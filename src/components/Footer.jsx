@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Phone, Mail, MapPin, Flame } from 'lucide-react';
+import { Phone, Mail, MapPin, Flame, Bike, Wallet, Clock, BadgeCheck, ArrowRight } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useSettings } from '../context/SettingsContext';
 import barB from '../assets/Barcode_cafe_B.png'
@@ -117,34 +117,45 @@ export const Footer = () => {
                   About Us
                 </Link>
               </li>
-              <li className="pt-1">
-                <Link
-                  to="/rider-application"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500/10 text-primary-500 text-xs font-bold hover:bg-primary-500 hover:text-white transition-all duration-300"
-                >
-                  Want to be a Rider?
-                </Link>
-              </li>
             </ul>
           </div>
 
-          {/* Opening Hours */}
+          {/* Become a Rider — highlighted CTA column (middle) */}
           <div>
-            {/* <h3 className="font-display text-white font-semibold text-lg mb-4">Hours</h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-between">
-                <span>Monday - Friday</span>
-                <span className="text-neutral-300">11:00 AM - 11:00 PM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Saturday</span>
-                <span className="text-neutral-300">12:00 PM - 12:00 AM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sunday</span>
-                <span className="text-neutral-300">12:00 PM - 10:00 PM</span>
-              </li>
-            </ul> */}
+            <div className="relative overflow-hidden rounded-2xl border border-primary-500/30 bg-gradient-to-br from-primary-500/15 via-neutral-900 to-neutral-900 p-5 h-full">
+              {/* soft glow accent */}
+              <div className="absolute -top-10 -right-10 w-28 h-28 bg-primary-500/20 blur-3xl rounded-full pointer-events-none" />
+              <div className="relative">
+                <div className="w-11 h-11 rounded-xl bg-primary-500 flex items-center justify-center text-white mb-3 shadow-lg shadow-primary-500/30">
+                  <Bike className="w-6 h-6" />
+                </div>
+                <h3 className="font-display text-white font-bold text-lg mb-1.5">Become a Rider</h3>
+                <p className="text-sm text-neutral-400 leading-relaxed mb-4">
+                  Deliver with Barcode and earn on your own schedule — sign up in minutes.
+                </p>
+                <ul className="space-y-2 mb-5">
+                  <li className="flex items-center gap-2 text-xs text-neutral-300">
+                    <Wallet className="w-4 h-4 text-primary-500 shrink-0" />
+                    Weekly guaranteed payouts
+                  </li>
+                  <li className="flex items-center gap-2 text-xs text-neutral-300">
+                    <Clock className="w-4 h-4 text-primary-500 shrink-0" />
+                    Flexible working hours
+                  </li>
+                  <li className="flex items-center gap-2 text-xs text-neutral-300">
+                    <BadgeCheck className="w-4 h-4 text-primary-500 shrink-0" />
+                    Quick, simple sign-up
+                  </li>
+                </ul>
+                <Link
+                  to="/rider-application"
+                  className="group inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all duration-300"
+                >
+                  Apply Now
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Contact Info */}
