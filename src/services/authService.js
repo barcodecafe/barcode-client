@@ -63,6 +63,17 @@ export async function login({ email, password }) {
 }
 
 /**
+ * Dedicated rider signup — creates a pending rider account and logs in
+ * immediately (stores the JWT). `formData` is multipart (includes photo + license).
+ * BACKEND: POST /api/riders/register → { user, token }
+ */
+export async function registerRider(formData) {
+  const { user, token } = await apiClient.postForm('/riders/register', formData);
+  localStorage.setItem(TOKEN_KEY, token);
+  return user;
+}
+
+/**
  * Ends the current session.
  * BACKEND: POST /api/auth/logout
  */

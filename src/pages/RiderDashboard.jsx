@@ -11,6 +11,7 @@ import {
   Phone,
   MapPin,
   X,
+  Clock,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -138,6 +139,52 @@ export const RiderDashboard = () => {
   };
 
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+
+  // Rider not yet approved → show a status screen instead of the order console.
+  // (legacy riders / approved riders have status 'none' or 'approved'.)
+  const approval = user?.riderApprovalStatus;
+  if (approval === "pending" || approval === "rejected") {
+    const pending = approval === "pending";
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-8 shadow-xl text-center"
+        >
+          <div
+            className={`w-16 h-16 rounded-2xl ${pending ? "bg-amber-500/10" : "bg-red-500/10"} flex items-center justify-center mx-auto mb-6 ${pending ? "animate-pulse" : ""}`}
+          >
+            {pending ? (
+              <Bike className="w-8 h-8 text-amber-500" />
+            ) : (
+              <ShieldAlert className="w-8 h-8 text-red-500" />
+            )}
+          </div>
+          <h1 className="font-display text-2xl font-extrabold text-neutral-800 dark:text-white tracking-tight">
+            {pending ? "Application Under Review" : "Application Not Approved"}
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3 leading-relaxed">
+            {pending
+              ? `Thanks for signing up, ${user.name}! Your rider profile and documents are being reviewed by our team. Once approved, your delivery orders will appear here automatically.`
+              : "Unfortunately your rider application was not approved this time. Please contact the Barcode team if you believe this was a mistake."}
+          </p>
+          <div
+            className={`mt-6 p-3 rounded-2xl border text-xs flex items-center justify-center gap-2 ${pending ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"}`}
+          >
+            <Clock className="w-4 h-4" />
+            Status: <span className="font-bold capitalize">{approval}</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-sm transition-all active:scale-95"
+          >
+            <LogOut className="w-4 h-4" /> Log Out
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

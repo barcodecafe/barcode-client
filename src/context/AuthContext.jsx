@@ -71,6 +71,13 @@ export const AuthProvider = ({ children }) => {
     return newUser;
   }, []);
 
+  const registerRider = useCallback(async (formData) => {
+    const newUser = await authService.registerRider(formData);
+    setUser(newUser);
+    markRegistered();
+    return newUser;
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
@@ -84,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     isAuthLoaded: isLoaded,
     login,
     register,
+    registerRider,
     logout,
   };
 

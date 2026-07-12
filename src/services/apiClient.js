@@ -62,12 +62,50 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
   return payload;
 }
 
+// Multipart/form-data POST (file uploads). Do NOT set Content-Type — the
+// browser adds the multipart boundary. Same auth + unwrap behavior as request().
+async function requestForm(path, formData) {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    if (response.status === 401) localStorage.removeItem('authToken');
+    throw new Error(errorBody.message || `Request failed: ${response.status}`);
+  }
+  if (response.status === 204) return null;
+  const payload = await response.json();
+  if (payload && typeof payload === 'object' && 'success' in payload) {
+    if (!payload.success) throw new Error(payload.message || 'Request failed');
+    return payload.data;
+  }
+  return payload;
+}
+
+// GET an auth-gated binary (image/PDF) and return an object URL for display.
+// Caller should URL.revokeObjectURL() when done.
+async function requestBlobUrl(path) {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${BASE_URL}${path}`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
 export const apiClient = {
   get: (path, opts) => request(path, { ...opts, method: 'GET' }),
+  getBlobUrl: (path) => requestBlobUrl(path),
   post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
   put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   delete: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+  postForm: (path, formData) => requestForm(path, formData),
 };
 
 // Used by mock services to simulate realistic network latency during
