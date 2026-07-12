@@ -78,6 +78,12 @@ export const AuthProvider = ({ children }) => {
     return newUser;
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const updated = await authService.updateMe(payload);
+    setUser(updated);
+    return updated;
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
@@ -92,6 +98,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     registerRider,
+    updateProfile,
     logout,
   };
 

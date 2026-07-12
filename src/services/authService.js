@@ -74,6 +74,14 @@ export async function registerRider(formData) {
 }
 
 /**
+ * Updates the logged-in user's own profile (name, phone, pickArea, address).
+ * BACKEND: PATCH /api/users/me → updated user
+ */
+export async function updateMe(payload) {
+  return apiClient.patch('/users/me', payload);
+}
+
+/**
  * Ends the current session.
  * BACKEND: POST /api/auth/logout
  */

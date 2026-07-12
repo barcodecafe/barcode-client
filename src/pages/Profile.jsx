@@ -296,7 +296,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
 // ── Main component ──────────────────────────────────────────────────────────
 
 export const Profile = () => {
-  const { user, logout, isAuthLoaded } = useAuth();
+  const { user, logout, isAuthLoaded, updateProfile } = useAuth();
   const { favoriteIds, toggleFavorite, isFavoritesLoaded } = useFavorites();
   const navigate = useNavigate();
 
@@ -306,9 +306,10 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  // Settings form (local only — no persistence endpoint exists yet)
+  // Settings form — persisted via PATCH /api/users/me
   const [form, setForm] = useState({ name: '', phone: '', pickArea: '', address: '' });
-  const [settingsNotice, setSettingsNotice] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState(null); // { ok, text } | null
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     // Wait for auth to hydrate before redirecting — avoids a flash redirect to
@@ -381,11 +382,23 @@ export const Profile = () => {
 
   const toggleOrder = (id) => setExpandedOrderId((cur) => (cur === id ? null : id));
 
-  const handleSettingsSubmit = (e) => {
+  const handleSettingsSubmit = async (e) => {
     e.preventDefault();
-    // No profile-update endpoint exists yet — surface an honest notice instead
-    // of pretending the change persisted to the account.
-    setSettingsNotice(true);
+    setSavingProfile(true);
+    setSettingsNotice(null);
+    try {
+      await updateProfile({
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        pickArea: form.pickArea.trim(),
+        address: form.address.trim(),
+      });
+      setSettingsNotice({ ok: true, text: 'Profile updated successfully.' });
+    } catch (err) {
+      setSettingsNotice({ ok: false, text: err.message || 'Failed to update profile. Please try again.' });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const resetForm = () => {
@@ -395,7 +408,7 @@ export const Profile = () => {
       pickArea: user.pickArea || '',
       address: user.address || '',
     });
-    setSettingsNotice(false);
+    setSettingsNotice(null);
   };
 
   const spinner = (
@@ -668,9 +681,15 @@ export const Profile = () => {
           <SectionHeading icon={Settings} title="Profile & Settings" subtitle="Manage your personal details." />
 
           {settingsNotice && (
-            <div className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-sm">
+            <div
+              className={`mb-5 flex items-start gap-2 p-3 rounded-xl border text-sm ${
+                settingsNotice.ok
+                  ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-300'
+                  : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400'
+              }`}
+            >
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>Profile editing isn&apos;t connected to your account yet, so these changes won&apos;t be saved. This feature is coming soon.</span>
+              <span>{settingsNotice.text}</span>
             </div>
           )}
 
@@ -757,10 +776,11 @@ export const Profile = () => {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/10 active:scale-95 transition-all"
+                disabled={savingProfile}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none"
               >
                 <Save className="w-4 h-4" />
-                Save Changes
+                {savingProfile ? 'Saving…' : 'Save Changes'}
               </button>
               <button
                 type="button"
@@ -867,19 +887,18 @@ export const Profile = () => {
           </Card>
         </div>
 
-        {/* Section content */}
+        {/* Section content — keyed motion.div re-animates on switch. (No
+            AnimatePresence mode="wait" so a throttled tab can't get stuck
+            waiting on an exit animation that never completes.) */}
         <div className="min-w-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-            >
-              {sectionContent[activeSection]()}
-            </motion.div>
-          </AnimatePresence>
+          <motion.div
+            key={activeSection}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {sectionContent[activeSection]()}
+          </motion.div>
         </div>
       </div>
     </div>
