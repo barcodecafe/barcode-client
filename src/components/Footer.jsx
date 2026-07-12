@@ -45,38 +45,30 @@ export const Footer = () => {
 
   return (
     <footer className="bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-6 lg:py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-          {/* Logo & Brand Info */}
-          <div className="flex flex-col gap-4">
-            <Link to="/" className="flex items-center gap-2">
-              {/* <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center text-white">
-                <Flame className="w-6 h-6 fill-current" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10">
+          {/* 1 — Brand */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            <Link to="/" className="w-fit">
+              <div className="h-12 w-fit flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-md transition-transform duration-300 hover:scale-[1.02]">
+                <img
+                  src={theme === "dark" ? (settings.logoDark || resW) : (settings.logoLight || resB)}
+                  alt="Barcode Cafe"
+                  className="h-9 w-auto"
+                />
               </div>
-               
-              <span className="font-display text-2xl font-extrabold tracking-tight text-white">
-                Barcode
-              </span> */}
-              <div className="h-12 flex items-center rounded-xl px-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-md transition-all duration-300 group-hover:scale-105">
-                  <img
-                    src={theme === "dark" ? (settings.logoDark || resW) : (settings.logoLight || resB)}
-                    alt="Barcode Cafe"
-                    className="h-9 w-auto"  
-                  />
-                </div>
             </Link>
-            <p className="text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed max-w-sm">
               {settings.footerDescription}
             </p>
-            {/* Social Icons */}
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3">
               {socialLinks.map((social, index) => (
                 <a
                   key={index}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-neutral-800 flex items-center justify-center text-neutral-300 hover:bg-primary-500 hover:text-white hover:scale-105 active:scale-95 transition-all duration-300"
+                  className="w-9 h-9 rounded-lg bg-neutral-800 flex items-center justify-center text-neutral-300 hover:bg-primary-500 hover:text-white hover:scale-105 active:scale-95 transition-all duration-300"
                   aria-label={social.label}
                 >
                   {social.icon}
@@ -85,9 +77,9 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-display text-white font-semibold text-lg mb-4">Quick Links</h3>
+          {/* 2 — Quick Links */}
+          <div className="lg:col-span-2">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-5">Quick Links</h3>
             <ul className="space-y-3">
               <li>
                 <Link
@@ -97,59 +89,57 @@ export const Footer = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className="text-sm hover:text-primary-500 transition-colors"
+                  className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200"
                 >
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/branches" className="text-sm hover:text-primary-500 transition-colors">
+                <Link to="/branches" className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200">
                   Our Branches
                 </Link>
               </li>
               <li>
-                <Link to="/menu" className="text-sm hover:text-primary-500 transition-colors">
+                <Link to="/menu" className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200">
                   Menu
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-sm hover:text-primary-500 transition-colors">
+                <Link to="/about" className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200">
                   About Us
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Become a Rider — highlighted CTA column (middle) */}
-          <div>
-            <div className="relative overflow-hidden rounded-2xl border border-primary-500/30 bg-gradient-to-br from-primary-500/15 via-neutral-900 to-neutral-900 p-5 h-full">
-              {/* soft glow accent */}
-              <div className="absolute -top-10 -right-10 w-28 h-28 bg-primary-500/20 blur-3xl rounded-full pointer-events-none" />
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-primary-500 flex items-center justify-center text-white mb-3 shadow-lg shadow-primary-500/30">
-                  <Bike className="w-6 h-6" />
+          {/* 3 — Become a Rider (middle, highlighted) */}
+          <div className="lg:col-span-3">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-5">Become a Rider</h3>
+            <div className="relative overflow-hidden rounded-2xl border border-primary-500/25 bg-gradient-to-br from-primary-500/12 to-transparent p-4">
+              <div className="absolute -top-8 -right-8 w-24 h-24 bg-primary-500/15 blur-3xl rounded-full pointer-events-none" />
+              <div className="relative flex flex-col gap-3.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-primary-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-primary-500/25">
+                    <Bike className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs text-neutral-300 leading-relaxed">
+                    Deliver with Barcode and earn on your own flexible schedule.
+                  </p>
                 </div>
-                <h3 className="font-display text-white font-bold text-lg mb-1.5">Become a Rider</h3>
-                <p className="text-sm text-neutral-400 leading-relaxed mb-4">
-                  Deliver with Barcode and earn on your own schedule — sign up in minutes.
-                </p>
-                <ul className="space-y-2 mb-5">
-                  <li className="flex items-center gap-2 text-xs text-neutral-300">
-                    <Wallet className="w-4 h-4 text-primary-500 shrink-0" />
-                    Weekly guaranteed payouts
+                <ul className="flex flex-col gap-1.5">
+                  <li className="flex items-center gap-2 text-xs text-neutral-400">
+                    <Wallet className="w-3.5 h-3.5 text-primary-500 shrink-0" /> Weekly payouts
                   </li>
-                  <li className="flex items-center gap-2 text-xs text-neutral-300">
-                    <Clock className="w-4 h-4 text-primary-500 shrink-0" />
-                    Flexible working hours
+                  <li className="flex items-center gap-2 text-xs text-neutral-400">
+                    <Clock className="w-3.5 h-3.5 text-primary-500 shrink-0" /> Flexible hours
                   </li>
-                  <li className="flex items-center gap-2 text-xs text-neutral-300">
-                    <BadgeCheck className="w-4 h-4 text-primary-500 shrink-0" />
-                    Quick, simple sign-up
+                  <li className="flex items-center gap-2 text-xs text-neutral-400">
+                    <BadgeCheck className="w-3.5 h-3.5 text-primary-500 shrink-0" /> Quick sign-up
                   </li>
                 </ul>
                 <Link
                   to="/rider-application"
-                  className="group inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all duration-300"
+                  className="group flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all duration-300"
                 >
                   Apply Now
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -158,36 +148,45 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Contact Info */}
-          <div>
-            <h3 className="font-display text-white font-semibold text-lg mb-4">Contact Info</h3>
-            <ul className="space-y-3.5 text-sm">
+          {/* 4 — Contact */}
+          <div className="lg:col-span-3">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-5">Contact Info</h3>
+            <ul className="space-y-4 text-sm">
               <li className="flex gap-3 items-start">
                 <MapPin className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" />
-                <span>{settings.footerAddress}</span>
+                <span className="leading-relaxed">{settings.footerAddress}</span>
               </li>
               <li className="flex gap-3 items-center">
                 <Phone className="w-5 h-5 text-primary-500 shrink-0" />
-                <span>{settings.footerPhone}</span>
+                <a
+                  href={`tel:${String(settings.footerPhone || '').replace(/[^\d+]/g, '')}`}
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  {settings.footerPhone}
+                </a>
               </li>
               <li className="flex gap-3 items-center">
                 <Mail className="w-5 h-5 text-primary-500 shrink-0" />
-                <span>{settings.footerEmail}</span>
+                <a
+                  href={`mailto:${settings.footerEmail || ''}`}
+                  className="hover:text-primary-500 transition-colors break-all"
+                >
+                  {settings.footerEmail}
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-neutral-800 my-8"></div>
-
-        {/* Copyright */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-          <p>© {currentYear} Barcode Restaurant. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-primary-500 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-primary-500 transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-primary-500 transition-colors">Sitemap</a>
+        {/* Divider + copyright */}
+        <div className="border-t border-neutral-800 mt-12 pt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+            <p>© {currentYear} Barcode Restaurant. All rights reserved.</p>
+            <div className="flex gap-6">
+              <a href="#" className="hover:text-primary-500 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-primary-500 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-primary-500 transition-colors">Sitemap</a>
+            </div>
           </div>
         </div>
       </div>
