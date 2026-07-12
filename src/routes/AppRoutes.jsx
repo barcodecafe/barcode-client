@@ -1,0 +1,107 @@
+import { Routes, Route } from 'react-router-dom';
+import { RootLayout } from '../layouts/RootLayout';
+import { AdminLayout } from '../layouts/AdminLayout';
+import { Home } from '../pages/Home';
+import { Branches } from '../pages/Branches';
+import BranchDetail from '../pages/BranchDetail';
+import { Menu } from '../pages/Menu';
+import { DishDetail } from '../pages/DishDetail';
+import { About } from '../pages/About';
+import { Login } from '../pages/Login';
+import { SignUp } from '../pages/SignUp';
+import { Profile } from '../pages/Profile';
+import { OrderTracking } from '../pages/OrderTracking';
+import { RiderDashboard } from '../pages/RiderDashboard';
+import { AdminDashboard } from '../pages/admin/AdminDashboard';
+import { AdminDishes } from '../pages/admin/AdminDishes';
+import { AdminBranches } from '../pages/admin/AdminBranches';
+import { AdminOrders } from '../pages/admin/AdminOrders';
+import { AdminCustomers } from '../pages/admin/AdminCustomers';
+import { AdminCoupons } from '../pages/admin/AdminCoupons';
+import { AdminHero } from '../pages/admin/AdminHero';
+import { AdminAbout } from '../pages/admin/AdminAbout';
+import { RiderApplication } from '../pages/RiderApplication';
+import { AdminRiders } from '../pages/admin/AdminRiders';
+import { AdminSettings } from '../pages/admin/AdminSettings';
+import { CartProvider } from '../context/CartContext';
+import { AuthProvider } from '../context/AuthContext';
+import { SettingsProvider } from '../context/SettingsContext';
+import { FavoritesProvider } from '../context/FavoritesContext';
+import { ScrollToTop } from '../components/ScrollToTop';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+
+// ---------------------------------------------------------------------------
+// Provider order: Auth wraps everything (other providers may eventually
+// need to know who's logged in — e.g. favorites/cart syncing to a real
+// account). Favorites and Cart are independent of each other so their
+// relative order doesn't matter.
+//
+// <ScrollToTop /> is mounted once here, inside the Router context but
+// outside <Routes>, so it sees every route change app-wide (Navbar links,
+// Footer Quick Links, search result clicks, programmatic navigate() calls,
+// etc.) without needing to be wired into each page individually.
+// ---------------------------------------------------------------------------
+export const AppRoutes = () => {
+  return (
+    <AuthProvider>
+      <SettingsProvider>
+        <FavoritesProvider>
+          <CartProvider>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<RootLayout />}>
+                <Route index element={<Home />} />
+                <Route path="branches" element={<Branches />} />
+                <Route path="branches/:id" element={<BranchDetail />} />
+                <Route path="menu" element={<Menu />} />
+                <Route path="menu/:id" element={<DishDetail />} />
+                <Route path="about" element={<About />} />
+                <Route path="login" element={<Login />} />
+                <Route path="signup" element={<SignUp />} />
+                <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="rider-application" element={<RiderApplication />} />
+                <Route path="order-tracking/:id" element={<OrderTracking />} />
+                <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
+              </Route>
+
+              {/* Rider Portal */}
+              <Route
+                path="/rider"
+                element={
+                  <ProtectedRoute requireRider>
+                    <RiderDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Dashboard — protected, admin-role only. Separate from
+                  RootLayout since it uses its own sidebar shell instead of the
+                  public Navbar/Footer. */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="dishes" element={<AdminDishes />} />
+                <Route path="branches" element={<AdminBranches />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="coupons" element={<AdminCoupons />} />
+                <Route path="hero" element={<AdminHero />} />
+                <Route path="about" element={<AdminAbout />} />
+                <Route path="rider-applications" element={<AdminRiders />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+            </Routes>
+          </CartProvider>
+        </FavoritesProvider>
+      </SettingsProvider>
+    </AuthProvider>
+  );
+};
+export default AppRoutes;
