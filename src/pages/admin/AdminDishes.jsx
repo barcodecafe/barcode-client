@@ -603,7 +603,7 @@ export const AdminDishes = () => {
                     </div>
                   ))}
                   {formData.variations.length > 0 && (
-                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">প্রতিটা variant-এর আলাদা দাম। Menu card-এ "from ৳{lowest}" দেখায়, customer dish page-এ একটা বেছে নেয়।</p>
+                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">প্রতিটা variant-এর আলাদা দাম। Menu card-এ সর্বনিম্ন দামটা "from ৳..." হিসেবে দেখায়; customer dish page-এ একটা বেছে নেয়।</p>
                   )}
                 </div>
 
