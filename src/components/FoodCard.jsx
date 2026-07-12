@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Heart, ShoppingBag } from "lucide-react";
+import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // FoodCard — একটাই শেয়ারড প্রোডাক্ট কার্ড, যা Home এবং Menu দুই পেজেই ব্যবহার
@@ -14,10 +14,17 @@ import { Star, Heart, ShoppingBag } from "lucide-react";
 //   variants         — framer-motion variants (ঐচ্ছিক)
 // ---------------------------------------------------------------------------
 const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
+  // Dishes with size/weight variants have no single price — show the cheapest as
+  // "from ৳X" and send the shopper to the detail page to pick a variant, instead
+  // of quietly quick-adding the base price without a choice.
+  const hasVariants = Array.isArray(food.variations) && food.variations.length > 0;
+  const basePrice = hasVariants
+    ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
+    : food.price;
   const hasDiscount = food.discountPct > 0;
   const discountedPrice = hasDiscount
-    ? food.price * (1 - food.discountPct / 100)
-    : food.price;
+    ? basePrice * (1 - food.discountPct / 100)
+    : basePrice;
 
   return (
     <motion.div
@@ -83,23 +90,38 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
         {/* ── Footer: price + order ───────────────────────────── */}
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="flex items-baseline gap-1.5 font-display">
+            {hasVariants && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                from
+              </span>
+            )}
             <span className="text-lg font-extrabold leading-none text-primary-500">
               ৳{discountedPrice.toFixed(2)}
             </span>
             {hasDiscount && (
               <span className="text-[11px] leading-none text-neutral-400 line-through dark:text-neutral-500">
-                ৳{food.price.toFixed(2)}
+                ৳{basePrice.toFixed(2)}
               </span>
             )}
           </div>
 
-          <button
-            onClick={() => onAddToCart(food)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            Order
-          </button>
+          {hasVariants ? (
+            <Link
+              to={`/menu/${food.id}`}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Choose
+            </Link>
+          ) : (
+            <button
+              onClick={() => onAddToCart(food)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" />
+              Order
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

@@ -83,10 +83,11 @@ export const DishDetail = () => {
     );
   }
 
-  // Price calculations
-  const basePrice = getActivePrice(food, branchId);
-  const activePrice = selectedVariation ? selectedVariation.price : basePrice;
+  // Price calculations — go through getActivePrice so the selected variant's
+  // price AND any per-branch adjustment are both applied (matches the server's
+  // getUnitPrice), instead of using the raw variation price in isolation.
   const hasDiscount = food.discountPct > 0;
+  const activePrice = getActivePrice(food, branchId, selectedVariation ? selectedVariation.name : null);
   const discountedPrice = hasDiscount ? activePrice * (1 - food.discountPct / 100) : activePrice;
 
   const handleQuantityChange = (newQty) => {
@@ -173,11 +174,12 @@ export const DishDetail = () => {
             {/* Variations */}
             {food.variations && food.variations.length > 0 && (
               <div className="pt-2 space-y-2">
-                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Select Size / Variation</h3>
+                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Choose {food.variantLabel || 'Size'}</h3>
                 <div className="flex flex-wrap gap-2">
                   {food.variations.map((v) => {
                     const isSelected = selectedVariation && selectedVariation.name === v.name;
-                    const vPrice = hasDiscount ? v.price * (1 - food.discountPct / 100) : v.price;
+                    const vFull = getActivePrice(food, branchId, v.name);
+                    const vPrice = hasDiscount ? vFull * (1 - food.discountPct / 100) : vFull;
                     return (
                       <button
                         key={v.name}

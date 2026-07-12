@@ -53,6 +53,7 @@ export const AdminDishes = () => {
     discountPct: 0,
     branches: [],
     branchPrices: {},
+    variantLabel: "Size",
     variations: [],
   });
 
@@ -154,6 +155,7 @@ export const AdminDishes = () => {
       discountPct: 0,
       branches: [],
       branchPrices: {},
+      variantLabel: "Size",
       variations: [],
     });
     setIsModalOpen(true);
@@ -178,6 +180,7 @@ export const AdminDishes = () => {
       discountPct: food.discountPct || 0,
       branches: food.branches || [],
       branchPrices: food.branchPrices || {},
+      variantLabel: food.variantLabel || "Size",
       variations: food.variations || [],
     });
     setIsModalOpen(true);
@@ -564,20 +567,44 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Variations */}
+                {/* Size / Weight Variants */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Dish Variations</label>
-                    <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Size</button>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight Variants</label>
+                    <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
                   </div>
-                  {formData.variations.length === 0 && <p className="text-xs text-neutral-400 italic">No custom size set.</p>}
+
+                  {/* Variant type — customers see it as "Choose {type}" on the dish page */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
+                    <select
+                      value={formData.variantLabel}
+                      onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })}
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer"
+                    >
+                      <option value="Size">Size (Small / Large / 2XL)</option>
+                      <option value="Weight">Weight (250g / 500g / 1kg)</option>
+                      <option value="Portion">Portion (Half / Full)</option>
+                      <option value="Piece">Piece (6 pcs / 12 pcs)</option>
+                    </select>
+                  </div>
+
+                  {formData.variations.length === 0 && (
+                    <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price above.</p>
+                  )}
                   {formData.variations.map((v, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <input type="text" placeholder="Size Name" value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
-                      <input type="number" step="0.01" placeholder="Price" value={v.price} onChange={(e) => handleVariationChange(index, "price", e.target.value)} className="w-24 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
-                      <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500">✕</button>
+                      <input type="text" placeholder={`${formData.variantLabel} name (e.g. ${formData.variantLabel === "Weight" ? "500g" : formData.variantLabel === "Portion" ? "Full" : formData.variantLabel === "Piece" ? "12 pcs" : "Large"})`} value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+                      <div className="relative w-28 shrink-0">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                        <input type="number" step="0.01" min="0" placeholder="Price" value={v.price} onChange={(e) => handleVariationChange(index, "price", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+                      </div>
+                      <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
                     </div>
                   ))}
+                  {formData.variations.length > 0 && (
+                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">প্রতিটা variant-এর আলাদা দাম। Menu card-এ "from ৳{lowest}" দেখায়, customer dish page-এ একটা বেছে নেয়।</p>
+                  )}
                 </div>
 
                 {/* Branch-wise availability & price adjustment */}
