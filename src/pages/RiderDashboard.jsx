@@ -12,6 +12,8 @@ import {
   MapPin,
   X,
   Clock,
+  Package,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -21,6 +23,20 @@ import {
   acceptRiderOrder,
   rejectRiderOrder,
 } from "../services/ordersService";
+import { updateRiderStatus } from "../services/ridersService";
+
+// small stat tile for the rider overview row
+const StatTile = ({ icon: Icon, label, value, tint }) => (
+  <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tint}`}>
+      <Icon className="w-5 h-5" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-lg font-extrabold text-neutral-800 dark:text-white leading-none truncate">{value}</p>
+      <p className="text-[11px] text-neutral-400 font-medium mt-1">{label}</p>
+    </div>
+  </div>
+);
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -47,7 +63,28 @@ export const RiderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [riderChatMessage, setRiderChatMessage] = useState("");
+  const [availability, setAvailability] = useState(user?.riderStatus || "Available");
+  const [updatingAvail, setUpdatingAvail] = useState(false);
   const chatEndRef = useRef(null);
+
+  // keep the toggle in sync with the hydrated user
+  useEffect(() => {
+    if (user?.riderStatus) setAvailability(user.riderStatus);
+  }, [user?.riderStatus]);
+
+  const handleToggleAvailability = async () => {
+    if (!user) return;
+    const next = availability === "Available" ? "Busy" : "Available";
+    setUpdatingAvail(true);
+    try {
+      await updateRiderStatus(user.id, next);
+      setAvailability(next);
+    } catch (err) {
+      alert("Failed to update availability: " + err.message);
+    } finally {
+      setUpdatingAvail(false);
+    }
+  };
   // const activeChatLength = orders.find((o) => o.id === activeChatOrderId)?.chatHistory?.length || 0;
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
@@ -194,6 +231,12 @@ export const RiderDashboard = () => {
     );
   }
 
+  // Overview stats derived from assigned orders
+  const deliveredOrders = orders.filter((o) => o.status === "order handover");
+  const activeOrders = orders.filter((o) => o.status !== "order handover");
+  const pendingAccept = orders.filter((o) => o.riderAcceptStatus === "pending");
+  const earnings = deliveredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -214,13 +257,42 @@ export const RiderDashboard = () => {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95 shrink-0"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Log Out
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Availability toggle */}
+            <button
+              onClick={handleToggleAvailability}
+              disabled={updatingAvail}
+              title="Toggle your availability for new deliveries"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-semibold text-xs transition-all active:scale-95 disabled:opacity-60 ${
+                availability === "Available"
+                  ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  availability === "Available" ? "bg-green-500 animate-pulse" : "bg-amber-500"
+                }`}
+              />
+              {updatingAvail ? "Updating…" : availability}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Log Out
+            </button>
+          </div>
+        </div>
+
+        {/* Overview stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatTile icon={Package} label="Active Orders" value={activeOrders.length} tint="bg-indigo-500/10 text-indigo-500" />
+          <StatTile icon={Clock} label="Pending Accept" value={pendingAccept.length} tint="bg-amber-500/10 text-amber-500" />
+          <StatTile icon={CheckCircle} label="Delivered" value={deliveredOrders.length} tint="bg-green-500/10 text-green-500" />
+          <StatTile icon={Wallet} label="Delivered Value" value={`৳${earnings.toFixed(0)}`} tint="bg-primary-500/10 text-primary-500" />
         </div>
 
         {/* Main Work Area */}
