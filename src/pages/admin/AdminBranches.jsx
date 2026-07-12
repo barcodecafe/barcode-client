@@ -18,6 +18,7 @@ import {
   deleteBranch,
 } from "../../services/branchesService";
 import { getRevenueByBranch } from "../../services/analyticsService";
+import { getAllRegions } from "../../services/regionsService";
 import LeafletMap from "../../components/LeafletMap";
 
 // Pull lat/lng out of a pasted Google Maps link (supports @lat,lng / q=lat,lng
@@ -44,6 +45,7 @@ const parseLatLngFromUrl = (url) => {
 // ---------------------------------------------------------------------------
 export const AdminBranches = () => {
   const [branches, setBranches] = useState([]);
+  const [regions, setRegions] = useState([]);
   const [revenueMap, setRevenueMap] = useState({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +65,7 @@ export const AdminBranches = () => {
     manager: "",
     capacity: 150,
     features: "",
-    region: "Chattogram",
+    regionId: null,
     lat: null,
     lng: null,
   });
@@ -72,9 +74,10 @@ export const AdminBranches = () => {
 
   const fetchBranchesData = () => {
     setIsLoading(true);
-    Promise.all([getAllBranches(), getRevenueByBranch()]).then(
-      ([branchData, revenueData]) => {
+    Promise.all([getAllBranches(), getRevenueByBranch(), getAllRegions()]).then(
+      ([branchData, revenueData, regionData]) => {
         setBranches(branchData);
+        setRegions(Array.isArray(regionData) ? regionData : []);
         setRevenueMap(
           revenueData.reduce((map, r) => {
             map[r.branchId] = r;
@@ -113,7 +116,7 @@ export const AdminBranches = () => {
       manager: "Branch Manager",
       capacity: 150,
       features: "Premium Seating, AC Venue, Wi-Fi Access, Parking Available",
-      region: "Chattogram",
+      regionId: null,
       lat: null,
       lng: null,
     });
@@ -136,7 +139,7 @@ export const AdminBranches = () => {
       features: Array.isArray(branch.features)
         ? branch.features.join(", ")
         : branch.features || "",
-      region: branch.region || "Chattogram",
+      regionId: typeof branch.regionId === "number" ? branch.regionId : null,
       lat: typeof branch.lat === "number" ? branch.lat : null,
       lng: typeof branch.lng === "number" ? branch.lng : null,
     });
@@ -222,6 +225,7 @@ export const AdminBranches = () => {
           : [],
         lat: typeof formData.lat === "number" && Number.isFinite(formData.lat) ? formData.lat : null,
         lng: typeof formData.lng === "number" && Number.isFinite(formData.lng) ? formData.lng : null,
+        regionId: typeof formData.regionId === "number" ? formData.regionId : null,
       };
 
       if (editingBranch) {
@@ -643,17 +647,24 @@ export const AdminBranches = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Region / Area
+                        Region
                       </label>
                       <select
-                        name="region"
-                        value={formData.region}
-                        onChange={handleInputChange}
+                        value={formData.regionId ?? ""}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            regionId: e.target.value ? Number(e.target.value) : null,
+                          }))
+                        }
                         className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
                       >
-                        <option value="Chattogram">Chattogram</option>
-                        <option value="Cox's Bazar">Cox's Bazar</option>
-                        <option value="Dhaka">Dhaka</option>
+                        <option value="">— No region —</option>
+                        {regions.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

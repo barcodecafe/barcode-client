@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   UtensilsCrossed,
   Building2,
+  Map,
   Menu as MenuIcon,
   X,
   Sun,
@@ -37,6 +38,7 @@ import resW from '../assets/Barcode_restaurant_groupW.png';
 const navItems = [
   { name: 'Overview', path: '/admin', icon: LayoutDashboard, end: true },
   { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
+  { name: 'Regions', path: '/admin/regions', icon: Map },
   { name: 'Branches', path: '/admin/branches', icon: Building2 },
   { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
   { name: 'Customers', path: '/admin/customers', icon: Users },

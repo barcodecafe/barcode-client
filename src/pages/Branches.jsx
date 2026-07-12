@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, Search } from 'lucide-react';
 import { getAllBranches } from '../services/branchesService';
+import { getAllRegions } from '../services/regionsService';
 
 // ---------------------------------------------------------------------------
 // Branches.jsx
@@ -15,29 +16,21 @@ import { getAllBranches } from '../services/branchesService';
 // ---------------------------------------------------------------------------
 export const Branches = () => {
   const [branches, setBranches] = useState([]);
+  const [regions, setRegions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRegion, setActiveRegion] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllBranches().then((data) => {
-      setBranches(data);
+    Promise.all([getAllBranches(), getAllRegions()]).then(([branchData, regionData]) => {
+      setBranches(branchData);
+      setRegions(Array.isArray(regionData) ? regionData : []);
       setIsLoading(false);
     });
   }, []);
 
-  // Group mappings to categorize regions based on branch location strings
-  const getRegion = (branch) => {
-    if (branch && branch.region) return branch.region;
-    if (!branch || !branch.location) return "Chattogram";
-    const loc = branch.location.toLowerCase();
-    if (loc.includes("cox's bazar")) return "Cox's Bazar";
-    if (loc.includes("dhaka") || loc.includes("banani")) return "Dhaka";
-    return "Chattogram";
-  };
-
-  // Filters branches based on search queries and selected region toggles
+  // Filters branches by search text + selected region (by regionId)
   const filteredBranches = useMemo(
     () =>
       branches.filter((branch) => {
@@ -45,15 +38,14 @@ export const Branches = () => {
           branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           branch.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-        const matchesRegion =
-          activeRegion === 'All' || getRegion(branch) === activeRegion;
+        const matchesRegion = activeRegion === 'All' || branch.regionId === activeRegion;
 
         return matchesSearch && matchesRegion;
       }),
     [branches, searchQuery, activeRegion]
   );
 
-  const regions = ['All', 'Chattogram', "Cox's Bazar", 'Dhaka'];
+  const regionTabs = [{ id: 'All', name: 'All' }, ...regions];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -61,17 +53,17 @@ export const Branches = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         {/* Regions Horizontal Navigation Toggle */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-          {regions.map((region) => (
+          {regionTabs.map((region) => (
             <button
-              key={region}
-              onClick={() => setActiveRegion(region)}
+              key={region.id}
+              onClick={() => setActiveRegion(region.id)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                activeRegion === region
+                activeRegion === region.id
                   ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                   : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
               }`}
             >
-              {region}
+              {region.name}
             </button>
           ))}
         </div>
