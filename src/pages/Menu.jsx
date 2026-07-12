@@ -1,17 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Star,
-  ShoppingBag,
   SlidersHorizontal,
-  Heart,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { getFoodsByBranch } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import FoodCard from "../components/FoodCard";
 
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
@@ -214,120 +211,18 @@ export const Menu = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
-          {filteredFoods.map((food) => {
-            const favorited = isFavorite(food.id);
-            const hasDiscount = food.discountPct > 0;
-            const discountedPrice = hasDiscount
-              ? food.price * (1 - food.discountPct / 100)
-              : food.price;
-
-            // FIX 3: যেহেতু এটি All Branches Menu, নির্দিষ্ট কোনো ব্রাঞ্চের ফিল্টারড স্টক দেখানোর পরিবর্তে 
-            // হেড অফিসের এভেলেবল মোট সেন্ট্রাল স্টক (food.baseStock) কে ব্যবহার করা হলো।
-            const stock = food.baseStock !== undefined ? food.baseStock : 0;
-            const isOutOfStock = stock <= 0;
-
-            return (
-              <motion.div
-                key={food.id}
-                variants={itemVariants}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-              >
-                {/* Product Image */}
-                <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                  {hasDiscount && (
-                    <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-                      {food.discountPct}% OFF
-                    </div>
-                  )}
-                  <Link to={`/menu/${food.id}`} className="block w-full h-full">
-                    <img
-                      src={food.image}
-                      alt={food.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                  </Link>
-
-                  <button
-                    onClick={() => toggleFavorite(food.id)}
-                    className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
-                      favorited ? "text-red-500" : "text-neutral-400 hover:text-red-500"
-                    }`}
-                    aria-label={favorited ? `Remove ${food.name} from favorites` : `Add ${food.name} to favorites`}
-                    aria-pressed={favorited}
-                  >
-                    <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
-                  </button>
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4 flex-grow flex flex-col justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                      <span className="uppercase tracking-wider">{food.category}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`font-bold text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wide ${isOutOfStock ? "bg-red-500/10 text-red-500 border border-red-500/10" : "bg-green-500/10 text-green-500 border border-green-500/10"}`}
-                        >
-                          {isOutOfStock ? "Sold Out" : `Qty: ${stock}`}
-                        </span>
-                        <div className="flex items-center gap-0.5 text-primary-500">
-                          <Star className="w-3 h-3 fill-current" />
-                          <span>{food.rating}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link to={`/menu/${food.id}`} className="block">
-                      <h3 className="font-semibold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-                        {food.name}
-                      </h3>
-                    </Link>
-
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light line-clamp-2">
-                      {food.description}
-                    </p>
-                  </div>
-
-                  {/* Bottom Row */}
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800/60 mt-1 font-display">
-                    <div className="flex flex-wrap items-baseline gap-1">
-                      {hasDiscount ? (
-                        <>
-                          <span className="font-extrabold text-red-500 text-base">
-                            ৳{discountedPrice.toFixed(2)}
-                          </span>
-                          <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
-                            ৳{food.price.toFixed(2)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-extrabold text-primary-500 text-base">
-                          ৳{food.price.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => !isOutOfStock && addToCart(food, null)}
-                      disabled={isOutOfStock}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans ${
-                        isOutOfStock
-                          ? "bg-neutral-150 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed shadow-none active:scale-100 hover:scale-100"
-                          : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25"
-                      }`}
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      {isOutOfStock ? "Sold Out" : "Order Now"}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+          {filteredFoods.map((food) => (
+            <FoodCard
+              key={food.id}
+              food={food}
+              favorited={isFavorite(food.id)}
+              onToggleFavorite={toggleFavorite}
+              onAddToCart={addToCart}
+              variants={itemVariants}
+            />
+          ))}
         </motion.div>
       )}
     </div>

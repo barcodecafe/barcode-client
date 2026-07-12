@@ -6,16 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Phone,
-  Star,
   ArrowRight,
-  Heart,
-  ShoppingBag,
   ChevronDown,
 } from "lucide-react";
 
-import { foodsData } from "../data/foodsData";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import FoodCard from "../components/FoodCard";
 import {
   getFeaturedBranches,
   getAllBranches,
@@ -311,7 +308,7 @@ export const Home = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {sortedPopularFoods.map((food) => {
             const favorited = isFavorite(food.id);
@@ -320,8 +317,8 @@ export const Home = () => {
                 key={food.id}
                 food={food}
                 favorited={favorited}
-                toggleFavorite={toggleFavorite}
-                addToCart={addToCart}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
                 variants={fadeInUp}
               />
             );
@@ -350,7 +347,7 @@ export const Home = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {featuredMenu.map((food) => {
             const favorited = isFavorite(food.id);
@@ -359,8 +356,8 @@ export const Home = () => {
                 key={food.id}
                 food={food}
                 favorited={favorited}
-                toggleFavorite={toggleFavorite}
-                addToCart={addToCart}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
                 variants={fadeInUp}
               />
             );
@@ -368,90 +365,6 @@ export const Home = () => {
         </motion.div>
       </section>
     </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// FoodCard Component (Extracted to avoid duplication)
-// ---------------------------------------------------------------------------
-const FoodCard = ({ food, favorited, toggleFavorite, addToCart, variants }) => {
-  const hasDiscount = food.discountPct > 0;
-  const discountedPrice = hasDiscount
-    ? food.price * (1 - food.discountPct / 100)
-    : food.price;
-
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-    >
-      <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-            {food.discountPct}% OFF
-          </div>
-        )}
-        <Link to={`/menu/${food.id}`} className="block w-full h-full">
-          <img
-            src={food.image}
-            alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        </Link>
-        <button
-          onClick={() => toggleFavorite(food.id)}
-          className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
-            favorited ? "text-red-500" : "text-neutral-400 hover:text-red-500"
-          }`}
-          aria-label="Toggle Favorite"
-        >
-          <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
-        </button>
-      </div>
-
-      <div className="p-4 flex-grow flex flex-col justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            <span>{food.rating}</span>
-          </div>
-          <Link to={`/menu/${food.id}`} className="block">
-            <h3 className="font-semibold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-              {food.name}
-            </h3>
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-          <div className="flex flex-wrap items-baseline gap-1">
-            {hasDiscount ? (
-              <>
-                <span className="font-display font-extrabold text-red-500 text-base">
-                  ৳{discountedPrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
-                  ৳{food.price.toFixed(2)}
-                </span>
-              </>
-            ) : (
-              <span className="font-display font-extrabold text-primary-500 text-base">
-                ৳{food.price.toFixed(2)}
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={() => addToCart(food)}
-            className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
-            title="Order Now"
-          >
-            <ShoppingBag className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
   );
 };
 
