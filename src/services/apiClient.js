@@ -14,7 +14,18 @@
 //   3. Remove the artificial network delay (`simulateDelay`).
 // ---------------------------------------------------------------------------
 
-const BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api';
+let BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api';
+
+// Mixed-content guard: an HTTPS page cannot call an http:// API (the browser
+// blocks it → "Failed to fetch"). If the app is served over HTTPS, upgrade an
+// http:// API base to https://. Local dev (http page → http API) is untouched.
+if (
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'https:' &&
+  BASE_URL.startsWith('http://')
+) {
+  BASE_URL = BASE_URL.replace(/^http:\/\//i, 'https://');
+}
 
 // Standard request wrapper — centralizes headers, auth token injection,
 // and error normalization so every service gets the same behavior.
