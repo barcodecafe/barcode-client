@@ -10,6 +10,7 @@ import { About } from '../pages/About';
 import { Login } from '../pages/Login';
 import { SignUp } from '../pages/SignUp';
 import { Profile } from '../pages/Profile';
+import { Checkout } from '../pages/Checkout';
 import { OrderTracking } from '../pages/OrderTracking';
 import { RiderDashboard } from '../pages/RiderDashboard';
 import { AdminDashboard } from '../pages/admin/AdminDashboard';
@@ -61,6 +62,7 @@ export const AppRoutes = () => {
                 <Route path="signup" element={<SignUp />} />
                 <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="checkout" element={<Checkout />} />
                 <Route path="rider-application" element={<RiderApplication />} />
                 <Route path="order-tracking/:id" element={<OrderTracking />} />
                 <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />

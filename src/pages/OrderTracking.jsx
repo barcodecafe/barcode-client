@@ -274,7 +274,7 @@ export const OrderTracking = () => {
             </button>
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {activeTab === 'map' ? (
               <motion.div
                 key="map"
@@ -469,10 +469,25 @@ export const OrderTracking = () => {
                       <span>-৳{order.discount.toFixed(2)}</span>
                     </div>
                   )}
+                  {order.pointsRedeemed > 0 && (
+                    <div className="flex justify-between text-xs text-amber-500 font-semibold">
+                      <span>Points Redeemed ({order.pointsRedeemed} pts)</span>
+                      <span>-৳{order.pointsRedeemed.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs text-neutral-400">
+                    <span>Delivery Charge {order.deliveryArea ? `(${order.deliveryArea})` : ''}</span>
+                    <span>৳{(order.deliveryCharge || 0).toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-white border-t border-dashed border-neutral-200 dark:border-neutral-850 pt-2.5">
                     <span>Total Amount Paid</span>
                     <span className="text-primary-500">৳{order.total.toFixed(2)}</span>
                   </div>
+                  {order.pointsEarned > 0 && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-0.5">
+                      <span>🎁 You earned {order.pointsEarned} reward points on this order</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

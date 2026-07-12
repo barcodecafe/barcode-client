@@ -61,7 +61,7 @@ export const CartProvider = ({ children }) => {
         selectedVariation: variationObj, // kept so DishDetail can match this line
         quantity: qty,
         price: purchasePrice,
-        originalPrice: food.price,
+        originalPrice: basePrice, // variant-aware pre-discount price (was food.price — wrong for variants)
       }];
     });
 

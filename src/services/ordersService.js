@@ -41,6 +41,9 @@ export async function createOrder(orderData) {
     branchId: orderData.branchId,
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
+    deliveryArea: orderData.deliveryArea || '',
+    deliveryAddress: orderData.deliveryAddress || '',
+    deliveryPhone: orderData.deliveryPhone || '',
     paymentMethod: orderData.paymentMethod || 'cod',
   };
   return apiClient.post('/orders', payload);
