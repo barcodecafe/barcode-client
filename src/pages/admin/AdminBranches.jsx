@@ -18,6 +18,23 @@ import {
   deleteBranch,
 } from "../../services/branchesService";
 import { getRevenueByBranch } from "../../services/analyticsService";
+import LeafletMap from "../../components/LeafletMap";
+
+// Pull lat/lng out of a pasted Google Maps link (supports @lat,lng / q=lat,lng
+// / query=lat,lng / !3dLAT!4dLNG). Returns null if none found.
+const parseLatLngFromUrl = (url) => {
+  if (!url) return null;
+  const patterns = [
+    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /[?&](?:q|query|destination)=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+  ];
+  for (const rx of patterns) {
+    const m = url.match(rx);
+    if (m) return { lat: Number(m[1]), lng: Number(m[2]) };
+  }
+  return null;
+};
 
 // ---------------------------------------------------------------------------
 // AdminBranches.jsx — /admin/branches
@@ -47,8 +64,11 @@ export const AdminBranches = () => {
     capacity: 150,
     features: "",
     region: "Chattogram",
+    lat: null,
+    lng: null,
   });
   const [formError, setFormError] = useState("");
+  const [mapLinkInput, setMapLinkInput] = useState("");
 
   const fetchBranchesData = () => {
     setIsLoading(true);
@@ -94,7 +114,10 @@ export const AdminBranches = () => {
       capacity: 150,
       features: "Premium Seating, AC Venue, Wi-Fi Access, Parking Available",
       region: "Chattogram",
+      lat: null,
+      lng: null,
     });
+    setMapLinkInput("");
     setFormError("");
     setIsModalOpen(true);
   };
@@ -114,7 +137,10 @@ export const AdminBranches = () => {
         ? branch.features.join(", ")
         : branch.features || "",
       region: branch.region || "Chattogram",
+      lat: typeof branch.lat === "number" ? branch.lat : null,
+      lng: typeof branch.lng === "number" ? branch.lng : null,
     });
+    setMapLinkInput("");
     setFormError("");
     setIsModalOpen(true);
   };
@@ -152,6 +178,26 @@ export const AdminBranches = () => {
     }
   };
 
+  // Map location helpers
+  const handlePickLocation = (lat, lng) => {
+    setFormData((prev) => ({ ...prev, lat, lng }));
+  };
+
+  const applyMapLink = () => {
+    const parsed = parseLatLngFromUrl(mapLinkInput.trim());
+    if (parsed) {
+      setFormData((prev) => ({ ...prev, lat: parsed.lat, lng: parsed.lng }));
+      setMapLinkInput("");
+      setFormError("");
+    } else {
+      setFormError("Couldn't read coordinates from that link. Paste a Google Maps link, or click the map.");
+    }
+  };
+
+  const clearLocation = () => {
+    setFormData((prev) => ({ ...prev, lat: null, lng: null }));
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -174,6 +220,8 @@ export const AdminBranches = () => {
               .map((f) => f.trim())
               .filter(Boolean)
           : [],
+        lat: typeof formData.lat === "number" && Number.isFinite(formData.lat) ? formData.lat : null,
+        lng: typeof formData.lng === "number" && Number.isFinite(formData.lng) ? formData.lng : null,
       };
 
       if (editingBranch) {
@@ -433,6 +481,53 @@ export const AdminBranches = () => {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       required
                     />
+                  </div>
+
+                  {/* Map Location Picker */}
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                      Map Location — click the map to drop a pin
+                    </label>
+                    <LeafletMap
+                      lat={formData.lat}
+                      lng={formData.lng}
+                      picker
+                      onPick={handlePickLocation}
+                      zoom={15}
+                      className="h-52 w-full border border-neutral-200 dark:border-neutral-800"
+                    />
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="text"
+                        value={mapLinkInput}
+                        onChange={(e) => setMapLinkInput(e.target.value)}
+                        placeholder="…or paste a Google Maps link"
+                        className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyMapLink}
+                        className="px-3 py-2 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-semibold shrink-0 hover:bg-neutral-900 transition-colors"
+                      >
+                        Use link
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-xs">
+                      <span className="text-neutral-500 dark:text-neutral-400 font-medium">
+                        {typeof formData.lat === "number" && typeof formData.lng === "number"
+                          ? `📍 ${formData.lat.toFixed(5)}, ${formData.lng.toFixed(5)}`
+                          : "No location pinned yet"}
+                      </span>
+                      {typeof formData.lat === "number" && (
+                        <button
+                          type="button"
+                          onClick={clearLocation}
+                          className="text-red-500 font-semibold hover:underline"
+                        >
+                          Clear pin
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -18,6 +18,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { getFoodsByBranch, getActivePrice, getDiscountedPrice, getFoodStock } from '../services/foodsService';
 import { getBranchById } from '../services/branchesService';
+import LeafletMap from '../components/LeafletMap';
 
 // ---------------------------------------------------------------------------
 // HeroImageCarousel — handles banner photo transitions, drag & autoplay
@@ -251,6 +252,16 @@ export const BranchDetail = () => {
     capacity: branch.capacity || 150,
     features: branch.features || ["Premium Seating", "AC Venue", "Wi-Fi Access", "Parking Available"]
   };
+
+  // Map / contact helpers
+  const hasCoords =
+    typeof branch.lat === 'number' &&
+    typeof branch.lng === 'number' &&
+    !(branch.lat === 0 && branch.lng === 0);
+  const telHref = `tel:${branch.contact ? branch.contact.replace(/[^\d+]/g, '') : ''}`;
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.location || branch.name)}`;
 
   const getRegion = (location) => {
     if (!location) return 'Chattogram';
@@ -548,35 +559,40 @@ export const BranchDetail = () => {
             transition={{ duration: 0.5 }}
             className="lg:col-span-5 space-y-4"
           >
-            <div className="relative h-48 sm:h-full sm:min-h-[180px] rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 overflow-hidden flex items-center justify-center shadow-inner">
-              <svg className="absolute inset-0 w-full h-full opacity-20 stroke-neutral-950 dark:stroke-white stroke-[1.5]" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <line x1="10" y1="0" x2="10" y2="100" />
-                <line x1="45" y1="0" x2="45" y2="100" />
-                <line x1="75" y1="0" x2="75" y2="100" />
-                <line x1="0" y1="25" x2="100" y2="25" />
-                <line x1="0" y1="65" x2="100" y2="65" />
-                <circle cx="45" cy="25" r="15" fill="none" strokeDasharray="4,4" />
-              </svg>
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="w-3 h-3 bg-primary-500 rounded-full animate-ping absolute" />
-                <MapPin className="w-7 h-7 text-primary-500 relative z-10 drop-shadow-md" />
+            {/* Real interactive map (OpenStreetMap via Leaflet — no API key) */}
+            {hasCoords ? (
+              <LeafletMap
+                lat={branch.lat}
+                lng={branch.lng}
+                zoom={16}
+                className="h-56 sm:min-h-[220px] w-full border border-neutral-200 dark:border-neutral-800 shadow-inner"
+              />
+            ) : (
+              <div className="relative h-56 sm:min-h-[220px] rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-dashed border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col items-center justify-center gap-2 shadow-inner text-center px-4">
+                <MapPin className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 max-w-[85%]">
+                  Precise map pin coming soon — use “Get Directions” to find us.
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="flex gap-3">
               <a
-                href={`tel:${branch.contact ? branch.contact.replace(/\D/g, '') : ''}`}
-                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm hover:bg-primary-500/5 active:scale-95 transition-all duration-300"
+                href={telHref}
+                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300"
               >
+                <Phone className="w-4 h-4" />
                 Call Branch
               </a>
-              <button
-                onClick={() => alert(`Launching map routes directing you to ${branch.name}...`)}
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex-1 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300"
               >
                 <Navigation className="w-4 h-4" />
                 Get Directions
-              </button>
+              </a>
             </div>
           </motion.div>
         </div>
