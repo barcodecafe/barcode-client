@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Do NOT commit the lockfile: it is generated per-OS and a Windows-built
+# lockfile breaks Linux CI builds (npm optional native-binary bug #4828).
+# Without it, Coolify runs a fresh `npm install` on Linux with correct binaries.
+package-lock.json
+
 # Env — do not commit local env (use .env.example)
 .env
 .env.*
