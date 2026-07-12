@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, ShoppingBag, Heart, ArrowLeft, Minus, Plus, Check, Zap } from 'lucide-react';
-import { getFoodById, getPopularFoods, getActivePrice, getFoodStock } from '../services/foodsService';
+import { getFoodById, getPopularFoods, getActivePrice } from '../services/foodsService';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -89,14 +89,8 @@ export const DishDetail = () => {
   const hasDiscount = food.discountPct > 0;
   const discountedPrice = hasDiscount ? activePrice * (1 - food.discountPct / 100) : activePrice;
 
-  // FIX 2: স্টক লজিক পরিবর্তন। যদি মেনু পেজ থেকে অল-ডাটা ভিউ নিয়ে আসা হয় (branchId === null),
-  // তবে নির্দিষ্ট কোনো ব্রাঞ্চের ফিল্টারড স্টক দেখানোর পরিবর্তে হেড অফিসের মেইন স্টক (food.baseStock) দেখাবে।
-  const stock = branchId ? getFoodStock(food, branchId) : (food.baseStock !== undefined ? food.baseStock : 0);
-  const isOutOfStock = stock <= 0;
-
   const handleQuantityChange = (newQty) => {
-    if (newQty < 1) return;
-    if (newQty > stock) return; 
+    if (newQty < 1 || newQty > 99) return;
     setQuantity(newQty);
     if (isAdded && cartItem) {
       updateCartQuantity(food.id, newQty, selectedVariation);
@@ -104,7 +98,6 @@ export const DishDetail = () => {
   };
 
   const handleAddToCartClick = () => {
-    if (isOutOfStock) return;
     addToCart(food, branchId, selectedVariation, quantity);
     setIsAdded(true);
     openCart(); 
@@ -150,9 +143,6 @@ export const DishDetail = () => {
                 {food.category}
               </span>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide ${isOutOfStock ? "bg-red-500/10 text-red-500 border border-red-500/10" : "bg-green-500/10 text-green-500 border border-green-500/10"}`}>
-                  {isOutOfStock ? "Sold Out" : `Stock: ${stock} Pcs`}
-                </span>
                 <div className="flex items-center gap-1 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-lg">
                   <Star className="w-4 h-4 fill-current" />
                   <span>{food.rating}</span>
@@ -217,7 +207,7 @@ export const DishDetail = () => {
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity - 1)}
-                disabled={isOutOfStock || quantity <= 1}
+                disabled={quantity <= 1}
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
               >
                 <Minus className="w-4 h-4" />
@@ -228,7 +218,7 @@ export const DishDetail = () => {
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity + 1)}
-                disabled={isOutOfStock || quantity >= stock}
+                disabled={quantity >= 99}
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
               >
                 <Plus className="w-4 h-4" />
@@ -239,13 +229,10 @@ export const DishDetail = () => {
             <button
               type="button"
               onClick={handleAddToCartClick}
-              disabled={isOutOfStock}
               className={`flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all ${
-                isOutOfStock
-                  ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed shadow-none"
-                  : isAdded
-                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-                    : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"
+                isAdded
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                  : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"
               }`}
             >
               {isAdded ? (
@@ -256,7 +243,7 @@ export const DishDetail = () => {
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
-                  {isOutOfStock ? "Sold Out" : "Add to Order Basket"}
+                  Add to Order Basket
                 </>
               )}
             </button>

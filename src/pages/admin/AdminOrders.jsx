@@ -23,7 +23,7 @@ import {
 } from "../../services/ordersService";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
-import { getAllFoods, getFoodStock } from "../../services/foodsService";
+import { getAllFoods } from "../../services/foodsService";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -617,16 +617,12 @@ export const AdminOrders = () => {
                       <tr className="border-b border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 font-semibold text-neutral-450 uppercase tracking-wider">
                         <th className="px-4 py-2.5">Dish</th>
                         <th className="px-4 py-2.5 text-center">Qty</th>
-                        <th className="px-4 py-2.5 text-center">Branch Stock</th>
                         <th className="px-4 py-2.5 text-right">Unit Price</th>
                         <th className="px-4 py-2.5 text-right">Subtotal</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedOrderDetails.items.map((item) => {
-                        const foodObj = foods.find((f) => f.id === item.id);
-                        const branchStock = foodObj ? getFoodStock(foodObj, selectedOrderDetails.branchId) : 0;
-                        const hasEnoughStock = branchStock >= item.quantity;
                         return (
                           <tr
                             key={item.id}
@@ -639,15 +635,6 @@ export const AdminOrders = () => {
                             </td>
                             <td className="px-4 py-3 text-center font-bold text-neutral-600 dark:text-neutral-300">
                               {item.quantity}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={`inline-block font-extrabold px-2 py-0.5 rounded text-[10px] ${
-                                hasEnoughStock
-                                  ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                                  : "bg-red-500/10 text-red-500 border border-red-500/20"
-                              }`}>
-                                {branchStock} Available
-                              </span>
                             </td>
                             <td className="px-4 py-3 text-right">
                               ৳{item.price.toFixed(2)}

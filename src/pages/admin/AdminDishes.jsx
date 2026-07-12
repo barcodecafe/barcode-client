@@ -12,7 +12,6 @@ import {
   MapPin,
   Filter,
   Layers,
-  Package,
   Settings,
   GripVertical,
 } from "lucide-react";
@@ -45,7 +44,6 @@ export const AdminDishes = () => {
     name: "",
     category: "Mains",
     price: 0,
-    baseStock: 10,
     rating: 4.5,
     image: "",
     description: "",
@@ -54,8 +52,7 @@ export const AdminDishes = () => {
     featuredOrder: 1,
     discountPct: 0,
     branches: [],
-    branchPrices: {}, 
-    branchStocks: {},
+    branchPrices: {},
     variations: [],
   });
 
@@ -148,7 +145,6 @@ export const AdminDishes = () => {
       name: "",
       category: sortedCategories[0] || "Mains",
       price: 0,
-      baseStock: 10,
       rating: 4.5,
       image: "",
       description: "",
@@ -158,7 +154,6 @@ export const AdminDishes = () => {
       discountPct: 0,
       branches: [],
       branchPrices: {},
-      branchStocks: {},
       variations: [],
     });
     setIsModalOpen(true);
@@ -174,7 +169,6 @@ export const AdminDishes = () => {
       name: food.name || "",
       category: food.category || "Mains",
       price: food.price || 0,
-      baseStock: food.baseStock !== undefined ? food.baseStock : 10,
       rating: food.rating || 4.5,
       image: food.image || "",
       description: food.description || "",
@@ -184,7 +178,6 @@ export const AdminDishes = () => {
       discountPct: food.discountPct || 0,
       branches: food.branches || [],
       branchPrices: food.branchPrices || {},
-      branchStocks: food.branchStocks || {},
       variations: food.variations || [],
     });
     setIsModalOpen(true);
@@ -207,24 +200,19 @@ export const AdminDishes = () => {
       const isSelected = prev.branches.includes(branchId);
       let updatedBranches;
       let updatedPrices = { ...prev.branchPrices };
-      let updatedStocks = { ...prev.branchStocks };
 
       if (isSelected) {
         updatedBranches = prev.branches.filter((id) => id !== branchId);
         delete updatedPrices[branchId];
-        delete updatedStocks[branchId];
       } else {
         updatedBranches = [...prev.branches, branchId];
-        updatedPrices[branchId] = 0; 
-        // FIX: In the distribution model, when a new branch is enabled, its default stock starts at 0.
-        updatedStocks[branchId] = 0; 
+        updatedPrices[branchId] = 0;
       }
 
       return {
         ...prev,
         branches: updatedBranches,
         branchPrices: updatedPrices,
-        branchStocks: updatedStocks,
       };
     });
   };
@@ -233,13 +221,6 @@ export const AdminDishes = () => {
     setFormData((prev) => ({
       ...prev,
       branchPrices: { ...prev.branchPrices, [branchId]: parseFloat(value) || 0 },
-    }));
-  };
-
-  const handleBranchStockChange = (branchId, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      branchStocks: { ...prev.branchStocks, [branchId]: parseInt(value) >= 0 ? parseInt(value) : 0 },
     }));
   };
 
@@ -279,16 +260,6 @@ export const AdminDishes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-   // FIX: Before submitting, verify that the total stock across all branches does not exceed the main central stock (baseStock).
-    const totalAllocatedToBranches = formData.branches.reduce((sum, id) => {
-      return sum + (formData.branchStocks[id] || 0);
-    }, 0);
-
-    if (totalAllocatedToBranches > formData.baseStock) {
-      alert(`Error! A total of ${totalAllocatedToBranches} items have been allocated across the branches, but the Head Office has only ${formData.baseStock} items in total stock. Please adjust the stock allocation and try again.`);
-      return;
-    }
-
     try {
       const cleanedFormData = {
         ...formData,
@@ -314,15 +285,6 @@ export const AdminDishes = () => {
       alert("Error saving dish details.");
     }
   };
-
-  // FIX: The total stock should always match the Head Office's main stock.
-  const calculateTotalStock = (food) => {
-    return food.baseStock !== undefined ? food.baseStock : 0;
-  };
-
-  // Live calculation for Modal UI indicator
-  const totalAllocatedInModal = formData.branches.reduce((sum, id) => sum + (formData.branchStocks[id] || 0), 0);
-  const remainingHeadOfficeStock = formData.baseStock - totalAllocatedInModal;
 
   const filteredFoods = useMemo(() => {
     const matched = foods.filter((f) => {
@@ -472,7 +434,6 @@ export const AdminDishes = () => {
           ) : (
             <div className="flex flex-col gap-3">
               {filteredFoods.map((food) => {
-                const totalAvailableStock = calculateTotalStock(food);
                 return (
                   <div
                     key={food.id}
@@ -500,22 +461,11 @@ export const AdminDishes = () => {
                       </div>
                     </div>
 
-                    {/* Stock & Prices */}
+                    {/* Price & Actions */}
                     <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
                       <div className="text-left sm:text-right min-w-[75px]">
                         <p className="text-sm font-black text-primary-500">৳{food.price}</p>
                         {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
-                      </div>
-
-                      {/* Stock View */}
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-50 dark:bg-neutral-950/50 border border-neutral-100 dark:border-neutral-800/50 min-w-[110px]">
-                        <Package className="w-4 h-4 text-neutral-400 shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Total Stock</span>
-                          <span className={`text-xs font-black ${totalAvailableStock === 0 ? "text-red-500 animate-pulse" : totalAvailableStock <= 5 ? "text-amber-500" : "text-emerald-500"}`}>
-                            {totalAvailableStock} Pcs
-                          </span>
-                        </div>
                       </div>
 
                       {/* Actions */}
@@ -602,8 +552,8 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Rating, Discount and Base Stock Configuration */}
-                <div className="grid grid-cols-3 gap-3">
+                {/* Rating & Discount */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
                     <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
@@ -611,11 +561,6 @@ export const AdminDishes = () => {
                   <div>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount (%)</label>
                     <input type="number" min="0" max="100" value={formData.discountPct} onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                  </div>
-                  <div>
-                    {/* সেন্ট্রাল স্টক ইনপুট ফিল্ড */}
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Central Stock *</label>
-                    <input type="number" min="0" required value={formData.baseStock} onChange={(e) => setFormData({ ...formData, baseStock: parseInt(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                 </div>
 
@@ -635,17 +580,13 @@ export const AdminDishes = () => {
                   ))}
                 </div>
 
-                {/* Branch Wise Stock & Pricing */}
+                {/* Branch-wise availability & price adjustment */}
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
-                    {/* FIX: Live Stock Allocation Tracker UI Header */}
                     <div className="flex justify-between items-center flex-wrap gap-2">
                       <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /> Distribute Stock to Branches
+                        <MapPin className="w-3.5 h-3.5" /> Branch Availability & Price Adjustment
                       </label>
-                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${remainingHeadOfficeStock < 0 ? "bg-red-100 text-red-600 animate-pulse" : "bg-amber-100 text-amber-800"}`}>
-                        Unallocated Central: {remainingHeadOfficeStock} / {formData.baseStock}
-                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -661,13 +602,8 @@ export const AdminDishes = () => {
                               {isChecked && (
                                 <div className="flex flex-col gap-1 items-end shrink-0">
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-neutral-400">Adj:</span>
+                                    <span className="text-[10px] text-neutral-400">Price Adj:</span>
                                     <input type="number" placeholder="৳0" value={formData.branchPrices[branch.id] !== undefined ? formData.branchPrices[branch.id] : ""} onChange={(e) => handleBranchPriceChange(branch.id, e.target.value)} className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none" />
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-neutral-400">Stock:</span>
-                                   {/* FIX: Display 0 as the default value when the input is undefined or empty. */}
-                                    <input type="number" min="0" value={formData.branchStocks[branch.id] !== undefined ? formData.branchStocks[branch.id] : 0} onChange={(e) => handleBranchStockChange(branch.id, e.target.value)} className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none" required />
                                   </div>
                                 </div>
                               )}

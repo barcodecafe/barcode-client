@@ -16,7 +16,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { getFoodsByBranch, getActivePrice, getDiscountedPrice, getFoodStock } from '../services/foodsService';
+import { getFoodsByBranch, getActivePrice, getDiscountedPrice } from '../services/foodsService';
 import { getBranchById } from '../services/branchesService';
 import LeafletMap from '../components/LeafletMap';
 
@@ -414,8 +414,6 @@ export const BranchDetail = () => {
               const basePrice = getActivePrice(food, branch.id);
               const purchasePrice = getDiscountedPrice(food, branch.id);
               const hasDiscount = food.discountPct > 0;
-              const stock = getFoodStock(food, branch.id);
-              const isOutOfStock = stock <= 0;
               return (
                 <motion.div
                   key={food.id}
@@ -444,9 +442,6 @@ export const BranchDetail = () => {
                       <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                         <span className="uppercase tracking-wider">{food.category}</span>
                         <div className="flex items-center gap-1.5">
-                          <span className={`font-black text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wide ${isOutOfStock ? 'bg-red-500/10 text-red-500 border border-red-500/10' : 'bg-green-500/10 text-green-500 border border-green-500/10'}`}>
-                            {isOutOfStock ? 'Sold Out' : `Qty: ${stock}`}
-                          </span>
                           <div className="flex items-center gap-0.5 text-primary-500 font-bold">
                             <Star className="w-3 h-3 fill-current" />
                             <span>{food.rating}</span>
@@ -481,16 +476,11 @@ export const BranchDetail = () => {
                         )}
                       </div>
                       <button
-                        onClick={() => !isOutOfStock && addToCart(food, branch.id)}
-                        disabled={isOutOfStock}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans ${
-                          isOutOfStock
-                            ? 'bg-neutral-150 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed shadow-none active:scale-100 hover:scale-100'
-                            : 'bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25'
-                        }`}
+                        onClick={() => addToCart(food, branch.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        {isOutOfStock ? 'Sold Out' : 'Order Now'}
+                        Order Now
                       </button>
                     </div>
                   </div>

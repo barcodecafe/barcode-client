@@ -1,14 +1,12 @@
 // ---------------------------------------------------------------------------
 // foodsService.js — LIVE BACKEND
 //
-// Menu/food data now comes from the API. The pure pricing/stock HELPERS
-// (getActivePrice / getDiscountedPrice / getFoodStock) stay client-side —
-// they operate on a food object the API already returns in the same shape
-// (branchPrices / branchStocks are plain objects keyed by branch id).
+// Menu/food data now comes from the API. The pure pricing HELPERS
+// (getActivePrice / getDiscountedPrice) stay client-side — they operate on a
+// food object the API already returns (branchPrices keyed by branch id).
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
-const DEFAULT_STOCK = 10;
 
 /** GET /api/foods */
 export async function getAllFoods() {
@@ -59,13 +57,6 @@ export async function deleteFood(id) {
   return apiClient.delete(`/foods/${id}`);
 }
 
-/** PATCH /api/foods/:id/stock (admin) */
-export async function decreaseFoodStock(foodId, branchId, quantity) {
-  return apiClient.patch(`/foods/${foodId}/stock`, { branchId, quantity, action: 'decrease' });
-}
-export async function increaseFoodStock(foodId, branchId, quantity) {
-  return apiClient.patch(`/foods/${foodId}/stock`, { branchId, quantity, action: 'increase' });
-}
 
 // ── Pure client-side display helpers (unchanged — operate on a food object) ──
 
@@ -88,19 +79,4 @@ export function getDiscountedPrice(food, branchId, selectedSize = null) {
   const basePrice = getActivePrice(food, branchId, selectedSize);
   if (food.discountPct > 0) return basePrice * (1 - food.discountPct / 100);
   return basePrice;
-}
-
-export function getFoodStock(food, branchId) {
-  if (!food) return 0;
-  if (!branchId || Number(branchId) === 0) {
-    if (food.branchStocks && Object.keys(food.branchStocks).length > 0) {
-      return Object.values(food.branchStocks).reduce((total, stock) => total + Number(stock), 0);
-    }
-    return DEFAULT_STOCK;
-  }
-  if (food.branchStocks && food.branchStocks[branchId] !== undefined) {
-    const v = Number(food.branchStocks[branchId]);
-    return Number.isFinite(v) ? v : DEFAULT_STOCK;
-  }
-  return DEFAULT_STOCK;
 }

@@ -69,7 +69,7 @@ export const OrderTracking = () => {
 
   // Stepper configurations
   const steps = [
-    { key: 'Placed', label: 'Order Placed', desc: 'Awaiting stock check' },
+    { key: 'Placed', label: 'Order Placed', desc: 'Waiting for confirmation' },
     { key: 'Accepted', label: 'Accepted', desc: 'Kitchen preparing soon' },
     { key: 'Preparing', label: 'Preparing', desc: 'Chefs are cooking your meal' },
     { key: 'Out for Delivery', label: 'On The Way', desc: 'Rider is out for delivery' },
@@ -158,7 +158,7 @@ export const OrderTracking = () => {
           <div>
             <h3 className="font-bold text-sm">Order Rejected</h3>
             <p className="text-xs mt-1 font-light opacity-95">
-              We regret to inform you that your order has been rejected due to physical stock availability. Any online transactions will be refunded automatically.
+              We regret to inform you that your order has been rejected. Any online transactions will be refunded automatically.
             </p>
           </div>
         </div>

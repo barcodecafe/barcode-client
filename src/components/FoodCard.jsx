@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag } from "lucide-react";
-import { getFoodStock } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
 // FoodCard — একটাই শেয়ারড প্রোডাক্ট কার্ড, যা Home এবং Menu দুই পেজেই ব্যবহার
@@ -20,11 +19,6 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
     ? food.price * (1 - food.discountPct / 100)
     : food.price;
 
-  // অল-ব্রাঞ্চ availability — per-branch স্টক যোগ করে; ডেটা না থাকলে নিরাপদ
-  // ডিফল্ট ধরে (যাতে আইটেম ভুল করে "Sold Out" না দেখায়)।
-  const stock = getFoodStock(food, null);
-  const isOutOfStock = stock <= 0;
-
   return (
     <motion.div
       variants={variants}
@@ -38,24 +32,14 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
             src={food.image}
             alt={food.name}
             loading="lazy"
-            className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-              isOutOfStock ? "grayscale opacity-70" : ""
-            }`}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
 
-        {hasDiscount && !isOutOfStock && (
+        {hasDiscount && (
           <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-primary-500/30">
             {food.discountPct}% OFF
           </span>
-        )}
-
-        {isOutOfStock && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/45">
-            <span className="rounded-lg bg-white/95 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-neutral-800 dark:bg-neutral-900/95 dark:text-neutral-100">
-              Sold Out
-            </span>
-          </div>
         )}
 
         <button
@@ -110,16 +94,11 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           </div>
 
           <button
-            onClick={() => !isOutOfStock && onAddToCart(food)}
-            disabled={isOutOfStock}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all active:scale-95 ${
-              isOutOfStock
-                ? "cursor-not-allowed bg-neutral-150 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-600"
-                : "bg-primary-500 text-white shadow-md shadow-primary-500/20 hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35"
-            }`}
+            onClick={() => onAddToCart(food)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
-            {isOutOfStock ? "Sold Out" : "Order"}
+            Order
           </button>
         </div>
       </div>
