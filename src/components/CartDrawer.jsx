@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Check, X, Tag, Phone, MapPin, Mail, Lock, User, LogOut, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { ShoppingBag, Check, X, Tag, Phone, MapPin, Mail, Lock, User, LogOut, ArrowRight, ArrowLeft, Loader2, Coins } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,7 @@ export const CartDrawer = () => {
     login,
     register,
     logout,
+    refreshUser,
   } = useAuth();
 
   const navigate = useNavigate();
@@ -71,6 +72,9 @@ export const CartDrawer = () => {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // Loyalty points redeem toggle (1 pt = ৳1). When on, we redeem the max allowed.
+  const [redeemPoints, setRedeemPoints] = useState(false);
+
   // Status/Errors
   const [authError, setAuthError] = useState('');
   const [orderError, setOrderError] = useState('');
@@ -95,6 +99,7 @@ export const CartDrawer = () => {
       setCouponError('');
       setCouponCodeInput('');
       setAppliedCoupon(null);
+      setRedeemPoints(false);
       setBillingSameAsShipping(true);
       setBillingAddress('');
       setPaymentMethod('cod');
@@ -207,6 +212,7 @@ export const CartDrawer = () => {
         subtotal: cartTotal,
         discount: discountVal,
         couponCode: appliedCoupon?.code || '',
+        pointsToRedeem: pointsDiscount, // loyalty redeem — server re-validates against balance
         total: finalTotal,
         paymentMethod: paymentMethod, // 'cod' or 'sslcommerz'
         paymentStatus: overridePaymentStatus, // 'Paid' or 'Pending'
@@ -215,11 +221,16 @@ export const CartDrawer = () => {
       };
 
       const newOrder = await createOrder(orderPayload);
-      
+
+      // Refresh the loyalty balance (points just redeemed were deducted server-side)
+      if (pointsDiscount > 0 && refreshUser) {
+        try { await refreshUser(); } catch { /* non-fatal — reload will resync */ }
+      }
+
       // Clear Cart
       clearCart();
       closeCart();
-      
+
       // Navigate to order tracking page
       navigate(`/order-tracking/${newOrder.id}`);
     } catch (err) {
@@ -230,7 +241,14 @@ export const CartDrawer = () => {
   };
 
   const couponDiscountAmount = appliedCoupon ? (cartTotal * appliedCoupon.discountPct) / 100 : 0;
-  const finalOrderTotal = cartTotal - couponDiscountAmount;
+  const afterCoupon = cartTotal - couponDiscountAmount;
+  // Loyalty: 1 pt = ৳1, capped at balance and at the remaining bill (never below ৳0)
+  const availablePoints = Math.max(0, Math.floor(user?.points || 0));
+  const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(afterCoupon)));
+  const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
+  const finalOrderTotal = afterCoupon - pointsDiscount;
+  // Points earned on delivery — subtotal-based (৳100 = 5 pts), shown as a heads-up
+  const pointsToEarn = Math.floor(cartTotal / 100) * 5;
 
   return (
     <>
@@ -723,6 +741,44 @@ export const CartDrawer = () => {
                           </span>
                         )}
                       </div>
+
+                      {/* Loyalty Points Redeem (1 pt = ৳1) */}
+                      {availablePoints > 0 && (
+                        <div className="border-t border-neutral-100 dark:border-neutral-850 pt-3">
+                          <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                            Reward Points
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setRedeemPoints((v) => !v)}
+                            disabled={maxRedeemablePoints < 1}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                              redeemPoints
+                                ? 'border-amber-400 bg-amber-50 dark:bg-amber-500/10'
+                                : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300'
+                            } ${maxRedeemablePoints < 1 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          >
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${redeemPoints ? 'bg-amber-400 text-white' : 'bg-amber-500/10 text-amber-500'}`}>
+                              <Coins className="w-4.5 h-4.5" />
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <span className="block text-xs font-bold text-neutral-800 dark:text-white">
+                                {availablePoints} points available
+                              </span>
+                              <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">
+                                {maxRedeemablePoints < 1
+                                  ? 'Nothing left to discount on this order'
+                                  : redeemPoints
+                                    ? `Redeeming ${maxRedeemablePoints} pts — ৳${maxRedeemablePoints} off`
+                                    : `Tap to use (up to ৳${maxRedeemablePoints} off)`}
+                              </span>
+                            </div>
+                            <div className={`w-9 h-5 rounded-full p-0.5 shrink-0 transition-colors ${redeemPoints ? 'bg-amber-400' : 'bg-neutral-300 dark:bg-neutral-700'}`}>
+                              <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${redeemPoints ? 'translate-x-4' : ''}`} />
+                            </div>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -871,22 +927,34 @@ export const CartDrawer = () => {
               {cart.length > 0 && (
                 <div className="border-t border-neutral-200 dark:border-neutral-800 pt-4 space-y-4 shrink-0">
                   <div className="space-y-1.5 text-sm">
+                    {(appliedCoupon || pointsDiscount > 0) && (
+                      <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs">
+                        <span>Subtotal Basket</span>
+                        <span>৳{cartTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     {appliedCoupon && (
-                      <>
-                        <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs">
-                          <span>Subtotal Basket</span>
-                          <span>৳{cartTotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-emerald-500 text-xs font-semibold">
-                          <span>Discount Coupon ({appliedCoupon.code})</span>
-                          <span>-৳{couponDiscountAmount.toFixed(2)}</span>
-                        </div>
-                      </>
+                      <div className="flex justify-between text-emerald-500 text-xs font-semibold">
+                        <span>Discount Coupon ({appliedCoupon.code})</span>
+                        <span>-৳{couponDiscountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {pointsDiscount > 0 && (
+                      <div className="flex justify-between text-amber-500 text-xs font-semibold">
+                        <span>Points Redeemed ({pointsDiscount} pts)</span>
+                        <span>-৳{pointsDiscount.toFixed(2)}</span>
+                      </div>
                     )}
                     <div className="flex justify-between font-bold text-base text-neutral-800 dark:text-white pt-1">
                       <span>Total Amount Due</span>
                       <span className="text-primary-500">৳{finalOrderTotal.toFixed(2)}</span>
                     </div>
+                    {pointsToEarn > 0 && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-0.5">
+                        <Coins className="w-3 h-3" />
+                        You'll earn {pointsToEarn} points on delivery
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 w-full">

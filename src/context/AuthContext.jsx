@@ -84,6 +84,14 @@ export const AuthProvider = ({ children }) => {
     return updated;
   }, []);
 
+  // Re-fetch the current user from the server (e.g. after an order changes the
+  // loyalty points balance) so the UI reflects the latest values without a reload.
+  const refreshUser = useCallback(async () => {
+    const current = await authService.getCurrentUser();
+    setUser(current);
+    return current;
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
@@ -99,6 +107,7 @@ export const AuthProvider = ({ children }) => {
     register,
     registerRider,
     updateProfile,
+    refreshUser,
     logout,
   };
 

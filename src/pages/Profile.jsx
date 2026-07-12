@@ -428,7 +428,7 @@ export const Profile = () => {
           <StatTile icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} hint={`${stats.activeOrders} active`} delay={0} />
           <StatTile icon={Wallet} label="Total Spent" value={taka(stats.totalSpent)} hint="Excludes cancelled" delay={0.05} />
           <StatTile icon={Heart} label="Favorites" value={favoriteIds.length} hint="Saved dishes" delay={0.1} />
-          <StatTile icon={Coins} label="Reward Points" value="—" hint="Loyalty program coming soon" delay={0.15} />
+          <StatTile icon={Coins} label="Reward Points" value={user?.points ?? 0} hint="1 pt = ৳1 · redeem at checkout" delay={0.15} />
         </div>
 
         {active.length > 0 && (

@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // ordersService.js — LIVE BACKEND
 //
-// Orders now live on the server. The backend RE-COMPUTES price/discount/stock
+// Orders now live on the server. The backend RE-COMPUTES price/discount/points
 // and owns the canonical status vocabulary, so the client only sends item ids,
-// quantities, branch, coupon and payment method — never money.
+// quantities, branch, coupon, points-to-redeem and payment method — never money.
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
@@ -40,6 +40,7 @@ export async function createOrder(orderData) {
     })),
     branchId: orderData.branchId,
     couponCode: orderData.couponCode || '',
+    pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
     paymentMethod: orderData.paymentMethod || 'cod',
   };
   return apiClient.post('/orders', payload);
