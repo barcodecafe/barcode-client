@@ -60,7 +60,10 @@ export const SearchBar = ({ variant = 'desktop', onClose }) => {
       setQuery('');
       setIsOpen(false);
       onClose?.();
-      navigate('/menu', { state: { highlightFoodId: food.id } });
+      // Go straight to the dish's detail page (/menu/:id). Previously this
+      // navigated to /menu with a highlightFoodId that Menu.jsx never read,
+      // so clicking a food result did nothing useful.
+      navigate(`/menu/${food.id}`);
     },
     [navigate, onClose]
   );

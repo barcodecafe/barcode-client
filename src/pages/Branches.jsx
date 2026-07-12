@@ -77,7 +77,7 @@ export const Branches = () => {
         </div>
 
         {/* Input Search Field */}
-        {/* <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
@@ -86,7 +86,7 @@ export const Branches = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
           />
-        </div> */}
+        </div>
       </div>
 
       {/* Main Content Showcase Section */}
