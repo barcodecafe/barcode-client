@@ -228,9 +228,8 @@ export const Home = () => {
 
         <motion.div
           variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          initial={false}
+          animate="visible"
           className="hidden sm:grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6"
         >
           {previewBranches.map((branch) => (
@@ -249,7 +248,7 @@ export const Home = () => {
             >
               <motion.div
                 variants={staggerContainer}
-                initial="hidden"
+                initial={false}
                 animate="visible"
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
               >
@@ -305,9 +304,8 @@ export const Home = () => {
         <motion.div
           key={activeSort}
           variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          initial={false}
+          animate="visible"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {sortedPopularFoods.map((food) => {
@@ -344,9 +342,8 @@ export const Home = () => {
 
         <motion.div
           variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          initial={false}
+          animate="visible"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {featuredMenu.map((food) => {
@@ -377,7 +374,10 @@ const BranchCard = ({ branch, variants }) => (
     whileHover={{ y: -6, transition: { duration: 0.2 } }}
     className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
   >
-    <Link to={`/branches/${branch.id}`}>
+    <Link
+      to={`/branches/${branch.id}`}
+      onClick={() => localStorage.setItem("selectedBranchId", String(branch.id))} //try trach branch id
+    >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <img
           src={branch.image}
@@ -406,14 +406,10 @@ const BranchCard = ({ branch, variants }) => (
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
           </div>
-          <Link
-            to={`/branches/${branch.id}`}
-            onClick={() => localStorage.setItem("selectedBranchId", String(branch.id))} //try trach branch id
-            className="text-primary-500 hover:text-primary-600 flex items-center gap-0.5 group"
-          >
+          <span className="text-primary-500 hover:text-primary-600 flex items-center gap-0.5 group">
             Details
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          </span>
         </div>
       </div>
     </Link>
