@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { CartDrawer } from '../components/CartDrawer';
-import { ChooseBranchModal } from '../components/ChooseBranchModal';
 
 export const RootLayout = () => {
   return (
@@ -22,9 +21,6 @@ export const RootLayout = () => {
           "Order Now" works identically whether triggered from Home, Menu,
           or anywhere else. */}
       <CartDrawer />
-
-      {/* Branch-first gate — forces a branch choice on first visit, re-openable from Navbar */}
-      <ChooseBranchModal />
     </div>
   );
 };

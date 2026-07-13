@@ -7,9 +7,10 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useBranch } from '../context/BranchContext';
 import { validateCoupon } from '../services/couponsService';
 import { createOrder } from '../services/ordersService';
-import { getBranchById } from '../services/branchesService';
+import { getDiscountedPrice } from '../services/foodsService';
 import { getBranchDeliveryCharge } from '../services/deliveryService';
 
 // ---------------------------------------------------------------------------
@@ -19,8 +20,10 @@ import { getBranchDeliveryCharge } from '../services/deliveryService';
 // The server re-computes every amount; the client only sends ids/choices.
 // ---------------------------------------------------------------------------
 export const Checkout = () => {
-  const { cart, cartTotal, updateCartQuantity, clearCart } = useCart();
+  const { cart, updateCartQuantity, clearCart } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
+  const { branches, selectedBranchId, chooseBranch } = useBranch();
+  const branch = branches.find((b) => b.id === selectedBranchId) || null;
   const navigate = useNavigate();
 
   // Auth (inline, only when logged out)
@@ -36,7 +39,6 @@ export const Checkout = () => {
   const [phone, setPhone] = useState('');
   const [area, setArea] = useState(''); // selected zone name; '' = Other/outside zones
   const [address, setAddress] = useState('');
-  const [branch, setBranch] = useState(null); // the ordering branch (holds delivery zones)
   const [billingSame, setBillingSame] = useState(true);
   const [billingAddress, setBillingAddress] = useState('');
 
@@ -67,20 +69,27 @@ export const Checkout = () => {
     }
   }, [user]);
 
-  // Load the ordering branch (its delivery zones drive the charge + area options)
+  // When the ordering branch changes, default the delivery area to its first zone.
   useEffect(() => {
-    const bid = Number(localStorage.getItem('selectedBranchId')) || 1;
-    getBranchById(bid)
-      .then((b) => {
-        setBranch(b);
-        if (b && Array.isArray(b.deliveryZones) && b.deliveryZones.length > 0) {
-          setArea(b.deliveryZones[0].name);
-        } else {
-          setArea('');
-        }
-      })
-      .catch(() => setBranch(null));
-  }, []);
+    if (branch && Array.isArray(branch.deliveryZones) && branch.deliveryZones.length > 0) {
+      setArea(branch.deliveryZones[0].name);
+    } else {
+      setArea('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranchId, branches.length]);
+
+  // ── Availability + prices at the chosen branch ──────────────────────────
+  const isAvailableAt = (item, bid) =>
+    !Array.isArray(item.branchIds) || item.branchIds.length === 0 || item.branchIds.includes(bid);
+  const unavailableItems = selectedBranchId ? cart.filter((item) => !isAvailableAt(item, selectedBranchId)) : [];
+  // Unit price re-derived at the chosen branch. The cart line's own `price` was
+  // discounted at add-time, so we price off the raw base (`basePrice`) to avoid
+  // double-applying the discount; getDiscountedPrice adds the branch adjustment.
+  const unitPriceAtBranch = (item) =>
+    getDiscountedPrice({ ...item, price: item.basePrice ?? item.price }, selectedBranchId, item.selectedSize);
+  const lineTotal = (item) => unitPriceAtBranch(item) * item.quantity;
+  const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
   // ── Derived money (mirrors the server) ──────────────────────────────────
   const couponDiscount = appliedCoupon ? (cartTotal * appliedCoupon.discountPct) / 100 : 0;
@@ -91,6 +100,7 @@ export const Checkout = () => {
   const deliveryCharge = getBranchDeliveryCharge(branch, area);
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
   const pointsToEarn = Math.floor(cartTotal / 100) * 5;
+  const canPlaceOrder = isAuthenticated && !!selectedBranchId && unavailableItems.length === 0;
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleAuth = async (e) => {
@@ -131,6 +141,8 @@ export const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     setOrderError('');
+    if (!selectedBranchId) return setOrderError('Please choose the branch you are ordering from.');
+    if (unavailableItems.length > 0) return setOrderError(`Not available at this branch: ${unavailableItems.map((i) => i.name).join(', ')}`);
     if (!phone.trim()) return setOrderError('Delivery phone number is required.');
     if (!address.trim()) return setOrderError('Delivery address is required.');
     if (!billingSame && !billingAddress.trim()) return setOrderError('Billing address is required.');
@@ -146,7 +158,7 @@ export const Checkout = () => {
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
         })),
-        branchId: Number(localStorage.getItem('selectedBranchId')) || 1,
+        branchId: selectedBranchId,
         couponCode: appliedCoupon?.code || '',
         pointsToRedeem: pointsDiscount,
         deliveryArea: area,
@@ -204,6 +216,25 @@ export const Checkout = () => {
               <ShoppingBag className="w-4 h-4 text-primary-500" /> Order Summary
             </h2>
 
+            {/* Ordering branch — chosen here at order time (drives price + delivery) */}
+            <div className="mb-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+              <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">🏪 Ordering Branch</label>
+              <select
+                value={selectedBranchId || ''}
+                onChange={(e) => chooseBranch(Number(e.target.value))}
+                className={`w-full px-3 py-2.5 rounded-xl border bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer ${selectedBranchId ? 'border-neutral-200 dark:border-neutral-800' : 'border-amber-400'}`}
+              >
+                <option value="" disabled>Select a branch…</option>
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              {!selectedBranchId && (
+                <p className="text-[10px] text-amber-500 font-semibold mt-1.5">অর্ডার করতে আগে একটা branch বাছুন</p>
+              )}
+              {unavailableItems.length > 0 && (
+                <p className="text-[10px] text-red-500 font-semibold mt-1.5">⚠️ এই branch-এ নেই: {unavailableItems.map((i) => i.name).join(', ')} — অন্য branch বাছুন বা এগুলো সরান।</p>
+              )}
+            </div>
+
             {/* Items */}
             <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
               {cart.map((item) => (
@@ -222,7 +253,7 @@ export const Checkout = () => {
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 shrink-0">৳{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 shrink-0">৳{lineTotal(item).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -270,9 +301,13 @@ export const Checkout = () => {
             {orderError && <div className="mt-3 p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">{orderError}</div>}
 
             {/* Place order */}
-            <button onClick={handlePlaceOrder} disabled={isLoading || !isAuthenticated}
+            <button onClick={handlePlaceOrder} disabled={isLoading || !canPlaceOrder}
               className="mt-4 w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/15 active:scale-95 transition-all">
-              {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing Order...</> : !isAuthenticated ? 'Log in to place order' : <>{paymentMethod === 'sslcommerz' ? `Pay ৳${orderTotal.toFixed(2)} & Place Order` : 'Confirm & Place Order'} <ArrowRight className="w-4 h-4" /></>}
+              {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing Order...</>
+                : !isAuthenticated ? 'Log in to place order'
+                : !selectedBranchId ? 'Select a branch to continue'
+                : unavailableItems.length > 0 ? 'Some items unavailable at this branch'
+                : <>{paymentMethod === 'sslcommerz' ? `Pay ৳${orderTotal.toFixed(2)} & Place Order` : 'Confirm & Place Order'} <ArrowRight className="w-4 h-4" /></>}
             </button>
             <p className="mt-2 flex items-center justify-center gap-1 text-[10px] text-neutral-400"><ShieldCheck className="w-3 h-3" /> Prices are re-verified securely on our server.</p>
           </div>

@@ -8,14 +8,13 @@ import {
 import { getFoodsByBranch } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useBranch } from "../context/BranchContext";
 import FoodCard from "../components/FoodCard";
 
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
-  
-  const { selectedBranchId } = useBranch();
-  
+
+  // Show ALL products regardless of branch — the customer picks a branch only
+  // at checkout, so browsing is unrestricted.
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
 
@@ -28,8 +27,8 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    getFoodsByBranch(selectedBranchId, 100).then(setFoods);
-  }, [selectedBranchId]);
+    getFoodsByBranch(null, 100).then(setFoods);
+  }, []);
 
   // 1. Load Admin Sort Order from LocalStorage & Map categories exactly like admin
   const sortedCategoriesList = useMemo(() => {

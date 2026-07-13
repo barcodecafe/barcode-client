@@ -62,6 +62,7 @@ export const CartProvider = ({ children }) => {
         quantity: qty,
         price: purchasePrice,
         originalPrice: basePrice, // variant-aware pre-discount price (was food.price — wrong for variants)
+        basePrice: food.price, // raw base food price — lets checkout re-price at the chosen branch
       }];
     });
 

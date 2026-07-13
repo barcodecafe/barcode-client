@@ -3,9 +3,8 @@ import { NavLink, Link } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useBranch } from '../context/BranchContext';
 import { useSettings } from '../context/SettingsContext';
-import { Sun, Moon, Menu, X, ShoppingBag, Search as SearchIcon, User, LogIn, UserPlus, LogOut, LayoutDashboard, Bike, ChevronDown, Store } from 'lucide-react';
+import { Sun, Moon, Menu, X, ShoppingBag, Search as SearchIcon, User, LogIn, UserPlus, LogOut, LayoutDashboard, Bike, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchBar } from './SearchBar';
 
@@ -40,7 +39,6 @@ const Avatar = ({ name, size = 'sm' }) => {
 export const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const { cartItemCount, openCart } = useCart();
-  const { selectedBranch, openBranchModal } = useBranch();
   const { settings } = useSettings();
 
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
@@ -146,17 +144,6 @@ export const Navbar = () => {
 
           {/* Right Controls (desktop) */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
-            {/* Branch selector — branch-first ordering */}
-            <button
-              onClick={openBranchModal}
-              title="Change branch"
-              className="flex items-center gap-1.5 max-w-[170px] px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:border-primary-500/50 text-neutral-600 dark:text-neutral-300 transition-colors"
-            >
-              <Store className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-              <span className="text-xs font-semibold truncate">{selectedBranch ? selectedBranch.name : 'Choose branch'}</span>
-              <ChevronDown className="w-3 h-3 shrink-0 opacity-60" />
-            </button>
-
             {/* Theme Toggle */}
             <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -346,16 +333,6 @@ export const Navbar = () => {
                   </div>
                 </div>
               )}
-
-              {/* Branch selector (mobile) — branch-first ordering */}
-              <button
-                onClick={() => { setIsOpen(false); openBranchModal(); }}
-                className="flex items-center gap-2 py-2.5 px-4 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 mb-2"
-              >
-                <Store className="w-4 h-4 text-primary-500 shrink-0" />
-                <span className="text-sm font-semibold truncate flex-grow text-left">{selectedBranch ? selectedBranch.name : 'Choose branch'}</span>
-                <ChevronDown className="w-4 h-4 opacity-60" />
-              </button>
 
               {/* Nav links */}
               <div className="flex flex-col gap-1">
