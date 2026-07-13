@@ -68,6 +68,8 @@ export const AdminBranches = () => {
     regionId: null,
     lat: null,
     lng: null,
+    deliveryZones: [],
+    defaultDeliveryCharge: 100,
   });
   const [formError, setFormError] = useState("");
   const [mapLinkInput, setMapLinkInput] = useState("");
@@ -119,6 +121,8 @@ export const AdminBranches = () => {
       regionId: null,
       lat: null,
       lng: null,
+      deliveryZones: [],
+      defaultDeliveryCharge: 100,
     });
     setMapLinkInput("");
     setFormError("");
@@ -142,10 +146,34 @@ export const AdminBranches = () => {
       regionId: typeof branch.regionId === "number" ? branch.regionId : null,
       lat: typeof branch.lat === "number" ? branch.lat : null,
       lng: typeof branch.lng === "number" ? branch.lng : null,
+      deliveryZones: Array.isArray(branch.deliveryZones) ? branch.deliveryZones.map((z) => ({ ...z })) : [],
+      defaultDeliveryCharge: typeof branch.defaultDeliveryCharge === "number" ? branch.defaultDeliveryCharge : 100,
     });
     setMapLinkInput("");
     setFormError("");
     setIsModalOpen(true);
+  };
+
+  // ── Delivery zone editor (per-branch: area name + charge) ──
+  const handleAddZone = () => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryZones: [...prev.deliveryZones, { name: "", charge: prev.defaultDeliveryCharge }],
+    }));
+  };
+  const handleZoneChange = (index, field, val) => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryZones: prev.deliveryZones.map((z, i) =>
+        i === index ? { ...z, [field]: field === "charge" ? parseFloat(val) || 0 : val } : z
+      ),
+    }));
+  };
+  const handleRemoveZone = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryZones: prev.deliveryZones.filter((_, i) => i !== index),
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -681,6 +709,37 @@ export const AdminBranches = () => {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
+                  </div>
+
+                  {/* Delivery Zones (per-branch: area name → charge) */}
+                  <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">🚚 Delivery Zones</label>
+                      <button type="button" onClick={handleAddZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Zone</button>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">এই ব্রাঞ্চ থেকে কোন অঞ্চলে কত টাকা ডেলিভারি — customer checkout-এ নিজের অঞ্চল বাছবে।</p>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">Default charge (অন্য অঞ্চল)</span>
+                      <div className="relative w-28">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                        <input type="number" min="0" step="1" value={formData.defaultDeliveryCharge} onChange={(e) => setFormData((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                      </div>
+                    </div>
+
+                    {formData.deliveryZones.length === 0 && (
+                      <p className="text-xs text-neutral-400 italic">কোনো zone নেই — সব ডেলিভারিতে উপরের default charge নেওয়া হবে।</p>
+                    )}
+                    {formData.deliveryZones.map((z, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input type="text" placeholder="Area name (e.g. Agrabad)" value={z.name} onChange={(e) => handleZoneChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" required />
+                        <div className="relative w-28 shrink-0">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                          <input type="number" min="0" step="1" placeholder="Charge" value={z.charge} onChange={(e) => handleZoneChange(index, "charge", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" required />
+                        </div>
+                        <button type="button" onClick={() => handleRemoveZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

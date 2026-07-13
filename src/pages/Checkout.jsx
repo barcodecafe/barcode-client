@@ -9,7 +9,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { validateCoupon } from '../services/couponsService';
 import { createOrder } from '../services/ordersService';
-import { getDeliveryCharge, DELIVERY_AREAS } from '../services/deliveryService';
+import { getBranchById } from '../services/branchesService';
+import { getBranchDeliveryCharge } from '../services/deliveryService';
 
 // ---------------------------------------------------------------------------
 // Checkout.jsx — dedicated /checkout page (replaces the in-drawer wizard).
@@ -33,8 +34,9 @@ export const Checkout = () => {
 
   // Delivery details
   const [phone, setPhone] = useState('');
-  const [area, setArea] = useState('Dhaka');
+  const [area, setArea] = useState(''); // selected zone name; '' = Other/outside zones
   const [address, setAddress] = useState('');
+  const [branch, setBranch] = useState(null); // the ordering branch (holds delivery zones)
   const [billingSame, setBillingSame] = useState(true);
   const [billingAddress, setBillingAddress] = useState('');
 
@@ -59,11 +61,26 @@ export const Checkout = () => {
   useEffect(() => {
     if (user) {
       setPhone(user.phone || '');
-      setArea(user.pickArea && DELIVERY_AREAS.includes(user.pickArea) ? user.pickArea : 'Dhaka');
+      // delivery `area` is driven by the branch's zones (set in the branch effect), not here
       setAddress(user.address || '');
       setBillingAddress(user.address || '');
     }
   }, [user]);
+
+  // Load the ordering branch (its delivery zones drive the charge + area options)
+  useEffect(() => {
+    const bid = Number(localStorage.getItem('selectedBranchId')) || 1;
+    getBranchById(bid)
+      .then((b) => {
+        setBranch(b);
+        if (b && Array.isArray(b.deliveryZones) && b.deliveryZones.length > 0) {
+          setArea(b.deliveryZones[0].name);
+        } else {
+          setArea('');
+        }
+      })
+      .catch(() => setBranch(null));
+  }, []);
 
   // ── Derived money (mirrors the server) ──────────────────────────────────
   const couponDiscount = appliedCoupon ? (cartTotal * appliedCoupon.discountPct) / 100 : 0;
@@ -71,7 +88,7 @@ export const Checkout = () => {
   const availablePoints = Math.max(0, Math.floor(user?.points || 0));
   const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(afterCoupon)));
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
-  const deliveryCharge = getDeliveryCharge(area);
+  const deliveryCharge = getBranchDeliveryCharge(branch, area);
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
   const pointsToEarn = Math.floor(cartTotal / 100) * 5;
 
@@ -245,7 +262,7 @@ export const Checkout = () => {
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs"><span>Subtotal</span><span>৳{cartTotal.toFixed(2)}</span></div>
               {appliedCoupon && <div className="flex justify-between text-emerald-500 text-xs font-semibold"><span>Coupon ({appliedCoupon.code})</span><span>-৳{couponDiscount.toFixed(2)}</span></div>}
               {pointsDiscount > 0 && <div className="flex justify-between text-amber-500 text-xs font-semibold"><span>Points ({pointsDiscount} pts)</span><span>-৳{pointsDiscount.toFixed(2)}</span></div>}
-              <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs"><span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Delivery ({area})</span><span>৳{deliveryCharge.toFixed(2)}</span></div>
+              <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs"><span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Delivery ({area || 'Other'})</span><span>৳{deliveryCharge.toFixed(2)}</span></div>
               <div className="flex justify-between font-bold text-base text-neutral-800 dark:text-white pt-1.5 border-t border-neutral-100 dark:border-neutral-800 mt-1"><span>Total</span><span className="text-primary-500">৳{orderTotal.toFixed(2)}</span></div>
               {pointsToEarn > 0 && <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-0.5"><Coins className="w-3 h-3" /> You'll earn {pointsToEarn} points on delivery</div>}
             </div>
@@ -297,7 +314,8 @@ export const Checkout = () => {
           {/* Step 2 — Delivery details (only once logged in) */}
           {isAuthenticated && (
             <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-              <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-4"><StepBadge n={2} /> Delivery Details</h2>
+              <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-1"><StepBadge n={2} /> Delivery Details</h2>
+              {branch && <p className="text-[11px] text-neutral-400 mb-4 ml-8">🏪 Ordering from <span className="font-semibold text-neutral-500 dark:text-neutral-300">{branch.name}</span> — charge is from this branch</p>}
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">Phone Number</label>
@@ -307,7 +325,8 @@ export const Checkout = () => {
                   <div>
                     <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">Delivery Area</label>
                     <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
-                      {DELIVERY_AREAS.map((a) => <option key={a} value={a}>{a} (৳{getDeliveryCharge(a)})</option>)}
+                      {(branch?.deliveryZones || []).map((z) => <option key={z.name} value={z.name}>{z.name} (৳{z.charge})</option>)}
+                      <option value="">Other area (৳{branch?.defaultDeliveryCharge ?? 100})</option>
                     </select>
                   </div>
                   <div>

@@ -22,3 +22,17 @@ export function getDeliveryCharge(area) {
   const key = String(area).trim();
   return DELIVERY_CHARGE_BY_AREA[key] ?? DEFAULT_DELIVERY_CHARGE;
 }
+
+// Per-branch: match the chosen zone on the branch → its charge; else the branch's
+// default charge; else the region fallback. Mirrors server chargeFromBranch().
+export function getBranchDeliveryCharge(branch, zoneName) {
+  const key = String(zoneName || '').trim();
+  if (key && branch && Array.isArray(branch.deliveryZones)) {
+    const z = branch.deliveryZones.find((x) => String(x.name).trim() === key);
+    if (z) return Number(z.charge) || 0;
+  }
+  if (branch && branch.defaultDeliveryCharge !== undefined && branch.defaultDeliveryCharge !== null) {
+    return Number(branch.defaultDeliveryCharge) || 0;
+  }
+  return getDeliveryCharge(zoneName);
+}
