@@ -8,14 +8,13 @@ import {
 import { getFoodsByBranch } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useBranch } from "../context/BranchContext";
 import FoodCard from "../components/FoodCard";
 
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
   
-  // FIX 1: নির্দিষ্ট কোন ব্রাঞ্চ আইডি (যেমন ০ বা অন্য কিছু) না নিয়ে স্পষ্ট করে null রাখা হলো 
-  // যাতে গ্লোবাল কোনো ব্রাঞ্চ আইডি একে প্রভাবিত করতে না পারে এবং অল-ব্রাঞ্চ মেনু আসে।
-  const selectedBranchId = null; 
+  const { selectedBranchId } = useBranch();
   
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
@@ -29,9 +28,8 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    // FIX 2: প্রথম প্যারামিটার explicitely null পাঠানো নিশ্চিত করা হলো যেন ব্যাকএন্ড সব ব্রাঞ্চের কম্বাইন্ড ডেটা পাঠায়
-    getFoodsByBranch(null, 100).then(setFoods);
-  }, []);
+    getFoodsByBranch(selectedBranchId, 100).then(setFoods);
+  }, [selectedBranchId]);
 
   // 1. Load Admin Sort Order from LocalStorage & Map categories exactly like admin
   const sortedCategoriesList = useMemo(() => {

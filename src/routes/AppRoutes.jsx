@@ -26,6 +26,7 @@ import { RiderApplication } from '../pages/RiderApplication';
 import { AdminRiders } from '../pages/admin/AdminRiders';
 import { AdminSettings } from '../pages/admin/AdminSettings';
 import { CartProvider } from '../context/CartContext';
+import { BranchProvider } from '../context/BranchContext';
 import { AuthProvider } from '../context/AuthContext';
 import { SettingsProvider } from '../context/SettingsContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
@@ -49,6 +50,7 @@ export const AppRoutes = () => {
       <SettingsProvider>
         <FavoritesProvider>
           <CartProvider>
+           <BranchProvider>
             <ScrollToTop />
             <Routes>
               <Route path="/" element={<RootLayout />}>
@@ -102,6 +104,7 @@ export const AppRoutes = () => {
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
             </Routes>
+           </BranchProvider>
           </CartProvider>
         </FavoritesProvider>
       </SettingsProvider>
