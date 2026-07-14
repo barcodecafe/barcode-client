@@ -11,6 +11,7 @@ import apiClient from './apiClient';
 export const DEFAULT_SETTINGS = {
   logoLight: '',
   logoDark: '',
+  paymentBanner: '', // <--- 1. Added a default key for the new payment banner.
   footerDescription:
     'Experience the art of modern dining at Barcode. We blend culinary innovation with premium atmospheres across all our branches.',
   footerAddress:

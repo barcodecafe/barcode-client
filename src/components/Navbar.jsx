@@ -47,6 +47,8 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  
+  // Ref to handle outside clicks for user dropdown (both logged in & guest)
   const userMenuRef = useRef(null);
 
   const navLinks = [
@@ -162,9 +164,10 @@ export const Navbar = () => {
             {/* Divider */}
             <span className="w-px h-6 bg-neutral-200 dark:bg-neutral-800 mx-1" aria-hidden="true" />
 
-            {/* Auth area */}
-            {isAuthenticated ? (
-              <div className="relative" ref={userMenuRef}>
+            {/* Auth area with Unified Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              {isAuthenticated ? (
+                // Logged In User Trigger
                 <button
                   onClick={() => setIsUserDropdownOpen((v) => !v)}
                   className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full border border-neutral-200/70 dark:border-neutral-800/70 bg-white/50 dark:bg-neutral-900/50 hover:border-primary-500/40 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
@@ -180,77 +183,109 @@ export const Navbar = () => {
                     className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`}
                   />
                 </button>
+              ) : (
+                // Guest / Logged Out User Trigger (Brings up Sign Up / Log In Dropdown)
+                <button
+                  onClick={() => setIsUserDropdownOpen((v) => !v)}
+                  className="p-2 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white/50 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-300 hover:text-primary-500 hover:border-primary-500/40 dark:hover:text-primary-500 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
+                  aria-label="Open sign in menu"
+                  aria-haspopup="menu"
+                  aria-expanded={isUserDropdownOpen}
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              )}
 
-                <AnimatePresence>
-                  {isUserDropdownOpen && (
-                    <motion.div
-                      role="menu"
-                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-3 w-64 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
-                    >
-                      {/* Identity header */}
-                      <div className="flex items-center gap-3 px-4 py-4 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
-                        <Avatar name={user.name} size="lg" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-neutral-800 dark:text-white truncate">{user.name}</p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
-                          <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-500">
-                            {roleLabel}
-                          </span>
+              {/* Unified Dropdown Menu */}
+              <AnimatePresence>
+                {isUserDropdownOpen && (
+                  <motion.div
+                    role="menu"
+                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-3 w-64 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
+                  >
+                    {isAuthenticated ? (
+                      // ---------------- LOGGED IN DROPDOWN CONTENT ----------------
+                      <>
+                        {/* Identity header */}
+                        <div className="flex items-center gap-3 px-4 py-4 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
+                          <Avatar name={user.name} size="lg" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-neutral-800 dark:text-white truncate">{user.name}</p>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+                            <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-500">
+                              {roleLabel}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Links */}
-                      <div className="p-1.5">
-                        {accountLinks.map((item) => (
+                        {/* Links */}
+                        <div className="p-1.5">
+                          {accountLinks.map((item) => (
+                            <Link
+                              key={item.to}
+                              to={item.to}
+                              role="menuitem"
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                            >
+                              <item.icon className="w-4 h-4 shrink-0" />
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
+
+                        {/* Log out */}
+                        <div className="p-1.5 border-t border-neutral-100 dark:border-neutral-800">
+                          <button
+                            onClick={handleLogout}
+                            role="menuitem"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4 shrink-0" />
+                            Log Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      // ---------------- LOGGED OUT (GUEST) DROPDOWN CONTENT ----------------
+                      <>
+                        {/* Header Box */}
+                        <div className="px-4 py-4 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
+                          <p className="text-sm font-bold text-neutral-800 dark:text-white">Welcome to Barcode</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Login to manage your orders</p>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="p-1.5 flex flex-col gap-1">
                           <Link
-                            key={item.to}
-                            to={item.to}
+                            to="/login"
                             role="menuitem"
                             onClick={() => setIsUserDropdownOpen(false)}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
                           >
-                            <item.icon className="w-4 h-4 shrink-0" />
-                            {item.label}
+                            <LogIn className="w-4 h-4 text-neutral-500" />
+                            Log In
                           </Link>
-                        ))}
-                      </div>
-
-                      {/* Log out */}
-                      <div className="p-1.5 border-t border-neutral-100 dark:border-neutral-800">
-                        <button
-                          onClick={handleLogout}
-                          role="menuitem"
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 shrink-0" />
-                          Log Out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="px-3.5 py-1.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-primary-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold bg-primary-500 hover:bg-primary-600 text-white shadow-sm shadow-primary-500/20 active:scale-95 transition-all duration-200"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Sign Up
-                </Link>
-              </div>
-            )}
+                          <Link
+                            to="/signup"
+                            role="menuitem"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                          >
+                            <UserPlus className="w-4 h-4 text-neutral-500" />
+                            Sign Up
+                          </Link>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Mobile Buttons */}
