@@ -181,7 +181,11 @@ export const BranchDetail = () => {
     getBranchById(id).then((data) => {
       setBranch(data);
       if (data) {
-        localStorage.setItem('selectedBranchId', String(data.id));
+        // NOTE: viewing a branch must NOT set the ordering branch. That is
+        // chosen explicitly at checkout (chooseBranch) — browsing a branch
+        // page used to silently pre-select it, so the customer could order
+        // from a branch they never picked. Per-branch prices on this page
+        // use branch.id directly, so nothing here needs localStorage.
         getFoodsByBranch(data.id, 24).then((menuData) => {
           setBranchMenu(menuData);
           // CHANGE: Removed setActiveCategory('All') because URL parameter manages this state now

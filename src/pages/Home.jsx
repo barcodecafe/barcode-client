@@ -97,11 +97,6 @@ export const Home = () => {
       transition: { staggerChildren: 0.1 },
     },
   };
-  // try to trac branch
-  const handleBranchSelect = (branchId) => {
-    localStorage.setItem("selectedBranchId", branchId);
-  };
-
   return (
     <div className="w-full">
       {/* 1. HERO BANNER CAROUSEL */}
@@ -376,7 +371,6 @@ const BranchCard = ({ branch, variants }) => (
   >
     <Link
       to={`/branches/${branch.id}`}
-      onClick={() => localStorage.setItem("selectedBranchId", String(branch.id))} //try trach branch id
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <img
