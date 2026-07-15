@@ -3,15 +3,10 @@ import { getAllUsers } from '../../services/authService';
 import { CreditCard, Download, X, QrCode } from 'lucide-react';
 import html2canvas from 'html2canvas'; 
 
-// Helper function to generate a unique membership ID from the Customer ID
-const generateMembershipId = (id) => {
-  if (!id) return "brg-000";
-  if (!isNaN(id) && String(id).trim() !== "") {
-    return `brg-${id}`;
-  }
-  const cleanId = String(id).slice(-4).toUpperCase();
-  return `brg-${cleanId || "100"}`;
-};
+// The membership id + QR are generated and stored on the server (stable, unique).
+// Prefer the backend value; fall back to a derived id only if it's somehow missing.
+const membershipIdOf = (c) =>
+  c?.membershipId || `BRG-${String(c?.id || "").slice(-6).toUpperCase() || "000"}`;
 
 export const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
@@ -41,7 +36,7 @@ export const AdminCustomers = () => {
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `Membership_Card_${generateMembershipId(activeCardUser.id)}.png`;
+      link.download = `Membership_Card_${membershipIdOf(activeCardUser)}.png`;
       link.click();
     });
   };
@@ -88,7 +83,7 @@ export const AdminCustomers = () => {
                     {c.id.slice(0, 12)}...
                   </td>
                   <td className="px-4 py-3.5 font-bold text-primary-600 dark:text-primary-400 font-mono">
-                    {generateMembershipId(c.id)}
+                    {membershipIdOf(c)}
                   </td>
                   <td className="px-4 py-3.5 font-bold text-neutral-800 dark:text-neutral-100">
                     {c.name}
@@ -168,14 +163,22 @@ export const AdminCustomers = () => {
                   </div>
                 </div>
 
-                {/* Card Center: Chip & QR Placeholder */}
+                {/* Card Center: Chip & real scannable QR */}
                 <div className="flex justify-between items-center my-2">
                   {/* Smart Card Chip Simulation */}
                   <div className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-300 via-amber-400 to-amber-200 opacity-80 border border-amber-500/30 shadow-inner" />
-                  
-                  {/* Simulated QR Code Icon */}
-                  <div className="text-neutral-500 p-1 bg-white rounded-md">
-                    <QrCode className="w-7 h-7 stroke-[1.5]" />
+
+                  {/* Real membership QR (encodes the membership id) — scan at POS */}
+                  <div className="p-1 bg-white rounded-md">
+                    {activeCardUser.membershipQr ? (
+                      <img
+                        src={activeCardUser.membershipQr}
+                        alt={`Membership QR ${membershipIdOf(activeCardUser)}`}
+                        className="w-12 h-12 object-contain"
+                      />
+                    ) : (
+                      <QrCode className="w-7 h-7 stroke-[1.5] text-neutral-500" />
+                    )}
                   </div>
                 </div>
 
@@ -198,7 +201,7 @@ export const AdminCustomers = () => {
                       Membership ID
                     </span>
                     <span className="block font-mono font-bold text-sm text-primary-400 tracking-wider">
-                      {generateMembershipId(activeCardUser.id)}
+                      {membershipIdOf(activeCardUser)}
                     </span>
                   </div>
                 </div>
