@@ -246,7 +246,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
 
           <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-500 font-semibold hover:underline">
+            <Link to={defaultRole === 'admin' ? '/admin/login' : '/login'} className="text-primary-500 font-semibold hover:underline">
               Log in
             </Link>
           </p>

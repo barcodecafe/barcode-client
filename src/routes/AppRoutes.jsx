@@ -60,7 +60,7 @@ export const AppRoutes = () => {
                 <Route path="menu" element={<Menu />} />
                 <Route path="menu/:id" element={<DishDetail />} />
                 <Route path="about" element={<About />} />
-                <Route path="login" element={<Login />} />
+                <Route path="login" element={<Login variant="user" />} />
                 <Route path="signup" element={<SignUp />} />
                 <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
                 <Route path="profile" element={<Profile />} />
@@ -69,6 +69,10 @@ export const AppRoutes = () => {
                 <Route path="order-tracking/:id" element={<OrderTracking />} />
                 <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
               </Route>
+
+              {/* Role-segregated login portals (public, outside RootLayout) */}
+              <Route path="/admin/login" element={<Login variant="admin" />} />
+              <Route path="/rider/login" element={<Login variant="rider" />} />
 
               {/* Rider Portal */}
               <Route

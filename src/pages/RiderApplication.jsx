@@ -356,7 +356,7 @@ export const RiderApplication = () => {
 
         <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
           Already have a rider account?{' '}
-          <Link to="/login" className="text-primary-500 font-semibold hover:underline">
+          <Link to="/rider/login" className="text-primary-500 font-semibold hover:underline">
             Log in
           </Link>
         </p>
