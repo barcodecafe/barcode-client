@@ -157,12 +157,21 @@ export const BranchDetail = () => {
   const [loading, setLoading] = useState(true);
   const [branchMenu, setBranchMenu] = useState([]);
   
-  // CHANGE: activeCategory now reads from URL search parameters instead of local state
-  const activeCategory = searchParams.get('category') || 'All';
-  
-  // CHANGE: Added helper function to update URL search parameters on category change
+  // Category filter is URL-driven (?category=...). `rawCategory` is the URL's
+  // literal value; `activeCategory` (computed below, once we know the branch's
+  // real categories) sanitises it so a stale/unknown category can't strand the
+  // user on an empty grid.
+  const rawCategory = searchParams.get('category') || 'All';
+
+  // Update the filter. 'All' clears the param; { replace: true } means switching
+  // categories doesn't pile up browser-history entries — so Back returns to the
+  // branches list instead of walking back through every filter that was clicked.
   const handleCategoryChange = (catName) => {
-    setSearchParams({ category: catName });
+    if (!catName || catName === 'All') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ category: catName }, { replace: true });
+    }
   };
   
   const scrollContainerRef = useRef(null);
@@ -214,6 +223,17 @@ export const BranchDetail = () => {
 
     return ['All', ...finalSortedCategories];
   }, [branchMenu, sortedCategoriesList]);
+
+// 2b. Sanitise the URL category against what this branch actually serves. A
+//     deep-link like ?category=Sushi (or a filter left over from another branch)
+//     falls back to 'All' so we never render a dead "no items" grid.
+  const activeCategory = useMemo(() => {
+    if (rawCategory === 'All') return 'All';
+    const match = categories.find(
+      (c) => c.trim().toLowerCase() === rawCategory.trim().toLowerCase()
+    );
+    return match || 'All';
+  }, [rawCategory, categories]);
 
 // 3. Arrange the food items according to the admin's preferred category order
   const filteredMenu = useMemo(() => {
