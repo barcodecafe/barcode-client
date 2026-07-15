@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'; // CHANGE: Added useSearchParams for URL-based category filtering
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin,
@@ -151,11 +151,19 @@ export const BranchDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const [searchParams, setSearchParams] = useSearchParams(); // CHANGE: Added searchParams hook for reading/writing category query parameter
 
   const [branch, setBranch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [branchMenu, setBranchMenu] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('All');
+  
+  // CHANGE: activeCategory now reads from URL search parameters instead of local state
+  const activeCategory = searchParams.get('category') || 'All';
+  
+  // CHANGE: Added helper function to update URL search parameters on category change
+  const handleCategoryChange = (catName) => {
+    setSearchParams({ category: catName });
+  };
   
   const scrollContainerRef = useRef(null);
 
@@ -167,7 +175,7 @@ export const BranchDetail = () => {
         localStorage.setItem('selectedBranchId', String(data.id));
         getFoodsByBranch(data.id, 24).then((menuData) => {
           setBranchMenu(menuData);
-          setActiveCategory('All');
+          // CHANGE: Removed setActiveCategory('All') because URL parameter manages this state now
           setLoading(false);
         });
       } else {
@@ -364,9 +372,9 @@ export const BranchDetail = () => {
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => handleCategoryChange(cat)} // CHANGE: Updated to handleCategoryChange to update URL
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center ${
-                    activeCategory === cat
+                    activeCategory?.trim().toLowerCase() === cat?.trim().toLowerCase() // CHANGE: Case-insensitive styling comparison
                       ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                       : 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/30 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800'
                   }`}
@@ -406,8 +414,7 @@ export const BranchDetail = () => {
           <motion.div
             variants={gridVariants}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
+            animate="visible" // CHANGE: Changed whileInView to animate to prevent items from disappearing on subsequent category clicks
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {filteredMenu.map((food) => {
@@ -440,7 +447,18 @@ export const BranchDetail = () => {
                   <div className="p-4 flex-grow flex flex-col justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                        <span className="uppercase tracking-wider">{food.category}</span>
+                        {/* CHANGE: Converted span category badge to button with onClick handler to filter category on badge click */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleCategoryChange(food.category);
+                          }}
+                          className="uppercase tracking-wider hover:text-primary-500 transition-colors cursor-pointer text-left"
+                        >
+                          {food.category}
+                        </button>
                         <div className="flex items-center gap-1.5">
                           <div className="flex items-center gap-0.5 text-primary-500 font-bold">
                             <Star className="w-3 h-3 fill-current" />

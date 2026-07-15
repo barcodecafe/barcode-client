@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom"; // CHANGE: Added Link and useSearchParams from react-router-dom
 import { motion } from "framer-motion";
 import {
   SlidersHorizontal,
@@ -13,9 +14,17 @@ import FoodCard from "../components/FoodCard";
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
 
-  // Show ALL products regardless of branch — the customer picks a branch only
-  // at checkout, so browsing is unrestricted.
-  const [activeCategory, setActiveCategory] = useState("All");
+  // CHANGE: Added searchParams hook for reading/writing category query parameter
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // CHANGE: activeCategory now reads from URL search parameters instead of local state
+  const activeCategory = searchParams.get("category") || "All";
+
+  // CHANGE: Added helper function to update URL search parameters on category change
+  const handleCategoryChange = (catName) => {
+    setSearchParams({ category: catName });
+  };
+
   const [sortBy, setSortBy] = useState("featured");
 
   // Arrow visibility states
@@ -91,7 +100,7 @@ export const Menu = () => {
   // 3. Filter & Apply Admin Sorting to the main foods rendering grid
   const filteredFoods = useMemo(() => {
     const matched = foods.filter(
-      (food) => activeCategory === "All" || food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase(),
+      (food) => activeCategory.trim().toLowerCase() === "all" || food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase(),
     );
 
     return matched.sort((a, b) => {
@@ -156,9 +165,9 @@ export const Menu = () => {
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => handleCategoryChange(cat)} // CHANGE: Updated to handleCategoryChange to update URL
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 shrink-0 ${
-                  activeCategory === cat
+                  activeCategory.trim().toLowerCase() === cat.trim().toLowerCase() // CHANGE: Case-insensitive styling comparison
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
                 }`}

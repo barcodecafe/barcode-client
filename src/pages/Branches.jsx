@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,  Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, Search } from 'lucide-react';
 import { getAllBranches } from '../services/branchesService';
@@ -114,9 +114,11 @@ export const Branches = () => {
               <motion.div
                 key={branch.id}
                 whileHover={{ y: -5 }}
-                onClick={() => navigate(`/branches/${branch.id}`)}
+                // onClick={() => navigate(`/branches/${branch.id}`)}
                 className="cursor-pointer group relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-xl"
               >
+                <Link to={`/branches/${branch.id}`} className="absolute inset-0 z-10 cursor-pointer" aria-label={`View details of ${branch.name}`} />
+
                 {/* Branch Thumbnail Graphic Image */}
                 <div className="relative h-48 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                   <img
@@ -156,3 +158,5 @@ export const Branches = () => {
 };
 
 export default Branches;
+
+// eta teo id view er option ta deo
