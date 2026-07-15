@@ -97,10 +97,13 @@ export const AdminSettings = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccess(false);
     setError("");
+    setSaving(true);
 
     try {
       const payload = {
@@ -116,36 +119,54 @@ export const AdminSettings = () => {
         footerTwitter: footerTwitter.trim(),
       };
 
-      updateSettings(payload);
+      // await the API — only show success when the server actually persisted it.
+      await updateSettings(payload);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError("Failed to update website settings.");
+      setError(
+        err?.message ||
+          "Failed to update website settings. Please try again.",
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (
-      window.confirm(
+      !window.confirm(
         "Are you sure you want to restore default settings? This will revert logos and footer text.",
       )
     ) {
-      const defaults = resetSettings();
+      return;
+    }
 
-      // Update form inputs
+    setSuccess(false);
+    setError("");
+
+    try {
+      // resetSettings is async — await the resolved settings object before
+      // syncing the form inputs (otherwise we'd assign fields off a Promise).
+      const defaults = await resetSettings();
+
       setFooterDescription(defaults.footerDescription);
       setFooterAddress(defaults.footerAddress);
       setFooterPhone(defaults.footerPhone);
       setFooterEmail(defaults.footerEmail);
-      setFooterFacebook(defaults.footerFacebook);
-      setFooterInstagram(defaults.footerInstagram);
-      setFooterTwitter(defaults.footerTwitter);
-      setLogoLight(defaults.logoLight);
-      setLogoDark(defaults.logoDark);
+      setFooterFacebook(defaults.footerFacebook || "");
+      setFooterInstagram(defaults.footerInstagram || "");
+      setFooterTwitter(defaults.footerTwitter || "");
+      setLogoLight(defaults.logoLight || "");
+      setLogoDark(defaults.logoDark || "");
       setPaymentBanner(defaults.paymentBanner || "");
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(
+        err?.message || "Failed to reset settings. Please try again.",
+      );
     }
   };
 
@@ -475,10 +496,11 @@ export const AdminSettings = () => {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all text-sm"
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <Save className="w-4 h-4" />
-            Save Site Settings
+            {saving ? "Saving..." : "Save Site Settings"}
           </button>
         </div>
       </form>
