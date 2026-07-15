@@ -36,3 +36,18 @@ export function getBranchDeliveryCharge(branch, zoneName) {
   }
   return getDeliveryCharge(zoneName);
 }
+
+// Per-region (ordering is region-based now): match the chosen area on the region
+// → its charge; else the region's default charge; else the global fallback.
+// Mirrors server chargeFromRegion().
+export function getRegionDeliveryCharge(region, areaName) {
+  const key = String(areaName || '').trim();
+  if (key && region && Array.isArray(region.deliveryZones)) {
+    const z = region.deliveryZones.find((x) => String(x.name).trim() === key);
+    if (z) return Number(z.charge) || 0;
+  }
+  if (region && region.defaultDeliveryCharge) {
+    return Number(region.defaultDeliveryCharge) || 0;
+  }
+  return getDeliveryCharge(areaName);
+}

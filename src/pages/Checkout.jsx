@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useBranch } from '../context/BranchContext';
 import { validateCoupon } from '../services/couponsService';
 import { createOrder } from '../services/ordersService';
+import { getAllRegions } from '../services/regionsService';
 import { getDiscountedPrice } from '../services/foodsService';
-import { getBranchDeliveryCharge } from '../services/deliveryService';
+import { getRegionDeliveryCharge } from '../services/deliveryService';
 
 // ---------------------------------------------------------------------------
 // Checkout.jsx — dedicated /checkout page (replaces the in-drawer wizard).
@@ -22,9 +22,28 @@ import { getBranchDeliveryCharge } from '../services/deliveryService';
 export const Checkout = () => {
   const { cart, updateCartQuantity, clearCart } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
-  const { branches, selectedBranchId, chooseBranch } = useBranch();
-  const branch = branches.find((b) => b.id === selectedBranchId) || null;
   const navigate = useNavigate();
+
+  // Ordering is region-based: the customer picks a delivery region (auto-picked
+  // when only one region delivers, e.g. a Chattogram-only launch), then an area.
+  const [regions, setRegions] = useState([]);
+  const [regionId, setRegionId] = useState(null);
+  const deliverableRegions = useMemo(
+    () => regions.filter((r) => Array.isArray(r.deliveryZones) && r.deliveryZones.length > 0),
+    [regions]
+  );
+  const region = regions.find((r) => r.id === regionId) || null;
+
+  useEffect(() => {
+    getAllRegions()
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        setRegions(arr);
+        const deliverable = arr.filter((r) => Array.isArray(r.deliveryZones) && r.deliveryZones.length > 0);
+        if (deliverable.length === 1) setRegionId(deliverable[0].id); // only one region delivers → auto-select
+      })
+      .catch(() => setRegions([]));
+  }, []);
 
   // Auth (inline, only when logged out)
   const [authTab, setAuthTab] = useState('login');
@@ -63,32 +82,28 @@ export const Checkout = () => {
   useEffect(() => {
     if (user) {
       setPhone(user.phone || '');
-      // delivery `area` is driven by the branch's zones (set in the branch effect), not here
+      // delivery `area` is driven by the region's zones (set in the region effect), not here
       setAddress(user.address || '');
       setBillingAddress(user.address || '');
     }
   }, [user]);
 
-  // When the ordering branch changes, default the delivery area to its first zone.
+  // When the region changes, default the delivery area to its first zone.
   useEffect(() => {
-    if (branch && Array.isArray(branch.deliveryZones) && branch.deliveryZones.length > 0) {
-      setArea(branch.deliveryZones[0].name);
+    if (region && Array.isArray(region.deliveryZones) && region.deliveryZones.length > 0) {
+      setArea(region.deliveryZones[0].name);
     } else {
       setArea('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBranchId, branches.length]);
+  }, [regionId, regions.length]);
 
-  // ── Availability + prices at the chosen branch ──────────────────────────
-  const isAvailableAt = (item, bid) =>
-    !Array.isArray(item.branchIds) || item.branchIds.length === 0 || item.branchIds.includes(bid);
-  const unavailableItems = selectedBranchId ? cart.filter((item) => !isAvailableAt(item, selectedBranchId)) : [];
-  // Unit price re-derived at the chosen branch. The cart line's own `price` was
-  // discounted at add-time, so we price off the raw base (`basePrice`) to avoid
-  // double-applying the discount; getDiscountedPrice adds the branch adjustment.
-  const unitPriceAtBranch = (item) =>
-    getDiscountedPrice({ ...item, price: item.basePrice ?? item.price }, selectedBranchId, item.selectedSize);
-  const lineTotal = (item) => unitPriceAtBranch(item) * item.quantity;
+  // ── Prices (region-based → base price, no per-branch adjustment) ─────────
+  // The cart line's own `price` was discounted at add-time, so we price off the
+  // raw base (`basePrice`) to avoid double-applying the discount.
+  const unitPrice = (item) =>
+    getDiscountedPrice({ ...item, price: item.basePrice ?? item.price }, undefined, item.selectedSize);
+  const lineTotal = (item) => unitPrice(item) * item.quantity;
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
   // ── Derived money (mirrors the server) ──────────────────────────────────
@@ -97,10 +112,10 @@ export const Checkout = () => {
   const availablePoints = Math.max(0, Math.floor(user?.points || 0));
   const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(afterCoupon)));
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
-  const deliveryCharge = getBranchDeliveryCharge(branch, area);
+  const deliveryCharge = getRegionDeliveryCharge(region, area);
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
   const pointsToEarn = Math.floor(cartTotal / 100) * 5;
-  const canPlaceOrder = isAuthenticated && !!selectedBranchId && unavailableItems.length === 0;
+  const canPlaceOrder = isAuthenticated && !!regionId;
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleAuth = async (e) => {
@@ -141,8 +156,7 @@ export const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     setOrderError('');
-    if (!selectedBranchId) return setOrderError('Please choose the branch you are ordering from.');
-    if (unavailableItems.length > 0) return setOrderError(`Not available at this branch: ${unavailableItems.map((i) => i.name).join(', ')}`);
+    if (!regionId) return setOrderError('Please choose your delivery region.');
     if (!phone.trim()) return setOrderError('Delivery phone number is required.');
     if (!address.trim()) return setOrderError('Delivery address is required.');
     if (!billingSame && !billingAddress.trim()) return setOrderError('Billing address is required.');
@@ -158,7 +172,7 @@ export const Checkout = () => {
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
         })),
-        branchId: selectedBranchId,
+        regionId,
         couponCode: appliedCoupon?.code || '',
         pointsToRedeem: pointsDiscount,
         deliveryArea: area,
@@ -216,22 +230,27 @@ export const Checkout = () => {
               <ShoppingBag className="w-4 h-4 text-primary-500" /> Order Summary
             </h2>
 
-            {/* Ordering branch — chosen here at order time (drives price + delivery) */}
+            {/* Delivery region — ordering is region-based (drives delivery areas + charge) */}
             <div className="mb-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-              <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">🏪 Ordering Branch</label>
-              <select
-                value={selectedBranchId || ''}
-                onChange={(e) => chooseBranch(Number(e.target.value))}
-                className={`w-full px-3 py-2.5 rounded-xl border bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer ${selectedBranchId ? 'border-neutral-200 dark:border-neutral-800' : 'border-amber-400'}`}
-              >
-                <option value="" disabled>Select a branch…</option>
-                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-              {!selectedBranchId && (
-                <p className="text-[10px] text-amber-500 font-semibold mt-1.5">অর্ডার করতে আগে একটা branch বাছুন</p>
+              <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">📍 Delivery Region</label>
+              {deliverableRegions.length === 0 ? (
+                <p className="text-[11px] text-amber-500 font-semibold">Online delivery isn't available yet — please check back soon.</p>
+              ) : deliverableRegions.length === 1 ? (
+                <div className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm font-semibold text-neutral-800 dark:text-white">
+                  {deliverableRegions[0].name}
+                </div>
+              ) : (
+                <select
+                  value={regionId || ''}
+                  onChange={(e) => setRegionId(Number(e.target.value))}
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer ${regionId ? 'border-neutral-200 dark:border-neutral-800' : 'border-amber-400'}`}
+                >
+                  <option value="" disabled>Select your region…</option>
+                  {deliverableRegions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
               )}
-              {unavailableItems.length > 0 && (
-                <p className="text-[10px] text-red-500 font-semibold mt-1.5">⚠️ এই branch-এ নেই: {unavailableItems.map((i) => i.name).join(', ')} — অন্য branch বাছুন বা এগুলো সরান।</p>
+              {deliverableRegions.length > 1 && !regionId && (
+                <p className="text-[10px] text-amber-500 font-semibold mt-1.5">অর্ডার করতে আগে region বাছুন</p>
               )}
             </div>
 
@@ -305,8 +324,7 @@ export const Checkout = () => {
               className="mt-4 w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/15 active:scale-95 transition-all">
               {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing Order...</>
                 : !isAuthenticated ? 'Log in to place order'
-                : !selectedBranchId ? 'Select a branch to continue'
-                : unavailableItems.length > 0 ? 'Some items unavailable at this branch'
+                : !regionId ? 'Select a region to continue'
                 : <>{paymentMethod === 'sslcommerz' ? `Pay ৳${orderTotal.toFixed(2)} & Place Order` : 'Confirm & Place Order'} <ArrowRight className="w-4 h-4" /></>}
             </button>
             <p className="mt-2 flex items-center justify-center gap-1 text-[10px] text-neutral-400"><ShieldCheck className="w-3 h-3" /> Prices are re-verified securely on our server.</p>
@@ -350,7 +368,7 @@ export const Checkout = () => {
           {isAuthenticated && (
             <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-1"><StepBadge n={2} /> Delivery Details</h2>
-              {branch && <p className="text-[11px] text-neutral-400 mb-4 ml-8">🏪 Ordering from <span className="font-semibold text-neutral-500 dark:text-neutral-300">{branch.name}</span> — charge is from this branch</p>}
+              {region && <p className="text-[11px] text-neutral-400 mb-4 ml-8">📍 Delivering in <span className="font-semibold text-neutral-500 dark:text-neutral-300">{region.name}</span> — charge is from your selected area</p>}
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">Phone Number</label>
@@ -360,8 +378,8 @@ export const Checkout = () => {
                   <div>
                     <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">Delivery Area</label>
                     <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
-                      {(branch?.deliveryZones || []).map((z) => <option key={z.name} value={z.name}>{z.name} (৳{z.charge})</option>)}
-                      <option value="">Other area (৳{branch?.defaultDeliveryCharge ?? 100})</option>
+                      {(region?.deliveryZones || []).map((z) => <option key={z.name} value={z.name}>{z.name} (৳{z.charge})</option>)}
+                      <option value="">Other area (৳{region?.defaultDeliveryCharge ?? 100})</option>
                     </select>
                   </div>
                   <div>

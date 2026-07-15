@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, Plus, Edit2, Trash2, X, Building2 } from 'lucide-react';
+import { Map, Plus, Edit2, Trash2, X, Building2, Truck } from 'lucide-react';
 import { getAllRegions, createRegion, updateRegion, deleteRegion } from '../../services/regionsService';
 import { getAllBranches } from '../../services/branchesService';
 
@@ -16,7 +16,7 @@ export const AdminRegions = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '' });
+  const [form, setForm] = useState({ name: '', description: '', deliveryZones: [], defaultDeliveryCharge: 0 });
   const [formError, setFormError] = useState('');
 
   const fetchData = () => {
@@ -43,24 +43,50 @@ export const AdminRegions = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', description: '' });
+    setForm({ name: '', description: '', deliveryZones: [], defaultDeliveryCharge: 0 });
     setFormError('');
     setIsModalOpen(true);
   };
 
   const openEdit = (region) => {
     setEditing(region);
-    setForm({ name: region.name, description: region.description || '' });
+    setForm({
+      name: region.name,
+      description: region.description || '',
+      deliveryZones: Array.isArray(region.deliveryZones) ? region.deliveryZones.map((z) => ({ ...z })) : [],
+      defaultDeliveryCharge: typeof region.defaultDeliveryCharge === 'number' ? region.defaultDeliveryCharge : 0,
+    });
     setFormError('');
     setIsModalOpen(true);
   };
 
+  // ── Delivery area editor (per-region: area name + charge) ──
+  const addZone = () =>
+    setForm((p) => ({ ...p, deliveryZones: [...p.deliveryZones, { name: '', charge: p.defaultDeliveryCharge || 0 }] }));
+  const changeZone = (i, field, value) =>
+    setForm((p) => ({
+      ...p,
+      deliveryZones: p.deliveryZones.map((z, idx) =>
+        idx === i ? { ...z, [field]: field === 'charge' ? (parseFloat(value) || 0) : value } : z
+      ),
+    }));
+  const removeZone = (i) =>
+    setForm((p) => ({ ...p, deliveryZones: p.deliveryZones.filter((_, idx) => idx !== i) }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return setFormError('Region name is required.');
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      deliveryZones: form.deliveryZones
+        .map((z) => ({ name: String(z.name || '').trim(), charge: Number(z.charge) || 0 }))
+        .filter((z) => z.name),
+      defaultDeliveryCharge: Number(form.defaultDeliveryCharge) || 0,
+    };
     try {
-      if (editing) await updateRegion(editing.id, { name: form.name.trim(), description: form.description.trim() });
-      else await createRegion({ name: form.name.trim(), description: form.description.trim() });
+      if (editing) await updateRegion(editing.id, payload);
+      else await createRegion(payload);
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
@@ -149,9 +175,17 @@ export const AdminRegions = () => {
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2">{region.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                <Building2 className="w-3.5 h-3.5 text-primary-500" />
-                {branchCount[region.id] || 0} branch{(branchCount[region.id] || 0) === 1 ? '' : 'es'}
+              <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-primary-500" />
+                  {branchCount[region.id] || 0} branch{(branchCount[region.id] || 0) === 1 ? '' : 'es'}
+                </span>
+                <span className={`flex items-center gap-1.5 ${(region.deliveryZones?.length || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500 font-semibold' : ''}`}>
+                  <Truck className="w-3.5 h-3.5" />
+                  {(region.deliveryZones?.length || 0) > 0
+                    ? `${region.deliveryZones.length} delivery area${region.deliveryZones.length === 1 ? '' : 's'}`
+                    : 'no delivery'}
+                </span>
               </div>
             </motion.div>
           ))}
@@ -215,6 +249,54 @@ export const AdminRegions = () => {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                   />
                 </div>
+
+                {/* Delivery Areas (per-region: area name → charge) */}
+                <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                      <Truck className="w-3.5 h-3.5" /> Delivery Areas
+                    </label>
+                    <button type="button" onClick={addZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg active:scale-95 transition-all">+ Add Area</button>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+                    এই region-এ কোন অঞ্চলে কত টাকা ডেলিভারি — customer checkout-এ নিজের অঞ্চল বাছবে। অঞ্চল না থাকলে region-টি delivery-র জন্য দেখাবে না।
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">Default charge (অন্য অঞ্চল)</span>
+                    <div className="relative w-28">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                      <input
+                        type="number" min="0" step="1" value={form.defaultDeliveryCharge}
+                        onChange={(e) => setForm((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))}
+                        className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+
+                  {form.deliveryZones.length === 0 && (
+                    <p className="text-xs text-neutral-400 italic">কোনো area নেই — এই region delivery-র জন্য active হবে না।</p>
+                  )}
+                  {form.deliveryZones.map((z, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <input
+                        type="text" placeholder="Area name (e.g. Agrabad)" value={z.name}
+                        onChange={(e) => changeZone(index, 'name', e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                      <div className="relative w-28 shrink-0">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                        <input
+                          type="number" min="0" step="1" placeholder="Charge" value={z.charge}
+                          onChange={(e) => changeZone(index, 'charge', e.target.value)}
+                          className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                      <button type="button" onClick={() => removeZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"

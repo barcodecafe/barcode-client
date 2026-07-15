@@ -38,7 +38,7 @@ export async function createOrder(orderData) {
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
     })),
-    branchId: orderData.branchId,
+    regionId: orderData.regionId, // ordering is region-based now
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
     deliveryArea: orderData.deliveryArea || '',

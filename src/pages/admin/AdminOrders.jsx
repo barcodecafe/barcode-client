@@ -23,6 +23,7 @@ import {
 } from "../../services/ordersService";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
+import { getAllRegions } from "../../services/regionsService";
 import { getAllFoods } from "../../services/foodsService";
 
 const getStatusColor = (status) => {
@@ -54,6 +55,7 @@ export const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [riders, setRiders] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [regions, setRegions] = useState([]);
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
@@ -64,12 +66,13 @@ export const AdminOrders = () => {
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
   const fetchOrdersAndFleet = () => {
-    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods()]).then(
-      ([ordersData, ridersData, branchesData, foodsData]) => {
+    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods(), getAllRegions()]).then(
+      ([ordersData, ridersData, branchesData, foodsData, regionsData]) => {
         setOrders(ordersData);
         setRiders(ridersData);
         setBranches(branchesData);
         setFoods(foodsData);
+        setRegions(Array.isArray(regionsData) ? regionsData : []);
         setLoading(false);
       },
     );
@@ -78,12 +81,13 @@ export const AdminOrders = () => {
   useEffect(() => {
     fetchOrdersAndFleet();
     const interval = setInterval(() => {
-      Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods()]).then(
-        ([ordersData, ridersData, branchesData, foodsData]) => {
+      Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods(), getAllRegions()]).then(
+        ([ordersData, ridersData, branchesData, foodsData, regionsData]) => {
           setOrders(ordersData);
           setRiders(ridersData);
           setBranches(branchesData);
           setFoods(foodsData);
+          setRegions(Array.isArray(regionsData) ? regionsData : []);
         },
       );
     }, 3000);
@@ -572,17 +576,19 @@ export const AdminOrders = () => {
 
                   <div className="p-3 border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/10 rounded-xl space-y-1.5">
                     <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
-                      Branch Details
+                      {selectedOrderDetails.regionId ? "Delivery Region" : "Branch Details"}
                     </span>
                     <span className="block text-xs font-bold text-neutral-800 dark:text-neutral-100">
-                      {branches.find(
-                        (b) => b.id === selectedOrderDetails.branchId,
-                      )?.name || `Branch #${selectedOrderDetails.branchId}`}
+                      {selectedOrderDetails.regionId
+                        ? regions.find((r) => r.id === selectedOrderDetails.regionId)?.name ||
+                          `Region #${selectedOrderDetails.regionId}`
+                        : branches.find((b) => b.id === selectedOrderDetails.branchId)?.name ||
+                          `Branch #${selectedOrderDetails.branchId}`}
                     </span>
                     <span className="block text-[11px] text-neutral-500 truncate">
-                      {branches.find(
-                        (b) => b.id === selectedOrderDetails.branchId,
-                      )?.location || "General Area"}
+                      {selectedOrderDetails.deliveryArea
+                        ? `Area: ${selectedOrderDetails.deliveryArea}`
+                        : branches.find((b) => b.id === selectedOrderDetails.branchId)?.location || "General Area"}
                     </span>
                   </div>
 
