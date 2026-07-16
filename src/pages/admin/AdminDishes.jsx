@@ -117,17 +117,23 @@ export const AdminDishes = () => {
 
     fetchInitial();
 
-    const interval = setInterval(() => {
-      Promise.all([getAllFoods(), getAllBranches()])
-        .then(([foodsData, branchesData]) => {
-          setFoods(foodsData || []);
-          setBranches(branchesData || []);
-        })
-        .catch(err => console.error("Background sync failed:", err));
-    }, 3000);
+    // মডাল ওপেন থাকলে ব্যাকগ্রাউন্ড অটো-সিঙ্ক বন্ধ থাকবে, মডাল অফ থাকলে সিঙ্ক হবে
+    let interval;
+    if (!isModalOpen) {
+      interval = setInterval(() => {
+        Promise.all([getAllFoods(), getAllBranches()])
+          .then(([foodsData, branchesData]) => {
+            setFoods(foodsData || []);
+            setBranches(branchesData || []);
+          })
+          .catch(err => console.error("Background sync failed:", err));
+      }, 3000);
+    }
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isModalOpen]); // Dependencies-এ isModalOpen যুক্ত করা হয়েছে
 
   const handleReorder = (newOrder) => {
     const orderMap = new Map();
@@ -171,6 +177,17 @@ export const AdminDishes = () => {
     setIsCustomCategory(isCustom);
     setImagePreview(food.image || null);
 
+    // ১. ব্রাঞ্চ আইডিগুলো String অ্যারে হিসেবে কনভার্ট করা হচ্ছে যেন চেক করা সহজ হয়
+    const formattedBranches = (food.branches || []).map(id => String(id));
+
+    // ২. branchPrices অবজেক্টের কীগুলোকেও String এ রূপান্তর করা হচ্ছে
+    const formattedBranchPrices = {};
+    if (food.branchPrices) {
+      Object.entries(food.branchPrices).forEach(([key, val]) => {
+        formattedBranchPrices[String(key)] = val;
+      });
+    }
+
     setFormData({
       name: food.name || "",
       category: food.category || "Mains",
@@ -184,8 +201,8 @@ export const AdminDishes = () => {
       discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
-      branches: food.branches || [],
-      branchPrices: food.branchPrices || {},
+      branches: formattedBranches,
+      branchPrices: formattedBranchPrices,
       variantLabel: food.variantLabel || "Size",
       variations: food.variations || [],
     });
@@ -205,17 +222,18 @@ export const AdminDishes = () => {
   };
 
   const handleBranchToggle = (branchId) => {
+    const targetId = String(branchId);
     setFormData((prev) => {
-      const isSelected = prev.branches.includes(branchId);
+      const isSelected = prev.branches.map(id => String(id)).includes(targetId);
       let updatedBranches;
       let updatedPrices = { ...prev.branchPrices };
 
       if (isSelected) {
-        updatedBranches = prev.branches.filter((id) => id !== branchId);
-        delete updatedPrices[branchId];
+        updatedBranches = prev.branches.filter((id) => String(id) !== targetId);
+        delete updatedPrices[targetId];
       } else {
-        updatedBranches = [...prev.branches, branchId];
-        updatedPrices[branchId] = 0;
+        updatedBranches = [...prev.branches, targetId];
+        updatedPrices[targetId] = 0;
       }
 
       return {
@@ -227,9 +245,10 @@ export const AdminDishes = () => {
   };
 
   const handleBranchPriceChange = (branchId, value) => {
+    const targetId = String(branchId);
     setFormData((prev) => ({
       ...prev,
-      branchPrices: { ...prev.branchPrices, [branchId]: parseFloat(value) || 0 },
+      branchPrices: { ...prev.branchPrices, [targetId]: parseFloat(value) || 0 },
     }));
   };
 
@@ -272,7 +291,9 @@ export const AdminDishes = () => {
     try {
       const cleanedFormData = {
         ...formData,
-        category: formData.category?.trim()
+        category: formData.category?.trim(),
+        // নিশ্চিত করা হচ্ছে যে সার্ভারেও ব্রাঞ্চ আইডি স্ট্রিং অ্যারে ফরম্যাটে যাচ্ছে
+        branches: formData.branches.map(id => String(id))
       };
 
       if (editingFood) {
@@ -609,7 +630,7 @@ export const AdminDishes = () => {
                     <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
                   </div>
 
-                  {/* Variant type — customers see it as "Choose {type}" on the dish page */}
+                  {/* Variant type */}
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
                     <select
@@ -653,20 +674,46 @@ export const AdminDishes = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
-                        const isChecked = formData.branches.includes(branch.id);
+                        // ১. আইডি স্ট্রিং কম্পারিজনের মাধ্যমে সঠিকভাবে সিলেক্টেড ব্রাঞ্চ চেক করা হচ্ছে
+                        const isChecked = formData.branches.map(id => String(id)).includes(String(branch.id));
+                        
+                        // ২. সঠিক প্রাইস অ্যাডজাস্টমেন্ট ভ্যালু সনাক্তকরণ করা হচ্ছে
+                        const branchPriceVal = formData.branchPrices[String(branch.id)] !== undefined 
+                          ? formData.branchPrices[String(branch.id)] 
+                          : (formData.branchPrices[branch.id] !== undefined ? formData.branchPrices[branch.id] : "");
+
                         return (
-                          <div key={branch.id} className={`flex flex-col p-3 rounded-xl border transition-all ${isChecked ? "bg-white dark:bg-neutral-900 border-amber-200" : "opacity-60"}`}>
+                          <div 
+                            key={branch.id} 
+                            className={`flex flex-col p-3 rounded-xl border transition-all ${
+                              isChecked 
+                                ? "bg-white dark:bg-neutral-900 border-amber-300 dark:border-amber-500 shadow-sm" 
+                                : "bg-neutral-50 dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800 opacity-60"
+                            }`}
+                          >
                             <div className="flex items-center justify-between">
-                              <label className="flex items-start gap-2 text-xs font-bold cursor-pointer flex-1">
-                                <input type="checkbox" checked={isChecked} onChange={() => handleBranchToggle(branch.id)} className="rounded text-amber-500" />
-                                <span>{branch.name}</span>
+                              <label className="flex items-center gap-2.5 text-xs font-bold cursor-pointer flex-1 select-none">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked} 
+                                  onChange={() => handleBranchToggle(branch.id)} 
+                                  className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer" 
+                                />
+                                <span className={isChecked ? "text-amber-900 dark:text-amber-400" : "text-neutral-500"}>
+                                  {branch.name}
+                                </span>
                               </label>
+
                               {isChecked && (
-                                <div className="flex flex-col gap-1 items-end shrink-0">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-neutral-400">Price Adj:</span>
-                                    <input type="number" placeholder="৳0" value={formData.branchPrices[branch.id] !== undefined ? formData.branchPrices[branch.id] : ""} onChange={(e) => handleBranchPriceChange(branch.id, e.target.value)} className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none" />
-                                  </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[10px] text-neutral-400">Price Adj:</span>
+                                  <input 
+                                    type="number" 
+                                    placeholder="৳0" 
+                                    value={branchPriceVal} 
+                                    onChange={(e) => handleBranchPriceChange(branch.id, e.target.value)} 
+                                    className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none focus:border-amber-400 dark:bg-neutral-800 dark:border-neutral-700" 
+                                  />
                                 </div>
                               )}
                             </div>
