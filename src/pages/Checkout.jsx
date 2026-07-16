@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { validateCoupon } from '../services/couponsService';
+import { validateCoupon, couponDiscountAmount, couponDiscountLabel } from '../services/couponsService';
 import { createOrder } from '../services/ordersService';
 import { getAllRegions } from '../services/regionsService';
 import { getDiscountedPrice } from '../services/foodsService';
@@ -107,7 +107,7 @@ export const Checkout = () => {
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
   // ── Derived money (mirrors the server) ──────────────────────────────────
-  const couponDiscount = appliedCoupon ? (cartTotal * appliedCoupon.discountPct) / 100 : 0;
+  const couponDiscount = appliedCoupon ? couponDiscountAmount(cartTotal, appliedCoupon) : 0;
   const afterCoupon = cartTotal - couponDiscount;
   const availablePoints = Math.max(0, Math.floor(user?.points || 0));
   const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, Math.floor(afterCoupon)));
@@ -291,7 +291,7 @@ export const Checkout = () => {
                 )}
               </form>
               {couponError && <p className="text-[10px] font-semibold text-red-500 mt-1 pl-1">{couponError}</p>}
-              {appliedCoupon && <p className="text-[10px] font-bold text-emerald-500 mt-1 pl-1">✓ {appliedCoupon.code} applied ({appliedCoupon.discountPct}% OFF)</p>}
+              {appliedCoupon && <p className="text-[10px] font-bold text-emerald-500 mt-1 pl-1">✓ {appliedCoupon.code} applied ({couponDiscountLabel(appliedCoupon)})</p>}
             </div>
 
             {/* Points redeem */}

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, QrCode, Download, X, Copy, Check } from 'lucide-react';
-import { getAllCoupons, createCoupon, deleteCoupon } from '../../services/couponsService';
+import { getAllCoupons, createCoupon, deleteCoupon, couponDiscountLabel } from '../../services/couponsService';
 
 export const AdminCoupons = () => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [couponCode, setCouponCode] = useState('');
+  const [couponType, setCouponType] = useState('percent'); // 'percent' | 'flat'
   const [couponDiscount, setCouponDiscount] = useState('');
   const [couponMinSpend, setCouponMinSpend] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -30,7 +31,7 @@ export const AdminCoupons = () => {
 
     // Code is now optional — the server auto-generates a unique one when blank.
     if (!couponDiscount) {
-      setCouponError('Please enter the Discount Percentage.');
+      setCouponError(couponType === 'flat' ? 'Please enter the discount amount (৳).' : 'Please enter the discount percentage.');
       return;
     }
 
@@ -38,7 +39,9 @@ export const AdminCoupons = () => {
     try {
       await createCoupon({
         code: couponCode.trim(), // blank => server generates a unique code
-        discountPct: parseInt(couponDiscount, 10),
+        discountType: couponType,
+        discountPct: couponType === 'percent' ? parseInt(couponDiscount, 10) : 0,
+        discountAmount: couponType === 'flat' ? parseFloat(couponDiscount) || 0 : 0,
         minSpend: parseFloat(couponMinSpend) || 0,
         isActive: true,
       });
@@ -115,19 +118,46 @@ export const AdminCoupons = () => {
               <p className="text-[10px] text-neutral-400 mt-1">A unique ID + QR code are generated automatically.</p>
             </div>
 
+            {/* Discount type toggle: percentage or flat ৳ amount */}
+            <div>
+              <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                Discount Type
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { key: 'percent', label: 'Percentage (%)' },
+                  { key: 'flat', label: 'Flat (৳)' },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setCouponType(opt.key)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      couponType === opt.key
+                        ? 'bg-primary-500 text-white border-primary-500'
+                        : 'bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800 hover:border-primary-500/40'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                  Discount (%)
+                  {couponType === 'flat' ? 'Discount (৳)' : 'Discount (%)'}
                 </label>
                 <input
                   type="number"
                   required
-                  min="1"
-                  max="100"
+                  min={couponType === 'flat' ? '1' : '1'}
+                  max={couponType === 'flat' ? undefined : '100'}
+                  step={couponType === 'flat' ? '1' : '1'}
                   value={couponDiscount}
                   onChange={(e) => setCouponDiscount(e.target.value)}
-                  placeholder="30"
+                  placeholder={couponType === 'flat' ? '৳100' : '30'}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
@@ -210,7 +240,7 @@ export const AdminCoupons = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3.5 font-extrabold text-neutral-800 dark:text-neutral-100">
-                      {cp.discountPct}% OFF
+                      {couponDiscountLabel(cp)}
                     </td>
                     <td className="px-4 py-3.5 font-medium text-neutral-605 dark:text-neutral-300">
                       ৳{(cp.minSpend || 0).toFixed(2)}
@@ -268,7 +298,7 @@ export const AdminCoupons = () => {
               {qrModal.code}
             </h3>
             <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              {qrModal.discountPct}% OFF{qrModal.minSpend ? ` · min ৳${qrModal.minSpend}` : ''}
+              {couponDiscountLabel(qrModal)}{qrModal.minSpend ? ` · min ৳${qrModal.minSpend}` : ''}
             </p>
 
             <div className="mt-4 flex justify-center">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, ShoppingBag, Heart, ArrowLeft, Minus, Plus, Check, Zap } from 'lucide-react';
-import { getFoodById, getPopularFoods, getActivePrice } from '../services/foodsService';
+import { getFoodById, getPopularFoods, getActivePrice, applyFoodDiscount, hasFoodDiscount, foodDiscountLabel } from '../services/foodsService';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -86,9 +86,9 @@ export const DishDetail = () => {
   // Price calculations — go through getActivePrice so the selected variant's
   // price AND any per-branch adjustment are both applied (matches the server's
   // getUnitPrice), instead of using the raw variation price in isolation.
-  const hasDiscount = food.discountPct > 0;
+  const hasDiscount = hasFoodDiscount(food);
   const activePrice = getActivePrice(food, branchId, selectedVariation ? selectedVariation.name : null);
-  const discountedPrice = hasDiscount ? activePrice * (1 - food.discountPct / 100) : activePrice;
+  const discountedPrice = applyFoodDiscount(activePrice, food);
 
   const handleQuantityChange = (newQty) => {
     if (newQty < 1 || newQty > 99) return;
@@ -121,7 +121,7 @@ export const DishDetail = () => {
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
           {hasDiscount && (
             <div className="absolute top-4 left-4 px-3 py-1 rounded-xl bg-primary-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/35 z-10">
-              {food.discountPct}% OFF
+              {foodDiscountLabel(food)}
             </div>
           )}
           <img src={food.image || ""} alt={food.name} className="w-full h-full object-cover" />
@@ -179,7 +179,7 @@ export const DishDetail = () => {
                   {food.variations.map((v) => {
                     const isSelected = selectedVariation && selectedVariation.name === v.name;
                     const vFull = getActivePrice(food, branchId, v.name);
-                    const vPrice = hasDiscount ? vFull * (1 - food.discountPct / 100) : vFull;
+                    const vPrice = applyFoodDiscount(vFull, food);
                     return (
                       <button
                         key={v.name}
@@ -265,8 +265,8 @@ export const DishDetail = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
           {featuredMenu.filter(f => f.id !== food.id).slice(0, 6).map((recFood) => {
-            const recHasDiscount = recFood.discountPct > 0;
-            const recPrice = recHasDiscount ? recFood.price * (1 - recFood.discountPct / 100) : recFood.price;
+            const recHasDiscount = hasFoodDiscount(recFood);
+            const recPrice = applyFoodDiscount(recFood.price, recFood);
             return (
               <div key={recFood.id} className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all">
                 <div className="space-y-2">

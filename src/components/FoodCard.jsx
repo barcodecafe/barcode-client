@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { hasFoodDiscount, applyFoodDiscount, foodDiscountLabel } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
 // FoodCard — একটাই শেয়ারড প্রোডাক্ট কার্ড, যা Home এবং Menu দুই পেজেই ব্যবহার
@@ -21,10 +22,8 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
   const basePrice = hasVariants
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
     : food.price;
-  const hasDiscount = food.discountPct > 0;
-  const discountedPrice = hasDiscount
-    ? basePrice * (1 - food.discountPct / 100)
-    : basePrice;
+  const hasDiscount = hasFoodDiscount(food);
+  const discountedPrice = applyFoodDiscount(basePrice, food);
 
   return (
     <motion.div
@@ -45,7 +44,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
 
         {hasDiscount && (
           <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-primary-500/30">
-            {food.discountPct}% OFF
+            {foodDiscountLabel(food)}
           </span>
         )}
 

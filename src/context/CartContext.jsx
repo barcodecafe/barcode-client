@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { getActivePrice } from '../services/foodsService';
+import { getActivePrice, applyFoodDiscount } from '../services/foodsService';
 
 const CartContext = createContext(null);
 
@@ -39,10 +39,7 @@ export const CartProvider = ({ children }) => {
     setCart((prevCart) => {
       const activeBranchId = branchId || Number(localStorage.getItem('selectedBranchId')) || null;
       const basePrice = getActivePrice(food, activeBranchId, sizeName); // honors the variation price
-      let purchasePrice = basePrice;
-      if (food.discountPct > 0) {
-        purchasePrice = basePrice * (1 - food.discountPct / 100);
-      }
+      const purchasePrice = applyFoodDiscount(basePrice, food); // percent or flat ৳ off
 
       const cartId = food.cartId || (sizeName ? `${food.id}-${sizeName}` : food.id);
 

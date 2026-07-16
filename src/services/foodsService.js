@@ -76,7 +76,40 @@ export function getActivePrice(food, branchId, selectedSize = null) {
 
 export function getDiscountedPrice(food, branchId, selectedSize = null) {
   if (!food) return 0;
-  const basePrice = getActivePrice(food, branchId, selectedSize);
-  if (food.discountPct > 0) return basePrice * (1 - food.discountPct / 100);
-  return basePrice;
+  return applyFoodDiscount(getActivePrice(food, branchId, selectedSize), food);
+}
+
+// ── Discount helpers — percentage OR flat ৳ amount (single source of truth) ──
+// A food discounts either by a percentage (discountPct) or a flat ৳ amount per
+// unit (discountAmount), chosen by discountType ('percent' default for legacy).
+
+/** true if the food currently has any active discount. */
+export function hasFoodDiscount(food) {
+  if (!food) return false;
+  return food.discountType === 'flat'
+    ? (Number(food.discountAmount) || 0) > 0
+    : (Number(food.discountPct) || 0) > 0;
+}
+
+/** Apply the food's discount to an already-computed active price (never below 0). */
+export function applyFoodDiscount(activePrice, food) {
+  const p = Number(activePrice) || 0;
+  if (!food) return p;
+  if (food.discountType === 'flat') {
+    const amt = Number(food.discountAmount) || 0;
+    return amt > 0 ? Math.max(0, p - amt) : p;
+  }
+  const pct = Number(food.discountPct) || 0;
+  return pct > 0 ? p * (1 - pct / 100) : p;
+}
+
+/** Badge text for the discount, e.g. "20% OFF" or "৳50 OFF" (null if none). */
+export function foodDiscountLabel(food) {
+  if (!food) return null;
+  if (food.discountType === 'flat') {
+    const a = Number(food.discountAmount) || 0;
+    return a > 0 ? `৳${a} OFF` : null;
+  }
+  const pct = Number(food.discountPct) || 0;
+  return pct > 0 ? `${pct}% OFF` : null;
 }

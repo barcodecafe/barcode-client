@@ -17,7 +17,7 @@ import {
   getFeaturedBranches,
   getAllBranches,
 } from "../services/branchesService";
-import { getPopularFoods, getAllFoods } from "../services/foodsService";
+import { getPopularFoods, getAllFoods, hasFoodDiscount, foodDiscountLabel } from "../services/foodsService";
 import { getAllSlides } from "../services/heroSlidesService";
 
 // Import Swiper styles
@@ -135,11 +135,10 @@ export const Home = () => {
                     <div className="max-w-3xl text-white flex flex-col items-center select-none pointer-events-none">
                       {slide.type === "promo" &&
                         (slide.offerText ||
-                          (featuredFood && featuredFood.discountPct > 0)) && (
+                          (featuredFood && hasFoodDiscount(featuredFood))) && (
                           <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg shadow-red-500/35">
                             🔥{" "}
-                            {slide.offerText ||
-                              `${featuredFood.discountPct}% OFF`}
+                            {slide.offerText || foodDiscountLabel(featuredFood)}
                           </span>
                         )}
                       <h2 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow-lg">

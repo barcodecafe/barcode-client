@@ -16,7 +16,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { getFoodsByBranch, getActivePrice, getDiscountedPrice } from '../services/foodsService';
+import { getFoodsByBranch, getActivePrice, getDiscountedPrice, hasFoodDiscount, foodDiscountLabel } from '../services/foodsService';
 import { getBranchById } from '../services/branchesService';
 import LeafletMap from '../components/LeafletMap';
 
@@ -444,7 +444,7 @@ export const BranchDetail = () => {
             {filteredMenu.map((food) => {
               const basePrice = getActivePrice(food, branch.id);
               const purchasePrice = getDiscountedPrice(food, branch.id);
-              const hasDiscount = food.discountPct > 0;
+              const hasDiscount = hasFoodDiscount(food);
               return (
                 <motion.div
                   key={food.id}
@@ -455,7 +455,7 @@ export const BranchDetail = () => {
                   <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                     {hasDiscount && (
                       <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-                        {food.discountPct}% OFF
+                        {foodDiscountLabel(food)}
                       </div>
                     )}
                     <Link to={`/menu/${food.id}?branchId=${branch.id}`} className="block w-full h-full">

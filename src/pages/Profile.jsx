@@ -30,7 +30,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getAllOrders, getActiveOrdersForUser } from '../services/ordersService';
-import { getAllFoods } from '../services/foodsService';
+import { getAllFoods, hasFoodDiscount, applyFoodDiscount } from '../services/foodsService';
 
 // ---------------------------------------------------------------------------
 // Profile.jsx — Customer Dashboard
@@ -623,8 +623,8 @@ export const Profile = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {favoriteFoods.map((food) => {
-            const hasDiscount = food.discountPct > 0;
-            const discounted = hasDiscount ? food.price * (1 - food.discountPct / 100) : food.price;
+            const hasDiscount = hasFoodDiscount(food);
+            const discounted = applyFoodDiscount(food.price, food);
             return (
               <motion.div
                 key={food.id}
@@ -652,7 +652,10 @@ export const Profile = () => {
                     )}
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-1">
-                    <span className="font-display font-extrabold text-sm text-primary-500">{taka(discounted)}</span>
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="font-display font-extrabold text-sm text-primary-500">{taka(discounted)}</span>
+                      {hasDiscount && <span className="text-[11px] text-neutral-400 line-through">{taka(food.price)}</span>}
+                    </span>
                     <button
                       onClick={() => toggleFavorite(food.id)}
                       className="p-1.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-90 transition-all"

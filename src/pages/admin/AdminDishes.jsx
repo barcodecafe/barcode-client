@@ -50,7 +50,9 @@ export const AdminDishes = () => {
     popular: false,
     isAdminFeatured: false,
     featuredOrder: 1,
+    discountType: "percent",
     discountPct: 0,
+    discountAmount: 0,
     branches: [],
     branchPrices: {},
     variantLabel: "Size",
@@ -152,7 +154,9 @@ export const AdminDishes = () => {
       popular: false,
       isAdminFeatured: false,
       featuredOrder: 1,
+      discountType: "percent",
       discountPct: 0,
+      discountAmount: 0,
       branches: [],
       branchPrices: {},
       variantLabel: "Size",
@@ -177,7 +181,9 @@ export const AdminDishes = () => {
       popular: !!food.popular,
       isAdminFeatured: !!food.isAdminFeatured,
       featuredOrder: food.featuredOrder || 1,
+      discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
+      discountAmount: food.discountAmount || 0,
       branches: food.branches || [],
       branchPrices: food.branchPrices || {},
       variantLabel: food.variantLabel || "Size",
@@ -562,8 +568,37 @@ export const AdminDishes = () => {
                     <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount (%)</label>
-                    <input type="number" min="0" max="100" value={formData.discountPct} onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
+                      Discount {formData.discountType === 'flat' ? '(৳)' : '(%)'}
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.discountType}
+                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer"
+                        title="Discount type"
+                      >
+                        <option value="percent">%</option>
+                        <option value="flat">৳</option>
+                      </select>
+                      {formData.discountType === 'flat' ? (
+                        <input
+                          type="number" min="0" step="1"
+                          value={formData.discountAmount}
+                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })}
+                          placeholder="৳ off"
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
+                        />
+                      ) : (
+                        <input
+                          type="number" min="0" max="100"
+                          value={formData.discountPct}
+                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })}
+                          placeholder="% off"
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
 
