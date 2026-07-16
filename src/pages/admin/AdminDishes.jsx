@@ -232,15 +232,19 @@ export const AdminDishes = () => {
 
   const handleBranchToggle = (branchId) => {
     setFormData((prev) => {
-      const isSelected = prev.branches.includes(branchId);
+      const searchId = branchId?.toString();
+      const isSelected = (prev.branches || []).map(String).includes(searchId);
       let updatedBranches;
       let updatedPrices = { ...prev.branchPrices };
 
       if (isSelected) {
-        updatedBranches = prev.branches.filter((id) => id !== branchId);
+        // এখানে id এবং searchId দুটিকেই String-এ রূপান্তর করে ফিল্টার করতে হবে
+        updatedBranches = (prev.branches || []).filter(
+          (id) => id?.toString() !== searchId,
+        );
         delete updatedPrices[branchId];
       } else {
-        updatedBranches = [...prev.branches, branchId];
+        updatedBranches = [...(prev.branches || []), branchId];
         updatedPrices[branchId] = 0;
       }
 
@@ -942,7 +946,10 @@ export const AdminDishes = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
-                        const isChecked = formData.branches.includes(branch.id);
+                        // const isChecked = formData.branches.includes(branch.id);
+                        const isChecked = (formData.branches || [])
+                          .map(String)
+                          .includes(branch.id?.toString());
                         return (
                           <div
                             key={branch.id}
