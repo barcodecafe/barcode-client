@@ -273,7 +273,7 @@ export const AdminRegions = () => {
                       />
                     </div>
                   </div>
-
+                  <div className="max-h-[200px] overflow-y-auto pr-1 space-y-2">
                   {form.deliveryZones.length === 0 && (
                     <p className="text-xs text-neutral-400 italic">কোনো area নেই — এই region delivery-র জন্য active হবে না।</p>
                   )}
@@ -295,6 +295,7 @@ export const AdminRegions = () => {
                       <button type="button" onClick={() => removeZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
                     </div>
                   ))}
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2">
