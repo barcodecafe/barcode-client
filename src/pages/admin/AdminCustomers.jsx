@@ -1,7 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getAllUsers } from '../../services/authService';
-import { CreditCard, Download, X, QrCode } from 'lucide-react';
-import html2canvas from 'html2canvas'; 
+import { getTopCustomers } from '../../services/analyticsService';
+import { CreditCard, Download, X, QrCode, Crown } from 'lucide-react';
+import html2canvas from 'html2canvas';
+
+const taka = (n) => `৳${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const MEDAL = ['🥇', '🥈', '🥉'];
 
 // The membership id + QR are generated and stored on the server (stable, unique).
 // Prefer the backend value; fall back to a derived id only if it's somehow missing.
@@ -10,18 +14,34 @@ const membershipIdOf = (c) =>
 
 export const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
+  const [spendByUser, setSpendByUser] = useState({}); // userId → { totalSpent, orderCount, lastOrderAt }
   const [loading, setLoading] = useState(true);
-  
+
  // State and reference for the Card Maker modal and download functionality
   const [activeCardUser, setActiveCardUser] = useState(null);
   const cardRef = useRef(null);
 
   useEffect(() => {
-    getAllUsers().then((data) => {
-      setCustomers(data.filter((u) => u.role === 'user'));
+    Promise.all([getAllUsers(), getTopCustomers()]).then(([users, spending]) => {
+      setCustomers(users.filter((u) => u.role === 'user'));
+      const map = {};
+      (spending || []).forEach((s) => { map[s.userId] = s; });
+      setSpendByUser(map);
       setLoading(false);
     });
   }, []);
+
+  const spendOf = (c) => spendByUser[c.id] || { totalSpent: 0, orderCount: 0 };
+
+  // Rank the registry by lifetime spend so top customers surface first.
+  const rankedCustomers = useMemo(
+    () => [...customers].sort((a, b) => (spendByUser[b.id]?.totalSpent || 0) - (spendByUser[a.id]?.totalSpent || 0)),
+    [customers, spendByUser]
+  );
+  const topThree = useMemo(
+    () => rankedCustomers.filter((c) => (spendByUser[c.id]?.totalSpent || 0) > 0).slice(0, 3),
+    [rankedCustomers, spendByUser]
+  );
 
   // Function to download the card as a PNG image
   const handleDownloadCard = () => {
@@ -56,37 +76,73 @@ export const AdminCustomers = () => {
           Customers Registry
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Registered customer accounts profile directory including contact info, region, and addresses.
+          Registered customer accounts with their lifetime purchase record, ranked by total spend.
         </p>
       </div>
+
+      {/* Top customers highlight — the biggest spenders (Rejected orders excluded) */}
+      {topThree.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {topThree.map((c, i) => {
+            const s = spendOf(c);
+            return (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 p-4 shadow-xs"
+              >
+                <span className="text-2xl leading-none shrink-0" aria-hidden>{MEDAL[i]}</span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary-500 flex items-center gap-1">
+                    <Crown className="w-3 h-3" /> Top Customer #{i + 1}
+                  </p>
+                  <p className="font-bold text-sm text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="font-extrabold text-neutral-700 dark:text-neutral-200">{taka(s.totalSpent)}</span>
+                    {' · '}{s.orderCount} order{s.orderCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
-                <th className="px-4 py-3">Customer ID</th>
                 <th className="px-4 py-3">Membership ID</th>
                 <th className="px-4 py-3">Full Name</th>
+                <th className="px-4 py-3 text-right">Total Spent</th>
+                <th className="px-4 py-3 text-center">Orders</th>
                 <th className="px-4 py-3">Email Address</th>
                 <th className="px-4 py-3">Phone Number</th>
                 <th className="px-4 py-3">Pick Area</th>
-                <th className="px-4 py-3">Detailed Address</th>
                 <th className="px-4 py-3">Signup Date</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((c) => (
+              {rankedCustomers.map((c, idx) => {
+                const s = spendOf(c);
+                const isTop = idx < 3 && s.totalSpent > 0;
+                return (
                 <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20">
-                  <td className="px-4 py-3.5 text-neutral-400 font-mono text-[11px]">
-                    {c.id.slice(0, 12)}...
-                  </td>
                   <td className="px-4 py-3.5 font-bold text-primary-600 dark:text-primary-400 font-mono">
                     {membershipIdOf(c)}
                   </td>
                   <td className="px-4 py-3.5 font-bold text-neutral-800 dark:text-neutral-100">
-                    {c.name}
+                    <span className="inline-flex items-center gap-1.5">
+                      {isTop && <span aria-hidden title={`Top customer #${idx + 1}`}>{MEDAL[idx]}</span>}
+                      {c.name}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100">
+                    {s.totalSpent > 0 ? taka(s.totalSpent) : <span className="text-neutral-400 font-normal">৳0.00</span>}
+                  </td>
+                  <td className="px-4 py-3.5 text-center font-semibold text-neutral-600 dark:text-neutral-300">
+                    {s.orderCount || 0}
                   </td>
                   <td className="px-4 py-3.5 text-neutral-600 dark:text-neutral-355">
                     {c.email}
@@ -96,9 +152,6 @@ export const AdminCustomers = () => {
                   </td>
                   <td className="px-4 py-3.5 font-semibold text-primary-500">
                     {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
-                  </td>
-                  <td className="px-4 py-3.5 text-neutral-605 dark:text-neutral-300 font-light truncate max-w-xs">
-                    {c.address || <span className="text-neutral-450 font-light italic">Not Set</span>}
                   </td>
                   <td className="px-4 py-3.5 text-neutral-450 dark:text-neutral-500 font-light">
                     {new Date(c.createdAt || Date.now()).toLocaleDateString()}
@@ -113,7 +166,8 @@ export const AdminCustomers = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

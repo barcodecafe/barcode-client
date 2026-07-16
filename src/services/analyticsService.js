@@ -29,3 +29,8 @@ export async function getDashboardSummary() {
 export async function getTopDishes(limit = 5) {
   return apiClient.get(`/analytics/top-dishes?limit=${limit}`);
 }
+
+/** GET /api/analytics/top-customers?limit=0 (0 = all customers, ranked by spend) */
+export async function getTopCustomers(limit = 0) {
+  return apiClient.get(`/analytics/top-customers?limit=${limit}`);
+}
