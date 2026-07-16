@@ -273,7 +273,7 @@ export const AdminRegions = () => {
                       />
                     </div>
                   </div>
-                  <div className="max-h-[200px] overflow-y-auto pr-1 space-y-2">
+                  <div className="max-h-[150px] overflow-y-auto pr-1 space-y-2">
                   {form.deliveryZones.length === 0 && (
                     <p className="text-xs text-neutral-400 italic">কোনো area নেই — এই region delivery-র জন্য active হবে না।</p>
                   )}
