@@ -117,7 +117,6 @@ export const AdminDishes = () => {
 
     fetchInitial();
 
-    // মডাল ওপেন থাকলে ব্যাকগ্রাউন্ড অটো-সিঙ্ক বন্ধ থাকবে, মডাল অফ থাকলে সিঙ্ক হবে
     let interval;
     if (!isModalOpen) {
       interval = setInterval(() => {
@@ -133,7 +132,7 @@ export const AdminDishes = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isModalOpen]); // Dependencies-এ isModalOpen যুক্ত করা হয়েছে
+  }, [isModalOpen]);
 
   const handleReorder = (newOrder) => {
     const orderMap = new Map();
@@ -171,16 +170,21 @@ export const AdminDishes = () => {
     setIsModalOpen(true);
   };
 
+  // লাইভ সার্ভারের আইডি টাইপ ফিক্সড ফাংশন
   const openEditModal = (food) => {
     setEditingFood(food);
     const isCustom = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
     setIsCustomCategory(isCustom);
     setImagePreview(food.image || null);
 
-    // ১. ব্রাঞ্চ আইডিগুলো String অ্যারে হিসেবে কনভার্ট করা হচ্ছে যেন চেক করা সহজ হয়
-    const formattedBranches = (food.branches || []).map(id => String(id));
+    // সার্ভার থেকে আইডি সরাসরি আসুক বা অবজেক্টের ভেতর আসুক, দুটোকেই হ্যান্ডেল করবে (_id এবং id)
+    const formattedBranches = (food.branches || []).map(item => {
+      if (item && typeof item === 'object') {
+        return String(item._id || item.id || ""); 
+      }
+      return String(item);
+    }).filter(Boolean);
 
-    // ২. branchPrices অবজেক্টের কীগুলোকেও String এ রূপান্তর করা হচ্ছে
     const formattedBranchPrices = {};
     if (food.branchPrices) {
       Object.entries(food.branchPrices).forEach(([key, val]) => {
@@ -224,7 +228,7 @@ export const AdminDishes = () => {
   const handleBranchToggle = (branchId) => {
     const targetId = String(branchId);
     setFormData((prev) => {
-      const isSelected = prev.branches.map(id => String(id)).includes(targetId);
+      const isSelected = prev.branches.includes(targetId);
       let updatedBranches;
       let updatedPrices = { ...prev.branchPrices };
 
@@ -292,7 +296,6 @@ export const AdminDishes = () => {
       const cleanedFormData = {
         ...formData,
         category: formData.category?.trim(),
-        // নিশ্চিত করা হচ্ছে যে সার্ভারেও ব্রাঞ্চ আইডি স্ট্রিং অ্যারে ফরম্যাটে যাচ্ছে
         branches: formData.branches.map(id => String(id))
       };
 
@@ -353,7 +356,7 @@ export const AdminDishes = () => {
         </button>
       </div>
 
-      {/* Filters & Custom Sort Options */}
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center max-w-2xl flex-1">
           <div className="relative flex-1">
@@ -411,7 +414,7 @@ export const AdminDishes = () => {
         </button>
       </div>
 
-      {/* Drag & Drop Category Sort Panel Drawer */}
+      {/* Category Reordering Panel */}
       <AnimatePresence>
         {isSortOpen && (
           <motion.div
@@ -448,7 +451,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* Main List View */}
+      {/* Foods List */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
@@ -463,56 +466,51 @@ export const AdminDishes = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {filteredFoods.map((food) => {
-                return (
-                  <div
-                    key={food.id}
-                    className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-all gap-4"
-                  >
-                    {/* Item Info */}
-                    <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
-                      {food.image ? (
-                        <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
-                          <Layers className="w-5 h-5" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                          <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                            {food.category}
-                          </span>
-                          {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                          {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
-                        </div>
-                        <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
-                        <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
+              {filteredFoods.map((food) => (
+                <div
+                  key={food.id}
+                  className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-all gap-4"
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                    {food.image ? (
+                      <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
+                        <Layers className="w-5 h-5" />
                       </div>
-                    </div>
-
-                    {/* Price & Actions */}
-                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
-                      <div className="text-left sm:text-right min-w-[75px]">
-                        <p className="text-sm font-black text-primary-500">৳{food.price}</p>
-                        {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                        <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                          {food.category}
+                        </span>
+                        {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                        {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
                       </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div>
+                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
+                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
                     </div>
                   </div>
-                );
-              })}
+
+                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
+                    <div className="text-left sm:text-right min-w-[75px]">
+                      <p className="text-sm font-black text-primary-500">৳{food.price}</p>
+                      {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </>
       )}
 
-      {/* Modal - CRUD Form */}
+      {/* Form Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -532,7 +530,7 @@ export const AdminDishes = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
-                {/* Image Box */}
+                {/* Image upload */}
                 <div>
                   <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Image *</label>
                   <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
@@ -553,7 +551,7 @@ export const AdminDishes = () => {
                   )}
                 </div>
 
-                {/* Form inputs */}
+                {/* Info Fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Name *</label>
@@ -589,55 +587,31 @@ export const AdminDishes = () => {
                     <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Discount {formData.discountType === 'flat' ? '(৳)' : '(%)'}
-                    </label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount</label>
                     <div className="flex gap-2">
-                      <select
-                        value={formData.discountType}
-                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
-                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer"
-                        title="Discount type"
-                      >
+                      <select value={formData.discountType} onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer" title="Discount type">
                         <option value="percent">%</option>
                         <option value="flat">৳</option>
                       </select>
                       {formData.discountType === 'flat' ? (
-                        <input
-                          type="number" min="0" step="1"
-                          value={formData.discountAmount}
-                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })}
-                          placeholder="৳ off"
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                        />
+                        <input type="number" min="0" step="1" value={formData.discountAmount} onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })} placeholder="৳ off" className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                       ) : (
-                        <input
-                          type="number" min="0" max="100"
-                          value={formData.discountPct}
-                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })}
-                          placeholder="% off"
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                        />
+                        <input type="number" min="0" max="100" value={formData.discountPct} onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} placeholder="% off" className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Size / Weight Variants */}
+                {/* Variants Component */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight Variants</label>
                     <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
                   </div>
 
-                  {/* Variant type */}
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
-                    <select
-                      value={formData.variantLabel}
-                      onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })}
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer"
-                    >
+                    <select value={formData.variantLabel} onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer">
                       <option value="Size">Size (Small / Large / 2XL)</option>
                       <option value="Weight">Weight (250g / 500g / 1kg)</option>
                       <option value="Portion">Portion (Half / Full)</option>
@@ -646,11 +620,11 @@ export const AdminDishes = () => {
                   </div>
 
                   {formData.variations.length === 0 && (
-                    <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price above.</p>
+                    <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price.</p>
                   )}
                   {formData.variations.map((v, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <input type="text" placeholder={`${formData.variantLabel} name (e.g. ${formData.variantLabel === "Weight" ? "500g" : formData.variantLabel === "Portion" ? "Full" : formData.variantLabel === "Piece" ? "12 pcs" : "Large"})`} value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+                      <input type="text" placeholder={`${formData.variantLabel} name`} value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
                       <div className="relative w-28 shrink-0">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
                         <input type="number" step="0.01" min="0" placeholder="Price" value={v.price} onChange={(e) => handleVariationChange(index, "price", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
@@ -658,12 +632,9 @@ export const AdminDishes = () => {
                       <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
                     </div>
                   ))}
-                  {formData.variations.length > 0 && (
-                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">প্রতিটা variant-এর আলাদা দাম। Menu card-এ সর্বনিম্ন দামটা "from ৳..." হিসেবে দেখায়; customer dish page-এ একটা বেছে নেয়।</p>
-                  )}
                 </div>
 
-                {/* Branch-wise availability & price adjustment */}
+                {/* BULLETPROOF BRANCH AVAILABILITY RENDER - LOCAL + LIVE SERVER SUPPORT */}
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex justify-between items-center flex-wrap gap-2">
@@ -674,20 +645,23 @@ export const AdminDishes = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
-                        // ১. আইডি স্ট্রিং কম্পারিজনের মাধ্যমে সঠিকভাবে সিলেক্টেড ব্রাঞ্চ চেক করা হচ্ছে
-                        const isChecked = formData.branches.map(id => String(id)).includes(String(branch.id));
+                        // লোকালহোস্ট এবং লাইভ সার্ভার উভয়ের আইডি প্রপার্টি ট্র্যাক করার কম্বাইন্ড লজিক
+                        const currentBranchId = String(branch._id || branch.id || "");
                         
-                        // ২. সঠিক প্রাইস অ্যাডজাস্টমেন্ট ভ্যালু সনাক্তকরণ করা হচ্ছে
-                        const branchPriceVal = formData.branchPrices[String(branch.id)] !== undefined 
-                          ? formData.branchPrices[String(branch.id)] 
-                          : (formData.branchPrices[branch.id] !== undefined ? formData.branchPrices[branch.id] : "");
+                        // প্রপারলি সিলেক্টেড ব্রাঞ্চের টিক মার্ক ডিটেকশন
+                        const isChecked = formData.branches.map(id => String(id)).includes(currentBranchId);
+                        
+                        // প্রাইস বক্সের জন্য সঠিক ভ্যালু এসাইনমেন্ট
+                        const branchPriceVal = formData.branchPrices[currentBranchId] !== undefined 
+                          ? formData.branchPrices[currentBranchId] 
+                          : "";
 
                         return (
                           <div 
-                            key={branch.id} 
+                            key={currentBranchId} 
                             className={`flex flex-col p-3 rounded-xl border transition-all ${
                               isChecked 
-                                ? "bg-white dark:bg-neutral-900 border-amber-300 dark:border-amber-500 shadow-sm" 
+                                ? "bg-white dark:bg-neutral-900 border-amber-300 dark:border-amber-500 shadow-sm opacity-100" 
                                 : "bg-neutral-50 dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800 opacity-60"
                             }`}
                           >
@@ -696,7 +670,7 @@ export const AdminDishes = () => {
                                 <input 
                                   type="checkbox" 
                                   checked={isChecked} 
-                                  onChange={() => handleBranchToggle(branch.id)} 
+                                  onChange={() => handleBranchToggle(currentBranchId)} 
                                   className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer" 
                                 />
                                 <span className={isChecked ? "text-amber-900 dark:text-amber-400" : "text-neutral-500"}>
@@ -711,7 +685,7 @@ export const AdminDishes = () => {
                                     type="number" 
                                     placeholder="৳0" 
                                     value={branchPriceVal} 
-                                    onChange={(e) => handleBranchPriceChange(branch.id, e.target.value)} 
+                                    onChange={(e) => handleBranchPriceChange(currentBranchId, e.target.value)} 
                                     className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none focus:border-amber-400 dark:bg-neutral-800 dark:border-neutral-700" 
                                   />
                                 </div>
@@ -738,7 +712,6 @@ export const AdminDishes = () => {
                   </label>
                 </div>
 
-                {/* Footer Buttons */}
                 <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold">Cancel</button>
                   <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold">

@@ -17,11 +17,7 @@ import {
   getFeaturedBranches,
   getAllBranches,
 } from "../services/branchesService";
-import { 
-  getAllFoods, 
-  hasFoodDiscount, 
-  foodDiscountLabel 
-} from "../services/foodsService";
+import { getAllFoods, hasFoodDiscount, foodDiscountLabel } from "../services/foodsService";
 import { getAllSlides } from "../services/heroSlidesService";
 
 // Import Swiper styles
@@ -31,7 +27,6 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
 const BRANCH_PREVIEW_COUNT = 6;
-const FOOD_PREVIEW_COUNT = 6; // প্রথমে ৬টি খাবার দেখানোর লিমিট
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -40,14 +35,9 @@ export const Home = () => {
   const [previewBranches, setPreviewBranches] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
-  const [allFoods, setAllFoods] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
+  const [allFoods, setAllFoods] = useState([]);
 
-  // Bestseller এবং Featured Menu-র জন্য নিজস্ব টগল স্টেট (হোমপেজে দেখার জন্য)
-  const [showAllPopular, setShowAllPopular] = useState(false);
-  const [showAllFeatured, setShowAllFeatured] = useState(false);
-
-  // সর্ট ট্যাব স্টেট
   const [activeSort, setActiveSort] = useState("popular");
 
   useEffect(() => {
@@ -64,62 +54,56 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // ---------------------------------------------------------------------
-  // Helper: ডিসকাউন্টসহ আসল বিক্রয়মূল্য বের করার লজিক
-  // ---------------------------------------------------------------------
-  const getEffectivePrice = (food) => {
-    if (!food) return 0;
-    if (food.discountType === "flat" && food.discountAmount > 0) {
-      return Math.max(0, food.price - food.discountAmount);
-    } else if (food.discountPct > 0) {
-      return food.price * (1 - food.discountPct / 100);
-    }
-    return food.price;
-  };
-
-  // ---------------------------------------------------------------------
-  // 1. Best Sellers (Popular Foods) Logic (No-Redirect Toggle)
-  // ---------------------------------------------------------------------
-  const totalPopularFoods = useMemo(() => {
-    if (!allFoods || allFoods.length === 0) return [];
-
-    // 'popular' ফিল্টার
-    let popularList = allFoods.filter((food) => food.popular === true);
-
-    // সর্টিং ট্যাব অনুযায়ী সর্ট
-    if (activeSort === "price-low") {
-      popularList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (activeSort === "price-high") {
-      popularList.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (activeSort === "rating") {
-      popularList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-
-    return popularList;
-  }, [allFoods, activeSort]);
-
-  // পেজ লোড অপ্টিমাইজেশনের জন্য প্রথম ৬টি প্রিভিউ এবং বাকিগুলো আলাদা করা হলো
-  const previewPopularFoods = useMemo(() => totalPopularFoods.slice(0, FOOD_PREVIEW_COUNT), [totalPopularFoods]);
-  const remainingPopularFoods = useMemo(() => totalPopularFoods.slice(FOOD_PREVIEW_COUNT), [totalPopularFoods]);
-
-
-  // ---------------------------------------------------------------------
-  // 2. Featured Menu Logic (No-Redirect Toggle)
-  // ---------------------------------------------------------------------
-  const totalFeaturedMenu = useMemo(() => {
-    if (!allFoods || allFoods.length === 0) return [];
-    // অ্যাডমিন প্যানেলে সিলেক্ট করা ফিচারড খাবার ফিল্টার
-    return allFoods.filter((food) => food.isAdminFeatured === true);
+  // ১. ব্রাঞ্চে টিক দেওয়া ফিল্টারিং লজিক (Branch Availability Helper)
+  // কোনো খাবার তখনই হোমপেজে দেখাবে যখন তার অন্তত ১টি ব্রাঞ্চে টিক দেওয়া থাকবে (Branches অ্যারে খালি থাকবে না)
+  const availableFoods = useMemo(() => {
+    return allFoods.filter((food) => {
+      // যদি খাবারে branches ফিল্ড থাকে এবং সেটি একটি অ্যারে হয়, তবে দৈর্ঘ্য অবশ্যই ০-এর বেশি হতে হবে।
+      // এর মানে হলো অন্তত ১টি ব্রাঞ্চে এই আইটেমের টিক মার্ক অন করা আছে।
+      return food.branches && Array.isArray(food.branches) && food.branches.length > 0;
+    });
   }, [allFoods]);
 
-  // প্রথম ৬টি প্রিভিউ এবং বাকিগুলো আলাদা
-  const previewFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(0, FOOD_PREVIEW_COUNT), [totalFeaturedMenu]);
-  const remainingFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(FOOD_PREVIEW_COUNT), [totalFeaturedMenu]);
+  // ২. ফিল্টারড এভেইলেবল ডাটা থেকে "Our Bestsellers (Popular Foods)" তৈরি করা
+  const popularFoods = useMemo(() => {
+    // শুধুমাত্র সেই খাবারগুলো ফিল্টার করা হচ্ছে যেগুলো 'popular' এবং অন্তত ১টি ব্রাঞ্চ সিলেক্ট করা আছে
+    return availableFoods.filter((food) => food.popular);
+  }, [availableFoods]);
 
+  // ৩. ফিল্টারড এভেইলেবল ডাটা থেকে "Featured Menu" তৈরি করা
+  const featuredMenu = useMemo(() => {
+    // শুধুমাত্র সেই খাবারগুলো যেগুলো 'isAdminFeatured' এবং অন্তত ১টি ব্রাঞ্চ সিলেক্ট করা আছে (সর্বোচ্চ ৬টি)
+    return availableFoods
+      .filter((food) => food.isAdminFeatured)
+      .slice(0, 6);
+  }, [availableFoods]);
 
-  // ---------------------------------------------------------------------
-  // Other Memorizations & Contexts
-  // ---------------------------------------------------------------------
+  // ৪. সর্টিং করার সময় ডিসকাউন্ট-অ্যাওয়ার প্রাইস ক্যালকুলেশন লজিক
+  const getEffectivePrice = (food) => {
+    const basePrice = food.price || 0;
+    if (food.discountType === "flat") {
+      return Math.max(0, basePrice - (food.discountAmount || 0));
+    } else if (food.discountType === "percent") {
+      return Math.max(0, basePrice * (1 - (food.discountPct || 0) / 105));
+    }
+    return basePrice;
+  };
+
+  const sortedPopularFoods = useMemo(() => {
+    return [...popularFoods].sort((a, b) => {
+      if (activeSort === "price-low") {
+        return getEffectivePrice(a) - getEffectivePrice(b);
+      }
+      if (activeSort === "price-high") {
+        return getEffectivePrice(b) - getEffectivePrice(a);
+      }
+      if (activeSort === "rating") {
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      return 0;
+    });
+  }, [popularFoods, activeSort]);
+
   const remainingBranches = useMemo(
     () => allBranches.slice(BRANCH_PREVIEW_COUNT),
     [allBranches],
@@ -313,23 +297,19 @@ export const Home = () => {
       </section>
 
       {/* 3. POPULAR FOODS SECTION (Our Bestsellers) */}
-      <section className="max-w-7xl mx-auto px-2 pt-8 pb-0 sm:px-4 sm:pt-10 sm:pb-0 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
+      <section className="max-w-7xl mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
               Our Bestsellers
             </h2>
           </div>
 
-          {/* ফিল্টার ট্যাব */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1 md:justify-center">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1 sm:justify-center">
             {sortTabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => {
-                  setActiveSort(tab.id);
-                  setShowAllPopular(false); // ট্যাব বদলালে ওপেন ভিউ রিসেট হয়ে প্রথম ৬টি দেখাবে
-                }}
+                onClick={() => setActiveSort(tab.id)}
                 className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                   activeSort === tab.id
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
@@ -341,31 +321,25 @@ export const Home = () => {
             ))}
           </div>
 
-          {/* NO-REDIRECT VIEW ALL TOGGLE BUTTON */}
-          <div className="shrink-0 flex justify-end">
-            {totalPopularFoods.length > FOOD_PREVIEW_COUNT && (
-              <button
-                onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-              >
-                {showAllPopular ? "Show Fewer" : "View All"}
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllPopular ? "rotate-180" : ""}`}
-                />
-              </button>
-            )}
+          <div className="shrink-0 flex sm:justify-end">
+            <Link
+              to="/menu"
+              className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
+            >
+              View Full Menu
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
         </div>
 
-        {/* প্রথম ৬টি আইটেম গ্রিড */}
         <motion.div
           key={activeSort}
           variants={staggerContainer}
           initial={false}
           animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
-          {previewPopularFoods.map((food) => {
+          {sortedPopularFoods.map((food) => {
             const favorited = isFavorite(food.id);
             return (
               <FoodCard
@@ -379,128 +353,44 @@ export const Home = () => {
             );
           })}
         </motion.div>
-
-        {/* বাকি থাকা খাবারগুলো রিডাইরেক্ট না করে স্মুথলি এখানেই লোড হবে */}
-        <AnimatePresence>
-          {showAllPopular && remainingPopularFoods.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.4 }}
-              className="overflow-hidden"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial={false}
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mt-6"
-              >
-                {remainingPopularFoods.map((food) => {
-                  const favorited = isFavorite(food.id);
-                  return (
-                    <FoodCard
-                      key={food.id}
-                      food={food}
-                      favorited={favorited}
-                      onToggleFavorite={toggleFavorite}
-                      onAddToCart={addToCart}
-                      variants={fadeInUp}
-                    />
-                  );
-                })}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </section>
 
       {/* 4. FEATURED MENU SECTION */}
-      <section className="max-w-7xl mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+      <section className="max-w-7xl mx-auto px-2 pt-4 pb-8 sm:px-4 sm:pt-5 sm:pb-12 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
           </h2>
 
-          {/* NO-REDIRECT FEATURED VIEW ALL BUTTON */}
-          <div className="flex justify-end">
-            {totalFeaturedMenu.length > FOOD_PREVIEW_COUNT && (
-              <button
-                onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-              >
-                {showAllFeatured ? "Show Fewer" : "View All"}
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllFeatured ? "rotate-180" : ""}`}
-                />
-              </button>
-            )}
-          </div>
+          <Link
+            to="/menu"
+            className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
+          >
+            Explore All
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
         </div>
 
-        {previewFeaturedMenu.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-350 dark:border-neutral-800 rounded-2xl">
-            <p className="text-neutral-500 dark:text-neutral-450 text-sm">No featured items available right now.</p>
-          </div>
-        ) : (
-          <>
-            {/* প্রথম ৬টি ফিচারড খাবার */}
-            <motion.div
-              variants={staggerContainer}
-              initial={false}
-              animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6"
-            >
-              {previewFeaturedMenu.map((food) => {
-                const favorited = isFavorite(food.id);
-                return (
-                  <FoodCard
-                    key={food.id}
-                    food={food}
-                    favorited={favorited}
-                    onToggleFavorite={toggleFavorite}
-                    onAddToCart={addToCart}
-                    variants={fadeInUp}
-                  />
-                );
-              })}
-            </motion.div>
-
-            {/* বাকি ফিচারড খাবারগুলো হোমপেজেই লোড হবে */}
-            <AnimatePresence>
-              {showAllFeatured && remainingFeaturedMenu.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="overflow-hidden"
-                >
-                  <motion.div
-                    variants={staggerContainer}
-                    initial={false}
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mt-6"
-                  >
-                    {remainingFeaturedMenu.map((food) => {
-                      const favorited = isFavorite(food.id);
-                      return (
-                        <FoodCard
-                          key={food.id}
-                          food={food}
-                          favorited={favorited}
-                          onToggleFavorite={toggleFavorite}
-                          onAddToCart={addToCart}
-                          variants={fadeInUp}
-                        />
-                      );
-                    })}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        )}
+        <motion.div
+          variants={staggerContainer}
+          initial={false}
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          {featuredMenu.map((food) => {
+            const favorited = isFavorite(food.id);
+            return (
+              <FoodCard
+                key={food.id}
+                food={food}
+                favorited={favorited}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
+                variants={fadeInUp}
+              />
+            );
+          })}
+        </motion.div>
       </section>
     </div>
   );
@@ -515,7 +405,9 @@ const BranchCard = ({ branch, variants }) => (
     whileHover={{ y: -6, transition: { duration: 0.2 } }}
     className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
   >
-    <Link to={`/branches/${branch.id}`}>
+    <Link
+      to={`/branches/${branch.id}`}
+    >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <img
           src={branch.image}
@@ -540,7 +432,7 @@ const BranchCard = ({ branch, variants }) => (
         </div>
 
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
-          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-450">
+          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
           </div>
