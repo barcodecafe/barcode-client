@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence, Reorder } from "framer-motion"; 
 import {
   Search,
   Star,
@@ -27,9 +27,9 @@ export const AdminDishes = () => {
   const [foods, setFoods] = useState([]);
   const [branches, setBranches] = useState([]);
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("All"); 
   const [isLoading, setIsLoading] = useState(true);
-
+  
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
@@ -68,17 +68,15 @@ export const AdminDishes = () => {
           setFoods(foodsData || []);
           setBranches(branchesData || []);
           setIsLoading(false);
-
-          const cats = (foodsData || [])
-            .map((f) => f.category?.trim())
-            .filter(Boolean);
-
+          
+          const cats = (foodsData || []).map((f) => f.category?.trim()).filter(Boolean);
+          
           const uniqueMap = new Map();
-          cats.forEach((cat) => {
+          cats.forEach(cat => {
             const lowerCaseCat = cat.toLowerCase();
             let finalCatName = cat;
             if (lowerCaseCat === "deserts") finalCatName = "Desserts";
-
+            
             const finalKey = finalCatName.toLowerCase();
             if (!uniqueMap.has(finalKey)) {
               uniqueMap.set(finalKey, finalCatName);
@@ -86,43 +84,26 @@ export const AdminDishes = () => {
           });
 
           const uniqueCustom = Array.from(uniqueMap.values()).filter(
-            (c) =>
-              !standardCategories
-                .map((sc) => sc.toLowerCase())
-                .includes(c.toLowerCase()),
+            (c) => !standardCategories.map(sc => sc.toLowerCase()).includes(c.toLowerCase())
           );
-
-          const currentTotalCategories = [
-            ...standardCategories,
-            ...uniqueCustom,
-          ];
+          
+          const currentTotalCategories = [...standardCategories, ...uniqueCustom];
 
           const savedOrder = localStorage.getItem("custom_category_order");
           if (savedOrder) {
-            const parsedOrder = JSON.parse(savedOrder)
-              .map((c) => c?.trim())
-              .filter(Boolean);
-
+            const parsedOrder = JSON.parse(savedOrder).map(c => c?.trim()).filter(Boolean);
+            
             const cleanedSavedMap = new Map();
-            parsedOrder.forEach((cat) => {
+            parsedOrder.forEach(cat => {
               cleanedSavedMap.set(cat.toLowerCase(), cat);
             });
             const uniqueSavedOrder = Array.from(cleanedSavedMap.values());
 
             const combined = [
-              ...uniqueSavedOrder.filter((so) =>
-                currentTotalCategories
-                  .map((cc) => cc.toLowerCase())
-                  .includes(so.toLowerCase()),
-              ),
-              ...currentTotalCategories.filter(
-                (cc) =>
-                  !uniqueSavedOrder
-                    .map((so) => so.toLowerCase())
-                    .includes(cc.toLowerCase()),
-              ),
+              ...uniqueSavedOrder.filter(so => currentTotalCategories.map(cc => cc.toLowerCase()).includes(so.toLowerCase())),
+              ...currentTotalCategories.filter(cc => !uniqueSavedOrder.map(so => so.toLowerCase()).includes(cc.toLowerCase()))
             ];
-
+            
             setSortedCategories(combined);
           } else {
             setSortedCategories(currentTotalCategories);
@@ -142,7 +123,7 @@ export const AdminDishes = () => {
           setFoods(foodsData || []);
           setBranches(branchesData || []);
         })
-        .catch((err) => console.error("Background sync failed:", err));
+        .catch(err => console.error("Background sync failed:", err));
     }, 3000);
 
     return () => clearInterval(interval);
@@ -150,16 +131,13 @@ export const AdminDishes = () => {
 
   const handleReorder = (newOrder) => {
     const orderMap = new Map();
-    newOrder.forEach((cat) => {
+    newOrder.forEach(cat => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
     });
     const finalUniqueOrder = Array.from(orderMap.values());
 
     setSortedCategories(finalUniqueOrder);
-    localStorage.setItem(
-      "custom_category_order",
-      JSON.stringify(finalUniqueOrder),
-    );
+    localStorage.setItem("custom_category_order", JSON.stringify(finalUniqueOrder));
   };
 
   const openCreateModal = () => {
@@ -189,11 +167,7 @@ export const AdminDishes = () => {
 
   const openEditModal = (food) => {
     setEditingFood(food);
-    const isCustom =
-      food.category &&
-      !standardCategories
-        .map((sc) => sc.toLowerCase())
-        .includes(food.category.trim().toLowerCase());
+    const isCustom = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
     setIsCustomCategory(isCustom);
     setImagePreview(food.image || null);
 
@@ -207,7 +181,7 @@ export const AdminDishes = () => {
       popular: !!food.popular,
       isAdminFeatured: !!food.isAdminFeatured,
       featuredOrder: food.featuredOrder || 1,
-      discountType: food.discountType === "flat" ? "flat" : "percent",
+      discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
       branches: food.branches || [],
@@ -232,19 +206,15 @@ export const AdminDishes = () => {
 
   const handleBranchToggle = (branchId) => {
     setFormData((prev) => {
-      const searchId = branchId?.toString();
-      const isSelected = (prev.branches || []).map(String).includes(searchId);
+      const isSelected = prev.branches.includes(branchId);
       let updatedBranches;
       let updatedPrices = { ...prev.branchPrices };
 
       if (isSelected) {
-        // এখানে id এবং searchId দুটিকেই String-এ রূপান্তর করে ফিল্টার করতে হবে
-        updatedBranches = (prev.branches || []).filter(
-          (id) => id?.toString() !== searchId,
-        );
+        updatedBranches = prev.branches.filter((id) => id !== branchId);
         delete updatedPrices[branchId];
       } else {
-        updatedBranches = [...(prev.branches || []), branchId];
+        updatedBranches = [...prev.branches, branchId];
         updatedPrices[branchId] = 0;
       }
 
@@ -259,10 +229,7 @@ export const AdminDishes = () => {
   const handleBranchPriceChange = (branchId, value) => {
     setFormData((prev) => ({
       ...prev,
-      branchPrices: {
-        ...prev.branchPrices,
-        [branchId]: parseFloat(value) || 0,
-      },
+      branchPrices: { ...prev.branchPrices, [branchId]: parseFloat(value) || 0 },
     }));
   };
 
@@ -305,7 +272,7 @@ export const AdminDishes = () => {
     try {
       const cleanedFormData = {
         ...formData,
-        category: formData.category?.trim(),
+        category: formData.category?.trim()
       };
 
       if (editingFood) {
@@ -314,20 +281,12 @@ export const AdminDishes = () => {
       } else {
         const created = await createFood(cleanedFormData);
         setFoods([created, ...foods]);
-
+        
         const createdCatTrimmed = created.category?.trim();
-        if (
-          createdCatTrimmed &&
-          !sortedCategories
-            .map((c) => c.toLowerCase())
-            .includes(createdCatTrimmed.toLowerCase())
-        ) {
+        if (createdCatTrimmed && !sortedCategories.map(c => c.toLowerCase()).includes(createdCatTrimmed.toLowerCase())) {
           const newCats = [...sortedCategories, createdCatTrimmed];
           setSortedCategories(newCats);
-          localStorage.setItem(
-            "custom_category_order",
-            JSON.stringify(newCats),
-          );
+          localStorage.setItem("custom_category_order", JSON.stringify(newCats));
         }
       }
       setIsModalOpen(false);
@@ -338,23 +297,14 @@ export const AdminDishes = () => {
 
   const filteredFoods = useMemo(() => {
     const matched = foods.filter((f) => {
-      const matchesSearch = f.name
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
-      const matchesCategory =
-        selectedCategory === "All" ||
-        f.category?.trim().toLowerCase() ===
-          selectedCategory.trim().toLowerCase();
+      const matchesSearch = f.name?.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || f.category?.trim().toLowerCase() === selectedCategory.trim().toLowerCase();
       return matchesSearch && matchesCategory;
     });
 
     return matched.sort((a, b) => {
-      const indexA = sortedCategories.findIndex(
-        (c) => c.toLowerCase() === a.category?.trim().toLowerCase(),
-      );
-      const indexB = sortedCategories.findIndex(
-        (c) => c.toLowerCase() === b.category?.trim().toLowerCase(),
-      );
+      const indexA = sortedCategories.findIndex(c => c.toLowerCase() === a.category?.trim().toLowerCase());
+      const indexB = sortedCategories.findIndex(c => c.toLowerCase() === b.category?.trim().toLowerCase());
       if (indexA !== -1 && indexB !== -1) {
         return indexA - indexB;
       }
@@ -431,8 +381,8 @@ export const AdminDishes = () => {
           type="button"
           onClick={() => setIsSortOpen(!isSortOpen)}
           className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-            isSortOpen
-              ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400"
+            isSortOpen 
+              ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
               : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
           }`}
         >
@@ -452,16 +402,16 @@ export const AdminDishes = () => {
             <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
               💡 Click and drag any category to move it up or down.
             </p>
-
-            <Reorder.Group
-              axis="y"
-              values={sortedCategories}
+            
+            <Reorder.Group 
+              axis="y" 
+              values={sortedCategories} 
               onReorder={handleReorder}
               className="flex flex-col gap-1.5"
             >
               {sortedCategories.map((cat) => (
-                <Reorder.Item
-                  key={cat}
+                <Reorder.Item 
+                  key={cat} 
                   value={cat}
                   className="flex items-center justify-between px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-sm text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-grab active:cursor-grabbing select-none hover:border-neutral-200"
                 >
@@ -469,9 +419,7 @@ export const AdminDishes = () => {
                     <GripVertical className="w-4 h-4 text-neutral-400" />
                     {cat}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-normal">
-                    Tug to move
-                  </span>
+                  <span className="text-[10px] text-neutral-400 font-normal">Tug to move</span>
                 </Reorder.Item>
               ))}
             </Reorder.Group>
@@ -483,19 +431,14 @@ export const AdminDishes = () => {
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="h-20 bg-neutral-100 dark:bg-neutral-900 rounded-2xl"
-            />
+            <div key={n} className="h-20 bg-neutral-100 dark:bg-neutral-900 rounded-2xl" />
           ))}
         </div>
       ) : (
         <>
           {filteredFoods.length === 0 ? (
             <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-950/20 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl">
-              <p className="text-sm text-neutral-400 italic">
-                No food items match your filter criteria.
-              </p>
+              <p className="text-sm text-neutral-400 italic">No food items match your filter criteria.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -508,11 +451,7 @@ export const AdminDishes = () => {
                     {/* Item Info */}
                     <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
                       {food.image ? (
-                        <img
-                          src={food.image}
-                          alt={food.name}
-                          className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0"
-                        />
+                        <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0" />
                       ) : (
                         <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
                           <Layers className="w-5 h-5" />
@@ -523,49 +462,25 @@ export const AdminDishes = () => {
                           <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
                             {food.category}
                           </span>
-                          {food.popular && (
-                            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                          )}
-                          {food.isAdminFeatured && (
-                            <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />
-                          )}
+                          {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                          {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
                         </div>
-                        <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">
-                          {food.name}
-                        </h3>
-                        <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">
-                          {food.description || "No description provided."}
-                        </p>
+                        <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
+                        <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
                       </div>
                     </div>
 
                     {/* Price & Actions */}
                     <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
                       <div className="text-left sm:text-right min-w-[75px]">
-                        <p className="text-sm font-black text-primary-500">
-                          ৳{food.price}
-                        </p>
-                        {food.rating && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">
-                            ★ {food.rating}
-                          </span>
-                        )}
+                        <p className="text-sm font-black text-primary-500">৳{food.price}</p>
+                        {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openEditModal(food)}
-                          className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(food.id)}
-                          className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   </div>
@@ -590,72 +505,29 @@ export const AdminDishes = () => {
                 <h2 className="text-lg font-black text-neutral-900 dark:text-white">
                   {editingFood ? "Edit Menu Dish" : "Create New Dish"}
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
+                <button type="button" onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form
-                onSubmit={handleSubmit}
-                className="flex-1 overflow-y-auto pr-1 py-4 space-y-4"
-              >
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
                 {/* Image Box */}
                 <div>
-                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                    Dish Image *
-                  </label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
+                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Image *</label>
+                  <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
                   {imagePreview ? (
                     <div className="relative group w-full h-36 rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current.click()}
-                          className="px-3 py-1.5 bg-white text-neutral-900 rounded-xl font-bold text-xs shadow"
-                        >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImagePreview(null);
-                            setFormData({ ...formData, image: "" });
-                          }}
-                          className="px-3 py-1.5 bg-red-500 text-white rounded-xl font-bold text-xs shadow"
-                        >
-                          Remove
-                        </button>
+                        <button type="button" onClick={() => fileInputRef.current.click()} className="px-3 py-1.5 bg-white text-neutral-900 rounded-xl font-bold text-xs shadow">Change</button>
+                        <button type="button" onClick={() => { setImagePreview(null); setFormData({ ...formData, image: "" }); }} className="px-3 py-1.5 bg-red-500 text-white rounded-xl font-bold text-xs shadow">Remove</button>
                       </div>
                     </div>
                   ) : (
-                    <div
-                      onClick={() => fileInputRef.current.click()}
-                      className="w-full h-36 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-950/40 transition-colors"
-                    >
-                      <div className="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl text-neutral-500">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
-                        Click to upload dish image
-                      </p>
-                      <p className="text-[10px] text-neutral-400">
-                        Supports JPG, PNG, WEBP
-                      </p>
+                    <div onClick={() => fileInputRef.current.click()} className="w-full h-36 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-950/40 transition-colors">
+                      <div className="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl text-neutral-500"><Upload className="w-5 h-5" /></div>
+                      <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Click to upload dish image</p>
+                      <p className="text-[10px] text-neutral-400">Supports JPG, PNG, WEBP</p>
                     </div>
                   )}
                 </div>
@@ -663,174 +535,65 @@ export const AdminDishes = () => {
                 {/* Form inputs */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Dish Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                    />
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Name *</label>
+                    <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
 
-                  <div
-                    className={
-                      isCustomCategory ? "col-span-2 space-y-2" : "col-span-1"
-                    }
-                  >
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Category *
-                    </label>
-                    <select
-                      value={isCustomCategory ? "Custom" : formData.category}
-                      onChange={(e) => {
-                        if (e.target.value === "Custom") {
-                          setIsCustomCategory(true);
-                          setFormData({ ...formData, category: "" });
-                        } else {
-                          setIsCustomCategory(false);
-                          setFormData({
-                            ...formData,
-                            category: e.target.value,
-                          });
-                        }
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                    >
-                      {sortedCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
+                  <div className={isCustomCategory ? "col-span-2 space-y-2" : "col-span-1"}>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Category *</label>
+                    <select value={isCustomCategory ? "Custom" : formData.category} onChange={(e) => { if (e.target.value === "Custom") { setIsCustomCategory(true); setFormData({ ...formData, category: "" }); } else { setIsCustomCategory(false); setFormData({ ...formData, category: e.target.value }); } }} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none">
+                      {sortedCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
                       ))}
                       <option value="Custom">Other (Type custom...)</option>
                     </select>
                     {isCustomCategory && (
                       <div className="flex gap-2 items-center mt-2">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Enter custom category"
-                          value={formData.category}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              category: e.target.value,
-                            })
-                          }
-                          className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomCategory(false);
-                            setFormData({
-                              ...formData,
-                              category: sortedCategories[0] || "Mains",
-                            });
-                          }}
-                          className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1"
-                        >
-                          Reset
-                        </button>
+                        <input type="text" required placeholder="Enter custom category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                        <button type="button" onClick={() => { setIsCustomCategory(false); setFormData({ ...formData, category: sortedCategories[0] || "Mains" }); }} className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1">Reset</button>
                       </div>
                     )}
                   </div>
 
-                  <div
-                    className={isCustomCategory ? "col-span-2" : "col-span-1"}
-                  >
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Base Price (৳) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.price}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          price: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                    />
+                  <div className={isCustomCategory ? "col-span-2" : "col-span-1"}>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Base Price (৳) *</label>
+                    <input type="number" step="0.01" required value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                 </div>
 
                 {/* Rating & Discount */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Rating *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="1.0"
-                      max="5.0"
-                      required
-                      value={formData.rating}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          rating: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                    />
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
+                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Discount{" "}
-                      {formData.discountType === "flat" ? "(৳)" : "(%)"}
+                      Discount {formData.discountType === 'flat' ? '(৳)' : '(%)'}
                     </label>
                     <div className="flex gap-2">
                       <select
                         value={formData.discountType}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            discountType: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
                         className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer"
                         title="Discount type"
                       >
                         <option value="percent">%</option>
                         <option value="flat">৳</option>
                       </select>
-                      {formData.discountType === "flat" ? (
+                      {formData.discountType === 'flat' ? (
                         <input
-                          type="number"
-                          min="0"
-                          step="1"
+                          type="number" min="0" step="1"
                           value={formData.discountAmount}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              discountAmount: parseFloat(e.target.value) || 0,
-                            })
-                          }
+                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })}
                           placeholder="৳ off"
                           className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
                         />
                       ) : (
                         <input
-                          type="number"
-                          min="0"
-                          max="100"
+                          type="number" min="0" max="100"
                           value={formData.discountPct}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              discountPct: parseInt(e.target.value) || 0,
-                            })
-                          }
+                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })}
                           placeholder="% off"
                           className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
                         />
@@ -842,31 +605,16 @@ export const AdminDishes = () => {
                 {/* Size / Weight Variants */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                      Size / Weight Variants
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAddVariation}
-                      className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg"
-                    >
-                      + Add Variant
-                    </button>
+                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight Variants</label>
+                    <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
                   </div>
 
                   {/* Variant type — customers see it as "Choose {type}" on the dish page */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-neutral-400 shrink-0">
-                      Variant type
-                    </span>
+                    <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
                     <select
                       value={formData.variantLabel}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          variantLabel: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })}
                       className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer"
                     >
                       <option value="Size">Size (Small / Large / 2XL)</option>
@@ -877,138 +625,48 @@ export const AdminDishes = () => {
                   </div>
 
                   {formData.variations.length === 0 && (
-                    <p className="text-xs text-neutral-400 italic">
-                      No variants — the dish sells at its single base price
-                      above.
-                    </p>
+                    <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price above.</p>
                   )}
                   {formData.variations.map((v, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        placeholder={`${formData.variantLabel} name (e.g. ${formData.variantLabel === "Weight" ? "500g" : formData.variantLabel === "Portion" ? "Full" : formData.variantLabel === "Piece" ? "12 pcs" : "Large"})`}
-                        value={v.name}
-                        onChange={(e) =>
-                          handleVariationChange(index, "name", e.target.value)
-                        }
-                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
-                        required
-                      />
+                      <input type="text" placeholder={`${formData.variantLabel} name (e.g. ${formData.variantLabel === "Weight" ? "500g" : formData.variantLabel === "Portion" ? "Full" : formData.variantLabel === "Piece" ? "12 pcs" : "Large"})`} value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
                       <div className="relative w-28 shrink-0">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">
-                          ৳
-                        </span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="Price"
-                          value={v.price}
-                          onChange={(e) =>
-                            handleVariationChange(
-                              index,
-                              "price",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
-                          required
-                        />
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                        <input type="number" step="0.01" min="0" placeholder="Price" value={v.price} onChange={(e) => handleVariationChange(index, "price", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVariation(index)}
-                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
-                      >
-                        ✕
-                      </button>
+                      <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
                     </div>
                   ))}
                   {formData.variations.length > 0 && (
-                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">
-                      প্রতিটা variant-এর আলাদা দাম। Menu card-এ সর্বনিম্ন দামটা
-                      "from ৳..." হিসেবে দেখায়; customer dish page-এ একটা বেছে
-                      নেয়।
-                    </p>
+                    <p className="text-[10px] text-neutral-400 leading-relaxed pt-1">প্রতিটা variant-এর আলাদা দাম। Menu card-এ সর্বনিম্ন দামটা "from ৳..." হিসেবে দেখায়; customer dish page-এ একটা বেছে নেয়।</p>
                   )}
                 </div>
 
                 {/* Branch-wise availability & price adjustment */}
-
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex justify-between items-center flex-wrap gap-2">
                       <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /> Branch Availability &
-                        Price Adjustment
+                        <MapPin className="w-3.5 h-3.5" /> Branch Availability & Price Adjustment
                       </label>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
-                        // const isChecked = formData.branches.includes(branch.id);
-                        const isChecked = (formData.branches || [])
-                          .map(String)
-                          .includes(branch.id?.toString());
+                        const isChecked = formData.branches.includes(branch.id);
                         return (
-                          <div
-                            key={branch.id}
-                            onClick={() => handleBranchToggle(branch.id)}
-                            className={`flex flex-col p-3 rounded-xl border cursor-pointer select-none transition-all ${
-                              isChecked
-                                ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-400 shadow-sm"
-                                : "bg-white dark:bg-neutral-900 border-neutral-200 opacity-60 hover:opacity-100"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                {/* Custom Checkbox Container */}
-                                <div
-                                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                                    isChecked
-                                      ? "bg-amber-500 border-amber-500 text-white"
-                                      : "border-neutral-300 dark:border-neutral-700"
-                                  }`}
-                                >
-                                  {isChecked && (
-                                    <svg
-                                      className="w-2.5 h-2.5 fill-none stroke-current stroke-[3]"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
-                                  {branch.name}
-                                </span>
-                              </div>
-
+                          <div key={branch.id} className={`flex flex-col p-3 rounded-xl border transition-all ${isChecked ? "bg-white dark:bg-neutral-900 border-amber-200" : "opacity-60"}`}>
+                            <div className="flex items-center justify-between">
+                              <label className="flex items-start gap-2 text-xs font-bold cursor-pointer flex-1">
+                                <input type="checkbox" checked={isChecked} onChange={() => handleBranchToggle(branch.id)} className="rounded text-amber-500" />
+                                <span>{branch.name}</span>
+                              </label>
                               {isChecked && (
-                                <div
-                                  className="flex items-center gap-1 shrink-0"
-                                  onClick={(e) => e.stopPropagation()} // Price box এ ক্লিক করলে যেন পুরো কার্ড আনচেক না হয়ে যায়
-                                >
-                                  <span className="text-[10px] text-neutral-400 font-medium">
-                                    Price Adj:
-                                  </span>
-                                  <input
-                                    type="number"
-                                    placeholder="৳0"
-                                    value={
-                                      formData.branchPrices[branch.id] !==
-                                      undefined
-                                        ? formData.branchPrices[branch.id]
-                                        : ""
-                                    }
-                                    onChange={(e) =>
-                                      handleBranchPriceChange(
-                                        branch.id,
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="w-16 px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-[11px] font-bold text-neutral-800 dark:text-neutral-200 focus:outline-none"
-                                  />
+                                <div className="flex flex-col gap-1 items-end shrink-0">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] text-neutral-400">Price Adj:</span>
+                                    <input type="number" placeholder="৳0" value={formData.branchPrices[branch.id] !== undefined ? formData.branchPrices[branch.id] : ""} onChange={(e) => handleBranchPriceChange(branch.id, e.target.value)} className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none" />
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1020,60 +678,23 @@ export const AdminDishes = () => {
                 )}
 
                 <div>
-                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none resize-none"
-                  />
+                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Description</label>
+                  <textarea rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none resize-none" />
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-1">
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.popular}
-                      onChange={(e) =>
-                        setFormData({ ...formData, popular: e.target.checked })
-                      }
-                      className="rounded text-primary-500"
-                    />{" "}
-                    Mark as Popular
+                    <input type="checkbox" checked={formData.popular} onChange={(e) => setFormData({ ...formData, popular: e.target.checked })} className="rounded text-primary-500" /> Mark as Popular
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isAdminFeatured}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          isAdminFeatured: e.target.checked,
-                        })
-                      }
-                      className="rounded text-primary-500"
-                    />{" "}
-                    Featured Dish
+                    <input type="checkbox" checked={formData.isAdminFeatured} onChange={(e) => setFormData({ ...formData, isAdminFeatured: e.target.checked })} className="rounded text-primary-500" /> Featured Dish
                   </label>
                 </div>
 
                 {/* Footer Buttons */}
                 <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold"
-                  >
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold">Cancel</button>
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold">
                     {editingFood ? "Save Changes" : "Create Dish"}
                   </button>
                 </div>
