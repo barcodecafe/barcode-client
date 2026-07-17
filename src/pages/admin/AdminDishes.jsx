@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion"; 
 import {
   Search,
@@ -14,6 +14,7 @@ import {
   Layers,
   Settings,
   GripVertical,
+  RefreshCw,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -22,6 +23,7 @@ import {
   deleteFood,
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
   const [foods, setFoods] = useState([]);
@@ -29,6 +31,7 @@ export const AdminDishes = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All"); 
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -63,14 +66,15 @@ export const AdminDishes = () => {
 
   const standardCategories = ["Mains", "Starters", "Desserts", "Beverages"];
 
+  // Initial load. Category order is derived here and only here — the background
+  // sync below just refreshes the rows.
   useEffect(() => {
-    const fetchInitial = () => {
-      Promise.all([getAllFoods(), getAllBranches()])
+    Promise.all([getAllFoods(), getAllBranches()])
         .then(([foodsData, branchesData]) => {
           setFoods(foodsData || []);
           setBranches(branchesData || []);
           setIsLoading(false);
-          
+
           const cats = (foodsData || []).map((f) => f.category?.trim()).filter(Boolean);
           
           const uniqueMap = new Map();
@@ -115,26 +119,31 @@ export const AdminDishes = () => {
           console.error("Error loading admin foods data:", err);
           setIsLoading(false);
         });
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    fetchInitial();
+  const syncFromServer = useCallback(
+    () =>
+      Promise.all([getAllFoods(), getAllBranches()])
+        .then(([foodsData, branchesData]) => {
+          setFoods(foodsData || []);
+          setBranches(branchesData || []);
+        })
+        .catch((err) => console.error("Background sync failed:", err)),
+    [],
+  );
 
-    let interval;
-    if (!isModalOpen) {
-      interval = setInterval(() => {
-        Promise.all([getAllFoods(), getAllBranches()])
-          .then(([foodsData, branchesData]) => {
-            setFoods(foodsData || []);
-            setBranches(branchesData || []);
-          })
-          .catch(err => console.error("Background sync failed:", err));
-      }, 3000);
-    }
+  // Background sync, paused while the modal is open so a refetch can never
+  // clobber a form mid-edit. 60s (was 3s): /api/foods is ~1.28MB because dish
+  // images are inlined as base64, so the old interval pulled ~25MB/min and blew
+  // the server's global 500 req/15min limiter — the page 429'd itself, and every
+  // other admin tab with it, in ~12 minutes of sitting idle. See useVisiblePolling.
+  useVisiblePolling(syncFromServer, { intervalMs: 60000, enabled: !isModalOpen });
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isModalOpen]);
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    syncFromServer().finally(() => setIsRefreshing(false));
+  };
 
   const handleReorder = (newOrder) => {
     const orderMap = new Map();
@@ -351,12 +360,23 @@ export const AdminDishes = () => {
             Total {foods.length} dishes registered
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Add New Dish
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            title="Refresh the list now"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 disabled:opacity-50 active:scale-95 transition-all"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add New Dish
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

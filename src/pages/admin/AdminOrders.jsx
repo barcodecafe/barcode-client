@@ -24,7 +24,7 @@ import {
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
-import { getAllFoods } from "../../services/foodsService";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -56,7 +56,6 @@ export const AdminOrders = () => {
   const [riders, setRiders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [regions, setRegions] = useState([]);
-  const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
@@ -65,34 +64,40 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  const fetchOrdersAndFleet = () => {
-    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods(), getAllRegions()]).then(
-      ([ordersData, ridersData, branchesData, foodsData, regionsData]) => {
-        setOrders(ordersData);
-        setRiders(ridersData);
-        setBranches(branchesData);
-        setFoods(foodsData);
-        setRegions(Array.isArray(regionsData) ? regionsData : []);
-        setLoading(false);
-      },
-    );
-  };
+  // Live data only — these are the two that actually move while the board is
+  // open, and this is what the post-action refetches below want. Everything
+  // else on this page is reference data, loaded once on mount.
+  const fetchOrdersAndFleet = () =>
+    Promise.all([getAllOrders(), getAllRiders()])
+      .then(([ordersData, ridersData]) => {
+        setOrders(ordersData || []);
+        setRiders(ridersData || []);
+      })
+      .catch((err) => console.error("Orders/fleet sync failed:", err));
 
+  // Initial load. branches/regions are only ever read for name lookups in the
+  // details modal and don't change during a shift, so they are fetched once
+  // here rather than riding along on every poll.
   useEffect(() => {
-    fetchOrdersAndFleet();
-    const interval = setInterval(() => {
-      Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllFoods(), getAllRegions()]).then(
-        ([ordersData, ridersData, branchesData, foodsData, regionsData]) => {
-          setOrders(ordersData);
-          setRiders(ridersData);
-          setBranches(branchesData);
-          setFoods(foodsData);
-          setRegions(Array.isArray(regionsData) ? regionsData : []);
-        },
-      );
-    }, 3000);
-    return () => clearInterval(interval);
+    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllRegions()])
+      .then(([ordersData, ridersData, branchesData, regionsData]) => {
+        setOrders(ordersData || []);
+        setRiders(ridersData || []);
+        setBranches(branchesData || []);
+        setRegions(Array.isArray(regionsData) ? regionsData : []);
+      })
+      .catch((err) => console.error("Error loading admin orders data:", err))
+      .finally(() => setLoading(false));
   }, []);
+
+  // 20s and visibility-gated, down from an unconditional 3s x 5 endpoints. That
+  // old poll spent ~1500 requests per 15min against the server's global 500
+  // req/15min/IP limiter — on its own it 429'd the entire admin in ~5 minutes.
+  // ~1.28MB of each cycle was a getAllFoods() whose result this page never read.
+  // 20s (two endpoints) is 90 req/15min — under even the ~100 the config comment
+  // targets for production. Admin actions refetch immediately (see call sites
+  // below), so the poll only needs to surface changes made elsewhere.
+  useVisiblePolling(fetchOrdersAndFleet, { intervalMs: 20000 });
 
   // useEffect(() => {
   //   if (chatEndRef.current) {
