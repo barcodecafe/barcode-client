@@ -207,6 +207,11 @@ export const AdminOrders = () => {
                 <span className="block text-[10px] text-neutral-400 mt-0.5">
                   Vehicle: {r.vehicle}
                 </span>
+                <span className="block text-[10px] font-semibold mt-0.5 text-neutral-500 dark:text-neutral-300">
+                  {r.activeOrders > 0
+                    ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
+                    : "No active delivery"}
+                </span>
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-150 dark:border-neutral-850">
                 <span
@@ -351,11 +356,23 @@ export const AdminOrders = () => {
                           }`}
                         >
                           <option value="">-- Assign Rider --</option>
-                          {riders.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name} ({r.vehicle})
-                            </option>
-                          ))}
+                          {riders.map((r) => {
+                            const busy = r.status === "Busy";
+                            const load = r.activeOrders || 0;
+                            // A busy rider can't take a new order, but keep the one
+                            // already on this order selectable so it still shows.
+                            const disabled = busy && ord.riderId !== r.id;
+                            const tag = busy
+                              ? `Busy${load ? ` · ${load} active` : ""}`
+                              : load
+                                ? `${load} active`
+                                : "Free";
+                            return (
+                              <option key={r.id} value={r.id} disabled={disabled}>
+                                {r.name} ({r.vehicle}) — {tag}
+                              </option>
+                            );
+                          })}
                         </select>
                         {ord.riderId && ord.status !== "Rejected" && ord.status !== "Delivered" && (
                           <div className="shrink-0 flex items-center">
