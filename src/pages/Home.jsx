@@ -17,7 +17,14 @@ import {
   getFeaturedBranches,
   getAllBranches,
 } from "../services/branchesService";
-import { getAllFoods, hasFoodDiscount, foodDiscountLabel } from "../services/foodsService";
+import {
+  getAllFoods,
+  getPopularFoods,
+  getFeaturedFoods,
+  hasFoodDiscount,
+  foodDiscountLabel,
+  applyFoodDiscount,
+} from "../services/foodsService";
 import { getAllSlides } from "../services/heroSlidesService";
 
 // Import Swiper styles
@@ -27,6 +34,8 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
 const BRANCH_PREVIEW_COUNT = 6;
+const POPULAR_COUNT = 8;
+const FEATURED_COUNT = 6;
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -36,7 +45,9 @@ export const Home = () => {
   const [allBranches, setAllBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
   const [heroSlides, setHeroSlides] = useState([]);
-  const [allFoods, setAllFoods] = useState([]);
+  const [allFoods, setAllFoods] = useState([]); // hero promo slides look dishes up by id
+  const [popularFoods, setPopularFoods] = useState([]);
+  const [featuredMenu, setFeaturedMenu] = useState([]);
 
   const [activeSort, setActiveSort] = useState("popular");
 
@@ -45,6 +56,10 @@ export const Home = () => {
     getAllBranches().then(setAllBranches);
     getAllSlides().then(setHeroSlides);
     getAllFoods().then(setAllFoods);
+    // Both sections are driven by the admin's ticks, resolved server-side:
+    // popular = "Mark as Popular" + best sellers; featured = "Featured Dish".
+    getPopularFoods(POPULAR_COUNT).then(setPopularFoods);
+    getFeaturedFoods(FEATURED_COUNT).then(setFeaturedMenu);
   }, []);
 
   const sortTabs = [
@@ -54,40 +69,9 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // ১. ব্রাঞ্চে টিক দেওয়া ফিল্টারিং লজিক (Branch Availability Helper)
-  // কোনো খাবার তখনই হোমপেজে দেখাবে যখন তার অন্তত ১টি ব্রাঞ্চে টিক দেওয়া থাকবে (Branches অ্যারে খালি থাকবে না)
-  const availableFoods = useMemo(() => {
-    return allFoods.filter((food) => {
-      // যদি খাবারে branches ফিল্ড থাকে এবং সেটি একটি অ্যারে হয়, তবে দৈর্ঘ্য অবশ্যই ০-এর বেশি হতে হবে।
-      // এর মানে হলো অন্তত ১টি ব্রাঞ্চে এই আইটেমের টিক মার্ক অন করা আছে।
-      return food.branches && Array.isArray(food.branches) && food.branches.length > 0;
-    });
-  }, [allFoods]);
-
-  // ২. ফিল্টারড এভেইলেবল ডাটা থেকে "Our Bestsellers (Popular Foods)" তৈরি করা
-  const popularFoods = useMemo(() => {
-    // শুধুমাত্র সেই খাবারগুলো ফিল্টার করা হচ্ছে যেগুলো 'popular' এবং অন্তত ১টি ব্রাঞ্চ সিলেক্ট করা আছে
-    return availableFoods.filter((food) => food.popular);
-  }, [availableFoods]);
-
-  // ৩. ফিল্টারড এভেইলেবল ডাটা থেকে "Featured Menu" তৈরি করা
-  const featuredMenu = useMemo(() => {
-    // শুধুমাত্র সেই খাবারগুলো যেগুলো 'isAdminFeatured' এবং অন্তত ১টি ব্রাঞ্চ সিলেক্ট করা আছে (সর্বোচ্চ ৬টি)
-    return availableFoods
-      .filter((food) => food.isAdminFeatured)
-      .slice(0, 6);
-  }, [availableFoods]);
-
-  // ৪. সর্টিং করার সময় ডিসকাউন্ট-অ্যাওয়ার প্রাইস ক্যালকুলেশন লজিক
-  const getEffectivePrice = (food) => {
-    const basePrice = food.price || 0;
-    if (food.discountType === "flat") {
-      return Math.max(0, basePrice - (food.discountAmount || 0));
-    } else if (food.discountType === "percent") {
-      return Math.max(0, basePrice * (1 - (food.discountPct || 0) / 105));
-    }
-    return basePrice;
-  };
+  // Sorting is discount-aware — customers compare what they actually pay.
+  // applyFoodDiscount is the shared helper, so percent/flat math lives in one place.
+  const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
 
   const sortedPopularFoods = useMemo(() => {
     return [...popularFoods].sort((a, b) => {
@@ -323,10 +307,10 @@ export const Home = () => {
 
           <div className="shrink-0 flex sm:justify-end">
             <Link
-              to="/menu"
+              to="/menu?filter=popular"
               className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
             >
-              View Full Menu
+              Explore All
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>

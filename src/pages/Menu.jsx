@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { getFoodsByBranch } from "../services/foodsService";
+import { getFoodsByBranch, getPopularFoods } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
@@ -20,9 +20,16 @@ export const Menu = () => {
   // CHANGE: activeCategory now reads from URL search parameters instead of local state
   const activeCategory = searchParams.get("category") || "All";
 
+  // ?filter=popular — the home page's Popular section links here so "Explore All"
+  // shows every popular dish rather than the whole menu.
+  const activeFilter = searchParams.get("filter");
+  const popularOnly = activeFilter === "popular";
+
   // CHANGE: Added helper function to update URL search parameters on category change
   const handleCategoryChange = (catName) => {
-    setSearchParams({ category: catName });
+    const next = { category: catName };
+    if (activeFilter) next.filter = activeFilter; // keep the popular view while switching categories
+    setSearchParams(next);
   };
 
   const [sortBy, setSortBy] = useState("featured");
@@ -36,8 +43,11 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    getFoodsByBranch(null, 100).then(setFoods);
-  }, []);
+    // Popular is defined server-side (admin's picks + best sellers), so the
+    // popular view asks for the same list the home page shows — just unlimited.
+    if (popularOnly) getPopularFoods(100).then(setFoods);
+    else getFoodsByBranch(null, 100).then(setFoods);
+  }, [popularOnly]);
 
   // 1. Load Admin Sort Order from LocalStorage & Map categories exactly like admin
   const sortedCategoriesList = useMemo(() => {
@@ -138,9 +148,17 @@ export const Menu = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-neutral-100 dark:border-neutral-800/40 w-full overflow-hidden">
         <div className="text-center md:text-left min-w-0">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight truncate">
-            Our Menu Categories
+            {popularOnly ? "Popular Items" : "Our Menu Categories"}
           </h2>
           <div className="h-1 w-16 bg-primary-500 mx-auto md:mx-0 mt-2 rounded-full" />
+          {popularOnly && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2.5">
+              Our team's picks and what customers order most.{" "}
+              <Link to="/menu" className="text-primary-500 font-semibold hover:underline">
+                View the full menu
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

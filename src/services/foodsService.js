@@ -24,9 +24,14 @@ export async function getFoodById(id) {
   return apiClient.get(`/foods/${id}`);
 }
 
-/** GET /api/foods/popular?limit=6 */
+/** GET /api/foods/popular?limit=6 — admin's "Mark as Popular" picks + best sellers */
 export async function getPopularFoods(limit = 6) {
   return apiClient.get(`/foods/popular?limit=${limit}`);
+}
+
+/** GET /api/foods/featured?limit=6 — only the dishes admin picked for Featured Menu */
+export async function getFeaturedFoods(limit = 6) {
+  return apiClient.get(`/foods/featured?limit=${limit}`);
 }
 
 /** GET /api/branches/:branchId/menu (falls back to all foods for branchId 0/none) */
