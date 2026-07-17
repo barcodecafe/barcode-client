@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, Shield, Check, X } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Phone, Eye, EyeOff, Loader2, AlertCircle, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
@@ -13,15 +13,20 @@ const PASSWORD_RULES = [
   { label: 'One number', test: (p) => /[0-9]/.test(p) },
 ];
 
+// Kept in sync with the backend (auth.validation.ts).
+const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
+const STRICT_EMAIL = /^[^\s@.][^\s@]*@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
 export const SignUp = ({ defaultRole = 'user' }) => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState(defaultRole);
+  const [role] = useState(defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +36,12 @@ export const SignUp = ({ defaultRole = 'user' }) => {
   const passwordScore = passwordChecks.filter((c) => c.passed).length;
   const isPasswordValid = passwordScore === PASSWORD_RULES.length;
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+
+  // Live email + Bangladeshi phone validation (mirrors the backend rules).
+  const emailValid = STRICT_EMAIL.test(email.trim());
+  const phoneValid = BD_PHONE.test(phone.trim());
   const canSubmit =
-    name.trim() && email.trim() && isPasswordValid && passwordsMatch && !isSubmitting;
+    name.trim() && emailValid && phoneValid && isPasswordValid && passwordsMatch && !isSubmitting;
 
   const strengthLabel = passwordScore <= 2 ? 'Weak' : passwordScore === 3 ? 'Medium' : 'Strong';
   const strengthColor =
@@ -42,6 +51,14 @@ export const SignUp = ({ defaultRole = 'user' }) => {
     e.preventDefault();
     setError('');
 
+    if (!emailValid) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!phoneValid) {
+      setError('Please enter a valid Bangladeshi mobile number (e.g. 01712345678).');
+      return;
+    }
     if (!isPasswordValid) {
       setError('Please meet all the password requirements below.');
       return;
@@ -53,7 +70,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
 
     setIsSubmitting(true);
     try {
-      const newUser = await register({ name, email, password, role });
+      const newUser = await register({ name, email: email.trim(), phone: phone.trim(), password, role });
       if (newUser.role === 'admin') {
         navigate('/admin', { replace: true });
       } else if (newUser.role === 'rider') {
@@ -131,6 +148,36 @@ export const SignUp = ({ defaultRole = 'user' }) => {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                 />
               </div>
+              {email.length > 0 && !emailValid && (
+                <p className="mt-1.5 text-[11px] flex items-center gap-1.5 text-red-500">
+                  <X className="w-3 h-3" /> Please enter a valid email address
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Mobile Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="phone"
+                  type="tel"
+                  required
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="01712345678"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
+              {phone.length > 0 && (
+                <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 ${phoneValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                  {phoneValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                  {phoneValid ? 'Looks good' : 'Enter a valid Bangladeshi mobile number'}
+                </p>
+              )}
             </div>
 
             <div>
