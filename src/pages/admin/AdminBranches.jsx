@@ -19,6 +19,7 @@ import {
 } from "../../services/branchesService";
 import { getRevenueByBranch } from "../../services/analyticsService";
 import { getAllRegions } from "../../services/regionsService";
+import { getAllBrandsAdmin } from "../../services/brandsService";
 import LeafletMap from "../../components/LeafletMap";
 
 // Pull lat/lng out of a pasted Google Maps link (supports @lat,lng / q=lat,lng
@@ -46,6 +47,7 @@ const parseLatLngFromUrl = (url) => {
 export const AdminBranches = () => {
   const [branches, setBranches] = useState([]);
   const [regions, setRegions] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [revenueMap, setRevenueMap] = useState({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +67,7 @@ export const AdminBranches = () => {
     manager: "",
     capacity: 150,
     features: "",
+    brandId: null,
     regionId: null,
     lat: null,
     lng: null,
@@ -76,6 +79,7 @@ export const AdminBranches = () => {
 
   const fetchBranchesData = () => {
     setIsLoading(true);
+    getAllBrandsAdmin().then((b) => setBrands(Array.isArray(b) ? b : [])).catch(() => {});
     Promise.all([getAllBranches(), getRevenueByBranch(), getAllRegions()]).then(
       ([branchData, revenueData, regionData]) => {
         setBranches(branchData);
@@ -143,6 +147,7 @@ export const AdminBranches = () => {
       features: Array.isArray(branch.features)
         ? branch.features.join(", ")
         : branch.features || "",
+      brandId: typeof branch.brandId === "number" ? branch.brandId : null,
       regionId: typeof branch.regionId === "number" ? branch.regionId : null,
       lat: typeof branch.lat === "number" ? branch.lat : null,
       lng: typeof branch.lng === "number" ? branch.lng : null,
@@ -253,6 +258,7 @@ export const AdminBranches = () => {
           : [],
         lat: typeof formData.lat === "number" && Number.isFinite(formData.lat) ? formData.lat : null,
         lng: typeof formData.lng === "number" && Number.isFinite(formData.lng) ? formData.lng : null,
+        brandId: typeof formData.brandId === "number" ? formData.brandId : null,
         regionId: typeof formData.regionId === "number" ? formData.regionId : null,
       };
 
@@ -673,6 +679,29 @@ export const AdminBranches = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                        Brand
+                      </label>
+                      <select
+                        value={formData.brandId ?? ""}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            brandId: e.target.value ? Number(e.target.value) : null,
+                          }))
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
+                      >
+                        <option value="">— No brand —</option>
+                        {brands.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
                         Region

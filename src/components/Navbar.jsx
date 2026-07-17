@@ -53,6 +53,7 @@ export const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'Our Brands', path: '/brands' },
     { name: 'Our Branches', path: '/branches' },
     { name: 'Menu', path: '/menu' },
     { name: 'About', path: '/about' },

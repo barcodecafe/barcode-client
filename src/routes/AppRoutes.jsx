@@ -4,6 +4,8 @@ import { AdminLayout } from '../layouts/AdminLayout';
 import { Home } from '../pages/Home';
 import { Branches } from '../pages/Branches';
 import BranchDetail from '../pages/BranchDetail';
+import { Brands } from '../pages/Brands';
+import { BrandDetail } from '../pages/BrandDetail';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
@@ -16,6 +18,7 @@ import { RiderDashboard } from '../pages/RiderDashboard';
 import { AdminDashboard } from '../pages/admin/AdminDashboard';
 import { AdminDishes } from '../pages/admin/AdminDishes';
 import { AdminBranches } from '../pages/admin/AdminBranches';
+import { AdminBrands } from '../pages/admin/AdminBrands';
 import { AdminRegions } from '../pages/admin/AdminRegions';
 import { AdminOrders } from '../pages/admin/AdminOrders';
 import { AdminCustomers } from '../pages/admin/AdminCustomers';
@@ -57,6 +60,8 @@ export const AppRoutes = () => {
                 <Route index element={<Home />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="branches/:id" element={<BranchDetail />} />
+                <Route path="brands" element={<Brands />} />
+                <Route path="brands/:slug" element={<BrandDetail />} />
                 <Route path="menu" element={<Menu />} />
                 <Route path="menu/:id" element={<DishDetail />} />
                 <Route path="about" element={<About />} />
@@ -97,6 +102,7 @@ export const AppRoutes = () => {
               >
                 <Route index element={<AdminDashboard />} />
                 <Route path="dishes" element={<AdminDishes />} />
+                <Route path="brands" element={<AdminBrands />} />
                 <Route path="regions" element={<AdminRegions />} />
                 <Route path="branches" element={<AdminBranches />} />
                 <Route path="orders" element={<AdminOrders />} />
