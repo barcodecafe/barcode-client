@@ -21,6 +21,16 @@ export async function getBrandBySlug(slug) {
   return apiClient.get(`/brands/slug/${encodeURIComponent(slug)}`);
 }
 
+/** GET /api/brands/slug/:slug/branches — { brand, branches } for the microsite */
+export async function getBrandBranches(slug) {
+  return apiClient.get(`/brands/slug/${encodeURIComponent(slug)}/branches`);
+}
+
+/** GET /api/brands/slug/:slug/menu — { brand, foods } served at the brand's branches */
+export async function getBrandMenu(slug) {
+  return apiClient.get(`/brands/slug/${encodeURIComponent(slug)}/menu`);
+}
+
 /** POST /api/brands (admin) */
 export async function createBrand(brand) {
   return apiClient.post('/brands', brand);

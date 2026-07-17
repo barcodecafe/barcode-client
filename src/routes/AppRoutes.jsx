@@ -5,7 +5,9 @@ import { Home } from '../pages/Home';
 import { Branches } from '../pages/Branches';
 import BranchDetail from '../pages/BranchDetail';
 import { Brands } from '../pages/Brands';
-import { BrandDetail } from '../pages/BrandDetail';
+import { BrandLayout } from '../layouts/BrandLayout';
+import { BrandHome } from '../pages/BrandHome';
+import { BrandMenu } from '../pages/BrandMenu';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
@@ -61,7 +63,6 @@ export const AppRoutes = () => {
                 <Route path="branches" element={<Branches />} />
                 <Route path="branches/:id" element={<BranchDetail />} />
                 <Route path="brands" element={<Brands />} />
-                <Route path="brands/:slug" element={<BrandDetail />} />
                 <Route path="menu" element={<Menu />} />
                 <Route path="menu/:id" element={<DishDetail />} />
                 <Route path="about" element={<About />} />
@@ -73,6 +74,13 @@ export const AppRoutes = () => {
                 <Route path="rider-application" element={<RiderApplication />} />
                 <Route path="order-tracking/:id" element={<OrderTracking />} />
                 <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
+              </Route>
+
+              {/* Brand microsites (public) — each brand's own themed nav/footer,
+                  separate from the group's RootLayout shell. */}
+              <Route path="/brands/:slug" element={<BrandLayout />}>
+                <Route index element={<BrandHome />} />
+                <Route path="menu" element={<BrandMenu />} />
               </Route>
 
               {/* Role-segregated login portals (public, outside RootLayout) */}
