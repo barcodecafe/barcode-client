@@ -376,26 +376,45 @@ export const OrderTracking = () => {
                   </svg>
                 </div>
 
-                {/* Rider info card */}
-                <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                {/* Rider info card — shows the real assigned rider once they've
+                    accepted; the Call button dials their actual number. */}
+                {order.riderName && order.riderAcceptStatus === 'accepted' ? (
+                  <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-2xl">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                        <Bike className="w-5 h-5 stroke-[2]" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs text-neutral-400">Delivery Courier</span>
+                        <span className="block text-sm font-semibold text-neutral-800 dark:text-white truncate">{order.riderName}</span>
+                        {order.riderPhone && (
+                          <span className="block text-[11px] text-neutral-400">{order.riderPhone}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {order.riderPhone ? (
+                      <a
+                        href={`tel:${order.riderPhone}`}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white font-bold text-xs transition-all active:scale-95 shadow-sm shrink-0"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        Call Rider
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-neutral-400 shrink-0">No contact number</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-2xl">
+                    <div className="w-11 h-11 rounded-full bg-neutral-500/10 text-neutral-400 flex items-center justify-center shrink-0">
                       <Bike className="w-5 h-5 stroke-[2]" />
                     </div>
-                    <div>
-                      <span className="block text-xs text-neutral-400">Delivery Courier</span>
-                      <span className="block text-sm font-semibold text-neutral-800 dark:text-white">Rider Kabir</span>
-                    </div>
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {order.riderName ? `${order.riderName} is confirming your delivery…` : 'Assigning a delivery rider…'}
+                    </span>
                   </div>
-
-                  <a
-                    href="tel:+8801500000000"
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white font-bold text-xs transition-all active:scale-95 shadow-sm"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    Call Rider
-                  </a>
-                </div>
+                )}
               </motion.div>
             ) : (
               <motion.div

@@ -38,21 +38,64 @@ const StatTile = ({ icon: Icon, label, value, tint }) => (
   </div>
 );
 
+// Canonical order statuses (must match the server's ORDER_STATUSES).
 const getStatusColor = (status) => {
   switch (status) {
-    case "pick order":
+    case "Placed":
       return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
-    case "ready to cook":
+    case "Accepted":
+      return "bg-sky-500/10 text-sky-500 border border-sky-500/20";
+    case "Preparing":
       return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
-    case "ready to pick":
-      return "bg-purple-500/10 text-purple-500 border border-purple-500/20";
-    case "on the way":
+    case "Out for Delivery":
       return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
-    case "order handover":
+    case "Delivered":
       return "bg-green-500/10 text-green-500 border border-green-500/20";
+    case "Rejected":
+      return "bg-red-500/10 text-red-500 border border-red-500/20";
     default:
       return "bg-neutral-500/10 text-neutral-500 border border-neutral-500/20";
   }
+};
+
+// The rider's next one-click action for an accepted, in-flight order.
+// Returns null when there's nothing for the rider to do (delivered/rejected).
+const nextDeliveryAction = (status) => {
+  if (status === "Out for Delivery") return { label: "Mark Delivered", next: "Delivered" };
+  if (status === "Delivered" || status === "Rejected") return null;
+  // Placed / Accepted / Preparing → rider heads out with the food
+  return { label: "Picked Up — On the Way", next: "Out for Delivery" };
+};
+
+// Compact 3-step progress for a rider's delivery: Accepted → On the Way → Delivered.
+const DELIVERY_STAGES = ["Accepted", "Out for Delivery", "Delivered"];
+const STAGE_LABELS = { Accepted: "Accepted", "Out for Delivery": "On the Way", Delivered: "Delivered" };
+const StageStepper = ({ status }) => {
+  // Map any pre-dispatch status onto the "Accepted" step.
+  const norm = status === "Delivered" || status === "Out for Delivery" ? status : "Accepted";
+  const currentIdx = DELIVERY_STAGES.indexOf(norm);
+  return (
+    <div className="flex items-center gap-1.5">
+      {DELIVERY_STAGES.map((stage, i) => {
+        const done = i <= currentIdx;
+        return (
+          <div key={stage} className="flex items-center gap-1.5">
+            <span
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wide ${
+                done ? "bg-primary-500/15 text-primary-500" : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400"
+              }`}
+            >
+              {done && <CheckCircle className="w-2.5 h-2.5" />}
+              {STAGE_LABELS[stage]}
+            </span>
+            {i < DELIVERY_STAGES.length - 1 && (
+              <span className={`h-px w-3 ${i < currentIdx ? "bg-primary-500/40" : "bg-neutral-200 dark:bg-neutral-700"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 export const RiderDashboard = () => {
@@ -231,11 +274,14 @@ export const RiderDashboard = () => {
     );
   }
 
-  // Overview stats derived from assigned orders
-  const deliveredOrders = orders.filter((o) => o.status === "order handover");
-  const activeOrders = orders.filter((o) => o.status !== "order handover");
+  // Overview stats derived from assigned orders (canonical statuses)
+  const deliveredOrders = orders.filter((o) => o.status === "Delivered");
+  const activeOrders = orders.filter(
+    (o) => o.status !== "Delivered" && o.status !== "Rejected",
+  );
   const pendingAccept = orders.filter((o) => o.riderAcceptStatus === "pending");
-  const earnings = deliveredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  // Rider's delivery earnings = the delivery charge collected on completed orders.
+  const earnings = deliveredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
@@ -292,7 +338,7 @@ export const RiderDashboard = () => {
           <StatTile icon={Package} label="Active Orders" value={activeOrders.length} tint="bg-indigo-500/10 text-indigo-500" />
           <StatTile icon={Clock} label="Pending Accept" value={pendingAccept.length} tint="bg-amber-500/10 text-amber-500" />
           <StatTile icon={CheckCircle} label="Delivered" value={deliveredOrders.length} tint="bg-green-500/10 text-green-500" />
-          <StatTile icon={Wallet} label="Delivered Value" value={`৳${earnings.toFixed(0)}`} tint="bg-primary-500/10 text-primary-500" />
+          <StatTile icon={Wallet} label="Delivery Earnings" value={`৳${earnings.toFixed(0)}`} tint="bg-primary-500/10 text-primary-500" />
         </div>
 
         {/* Main Work Area */}
@@ -354,6 +400,13 @@ export const RiderDashboard = () => {
                         </div>
                       </div>
 
+                      {/* Delivery workflow progress (accepted, in-flight orders) */}
+                      {ord.riderAcceptStatus === "accepted" && ord.status !== "Rejected" && (
+                        <div className="overflow-x-auto scrollbar-none">
+                          <StageStepper status={ord.status} />
+                        </div>
+                      )}
+
                       {/* Location & customer info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-850 py-3">
                         <div className="space-y-1.5">
@@ -363,10 +416,18 @@ export const RiderDashboard = () => {
                           <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
                             <span>{ord.user.name}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                            <Phone className="w-3 h-3 text-primary-500" />
-                            <span>{ord.user.phone}</span>
-                          </div>
+                          {ord.user.phone ? (
+                            <a
+                              href={`tel:${ord.user.phone}`}
+                              className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                              title="Call the customer"
+                            >
+                              <Phone className="w-3 h-3" />
+                              {ord.user.phone}
+                            </a>
+                          ) : (
+                            <span className="block text-[10px] text-neutral-400 italic">No phone on file</span>
+                          )}
                         </div>
 
                         <div className="space-y-1.5">
@@ -376,9 +437,19 @@ export const RiderDashboard = () => {
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
                             <span className="leading-tight">
-                              {ord.user.address} ({ord.user.pickArea})
+                              {ord.user.address || "—"} {ord.user.pickArea ? `(${ord.user.pickArea})` : ""}
                             </span>
                           </div>
+                          {(ord.user.address || ord.user.pickArea) && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ord.user.address || ""} ${ord.user.pickArea || ""}`.trim())}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                            >
+                              <MapPin className="w-3 h-3" /> Open in Maps
+                            </a>
+                          )}
                         </div>
                       </div>
 
@@ -407,25 +478,22 @@ export const RiderDashboard = () => {
                                 Reject Job
                               </button>
                             </div>
+                          ) : ord.status === "Delivered" ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-xs">
+                              <CheckCircle className="w-4 h-4" /> Delivered
+                            </span>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={ord.status}
-                                onChange={(e) =>
-                                  handleStatusChange(ord.id, e.target.value)
-                                }
-                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
-                              >
-                                {/* <option value="ready to cook">Preparing</option>
-                                <option value="ready to pick">
-                                  Ready Pick
-                                </option> */}
-                                <option value="on the way">On Way</option>
-                                <option value="order handover">
-                                  Delivered
-                                </option>
-                              </select>
-                            </div>
+                            (() => {
+                              const action = nextDeliveryAction(ord.status);
+                              return action ? (
+                                <button
+                                  onClick={() => handleStatusChange(ord.id, action.next)}
+                                  className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all"
+                                >
+                                  {action.label}
+                                </button>
+                              ) : null;
+                            })()
                           )}
 
                           <button
