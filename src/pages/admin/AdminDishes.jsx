@@ -53,7 +53,9 @@ export const AdminDishes = () => {
     discountType: "percent",
     discountPct: 0,
     discountAmount: 0,
-    branches: [],
+    // Must stay named `branchIds` — the API's field name, on both read and write.
+    // Any other key silently loses every branch tick on save.
+    branchIds: [],
     branchPrices: {},
     variantLabel: "Size",
     variations: [],
@@ -162,7 +164,7 @@ export const AdminDishes = () => {
       discountType: "percent",
       discountPct: 0,
       discountAmount: 0,
-      branches: [],
+      branchIds: [],
       branchPrices: {},
       variantLabel: "Size",
       variations: [],
@@ -170,20 +172,15 @@ export const AdminDishes = () => {
     setIsModalOpen(true);
   };
 
-  // লাইভ সার্ভারের আইডি টাইপ ফিক্সড ফাংশন
   const openEditModal = (food) => {
     setEditingFood(food);
     const isCustom = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
     setIsCustomCategory(isCustom);
     setImagePreview(food.image || null);
 
-    // সার্ভার থেকে আইডি সরাসরি আসুক বা অবজেক্টের ভেতর আসুক, দুটোকেই হ্যান্ডেল করবে (_id এবং id)
-    const formattedBranches = (food.branches || []).map(item => {
-      if (item && typeof item === 'object') {
-        return String(item._id || item.id || ""); 
-      }
-      return String(item);
-    }).filter(Boolean);
+    // API পাঠায় `branchIds` (সংখ্যার অ্যারে) — `branches` নামে কিছু আসে না।
+    // ভুল নামে পড়লে টিক ফাঁকা আসে, আর সেভ করলে assignment মুছে যায়।
+    const formattedBranches = (food.branchIds || []).map(String).filter(Boolean);
 
     const formattedBranchPrices = {};
     if (food.branchPrices) {
@@ -205,7 +202,7 @@ export const AdminDishes = () => {
       discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
-      branches: formattedBranches,
+      branchIds: formattedBranches,
       branchPrices: formattedBranchPrices,
       variantLabel: food.variantLabel || "Size",
       variations: food.variations || [],
@@ -228,21 +225,22 @@ export const AdminDishes = () => {
   const handleBranchToggle = (branchId) => {
     const targetId = String(branchId);
     setFormData((prev) => {
-      const isSelected = prev.branches.includes(targetId);
-      let updatedBranches;
+      const isSelected = prev.branchIds.includes(targetId);
+      let updatedBranchIds;
       let updatedPrices = { ...prev.branchPrices };
 
       if (isSelected) {
-        updatedBranches = prev.branches.filter((id) => String(id) !== targetId);
+        updatedBranchIds = prev.branchIds.filter((id) => String(id) !== targetId);
         delete updatedPrices[targetId];
       } else {
-        updatedBranches = [...prev.branches, targetId];
-        updatedPrices[targetId] = 0;
+        updatedBranchIds = [...prev.branchIds, targetId];
+        // keep any price adjustment this branch already had
+        if (updatedPrices[targetId] === undefined) updatedPrices[targetId] = 0;
       }
 
       return {
         ...prev,
-        branches: updatedBranches,
+        branchIds: updatedBranchIds,
         branchPrices: updatedPrices,
       };
     });
@@ -296,7 +294,7 @@ export const AdminDishes = () => {
       const cleanedFormData = {
         ...formData,
         category: formData.category?.trim(),
-        branches: formData.branches.map(id => String(id))
+        branchIds: formData.branchIds.map(Number),
       };
 
       if (editingFood) {
@@ -318,6 +316,11 @@ export const AdminDishes = () => {
       alert("Error saving dish details.");
     }
   };
+
+  const branchNameById = useMemo(
+    () => new Map(branches.map((b) => [String(b._id || b.id || ""), b.name])),
+    [branches],
+  );
 
   const filteredFoods = useMemo(() => {
     const matched = foods.filter((f) => {
@@ -489,6 +492,30 @@ export const AdminDishes = () => {
                       </div>
                       <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
                       <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
+
+                      {/* Branch availability — an empty branchIds means the dish is
+                          served everywhere, which is how the API reads it too. */}
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
+                        {(food.branchIds || []).length === 0 ? (
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                            All branches
+                          </span>
+                        ) : (
+                          <>
+                            {food.branchIds.slice(0, 3).map((bid) => (
+                              <span key={bid} className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500">
+                                {branchNameById.get(String(bid)) || `Branch #${bid}`}
+                              </span>
+                            ))}
+                            {food.branchIds.length > 3 && (
+                              <span className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                                +{food.branchIds.length - 3} more
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -641,7 +668,15 @@ export const AdminDishes = () => {
                       <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" /> Branch Availability & Price Adjustment
                       </label>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-500">
+                        {formData.branchIds.length} of {branches.length} selected
+                      </span>
                     </div>
+                    {formData.branchIds.length === 0 && (
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-relaxed">
+                        কোনো branch টিক না দিলে dish টা <strong>সব branch-এ</strong> দেখাবে। নির্দিষ্ট branch-এ সীমাবদ্ধ রাখতে সেগুলোতে টিক দিন।
+                      </p>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
@@ -649,7 +684,7 @@ export const AdminDishes = () => {
                         const currentBranchId = String(branch._id || branch.id || "");
                         
                         // প্রপারলি সিলেক্টেড ব্রাঞ্চের টিক মার্ক ডিটেকশন
-                        const isChecked = formData.branches.map(id => String(id)).includes(currentBranchId);
+                        const isChecked = formData.branchIds.map(id => String(id)).includes(currentBranchId);
                         
                         // প্রাইস বক্সের জন্য সঠিক ভ্যালু এসাইনমেন্ট
                         const branchPriceVal = formData.branchPrices[currentBranchId] !== undefined 
