@@ -139,8 +139,10 @@ export const PieChart = ({ data, valueFormatter = (v) => v }) => {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-col gap-2.5 w-full">
+      {/* Legend — min-w-0 lets it shrink beside the fixed-width donut in the
+          sm:flex-row layout; without it the legend can't shrink below its
+          content and pushes the dashboard into horizontal overflow. */}
+      <div className="flex flex-col gap-2.5 w-full min-w-0">
         {total === 0 ? (
           <div className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">
             No order data available
