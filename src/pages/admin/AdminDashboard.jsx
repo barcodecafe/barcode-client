@@ -60,7 +60,7 @@ export const AdminDashboard = () => {
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 8)
-    .map((b) => ({ label: b.shortName, fullLabel: b.name, value: b.revenue }));
+    .map((b) => ({ id: b.branchId, label: b.shortName, fullLabel: b.name, value: b.revenue }));
 
   const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
   const lineData = revenueTrend.map((t) => ({ label: t.month, value: t.revenue }));

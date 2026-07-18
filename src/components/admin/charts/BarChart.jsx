@@ -59,7 +59,7 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
             const isHovered = hoveredIndex === i;
             return (
               <div
-                key={d.label}
+                key={d.id ?? d.label}
                 className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0"
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
