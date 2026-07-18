@@ -522,7 +522,7 @@ export const Home = () => {
                   {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে আসবে */}
                   <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="w-full h-full object-cover" />
+                      <img src={brand.logoLight} alt={brand.name} className="w-full h-full object-contain" />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
