@@ -123,6 +123,10 @@ export const Home = () => {
 
   return (
     <div className="w-full">
+      {/* GLOBAL MAINTENANCE NOTICE LINE */}
+      <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-primary-600 text-white text-center py-2 px-4 text-xs font-semibold uppercase tracking-wider select-none">
+       ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!
+      </div>
       {/* 1. HERO BANNER CAROUSEL */}
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
         {heroSlides.length > 0 && (
@@ -194,44 +198,6 @@ export const Home = () => {
           </Swiper>
         )}
       </section>
-
-      {/* 1b. OUR BRANDS SECTION — the group is a family of brands */}
-      {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-2 pt-4 pb-2 sm:px-4 sm:pt-5 lg:px-8">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
-            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
-              Our Brands
-            </h2>
-            <Link
-              to="/brands"
-              className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
-            >
-              Explore All
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {brands.slice(0, 6).map((brand) => (
-              <Link
-                key={brand.id}
-                to={`/brands/${brand.slug}`}
-                className="group flex flex-col items-center text-center gap-2 p-4 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:border-primary-500/30 transition-all"
-              >
-                <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
-                  {brand.logoLight ? (
-                    <img src={brand.logoLight} alt={brand.name} className="max-w-full max-h-full object-contain" />
-                  ) : (
-                    <span className="font-display font-black text-primary-500 text-lg">{brand.name.charAt(0)}</span>
-                  )}
-                </div>
-                <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 leading-tight line-clamp-2 group-hover:text-primary-500 transition-colors">
-                  {brand.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* 2. OUR BRANCHES SECTION */}
       <section className="max-w-7xl mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
@@ -417,6 +383,45 @@ export const Home = () => {
           })}
         </motion.div>
       </section>
+
+      {/* 1b. OUR BRANDS SECTION — the group is a family of brands */}
+      {brands.length > 0 && (
+        <section className="max-w-7xl mx-auto px-2 pt-4 pb-2 sm:px-4 sm:pt-5 lg:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+              Our Brands
+            </h2>
+            <Link
+              to="/brands"
+              className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
+            >
+              Explore All
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {brands.slice(0, 6).map((brand) => (
+              <Link
+                key={brand.id}
+                to={`/brands/${brand.slug}`}
+                className="group flex flex-col items-center text-center gap-2 p-4 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:border-primary-500/30 transition-all"
+              >
+                <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
+                  {brand.logoLight ? (
+                    <img src={brand.logoLight} alt={brand.name} className="max-w-full max-h-full object-contain" />
+                  ) : (
+                    <span className="font-display font-black text-primary-500 text-lg">{brand.name.charAt(0)}</span>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 leading-tight line-clamp-2 group-hover:text-primary-500 transition-colors">
+                  {brand.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
     </div>
   );
 };
