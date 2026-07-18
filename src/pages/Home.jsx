@@ -517,24 +517,26 @@ export const Home = () => {
               <motion.div key={brand.id} variants={fadeInUp} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                 <Link
                   to={`/brands/${brand.slug}`}
-                  className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350"
+                  className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  <div className="w-16 h-16 rounded-xl bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border border-neutral-100 dark:border-neutral-800/40 p-1 group-hover:scale-105 transition-transform duration-300">
+                  {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে আসবে */}
+                  <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="max-w-full max-h-full object-contain" />
+                      <img src={brand.logoLight} alt={brand.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
                   </div>
-                  <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-[130px]">
+                  {/* নাম এবং ডেসক্রিপশন নিচে পর্যাপ্ত প্যাডিং সহ সেট করা হয়েছে */}
+                  <div className="p-4 text-center space-y-0.5">
+                    <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
                     {brand.tagline && (
-                      <span className="block text-[10px] text-neutral-400 dark:text-neutral-500 truncate max-w-[130px]">
+                      <span className="block text-[10px] text-neutral-400 dark:text-neutral-500 truncate max-w-full">
                         {brand.tagline}
                       </span>
-                    )}
+                )}
                   </div>
                 </Link>
               </motion.div>
