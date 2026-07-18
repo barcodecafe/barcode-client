@@ -59,7 +59,7 @@ export const Footer = () => {
 
   return (
     <footer className="bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6 lg:pt-14 lg:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10">
           {/* 1 — Brand */}
           <div className="lg:col-span-4 flex flex-col gap-5">
@@ -147,7 +147,7 @@ export const Footer = () => {
               Payment Methods
             </h3>
            
-            <div className="w-full h-40 bg-white p-1 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="w-full h-24 bg-white p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
@@ -191,7 +191,7 @@ export const Footer = () => {
         </div>
 
         {/* Divider + copyright */}
-        <div className="border-t border-neutral-800 mt-10 pt-5">
+        <div className="border-t border-neutral-800 mt-8 pt-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-5 text-xs">
             {/* Copyright */}
             <p className="order-1 md:order-0 text-neutral-400 shrink-0">
@@ -199,7 +199,7 @@ export const Footer = () => {
             </p>
 
             {/* 3b - Become a Rider */}
-            <div className="order-2 md:order-0 flex items-center justify-center gap-2 text-neutral-400">
+            <div className="order-2 md:order-0 flex items-center justify-center gap-4 text-neutral-400">
               <div className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-primary-500" />
                 <span className="font-semibold text-white">
