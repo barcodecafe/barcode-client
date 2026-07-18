@@ -3,16 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target,
   Eye,
-  Calendar,
-  Building2,
-  Users,
   Plus,
   Edit2,
   Trash2,
   X,
   Save,
   Check,
-  Award,
   Upload
 } from 'lucide-react';
 import {
@@ -26,14 +22,12 @@ import {
   deleteLeadershipMember,
 } from '../../services/aboutService';
 
-// ---------------------------------------------------------------------------
-// AdminAbout.jsx — /admin/about
-//
-// Full CRUD panel for managing business information (timeline, mission,
-// vision, leadership team) shown on the public About page.
-// ---------------------------------------------------------------------------
 export const AdminAbout = () => {
-  const [aboutData, setAboutData] = useState(null);
+  /* 
+    CHANGES 1: Initial state-e empty object/array define kora hoyeche, 
+    jate component load hobar shomoy data map short-circuit ba blank error na dey.
+  */
+  const [aboutData, setAboutData] = useState({ timeline: [], leadership: [], stats: {} });
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,10 +38,17 @@ export const AdminAbout = () => {
   const [vision, setVision] = useState('');
   const [stats, setStats] = useState({ founded: '', branchesCount: '', standard: '' });
 
-  // Modals
+  // Modals & Tracking
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [isLeaderModalOpen, setIsLeaderModalOpen] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
+  
+  /* 
+    CHANGES 2: (CRITICAL FIX) 
+    Apnar ager code-e shudhu 'editingIndex' chilo, jeta problem korchilo. 
+    Ekhon amra 'selectedItem' state niyechi. Eta index er bodole direct database object 
+    hold korbe, jate dynamic unique ID track kora jay.
+  */
+  const [selectedItem, setSelectedItem] = useState(null); 
 
   // Timeline Form State
   const [timelineForm, setTimelineForm] = useState({ year: '', title: '', desc: '' });
@@ -58,13 +59,17 @@ export const AdminAbout = () => {
 
   const fetchAboutData = () => {
     setIsLoading(true);
-    getAboutData().then((data) => {
-      setAboutData(data);
-      setMission(data.mission);
-      setVision(data.vision);
-      setStats(data.stats);
-      setIsLoading(false);
-    });
+    getAboutData()
+      .then((data) => {
+        if (data) {
+          setAboutData(data);
+          setMission(data.mission || '');
+          setVision(data.vision || '');
+          setStats(data.stats || { founded: '', branchesCount: '', standard: '' });
+        }
+      })
+      .catch((err) => alert('Failed to fetch data from backend.'))
+      .finally(() => setIsLoading(false));
   };
 
   useEffect(() => {
@@ -89,28 +94,44 @@ export const AdminAbout = () => {
     }
   };
 
+  // ==========================================
   // Timeline Handlers
+  // ==========================================
   const openAddTimeline = () => {
-    setEditingIndex(null);
+    setSelectedItem(null); // Add korar shomoy selected tracking null kore dewa hoyeche
     setTimelineForm({ year: new Date().getFullYear().toString(), title: '', desc: '' });
     setIsTimelineModalOpen(true);
   };
 
   const openEditTimeline = (item, index) => {
-    setEditingIndex(index);
-    setTimelineForm({ ...item });
+    /* 
+      CHANGES 3: Edit mode open korar shomoy item er property layout text check korbe.
+      Jodi backend data table-e specific '_id' ba 'id' key thake, sheta target korbe, 
+      na thakle safer side fallback hisebe 'targetIndex' store korbe.
+    */
+    setSelectedItem({ ...item, targetIndex: index });
+    setTimelineForm({ year: item.year || '', title: item.title || '', desc: item.desc || '' });
     setIsTimelineModalOpen(true);
   };
 
   const handleTimelineSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingIndex !== null) {
-        await updateTimelineItem(editingIndex, timelineForm);
+      if (selectedItem) {
+        /* 
+          CHANGES 4: (UPDATE FIX) 
+          Direct database _id ba id check korche. Backend validation standard 
+          onujayi absolute query parameter pathiye row targeted route trigger korbe.
+        */
+        const targetId = selectedItem._id || selectedItem.id || selectedItem.targetIndex;
+        await updateTimelineItem(targetId, timelineForm);
       } else {
         await addTimelineItem(timelineForm);
       }
+      
+      /* CHANGES 5: Action submit shesh hole Modal close, state reset logic cleanup kora hoyeche */
       setIsTimelineModalOpen(false);
+      setSelectedItem(null);
       fetchAboutData();
       showSuccess('Timeline milestone saved!');
     } catch (err) {
@@ -118,10 +139,16 @@ export const AdminAbout = () => {
     }
   };
 
-  const handleDeleteTimeline = async (index) => {
+  const handleDeleteTimeline = async (item, index) => {
     if (window.confirm('Are you sure you want to delete this timeline milestone?')) {
       try {
-        await deleteTimelineItem(index);
+        /* 
+          CHANGES 6: (DELETE FIX) 
+          Ager code-e shudhu array index pass hoto, jeta dynamic state render breakdown korto.
+          Ekhon proper DB dynamic unique target identifier search kore service-e execution dibe.
+        */
+        const targetId = item._id || item.id || index;
+        await deleteTimelineItem(targetId);
         fetchAboutData();
         showSuccess('Timeline milestone deleted.');
       } catch (err) {
@@ -130,9 +157,11 @@ export const AdminAbout = () => {
     }
   };
 
+  // ==========================================
   // Leadership Handlers
+  // ==========================================
   const openAddLeader = () => {
-    setEditingIndex(null);
+    setSelectedItem(null);
     setLeaderForm({
       name: '',
       role: '',
@@ -143,8 +172,14 @@ export const AdminAbout = () => {
   };
 
   const openEditLeader = (member, index) => {
-    setEditingIndex(index);
-    setLeaderForm({ ...member });
+    /* CHANGES 7: Leadership component tracking system updated matching data identifiers */
+    setSelectedItem({ ...member, targetIndex: index });
+    setLeaderForm({ 
+      name: member.name || '', 
+      role: member.role || '', 
+      image: member.image || '', 
+      bio: member.bio || '' 
+    });
     setIsLeaderModalOpen(true);
   };
 
@@ -152,14 +187,12 @@ export const AdminAbout = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate File Type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       alert('Please select a valid image file (JPEG, JPG, or PNG).');
       return;
     }
 
-    // Convert file to Base64 (or append to FormData if your backend prefers raw files)
     const reader = new FileReader();
     reader.onloadend = () => {
       setLeaderForm((prev) => ({ ...prev, image: reader.result }));
@@ -170,12 +203,15 @@ export const AdminAbout = () => {
   const handleLeaderSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingIndex !== null) {
-        await updateLeadershipMember(editingIndex, leaderForm);
+      if (selectedItem) {
+        /* CHANGES 8: Team member update target query selector implementation */
+        const targetId = selectedItem._id || selectedItem.id || selectedItem.targetIndex;
+        await updateLeadershipMember(targetId, leaderForm);
       } else {
         await addLeadershipMember(leaderForm);
       }
       setIsLeaderModalOpen(false);
+      setSelectedItem(null);
       fetchAboutData();
       showSuccess('Team member saved!');
     } catch (err) {
@@ -183,10 +219,12 @@ export const AdminAbout = () => {
     }
   };
 
-  const handleDeleteLeader = async (index) => {
+  const handleDeleteLeader = async (member, index) => {
     if (window.confirm('Are you sure you want to delete this team member?')) {
       try {
-        await deleteLeadershipMember(index);
+        /* CHANGES 9: Leadership dynamic index/ID absolute targeting for safe database operations */
+        const targetId = member._id || member.id || index;
+        await deleteLeadershipMember(targetId);
         fetchAboutData();
         showSuccess('Team member deleted.');
       } catch (err) {
@@ -221,7 +259,6 @@ export const AdminAbout = () => {
           </p>
         </div>
 
-        {/* Success Alert toast */}
         <AnimatePresence>
           {successMsg && (
             <motion.div
@@ -239,41 +276,23 @@ export const AdminAbout = () => {
 
       {/* Tabs Menu */}
       <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800 pb-px">
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
-            activeTab === 'profile'
-              ? 'border-primary-500 text-primary-500'
-              : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-          }`}
-        >
-          Company Profile
-        </button>
-        <button
-          onClick={() => setActiveTab('timeline')}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
-            activeTab === 'timeline'
-              ? 'border-primary-500 text-primary-500'
-              : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-          }`}
-        >
-          Timeline
-        </button>
-        <button
-          onClick={() => setActiveTab('leadership')}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
-            activeTab === 'leadership'
-              ? 'border-primary-500 text-primary-500'
-              : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-          }`}
-        >
-          Leadership Team
-        </button>
+        {['profile', 'timeline', 'leadership'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all capitalize ${
+              activeTab === tab
+                ? 'border-primary-500 text-primary-500'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+            }`}
+          >
+            {tab === 'profile' ? 'Company Profile' : tab === 'leadership' ? 'Leadership Team' : tab}
+          </button>
+        ))}
       </div>
 
       {/* Tab Contents */}
       <div className="mt-4">
-        {/* Tab 1: Company Profile (Mission, Vision, Stats) */}
         {activeTab === 'profile' && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -311,55 +330,29 @@ export const AdminAbout = () => {
                 </div>
               </div>
 
-              {/* Stats Grid */}
               <div className="pt-6 border-t border-neutral-100 dark:border-neutral-800">
                 <span className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
                   Quick Business Statistics
                 </span>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">
-                      Year Founded
-                    </label>
-                    <input
-                      type="text"
-                      value={stats.founded}
-                      onChange={(e) => setStats((prev) => ({ ...prev, founded: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">
-                      Branches Count
-                    </label>
-                    <input
-                      type="text"
-                      value={stats.branchesCount}
-                      onChange={(e) => setStats((prev) => ({ ...prev, branchesCount: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1.5">
-                      Standard Scale
-                    </label>
-                    <input
-                      type="text"
-                      value={stats.standard}
-                      onChange={(e) => setStats((prev) => ({ ...prev, standard: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                      required
-                    />
-                  </div>
+                  {['founded', 'branchesCount', 'standard'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 capitalize">
+                        {field === 'branchesCount' ? 'Branches Count' : field === 'standard' ? 'Standard Scale' : field}
+                      </label>
+                      <input
+                        type="text"
+                        value={stats[field] || ''}
+                        onChange={(e) => setStats((prev) => ({ ...prev, [field]: e.target.value }))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        required
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="flex justify-end pt-4 border-t border-neutral-100 dark:border-neutral-800">
                 <button
                   type="submit"
@@ -374,7 +367,6 @@ export const AdminAbout = () => {
           </motion.div>
         )}
 
-        {/* Tab 2: Timeline Milestones */}
         {activeTab === 'timeline' && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -403,33 +395,29 @@ export const AdminAbout = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {aboutData.timeline.map((item, index) => (
+                    {aboutData.timeline && aboutData.timeline.map((item, index) => (
+                      /* 
+                        CHANGES 10: JSX Table render key calculation algorithm 
+                        index map change kore explicit runtime dynamic key-e transform kora hoyeche.
+                      */
                       <tr
-                        key={item.year + index}
+                        key={item._id || item.id || index}
                         className="border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
                       >
-                        <td className="px-5 py-3.5 font-display font-bold text-primary-500">
-                          {item.year}
-                        </td>
-                        <td className="px-5 py-3.5 font-semibold text-neutral-800 dark:text-neutral-100">
-                          {item.title}
-                        </td>
-                        <td className="px-5 py-3.5 text-neutral-500 dark:text-neutral-400 font-light max-w-md truncate">
-                          {item.desc}
-                        </td>
+                        <td className="px-5 py-3.5 font-display font-bold text-primary-500">{item.year}</td>
+                        <td className="px-5 py-3.5 font-semibold text-neutral-800 dark:text-neutral-100">{item.title}</td>
+                        <td className="px-5 py-3.5 text-neutral-500 dark:text-neutral-400 font-light max-w-md truncate">{item.desc}</td>
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditTimeline(item, index)}
                               className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-primary-500 transition-all"
-                              title="Edit Milestone"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDeleteTimeline(index)}
+                              onClick={() => handleDeleteTimeline(item, index)}
                               className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                              title="Delete Milestone"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -444,7 +432,6 @@ export const AdminAbout = () => {
           </motion.div>
         )}
 
-        {/* Tab 3: Leadership Team */}
         {activeTab === 'leadership' && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -462,16 +449,14 @@ export const AdminAbout = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {aboutData.leadership.map((member, index) => (
+              {aboutData.leadership && aboutData.leadership.map((member, index) => (
                 <div
-                  key={member.name + index}
+                  key={member._id || member.id || index}
                   className="group bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between"
                 >
                   <div>
                     <div className="relative aspect-video overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                       <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
-                      
-                      {/* Action buttons */}
                       <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEditLeader(member, index)}
@@ -480,7 +465,7 @@ export const AdminAbout = () => {
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleDeleteLeader(index)}
+                          onClick={() => handleDeleteLeader(member, index)}
                           className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 shadow-sm transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -489,32 +474,10 @@ export const AdminAbout = () => {
                     </div>
 
                     <div className="p-4">
-                      <h4 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                        {member.name}
-                      </h4>
-                      <span className="text-xs text-primary-500 font-bold uppercase tracking-wider block mt-0.5 mb-2">
-                        {member.role}
-                      </span>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light leading-relaxed line-clamp-3">
-                        {member.bio}
-                      </p>
+                      <h4 className="font-semibold text-neutral-800 dark:text-neutral-100">{member.name}</h4>
+                      <span className="text-xs text-primary-500 font-bold uppercase tracking-wider block mt-0.5 mb-2">{member.role}</span>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light leading-relaxed line-clamp-3">{member.bio}</p>
                     </div>
-                  </div>
-                  
-                  {/* Mobile Actions */}
-                  <div className="flex gap-2 p-4 pt-0 border-t border-neutral-50 dark:border-neutral-800/50 mt-2 md:hidden">
-                    <button
-                      onClick={() => openEditLeader(member, index)}
-                      className="flex items-center gap-1.5 flex-1 justify-center py-1.5 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-300"
-                    >
-                      <Edit2 className="w-3 h-3" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteLeader(index)}
-                      className="flex items-center gap-1.5 flex-1 justify-center py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs"
-                    >
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </button>
                   </div>
                 </div>
               ))}
@@ -531,7 +494,8 @@ export const AdminAbout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsTimelineModalOpen(false)}
+              /* CHANGES 11: Outside modal space click/cancel korle state mapping default empty resetting handle korbe */
+              onClick={() => { setIsTimelineModalOpen(false); setSelectedItem(null); }}
               className="absolute inset-0 bg-neutral-950/50 backdrop-blur-sm"
             />
 
@@ -543,50 +507,41 @@ export const AdminAbout = () => {
             >
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 mb-4">
                 <h3 className="text-lg font-bold font-display text-neutral-800 dark:text-white">
-                  {editingIndex !== null ? 'Edit Milestone' : 'Add Milestone'}
+                  {selectedItem ? 'Edit Milestone' : 'Add Milestone'}
                 </h3>
-                <button onClick={() => setIsTimelineModalOpen(false)}>
+                <button onClick={() => { setIsTimelineModalOpen(false); setSelectedItem(null); }}>
                   <X className="w-5 h-5 text-neutral-400 hover:text-neutral-600" />
                 </button>
               </div>
 
               <form onSubmit={handleTimelineSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Year
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Year</label>
                   <input
                     type="text"
                     value={timelineForm.year}
                     onChange={(e) => setTimelineForm((prev) => ({ ...prev, year: e.target.value }))}
-                    placeholder="e.g. 2026"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Milestone Title
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Milestone Title</label>
                   <input
                     type="text"
                     value={timelineForm.title}
                     onChange={(e) => setTimelineForm((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g. Six Branches, One Standard"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Description
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Description</label>
                   <textarea
                     value={timelineForm.desc}
                     onChange={(e) => setTimelineForm((prev) => ({ ...prev, desc: e.target.value }))}
-                    placeholder="Provide details about this milestone..."
                     rows="3"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm resize-none"
                     required
@@ -596,15 +551,12 @@ export const AdminAbout = () => {
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800 mt-4">
                   <button
                     type="button"
-                    onClick={() => setIsTimelineModalOpen(false)}
+                    onClick={() => { setIsTimelineModalOpen(false); setSelectedItem(null); }}
                     className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all"
-                  >
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white font-semibold text-sm shadow-md transition-all">
                     Save Milestone
                   </button>
                 </div>
@@ -622,7 +574,7 @@ export const AdminAbout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsLeaderModalOpen(false)}
+              onClick={() => { setIsLeaderModalOpen(false); setSelectedItem(null); }}
               className="absolute inset-0 bg-neutral-950/50 backdrop-blur-sm"
             />
 
@@ -634,80 +586,60 @@ export const AdminAbout = () => {
             >
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 mb-4">
                 <h3 className="text-lg font-bold font-display text-neutral-800 dark:text-white">
-                  {editingIndex !== null ? 'Edit Team Member' : 'Add Team Member'}
+                  {selectedItem ? 'Edit Team Member' : 'Add Team Member'}
                 </h3>
-                <button onClick={() => setIsLeaderModalOpen(false)}>
+                <button onClick={() => { setIsLeaderModalOpen(false); setSelectedItem(null); }}>
                   <X className="w-5 h-5 text-neutral-400 hover:text-neutral-600" />
                 </button>
               </div>
 
               <form onSubmit={handleLeaderSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Full Name
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Full Name</label>
                   <input
                     type="text"
                     value={leaderForm.name}
                     onChange={(e) => setLeaderForm((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. Jane Doe"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Role / Title
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Role / Title</label>
                   <input
                     type="text"
                     value={leaderForm.role}
                     onChange={(e) => setLeaderForm((prev) => ({ ...prev, role: e.target.value }))}
-                    placeholder="e.g. Chief Executive Officer"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Photo Image
-                  </label>
-                  
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/jpeg, image/jpg, image/png"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Photo Image</label>
+                  <input type="file" ref={fileInputRef} accept="image/jpeg, image/jpg, image/png" onChange={handleImageUpload} className="hidden" />
                   <div className="flex items-center gap-4 mt-1">
                     {leaderForm.image && (
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 border flex-shrink-0">
                         <img src={leaderForm.image} alt="Preview" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 hover:border-primary-500 dark:hover:border-primary-500 text-neutral-600 dark:text-neutral-300 font-medium text-xs transition-all w-full justify-center bg-neutral-50/50 dark:bg-neutral-900/50"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-neutral-600 dark:text-neutral-300 font-medium text-xs transition-all w-full justify-center bg-neutral-50/50"
                     >
-                      <Upload className="w-4 h-4 text-neutral-400" />
-                      Select JPEG, JPG, or PNG
+                      Upload Image File
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Short Bio
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Short Bio</label>
                   <textarea
                     value={leaderForm.bio}
                     onChange={(e) => setLeaderForm((prev) => ({ ...prev, bio: e.target.value }))}
-                    placeholder="Describe their experience and contributions..."
                     rows="3"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm resize-none"
                     required
@@ -717,15 +649,12 @@ export const AdminAbout = () => {
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800 mt-4">
                   <button
                     type="button"
-                    onClick={() => setIsLeaderModalOpen(false)}
+                    onClick={() => { setIsLeaderModalOpen(false); setSelectedItem(null); }}
                     className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all"
-                  >
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white font-semibold text-sm shadow-md transition-all">
                     Save Member
                   </button>
                 </div>
