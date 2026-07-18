@@ -3,12 +3,7 @@ import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination, EffectFade } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  MapPin,
-  Phone,
-  ArrowRight,
-  ChevronDown,
-} from "lucide-react";
+import { MapPin, Phone, ArrowRight, ChevronDown } from "lucide-react";
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -37,6 +32,7 @@ import "swiper/css/effect-fade";
 const BRANCH_PREVIEW_COUNT = 6;
 const POPULAR_COUNT = 8;
 const FEATURED_COUNT = 6;
+const PREVIEW_COUNT = 6;
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -49,12 +45,17 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]); // hero promo slides look dishes up by id
   const [popularFoods, setPopularFoods] = useState([]);
-  const [featuredMenu, setFeaturedMenu] = useState([]);
+  // const [featuredMenu, setFeaturedMenu] = useState([]);
+  // Bestsellers & Featured Menu এর জন্য State[cite: 1]
+  // const [showAllPopular, setShowAllPopular] = useState(false);
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
 
   const [activeSort, setActiveSort] = useState("popular");
 
   useEffect(() => {
-    getAllBrands().then(setBrands).catch(() => setBrands([]));
+    getAllBrands()
+      .then(setBrands)
+      .catch(() => setBrands([]));
     getFeaturedBranches(BRANCH_PREVIEW_COUNT).then(setPreviewBranches);
     getAllBranches().then(setAllBranches);
     getAllSlides().then(setHeroSlides);
@@ -91,6 +92,22 @@ export const Home = () => {
     });
   }, [popularFoods, activeSort]);
 
+  // ---------------------------------------------------------------------
+  // Featured Menu Logic[cite: 1]
+  // ---------------------------------------------------------------------
+  const totalFeaturedMenu = useMemo(() => {
+    return allFoods.filter((food) => food.isAdminFeatured === true);
+  }, [allFoods]);
+
+  const previewFeaturedMenu = useMemo(
+    () => totalFeaturedMenu.slice(0, PREVIEW_COUNT),
+    [totalFeaturedMenu],
+  );
+  const remainingFeaturedMenu = useMemo(
+    () => totalFeaturedMenu.slice(PREVIEW_COUNT),
+    [totalFeaturedMenu],
+  );
+
   const remainingBranches = useMemo(
     () => allBranches.slice(BRANCH_PREVIEW_COUNT),
     [allBranches],
@@ -125,7 +142,9 @@ export const Home = () => {
     <div className="w-full">
       {/* GLOBAL MAINTENANCE NOTICE LINE */}
       <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-primary-600 text-white text-center py-2 px-4 text-xs font-semibold uppercase tracking-wider select-none">
-       ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!
+        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly
+        for experimental purposes). Also, we are updating our server system
+        right now, so some features might be slower than usual!
       </div>
       {/* 1. HERO BANNER CAROUSEL */}
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
@@ -346,42 +365,97 @@ export const Home = () => {
         </motion.div>
       </section>
 
-      {/* 4. FEATURED MENU SECTION */}
-      <section className="max-w-7xl mx-auto px-2 pt-4 pb-8 sm:px-4 sm:pt-5 sm:pb-12 lg:px-8">
+      {/* 4. FEATURED MENU SECTION[cite: 1] */}
+      <section className="max-w-7xl mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
           </h2>
 
-          <Link
-            to="/menu"
-            className="flex items-center gap-1.5 text-primary-500 hover:text-primary-600 font-semibold group transition-colors text-xs sm:text-sm whitespace-nowrap"
-          >
-            Explore All
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          {/* View All / Show Fewer Button for Featured Menu[cite: 1] */}
+          <div className="flex justify-end">
+            {remainingFeaturedMenu.length > 0 ? (
+              <button
+                onClick={() => setShowAllFeatured((v) => !v)}
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+              >
+                {showAllFeatured ? "Show Fewer" : "View All"}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllFeatured ? "rotate-180" : ""}`}
+                />
+              </button>
+            ) : (
+              <div className="w-1" />
+            )}
+          </div>
         </div>
 
-        <motion.div
-          variants={staggerContainer}
-          initial={false}
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
-          {featuredMenu.map((food) => {
-            const favorited = isFavorite(food.id);
-            return (
-              <FoodCard
-                key={food.id}
-                food={food}
-                favorited={favorited}
-                onToggleFavorite={toggleFavorite}
-                onAddToCart={addToCart}
-                variants={fadeInUp}
-              />
-            );
-          })}
-        </motion.div>
+        {previewFeaturedMenu.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl">
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+              No featured items available right now.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* First 6 Items[cite: 1] */}
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            >
+              {previewFeaturedMenu.map((food) => {
+                const favorited = isFavorite(food.id);
+                return (
+                  <FoodCard
+                    key={food.id}
+                    food={food}
+                    favorited={favorited}
+                    toggleFavorite={toggleFavorite}
+                    addToCart={addToCart}
+                    variants={fadeInUp}
+                  />
+                );
+              })}
+            </motion.div>
+
+            {/* Remaining Items Toggle View[cite: 1] */}
+            <AnimatePresence>
+              {showAllFeatured && remainingFeaturedMenu.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <motion.div
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                  >
+                    {remainingFeaturedMenu.map((food) => {
+                      const favorited = isFavorite(food.id);
+                      return (
+                        <FoodCard
+                          key={food.id}
+                          food={food}
+                          favorited={favorited}
+                          toggleFavorite={toggleFavorite}
+                          addToCart={addToCart}
+                          variants={fadeInUp}
+                        />
+                      );
+                    })}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </section>
 
       {/* 1b. OUR BRANDS SECTION — the group is a family of brands */}
@@ -408,9 +482,15 @@ export const Home = () => {
               >
                 <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
                   {brand.logoLight ? (
-                    <img src={brand.logoLight} alt={brand.name} className="max-w-full max-h-full object-contain" />
+                    <img
+                      src={brand.logoLight}
+                      alt={brand.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
                   ) : (
-                    <span className="font-display font-black text-primary-500 text-lg">{brand.name.charAt(0)}</span>
+                    <span className="font-display font-black text-primary-500 text-lg">
+                      {brand.name.charAt(0)}
+                    </span>
                   )}
                 </div>
                 <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 leading-tight line-clamp-2 group-hover:text-primary-500 transition-colors">
@@ -421,7 +501,6 @@ export const Home = () => {
           </div>
         </section>
       )}
-
     </div>
   );
 };
@@ -435,9 +514,7 @@ const BranchCard = ({ branch, variants }) => (
     whileHover={{ y: -6, transition: { duration: 0.2 } }}
     className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
   >
-    <Link
-      to={`/branches/${branch.id}`}
-    >
+    <Link to={`/branches/${branch.id}`}>
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <img
           src={branch.image}
