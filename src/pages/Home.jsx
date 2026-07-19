@@ -39,12 +39,22 @@ const PREVIEW_COUNT = 6;
 // ---------------------------------------------------------------------------
 // সংশোধিত লোগো কম্পোনেন্ট (দুই পাশে বা উপরে-নিচে কোনো সাদা গ্যাপ থাকবে না, পুরো ফিল হবে)
 // ---------------------------------------------------------------------------
-const BrandImage = ({ src, alt, className = "" }) => {
+// ---------------------------------------------------------------------------
+// কন্ডিশনাল লোগো কম্পোনেন্ট (লোগোর নাম বা স্লিপ অনুযায়ী স্টাইল পরিবর্তন হবে)
+// ---------------------------------------------------------------------------
+const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
+  // যেসব লোগোর রঙিন ব্যাকগ্রাউন্ড আছে এবং object-cover দিলে কেটে যায় বা overflow হয়
+  const isColoredBackground = ["omerta", "bir-chattala", "barcode-sweets"].includes(brandSlug);
+
   return (
     <img
       src={src}
       alt={alt}
-      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${className}`}
+      className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
+        isColoredBackground 
+          ? "object-contain" // রঙিন লোগো যেন কেটে না যায় (overflow না হয়) তাই contain
+          : "object-contain p-2" // সাদা লোগোগুলো সুন্দরভাবে মাঝে থাকবে এবং সামান্য প্যাডিং পাবে
+      } ${className}`}
     />
   );
 };
