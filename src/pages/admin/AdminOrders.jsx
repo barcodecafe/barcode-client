@@ -66,9 +66,7 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Live data only — these are the two that actually move while the board is
-  // open, and this is what the post-action refetches below want. Everything
-  // else on this page is reference data, loaded once on mount.
+  // Live data only
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
@@ -77,9 +75,7 @@ export const AdminOrders = () => {
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
-  // Initial load. branches/regions are only ever read for name lookups in the
-  // details modal and don't change during a shift, so they are fetched once
-  // here rather than riding along on every poll.
+  // Initial load
   useEffect(() => {
     Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllRegions()])
       .then(([ordersData, ridersData, branchesData, regionsData]) => {
@@ -92,13 +88,6 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // 20s and visibility-gated, down from an unconditional 3s x 5 endpoints. That
-  // old poll spent ~1500 requests per 15min against the server's global 500
-  // req/15min/IP limiter — on its own it 429'd the entire admin in ~5 minutes.
-  // ~1.28MB of each cycle was a getAllFoods() whose result this page never read.
-  // 20s (two endpoints) is 90 req/15min — under even the ~100 the config comment
-  // targets for production. Admin actions refetch immediately (see call sites
-  // below), so the poll only needs to surface changes made elsewhere.
   useVisiblePolling(fetchOrdersAndFleet, { intervalMs: 20000 });
 
   useEffect(() => {
@@ -110,20 +99,40 @@ export const AdminOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // Helper logic to calculate individual rider statistics from successfully delivered orders
+  // Enhanced Helper logic to calculate daily, weekly, and monthly stats
   const getRiderPerformanceStats = (riderId, riderName) => {
+    const now = new Date();
+    
+    // Start of Today
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Start of This Week (Sunday as start of week)
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    
+    // Start of This Month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     const deliveredOrders = orders.filter(
       (o) =>
         o.status === "Delivered" &&
         (o.riderId === riderId || o.riderName?.toLowerCase() === riderName?.toLowerCase())
     );
 
-    const totalEarnings = deliveredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
-    const totalFoodPrice = deliveredOrders.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
+    const calculateTotals = (filteredOrders) => {
+      const totalEarnings = filteredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+      const totalFoodPrice = filteredOrders.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
+      return { foodDelivered: totalFoodPrice, income: totalEarnings };
+    };
+
+    // Filter by date ranges
+    const dailyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfToday);
+    const weeklyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfWeek);
+    const monthlyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfMonth);
 
     return {
-      foodDelivered: totalFoodPrice,
-      income: totalEarnings,
+      daily: calculateTotals(dailyOrders),
+      weekly: calculateTotals(weeklyOrders),
+      monthly: calculateTotals(monthlyOrders)
     };
   };
 
@@ -229,26 +238,37 @@ export const AdminOrders = () => {
                       : "No active delivery"}
                   </span>
 
-                  {/* Added Stats Container */}
-                  <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="flex flex-col">
-                      <span className="text-neutral-400 font-medium flex items-center gap-0.5">
-                        <Utensils className="w-2.5 h-2.5 text-indigo-500" /> Food Deliv.
-                      </span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                        ৳{stats.foodDelivered.toFixed(2)}
-                      </span>
+                  {/* Period Stats Breakdowns (Daily, Weekly, Monthly) */}
+                  <div className="mt-3 pt-2.5 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
+                    {/* Daily */}
+                    <div>
+                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Today</span>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
+                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.daily.foodDelivered.toFixed(0)}</span>
+                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.daily.income.toFixed(0)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-neutral-400 font-medium flex items-center gap-0.5">
-                        <TrendingUp className="w-2.5 h-2.5 text-primary-500" /> Net Earned
-                      </span>
-                      <span className="font-bold text-primary-500">
-                        ৳{stats.income.toFixed(2)}
-                      </span>
+                    
+                    {/* Weekly */}
+                    <div>
+                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">This Week</span>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
+                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.weekly.foodDelivered.toFixed(0)}</span>
+                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.weekly.income.toFixed(0)}</span>
+                      </div>
+                    </div>
+
+                    {/* Monthly */}
+                    <div>
+                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">This Month</span>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
+                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.monthly.foodDelivered.toFixed(0)}</span>
+                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.monthly.income.toFixed(0)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                
                 <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-neutral-150 dark:border-neutral-850">
                   <span
                     className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
@@ -310,7 +330,7 @@ export const AdminOrders = () => {
                       {ord.id}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[120px]">
+                      <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
                         {ord.user.name}
                       </span>
                       <span className="block text-[10px] text-neutral-400 mt-0.5">
@@ -396,8 +416,6 @@ export const AdminOrders = () => {
                           {riders.map((r) => {
                             const busy = r.status === "Busy";
                             const load = r.activeOrders || 0;
-                            // A busy rider can't take a new order, but keep the one
-                            // already on this order selectable so it still shows.
                             const disabled = busy && ord.riderId !== r.id;
                             const tag = busy
                               ? `Busy${load ? ` · ${load} active` : ""}`
@@ -593,7 +611,7 @@ export const AdminOrders = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[85vh]"
             >
               {/* Modal Header */}
               <div className="p-5 border-b border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 flex items-center justify-between">
@@ -616,7 +634,6 @@ export const AdminOrders = () => {
 
               {/* Modal Content */}
               <div className="p-6 overflow-y-auto space-y-5">
-                {/* Customer, Shipping, and Billing Address Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/10 rounded-xl space-y-1.5">
                     <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
@@ -731,7 +748,7 @@ export const AdminOrders = () => {
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between font-bold text-sm text-neutral-850 dark:text-white pt-1">
+                    <div className="flex justify-between font-bold text-sm text-neutral-855 dark:text-white pt-1">
                       <span>Total Invoice:</span>
                       <span className="text-primary-500">
                         ৳{selectedOrderDetails.total.toFixed(2)}
