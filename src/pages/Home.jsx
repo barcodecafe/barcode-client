@@ -522,7 +522,7 @@ export const Home = () => {
                   
                   <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="object-contain py-2" />
+                      <img src={brand.logoLight} alt={brand.name} className="object-contain py-4" />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
