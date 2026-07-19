@@ -37,28 +37,14 @@ import "swiper/css/effect-fade";
 const PREVIEW_COUNT = 6; // প্রিভিউ সেকশনে ৬টি কার্ড দেখানোর জন্য গ্লোবাল ভ্যারিয়েবল
 
 // ---------------------------------------------------------------------------
-// ডাইনামিক রেশিও এবং লাইট/ডার্ক মোড হ্যান্ডল করার জন্য সাব-কম্পোনেন্ট
+// ব্র্যান্ড লোগো ফিট করার জন্য সংশোধিত সাব-কম্পোনেন্ট (লোগো কাটবে না)
 // ---------------------------------------------------------------------------
 const BrandImage = ({ src, alt, className = "" }) => {
-  const [isWide, setIsWide] = useState(false);
-
-  const handleImageLoad = (e) => {
-    const { naturalWidth, naturalHeight } = e.target;
-    if (naturalWidth / naturalHeight > 1.5) {
-      setIsWide(true);
-    }
-  };
-
   return (
     <img
       src={src}
       alt={alt}
-      onLoad={handleImageLoad}
-      className={`w-full h-full group-hover:scale-105 transition-transform duration-300 ${
-        isWide 
-          ? "object-contain p-4"  // ওয়াইড লোগো
-          : "object-cover"        // স্কয়ার/রাউন্ড লোগো
-      } ${className}`}
+      className={`w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300 ${className}`}
     />
   );
 };
@@ -586,7 +572,7 @@ export const Home = () => {
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                  <div className="w-full h-28 bg-white flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
                     {brand.logoLight || brand.logoDark ? (
                       <>
                         {brand.logoLight && (
@@ -646,7 +632,7 @@ export const Home = () => {
                         to={`/brands/${brand.slug}`}
                         className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                       >
-                        <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                        <div className="w-full h-28 bg-white flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
                           {brand.logoLight || brand.logoDark ? (
                             <>
                               {brand.logoLight && (
