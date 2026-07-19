@@ -521,9 +521,6 @@ export const Home = () => {
               <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
                 Our Family of Brands
               </h2>
-              <p className="text-xs text-neutral-450 dark:text-neutral-500 mt-0.5">
-                Explore Chittagong's finest restaurant concepts
-              </p>
             </div>
             <Link
               to="/brands"
@@ -585,9 +582,7 @@ export const Home = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// FoodCard Component (মেইন সার্ভারের অরিজিনাল প্রোডিউসড কার্ড ডিজাইন অনুযায়ী)
-// ---------------------------------------------------------------------------
+
 const FoodCard = memo(
   ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
     const hasDiscount = hasFoodDiscount(food);
@@ -670,9 +665,6 @@ const FoodCard = memo(
 );
 FoodCard.displayName = "FoodCard";
 
-// ---------------------------------------------------------------------------
-// BranchCard Component
-// ---------------------------------------------------------------------------
 const BranchCard = memo(({ branch, variants }) => {
   const handleDetailsClick = () => {
     localStorage.setItem("selectedBranchId", String(branch.id));
