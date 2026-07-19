@@ -519,15 +519,15 @@ export const Home = () => {
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে আসবে */}
+                  
                   <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="object-contain" />
+                      <img src={brand.logoLight} alt={brand.name} className="object-contain py-2" />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
                   </div>
-                  {/* নাম এবং ডেসক্রিপশন নিচে পর্যাপ্ত প্যাডিং সহ সেট করা হয়েছে */}
+                 
                   <div className="p-2 text-center">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
