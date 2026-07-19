@@ -11,10 +11,11 @@ import {
   MapPin,
   X,
   Calendar,
-  DollarSign,
   TrendingUp,
   Clock,
   CheckCircle,
+  XCircle,
+  ClipboardList
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -54,7 +55,7 @@ export const RiderDashboard = () => {
   const [riderChatMessage, setRiderChatMessage] = useState("");
   
   // Earning & Delivery Filter States
-  const [timeFilter, setTimeFilter] = useState("daily"); // daily, weekly, monthly, yearly, custom
+  const [timeFilter, setTimeFilter] = useState("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -145,28 +146,22 @@ export const RiderDashboard = () => {
   const getFilteredStats = () => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // Filter only Delivered orders for calculation
     const deliveredOrders = orders.filter((o) => o.status === "Delivered");
 
     const filtered = deliveredOrders.filter((order) => {
       const orderDate = new Date(order.createdAt);
 
-      if (timeFilter === "daily") {
-        return orderDate >= startOfToday;
-      }
+      if (timeFilter === "daily") return orderDate >= startOfToday;
       if (timeFilter === "weekly") {
         const oneWeekAgo = new Date(startOfToday);
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         return orderDate >= oneWeekAgo;
       }
       if (timeFilter === "monthly") {
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        return orderDate >= startOfMonth;
+        return orderDate >= new Date(now.getFullYear(), now.getMonth(), 1);
       }
       if (timeFilter === "yearly") {
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        return orderDate >= startOfYear;
+        return orderDate >= new Date(now.getFullYear(), 0, 1);
       }
       if (timeFilter === "custom") {
         let matches = true;
@@ -185,19 +180,49 @@ export const RiderDashboard = () => {
       return true;
     });
 
-    const totalEarnings = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
     return {
       deliveryCount: filtered.length,
-      earnings: totalEarnings,
+      earnings: filtered.reduce((sum, o) => sum + (o.total || 0), 0),
     };
   };
 
+  // --- Daily Performance Log Logic (Grouped by Date) ---
+  const getDailyPerformanceLog = () => {
+    const logMap = {};
+
+    orders.forEach((order) => {
+      if (!order.createdAt) return;
+      
+      // Date format (e.g., "YYYY-MM-DD")
+      const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+
+      if (!logMap[dateKey]) {
+        logMap[dateKey] = { delivered: 0, rejected: 0, earnings: 0 };
+      }
+
+      if (order.status === "Delivered") {
+        logMap[dateKey].delivered += 1;
+        logMap[dateKey].earnings += order.total || 0;
+      } else if (order.status === "Rejected") {
+        logMap[dateKey].rejected += 1;
+      }
+    });
+
+    // Convert object to sorted array (Latest date first)
+    return Object.keys(logMap)
+      .map((date) => ({ date, ...logMap[date] }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
   const filteredStats = getFilteredStats();
+  const dailyLog = getDailyPerformanceLog();
   
-  // Other general stats
   const activeOrdersCount = orders.filter((o) => o.status !== "Delivered" && o.status !== "Rejected").length;
   const pendingAcceptCount = orders.filter((o) => o.riderAcceptStatus === "pending").length;
-
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
   if (loading) {
@@ -237,9 +262,8 @@ export const RiderDashboard = () => {
           </button>
         </div>
 
-        {/* --- MARKED AREA: FILTER AND STATS CARDS --- */}
+        {/* Filter and Stats Cards */}
         <div className="space-y-4">
-          {/* Filter Controls Bar */}
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary-500" />
@@ -281,9 +305,7 @@ export const RiderDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Active Orders */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                 <Clock className="w-6 h-6" />
@@ -298,7 +320,6 @@ export const RiderDashboard = () => {
               </div>
             </div>
 
-            {/* Pending Accept */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-6 h-6" />
@@ -313,7 +334,6 @@ export const RiderDashboard = () => {
               </div>
             </div>
 
-            {/* Filtered Delivered Count */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-emerald-500">
               <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
                 <CheckCircle className="w-6 h-6" />
@@ -328,7 +348,6 @@ export const RiderDashboard = () => {
               </div>
             </div>
 
-            {/* Filtered Earnings */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-primary-500">
               <div className="w-12 h-12 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-6 h-6" />
@@ -345,12 +364,57 @@ export const RiderDashboard = () => {
           </div>
         </div>
 
+        {/* --- NEW SECTION: DAILY PERFORMANCE LOG LIST --- */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList className="w-4 h-4 text-primary-500" />
+            <h3 className="font-display font-extrabold text-sm text-neutral-850 dark:text-white uppercase tracking-wider">
+              Daily Performance Track Log
+            </h3>
+          </div>
+
+          {dailyLog.length === 0 ? (
+            <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">No history logs recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-450 dark:text-neutral-500 uppercase tracking-wider font-bold">
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3">Completed Deliveries</th>
+                    <th className="py-2.5 px-3">Rejected Orders</th>
+                    <th className="py-2.5 px-3 text-right">Day Earnings</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
+                  {dailyLog.map((log, index) => (
+                    <tr key={index} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors">
+                      <td className="py-3 px-3 font-bold text-neutral-700 dark:text-neutral-300">{log.date}</td>
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1 font-extrabold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                          <CheckCircle className="w-3 h-3" /> {log.delivered}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1 font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
+                          <XCircle className="w-3 h-3" /> {log.rejected}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right font-black text-primary-500">
+                        ৳{log.earnings.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* Main Work Area */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Active Orders List */}
-          <div
-            className={`${activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"} space-y-4 transition-all duration-300`}
-          >
+          <div className={`${activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"} space-y-4 transition-all duration-300`}>
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
               <h3 className="font-display font-extrabold text-sm text-neutral-850 dark:text-white mb-4 uppercase tracking-wider">
                 Assigned Delivery Orders ({orders.length})
@@ -359,57 +423,33 @@ export const RiderDashboard = () => {
               {orders.length === 0 ? (
                 <div className="text-center py-12 text-neutral-400 dark:text-neutral-500 space-y-2">
                   <ShieldAlert className="w-8 h-8 mx-auto stroke-1" />
-                  <p className="text-xs font-semibold">
-                    No orders assigned to you yet.
-                  </p>
-                  <p className="text-[10px] font-light">
-                    Assigned orders will pop up here in real-time.
-                  </p>
+                  <p className="text-xs font-semibold">No orders assigned to you yet.</p>
+                  <p className="text-[10px] font-light">Assigned orders will pop up here in real-time.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {orders.map((ord) => (
-                    <div
-                      key={ord.id}
-                      className="border border-neutral-100 dark:border-neutral-850 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
-                    >
-                      {/* Order info row */}
+                    <div key={ord.id} className="border border-neutral-100 dark:border-neutral-850 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between">
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div>
-                          <span className="font-bold text-xs uppercase text-neutral-805 dark:text-white">
-                            Order #{ord.id}
-                          </span>
+                          <span className="font-bold text-xs uppercase text-neutral-805 dark:text-white">Order #{ord.id}</span>
                           <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
-                            Placed:{" "}
-                            {new Date(ord.createdAt).toLocaleTimeString()}
+                            Placed: {new Date(ord.createdAt).toLocaleTimeString()}
                           </span>
                         </div>
                         <div className="flex gap-2 items-center">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(ord.status)}`}
-                          >
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(ord.status)}`}>
                             {ord.status}
                           </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                              ord.riderAcceptStatus === "accepted"
-                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                                : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
-                            }`}
-                          >
-                            {ord.riderAcceptStatus === "accepted"
-                              ? "Accepted"
-                              : "Pending Accept"}
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${ord.riderAcceptStatus === "accepted" ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-orange-500/10 text-orange-500 border border-orange-500/20"}`}>
+                            {ord.riderAcceptStatus === "accepted" ? "Accepted" : "Pending Accept"}
                           </span>
                         </div>
                       </div>
 
-                      {/* Location & customer info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-850 py-3">
                         <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                            Customer
-                          </span>
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Customer</span>
                           <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
                             <span>{ord.user?.name}</span>
                           </div>
@@ -420,73 +460,32 @@ export const RiderDashboard = () => {
                         </div>
 
                         <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                            Delivery Address
-                          </span>
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Delivery Address</span>
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
-                            <span className="leading-tight">
-                              {ord.user?.address} ({ord.user?.pickArea})
-                            </span>
+                            <span className="leading-tight">{ord.user?.address} ({ord.user?.pickArea})</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Operations / Status controls */}
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="font-bold text-xs">
-                          Total Invoice:{" "}
-                          <span className="text-primary-500">
-                            ৳{ord.total.toFixed(2)}
-                          </span>
-                        </div>
-
+                        <div className="font-bold text-xs">Total Invoice: <span className="text-primary-500">৳{ord.total.toFixed(2)}</span></div>
                         <div className="flex items-center gap-2">
                           {ord.riderAcceptStatus === "pending" ? (
                             <div className="flex gap-2">
-                              <button
-                                onClick={() => handleAccept(ord.id)}
-                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all"
-                              >
-                                Accept Job
-                              </button>
-                              <button
-                                onClick={() => handleReject(ord.id)}
-                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all"
-                              >
-                                Reject Job
-                              </button>
+                              <button onClick={() => handleAccept(ord.id)} className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all">Accept Job</button>
+                              <button onClick={() => handleReject(ord.id)} className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all">Reject Job</button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <select
-                                value={ord.status}
-                                onChange={(e) =>
-                                  handleStatusChange(ord.id, e.target.value)
-                                }
-                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
-                              >
+                              <select value={ord.status} onChange={(e) => handleStatusChange(ord.id, e.target.value)} className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500">
                                 <option value="Out for Delivery">On Way</option>
-                                <option value="Delivered">
-                                  Delivered
-                                </option>
+                                <option value="Delivered">Delivered</option>
                               </select>
                             </div>
                           )}
 
-                          <button
-                            onClick={() =>
-                              setActiveChatOrderId(
-                                ord.id === activeChatOrderId ? null : ord.id,
-                              )
-                            }
-                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
-                              activeChatOrderId === ord.id
-                                ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                                : ""
-                            }`}
-                            title="Chat Console"
-                          >
+                          <button onClick={() => setActiveChatOrderId(ord.id === activeChatOrderId ? null : ord.id)} className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${activeChatOrderId === ord.id ? "bg-primary-500/10 text-primary-500 border-primary-500/30" : ""}`} title="Chat Console">
                             <MessageSquare className="w-4 h-4" />
                           </button>
                         </div>
@@ -501,89 +500,54 @@ export const RiderDashboard = () => {
           {/* Chat Console Panel */}
           <AnimatePresence>
             {activeChatOrderId && chatOrder && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="lg:col-span-5 flex flex-col h-140 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
-              >
-                {/* Header */}
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="lg:col-span-5 flex flex-col h-140 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs">
                 <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                   <div>
-                    <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                      Chat for #{chatOrder.id.toUpperCase()}
-                    </h3>
-                    <span className="block text-[9px] text-neutral-400">
-                      Customer: {chatOrder.user?.name} ({chatOrder.user?.phone})
-                    </span>
+                    <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">Chat for #{chatOrder.id.toUpperCase()}</h3>
+                    <span className="block text-[9px] text-neutral-400">Customer: {chatOrder.user?.name} ({chatOrder.user?.phone})</span>
                   </div>
-                  <button
-                    onClick={() => setActiveChatOrderId(null)}
-                    className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-650"
-                  >
+                  <button onClick={() => setActiveChatOrderId(null)} className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-650">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Messages feed */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
                   {chatOrder.chatHistory.map((msg, i) => {
-                    const isSelf =
-                      msg.sender === "rider" && msg.senderName === user.name;
+                    const isSelf = msg.sender === "rider" && msg.senderName === user.name;
                     const isSystem = msg.senderName === "System";
-                    const isAdmin =
-                      msg.sender === "admin" && msg.senderName !== "System";
+                    const isAdmin = msg.sender === "admin" && msg.senderName !== "System";
                     const isCustomer = msg.sender === "customer";
 
                     let alignClass = "justify-start";
-                    let bubbleClass =
-                      "bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-805 dark:text-neutral-100 rounded-2xl rounded-tl-none";
+                    let bubbleClass = "bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-805 dark:text-neutral-100 rounded-2xl rounded-tl-none";
                     let labelColor = "text-neutral-400";
 
                     if (isSelf) {
                       alignClass = "justify-end";
-                      bubbleClass =
-                        "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
+                      bubbleClass = "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
                       labelColor = "text-primary-500";
                     } else if (isSystem) {
                       return (
                         <div key={i} className="flex justify-center my-1">
-                          <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">
-                            {msg.text}
-                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">{msg.text}</span>
                         </div>
                       );
                     } else if (isAdmin) {
-                      bubbleClass =
-                        "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+                      bubbleClass = "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
                       labelColor = "text-indigo-500";
                     } else if (isCustomer) {
-                      bubbleClass =
-                        "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+                      bubbleClass = "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
                       labelColor = "text-emerald-555";
                     }
 
                     return (
                       <div key={i} className={`flex ${alignClass}`}>
                         <div className="max-w-[85%] flex flex-col gap-1">
-                          {!isSelf && (
-                            <span
-                              className={`text-[10px] font-bold ${labelColor} px-1.5`}
-                            >
-                              {msg.senderName} ({msg.sender.toUpperCase()})
-                            </span>
-                          )}
-                          <div
-                            className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}
-                          >
+                          {!isSelf && <span className={`text-[10px] font-bold ${labelColor} px-1.5`}>{msg.senderName} ({msg.sender.toUpperCase()})</span>}
+                          <div className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}>
                             <p>{msg.text}</p>
-                            <span
-                              className={`block text-[9px] text-right mt-1 font-light ${isSelf ? "text-white/60" : "text-neutral-400"}`}
-                            >
-                              {new Date(msg.timestamp).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                            <span className={`block text-[9px] text-right mt-1 font-light ${isSelf ? "text-white/60" : "text-neutral-400"}`}>
+                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
                         </div>
@@ -593,23 +557,9 @@ export const RiderDashboard = () => {
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Input Form */}
-                <form
-                  onSubmit={handleSendRiderMessage}
-                  className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
-                >
-                  <input
-                    type="text"
-                    value={riderChatMessage}
-                    onChange={(e) => setRiderChatMessage(e.target.value)}
-                    placeholder="Type message to Customer/Admin..."
-                    className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!riderChatMessage.trim()}
-                    className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10"
-                  >
+                <form onSubmit={handleSendRiderMessage} className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0">
+                  <input type="text" value={riderChatMessage} onChange={(e) => setRiderChatMessage(e.target.value)} placeholder="Type message to Customer/Admin..." className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                  <button type="submit" disabled={!riderChatMessage.trim()} className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10">
                     <Send className="w-4 h-4" />
                   </button>
                 </form>
