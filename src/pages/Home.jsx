@@ -47,7 +47,7 @@ const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
       alt={alt}
       className={`transition-transform duration-300 group-hover:scale-105 ${
         isColoredBackground 
-          ? "w-full h-auto object-contain" // Use w-full and h-auto to extend the floral design to both sides without height overflow or clipping.
+          ? "w-full h-auto object-cover" // Use w-full and h-auto to extend the floral design to both sides without height overflow or clipping.
           : "w-full h-full object-contain p-2" // Keep white or standard logos displayed perfectly as before.
       } ${className}`}
     />
