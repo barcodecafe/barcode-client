@@ -36,6 +36,33 @@ import "swiper/css/effect-fade";
 
 const PREVIEW_COUNT = 6; // প্রিভিউ সেকশনে ৬টি কার্ড দেখানোর জন্য গ্লোবাল ভ্যারিয়েবল
 
+// ---------------------------------------------------------------------------
+// ডাইনামিক রেশিও এবং লাইট/ডার্ক মোড হ্যান্ডল করার জন্য সাব-কম্পোনেন্ট
+// ---------------------------------------------------------------------------
+const BrandImage = ({ src, alt, className = "" }) => {
+  const [isWide, setIsWide] = useState(false);
+
+  const handleImageLoad = (e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    if (naturalWidth / naturalHeight > 1.5) {
+      setIsWide(true);
+    }
+  };
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={handleImageLoad}
+      className={`w-full h-full group-hover:scale-105 transition-transform duration-300 ${
+        isWide 
+          ? "object-contain p-4"  // ওয়াইড লোগো
+          : "object-cover"        // স্কয়ার/রাউন্ড লোগো
+      } ${className}`}
+    />
+  );
+};
+
 export const Home = () => {
   // ---------------------------------------------------------------------
   // States & Hooks
@@ -47,9 +74,10 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
 
-  // Bestsellers & Featured Menu এর জন্য টগল স্টেট
+  // Bestsellers, Featured Menu & Brands এর জন্য টগল স্টেট
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const [activeSort, setActiveSort] = useState("popular");
 
@@ -70,7 +98,6 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // মেইন সার্ভারের shared helper ব্যবহার করে ডিসকাউন্ট রেট ক্যালকুলেট করা
   const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
 
   // ---------------------------------------------------------------------
@@ -78,11 +105,8 @@ export const Home = () => {
   // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
-
-    // ১. অ্যাডমিনের সিলেক্ট করা পপুলার খাবারগুলো ফিল্টার করা হচ্ছে
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    // ২. সিলেক্টেড ট্যাব অনুযায়ী ডিসকাউন্ট-অ্যাওয়ার সর্টিং
     if (activeSort === "price-low") {
       filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
     } else if (activeSort === "price-high") {
@@ -90,7 +114,6 @@ export const Home = () => {
     } else if (activeSort === "rating") {
       filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
-
     return filteredList;
   }, [allFoods, activeSort]);
 
@@ -126,6 +149,12 @@ export const Home = () => {
     () => allBranches.slice(PREVIEW_COUNT),
     [allBranches],
   );
+
+  // ---------------------------------------------------------------------
+  // Brands Logic (৬টি আলাদা করার জন্য)
+  // ---------------------------------------------------------------------
+  const previewBrands = useMemo(() => brands.slice(0, PREVIEW_COUNT), [brands]);
+  const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
 
   const foodsById = useMemo(
     () =>
@@ -513,10 +542,10 @@ export const Home = () => {
         )}
       </section>
 
-      {/* 1b. OUR BRANDS SECTION */}
+      {/* 1b. OUR BRANDS SECTION (সংশোধিত ডাইনামিক ভিউ অল লজিক সহ) */}
       {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pt-10 pb-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 mb-6">
+        <section className="max-w-7xl mx-auto px-4 pt-10 pb-12 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4 mb-6 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
             <div>
               <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
                 Our Family of Brands
@@ -525,22 +554,29 @@ export const Home = () => {
                 Explore Chittagong's finest restaurant concepts
               </p>
             </div>
-            <Link
-              to="/brands"
-              className="flex items-center gap-1 text-primary-500 hover:text-primary-650 font-bold group transition-colors text-xs sm:text-sm whitespace-nowrap"
-            >
-              Explore All
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            {/* ডাইনামিক View All / Show Fewer বাটন */}
+            {remainingBrands.length > 0 && (
+              <button
+                onClick={() => setShowAllBrands((v) => !v)}
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+              >
+                {showAllBrands ? "Show Fewer" : "View All"}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllBrands ? "rotate-180" : ""}`}
+                />
+              </button>
+            )}
           </div>
+
+          {/* ৬টি প্রিভিউ ব্র্যান্ড গ্রিড */}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
-            {brands.slice(0, 10).map((brand) => (
+            {previewBrands.map((brand) => (
               <motion.div
                 key={brand.id}
                 variants={fadeInUp}
@@ -550,35 +586,102 @@ export const Home = () => {
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে সুন্দরভাবে বসবে এবং কোনো অংশ কাটবে না */}
-                  <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
-                    {brand.logoLight ? (
-                      <img
-                        src={brand.logoLight}
-                        alt={brand.name}
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                      />
+                  <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                    {brand.logoLight || brand.logoDark ? (
+                      <>
+                        {brand.logoLight && (
+                          <BrandImage
+                            src={brand.logoLight}
+                            alt={brand.name}
+                            className={brand.logoDark ? "dark:hidden" : ""}
+                          />
+                        )}
+                        {brand.logoDark && (
+                          <BrandImage
+                            src={brand.logoDark}
+                            alt={brand.name}
+                            className={brand.logoLight ? "hidden dark:block" : ""}
+                          />
+                        )}
+                      </>
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
                         {brand.name.charAt(0)}
                       </span>
                     )}
                   </div>
-                  {/* নাম এবং ডেসক্রিপশন নিচে পর্যাপ্ত প্যাডিং সহ সেট করা হয়েছে */}
-                  {/* <div className="p-4 text-center space-y-0.5">
+                  <div className="p-4 text-center space-y-0.5">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
-                   {brand.tagline && (
-                      <span className="block text-[10px] text-neutral-400 dark:text-neutral-500 truncate max-w-full">
-                        {brand.tagline}
-                      </span>
-                    )}
-                  </div> */}
+                  </div>
                 </Link>
               </motion.div>
             ))}
           </motion.div>
+
+          {/* বাকি ব্র্যান্ডগুলো নিচে টগল হবে */}
+          <AnimatePresence>
+            {showAllBrands && remainingBrands.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="overflow-hidden"
+              >
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                >
+                  {remainingBrands.map((brand) => (
+                    <motion.div
+                      key={brand.id}
+                      variants={fadeInUp}
+                      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                    >
+                      <Link
+                        to={`/brands/${brand.slug}`}
+                        className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+                      >
+                        <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                          {brand.logoLight || brand.logoDark ? (
+                            <>
+                              {brand.logoLight && (
+                                <BrandImage
+                                  src={brand.logoLight}
+                                  alt={brand.name}
+                                  className={brand.logoDark ? "dark:hidden" : ""}
+                                />
+                              )}
+                              {brand.logoDark && (
+                                <BrandImage
+                                  src={brand.logoDark}
+                                  alt={brand.name}
+                                  className={brand.logoLight ? "hidden dark:block" : ""}
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
+                              {brand.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-4 text-center space-y-0.5">
+                          <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
+                            {brand.name}
+                          </span>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
       )}
     </div>
@@ -586,7 +689,7 @@ export const Home = () => {
 };
 
 // ---------------------------------------------------------------------------
-// FoodCard Component (মেইন সার্ভারের অরিজিনাল প্রোডিউসড কার্ড ডিজাইন অনুযায়ী)
+// FoodCard Component
 // ---------------------------------------------------------------------------
 const FoodCard = memo(
   ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
