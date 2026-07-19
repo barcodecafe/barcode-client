@@ -15,7 +15,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ClipboardList
+  ClipboardList,
+  Utensils
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -142,7 +143,7 @@ export const RiderDashboard = () => {
     }
   };
 
-  // --- Filtering Logic for Earnings and Deliveries ---
+  // --- Fixed Calculation: Separate Rider Earnings and Food Price ---
   const getFilteredStats = () => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -180,20 +181,25 @@ export const RiderDashboard = () => {
       return true;
     });
 
+    // Rider Earnings = delivery charge only
+    const totalEarnings = filtered.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+    // Food Price = total invoice amount minus delivery charge
+    const totalFoodPrice = filtered.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
+
     return {
       deliveryCount: filtered.length,
-      earnings: filtered.reduce((sum, o) => sum + (o.total || 0), 0),
+      earnings: totalEarnings,
+      foodPrice: totalFoodPrice,
     };
   };
 
-  // --- Daily Performance Log Logic (Grouped by Date) ---
+  // --- Performance Log Grouped by Date (Updated with separate columns) ---
   const getDailyPerformanceLog = () => {
     const logMap = {};
 
     orders.forEach((order) => {
       if (!order.createdAt) return;
       
-      // Date format (e.g., "YYYY-MM-DD")
       const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -201,18 +207,19 @@ export const RiderDashboard = () => {
       });
 
       if (!logMap[dateKey]) {
-        logMap[dateKey] = { delivered: 0, rejected: 0, earnings: 0 };
+        logMap[dateKey] = { delivered: 0, rejected: 0, earnings: 0, foodPrice: 0 };
       }
 
       if (order.status === "Delivered") {
         logMap[dateKey].delivered += 1;
-        logMap[dateKey].earnings += order.total || 0;
+        const riderFee = order.deliveryCharge || 0;
+        logMap[dateKey].earnings += riderFee;
+        logMap[dateKey].foodPrice += ((order.total - riderFee) || 0);
       } else if (order.status === "Rejected") {
         logMap[dateKey].rejected += 1;
       }
     });
 
-    // Convert object to sorted array (Latest date first)
     return Object.keys(logMap)
       .map((date) => ({ date, ...logMap[date] }))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -305,66 +312,82 @@ export const RiderDashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
               </div>
               <div>
-                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
                   {activeOrdersCount}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-400 uppercase mt-1 block">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
                   Active Orders
                 </span>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-6 h-6" />
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5" />
               </div>
               <div>
-                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
                   {pendingAcceptCount}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-400 uppercase mt-1 block">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
                   Pending Accept
                 </span>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-emerald-500">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                <CheckCircle className="w-6 h-6" />
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-500/10 text-neutral-500 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-5 h-5" />
               </div>
               <div>
-                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
                   {filteredStats.deliveryCount}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-500 uppercase mt-1 block">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
                   Delivered ({timeFilter})
                 </span>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-primary-500">
-              <div className="w-12 h-12 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-6 h-6" />
+            {/* Total Food Value Delivered */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-indigo-500">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                <Utensils className="w-5 h-5" />
               </div>
               <div>
-                <span className="block text-2xl font-black text-primary-500 dark:text-primary-400 leading-none">
+                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
+                  ৳{filteredStats.foodPrice.toFixed(2)}
+                </span>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase mt-1 block">
+                  Food Delivered
+                </span>
+              </div>
+            </div>
+
+            {/* Rider Actual Income */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-primary-500">
+              <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-xl font-black text-primary-500 dark:text-primary-400 leading-none">
                   ৳{filteredStats.earnings.toFixed(2)}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-500 uppercase mt-1 block">
-                  Earnings ({timeFilter})
+                <span className="text-[10px] font-bold text-neutral-500 uppercase mt-1 block">
+                  Rider Income
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* --- NEW SECTION: DAILY PERFORMANCE LOG LIST --- */}
+        {/* Daily Performance Log Table */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-4 h-4 text-primary-500" />
@@ -381,9 +404,10 @@ export const RiderDashboard = () => {
                 <thead>
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-450 dark:text-neutral-500 uppercase tracking-wider font-bold">
                     <th className="py-2.5 px-3">Date</th>
-                    <th className="py-2.5 px-3">Completed Deliveries</th>
-                    <th className="py-2.5 px-3">Rejected Orders</th>
-                    <th className="py-2.5 px-3 text-right">Day Earnings</th>
+                    <th className="py-2.5 px-3">Delivered</th>
+                    <th className="py-2.5 px-3">Rejected</th>
+                    <th className="py-2.5 px-3">Food Total Delivered</th>
+                    <th className="py-2.5 px-3 text-right">Rider Net Income</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
@@ -399,6 +423,9 @@ export const RiderDashboard = () => {
                         <span className="inline-flex items-center gap-1 font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
                           <XCircle className="w-3 h-3" /> {log.rejected}
                         </span>
+                      </td>
+                      <td className="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">
+                        ৳{log.foodPrice.toFixed(2)}
                       </td>
                       <td className="py-3 px-3 text-right font-black text-primary-500">
                         ৳{log.earnings.toFixed(2)}
