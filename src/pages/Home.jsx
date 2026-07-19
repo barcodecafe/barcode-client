@@ -656,7 +656,7 @@ export const Home = () => {
                             </span>
                           )}
                         </div>
-                        <div className="p-4 text-center space-y-0.5">
+                        <div className="p-2 text-center space-y-0.5">
                           <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                             {brand.name}
                           </span>
