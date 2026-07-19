@@ -37,7 +37,7 @@ import "swiper/css/effect-fade";
 const PREVIEW_COUNT = 6; // প্রিভিউ সেকশনে ৬টি কার্ড দেখানোর জন্য গ্লোবাল ভ্যারিয়েবল
 
 // ---------------------------------------------------------------------------
-// ব্র্যান্ড লোগো ফিট করার জন্য সংশোধিত সাব-কম্পোনেন্ট (লোগো কাটবে না)
+// নিখুঁত ব্র্যান্ড লোগো কম্পোনেন্ট (কোনো লোগো কাটবে না, সব সুন্দরভাবে গুটিয়ে থাকবে)
 // ---------------------------------------------------------------------------
 const BrandImage = ({ src, alt, className = "" }) => {
   return (
@@ -528,7 +528,7 @@ export const Home = () => {
         )}
       </section>
 
-      {/* 1b. OUR BRANDS SECTION (সংশোধিত ডাইনামিক ভিউ অল লজিক সহ) */}
+      {/* 1b. OUR BRANDS SECTION */}
       {brands.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pt-10 pb-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 mb-6 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
@@ -536,9 +536,6 @@ export const Home = () => {
               <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
                 Our Family of Brands
               </h2>
-              <p className="text-xs text-neutral-450 dark:text-neutral-500 mt-0.5">
-                Explore Chittagong's finest restaurant concepts
-              </p>
             </div>
             {/* ডাইনামিক View All / Show Fewer বাটন */}
             {remainingBrands.length > 0 && (
@@ -559,7 +556,7 @@ export const Home = () => {
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+            viewport={{ once: true, margin: "-100px" }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {previewBrands.map((brand) => (
@@ -572,7 +569,7 @@ export const Home = () => {
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  <div className="w-full h-28 bg-white flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                  <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
                     {brand.logoLight || brand.logoDark ? (
                       <>
                         {brand.logoLight && (
@@ -596,7 +593,8 @@ export const Home = () => {
                       </span>
                     )}
                   </div>
-                  <div className="p-4 text-center space-y-0.5">
+                  {/* প্যাডিং কমিয়ে আপনার স্ক্রিনশটের মতো নিখুঁত স্পেসিং করা হলো */}
+                  <div className="py-2.5 px-3 text-center">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
@@ -632,7 +630,7 @@ export const Home = () => {
                         to={`/brands/${brand.slug}`}
                         className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                       >
-                        <div className="w-full h-28 bg-white flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
+                        <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
                           {brand.logoLight || brand.logoDark ? (
                             <>
                               {brand.logoLight && (
@@ -656,7 +654,8 @@ export const Home = () => {
                             </span>
                           )}
                         </div>
-                        <div className="p-2 text-center space-y-0.5">
+                        {/* প্যাডিং কমিয়ে আপনার স্ক্রিনশটের মতো নিখুঁত স্পেসিং করা হলো */}
+                        <div className="py-2.5 px-3 text-center">
                           <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                             {brand.name}
                           </span>
