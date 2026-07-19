@@ -47,9 +47,10 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
 
-  // Bestsellers & Featured Menu
+  // Bestsellers, Featured Menu & Brands toggles
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const [activeSort, setActiveSort] = useState("popular");
 
@@ -70,19 +71,21 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // মেইন সার্ভারের shared helper ব্যবহার করে ডিসকাউন্ট রেট ক্যালকুলেট করা
   const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
+
+  // ---------------------------------------------------------------------
+  // Brands Preview Logic
+  // ---------------------------------------------------------------------
+  const previewBrands = useMemo(() => brands.slice(0, PREVIEW_COUNT), [brands]);
+  const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
 
   // ---------------------------------------------------------------------
   // Bestsellers (Popular Foods) Logic
   // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
-
-    // ১. অ্যাডমিনের সিলেক্ট করা পপুলার খাবারগুলো ফিল্টার করা হচ্ছে
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    // ২. সিলেক্টেড ট্যাব অনুযায়ী ডিসকাউন্ট-অ্যাওয়ার সর্টিং
     if (activeSort === "price-low") {
       filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
     } else if (activeSort === "price-high") {
@@ -90,7 +93,6 @@ export const Home = () => {
     } else if (activeSort === "rating") {
       filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
-
     return filteredList;
   }, [allFoods, activeSort]);
 
@@ -140,15 +142,19 @@ export const Home = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { staggerChildren: 0.05 },
     },
   };
 
@@ -284,17 +290,18 @@ export const Home = () => {
           )}
         </div>
 
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="hidden sm:grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6"
-        >
-          {previewBranches.map((branch) => (
-            <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
-          ))}
-        </motion.div>
+        {previewBranches.length > 0 && (
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+          >
+            {previewBranches.map((branch) => (
+              <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
+            ))}
+          </motion.div>
+        )}
 
         <AnimatePresence>
           {showAllBranches && remainingBranches.length > 0 && (
@@ -366,28 +373,29 @@ export const Home = () => {
           </div>
         </div>
 
-        <motion.div
-          key={activeSort}
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
-        >
-          {previewPopularFoods.map((food) => {
-            const favorited = isFavorite(food.id);
-            return (
-              <FoodCard
-                key={food.id}
-                food={food}
-                favorited={favorited}
-                onToggleFavorite={toggleFavorite}
-                onAddToCart={addToCart}
-                variants={fadeInUp}
-              />
-            );
-          })}
-        </motion.div>
+        {previewPopularFoods.length > 0 && (
+          <motion.div
+            key={activeSort}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+          >
+            {previewPopularFoods.map((food) => {
+              const favorited = isFavorite(food.id);
+              return (
+                <FoodCard
+                  key={food.id}
+                  food={food}
+                  favorited={favorited}
+                  onToggleFavorite={toggleFavorite}
+                  onAddToCart={addToCart}
+                  variants={fadeInUp}
+                />
+              );
+            })}
+          </motion.div>
+        )}
 
         <AnimatePresence>
           {showAllPopular && remainingPopularFoods.length > 0 && (
@@ -458,8 +466,7 @@ export const Home = () => {
             <motion.div
               variants={staggerContainer}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              animate="visible"
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
@@ -513,75 +520,144 @@ export const Home = () => {
         )}
       </section>
 
-      {/* 1b. OUR BRANDS SECTION */}
+      {/* 5. OUR BRANDS SECTION */}
       {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pt-10 pb-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
-                Our Family of Brands
-              </h2>
-            </div>
-            <Link
-              to="/brands"
-              className="flex items-center gap-1 text-primary-500 hover:text-primary-650 font-bold group transition-colors text-xs sm:text-sm whitespace-nowrap"
-            >
-              Explore All
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
-          >
-            {brands.slice(0, 10).map((brand) => (
-              <motion.div
-                key={brand.id}
-                variants={fadeInUp}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              >
-                <Link
-                  to={`/brands/${brand.slug}`}
-                  className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+        <section className="max-w-7xl mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
+              Our Family of Brands
+            </h2>
+            <div className="flex justify-end">
+              {brands.length > PREVIEW_COUNT ? (
+                <button
+                  onClick={() => setShowAllBrands((v) => !v)}
+                  className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
                 >
-                  <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
-                    {brand.logoLight ? (
-                      <img
-                        src={brand.logoLight}
-                        alt={brand.name}
-                        className={`w-full h-[calc(100%-12px)] block ${
-                          ["omerta", "bir-chattala", "barcode-sweets"].includes(
-                            brand.slug,
-                          )
-                            ? "object-cover object-center rounded-lg" // ৩টি লোগো নির্দিষ্ট হাইটের ভেতর কভার হবে এবং কোনা রাউন্ড থাকবে
-                            : "object-contain" // বাকি সব লোগো কনটেইন হয়ে সমান স্পেস পাবে
-                        }`}
-                      />
-                    ) : (
-                      <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
-                        {brand.name.charAt(0)}
-                      </span>
-                    )}
-                  </div>
+                  {showAllBrands ? "Show Fewer" : "View All"}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllBrands ? "rotate-180" : ""}`}
+                  />
+                </button>
+              ) : (
+                <div className="w-1" />
+              )}
+            </div>
+          </div>
 
-                  <div className="p-2 text-center">
-                    <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
-                      {brand.name}
-                    </span>
-                  </div>
-                </Link>
+          {previewBrands.length > 0 && (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            >
+              {previewBrands.map((brand) => (
+                <motion.div
+                  key={brand.id}
+                  variants={fadeInUp}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                >
+                  <Link
+                    to={`/brands/${brand.slug}`}
+                    className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+                  >
+                    <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
+                      {brand.logoLight ? (
+                        <img
+                          src={brand.logoLight}
+                          alt={brand.name}
+                          className={`w-full h-[calc(100%-12px)] block ${
+                            [
+                              "omerta",
+                              "bir-chattala",
+                              "barcode-sweets",
+                            ].includes(brand.slug)
+                              ? "object-cover object-center rounded-lg"
+                              : "object-contain"
+                          }`}
+                        />
+                      ) : (
+                        <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
+                          {brand.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="py-2.5 px-3 text-center">
+                      <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
+                        {brand.name}
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          <AnimatePresence>
+            {showAllBrands && remainingBrands.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="overflow-hidden"
+              >
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                >
+                  {remainingBrands.map((brand) => (
+                    <motion.div
+                      key={brand.id}
+                      variants={fadeInUp}
+                      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                    >
+                      <Link
+                        to={`/brands/${brand.slug}`}
+                        className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+                      >
+                        <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
+                          {brand.logoLight ? (
+                            <img
+                              src={brand.logoLight}
+                              alt={brand.name}
+                              className={`w-full h-[calc(100%-12px)] block ${
+                                [
+                                  "omerta",
+                                  "bir-chattala",
+                                  "barcode-sweets",
+                                ].includes(brand.slug)
+                                  ? "object-cover object-center rounded-lg"
+                                  : "object-contain"
+                          }`}
+                            />
+                          ) : (
+                            <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
+                              {brand.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="py-2.5 px-3 text-center">
+                          <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
+                            {brand.name}
+                          </span>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </motion.div>
               </motion.div>
-            ))}
-          </motion.div>
+            )}
+          </AnimatePresence>
         </section>
       )}
     </div>
   );
 };
-
 
 const FoodCard = memo(
   ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
