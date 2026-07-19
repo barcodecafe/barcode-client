@@ -36,8 +36,9 @@ import "swiper/css/effect-fade";
 
 const PREVIEW_COUNT = 6; 
 
-
-
+// ---------------------------------------------------------------------------
+// সংশোধিত BrandImage কম্পোনেন্ট (নির্দিষ্ট ৩টি cover এবং বাকিগুলো contain হবে)
+// ---------------------------------------------------------------------------
 const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
   const isColoredBackground = ["omerta", "bir-chattala", "barcode-sweets"].includes(brandSlug);
 
@@ -45,10 +46,10 @@ const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
     <img
       src={src}
       alt={alt}
-      className={`transition-transform duration-300 group-hover:scale-105 ${
+      className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
         isColoredBackground 
-          ? "w-full h-auto object-cover" // Use w-full and h-auto to extend the floral design to both sides without height overflow or clipping.
-          : "w-full h-full object-contain p-2" // Keep white or standard logos displayed perfectly as before.
+          ? "object-cover" // নির্দিষ্ট ৩টি লোগো ফুল উইডথ নিয়ে কভার করবে
+          : "object-contain p-2" // বাকি সাধারণ লোগোগুলো কনটেইন ও প্যাডিং পাবে
       } ${className}`}
     />
   );
@@ -408,17 +409,9 @@ export const Home = () => {
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  {/* h-28 এবং p-0 (কোনো প্যাডিং নেই) করে ইমেজটি ডানে-বামে পুরো ফিল (object-cover) করা হয়েছে */}
                   <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
-                    {brand.logoLight || brand.logoDark ? (
-                      <>
-                        {brand.logoLight && (
-                          <BrandImage src={brand.logoLight} alt={brand.name} className={brand.logoDark ? "dark:hidden" : ""} />
-                        )}
-                        {brand.logoDark && (
-                          <BrandImage src={brand.logoDark} alt={brand.name} className={brand.logoLight ? "hidden dark:block" : ""} />
-                        )}
-                      </>
+                    {brand.logo ? (
+                      <BrandImage src={brand.logo} alt={brand.name} brandSlug={brand.slug} />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
                         {brand.name.charAt(0)}
@@ -447,15 +440,8 @@ export const Home = () => {
                         className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                       >
                         <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
-                          {brand.logoLight || brand.logoDark ? (
-                            <>
-                              {brand.logoLight && (
-                                <BrandImage src={brand.logoLight} alt={brand.name} className={brand.logoDark ? "dark:hidden" : ""} />
-                              )}
-                              {brand.logoDark && (
-                                <BrandImage src={brand.logoDark} alt={brand.name} className={brand.logoLight ? "hidden dark:block" : ""} />
-                              )}
-                            </>
+                          {brand.logo ? (
+                            <BrandImage src={brand.logo} alt={brand.name} brandSlug={brand.slug} />
                           ) : (
                             <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
                               {brand.name.charAt(0)}
