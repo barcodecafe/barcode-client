@@ -34,26 +34,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-const PREVIEW_COUNT = 6; 
-
-// ---------------------------------------------------------------------------
-// সংশোধিত BrandImage কম্পোনেন্ট (নির্দিষ্ট ৩টি cover এবং বাকিগুলো contain হবে)
-// ---------------------------------------------------------------------------
-const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
-  const isColoredBackground = ["omerta", "bir-chattala", "barcode-sweets"].includes(brandSlug);
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
-        isColoredBackground 
-          ? "object-cover" // নির্দিষ্ট ৩টি লোগো ফুল উইডথ নিয়ে কভার করবে
-          : "object-contain p-2" // বাকি সাধারণ লোগোগুলো কনটেইন ও প্যাডিং পাবে
-      } ${className}`}
-    />
-  );
-};
+const PREVIEW_COUNT = 6; // প্রিভিউ সেকশনে ৬টি কার্ড দেখানোর জন্য গ্লোবাল ভ্যারিয়েবল
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -66,9 +47,9 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
 
+  // Bestsellers & Featured Menu এর জন্য টগল স্টেট
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
-  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const [activeSort, setActiveSort] = useState("popular");
 
@@ -89,13 +70,19 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
+  // মেইন সার্ভারের shared helper ব্যবহার করে ডিসকাউন্ট রেট ক্যালকুলেট করা
   const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
 
-  // Bestsellers Logic
+  // ---------------------------------------------------------------------
+  // Bestsellers (Popular Foods) Logic
+  // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
+
+    // ১. অ্যাডমিনের সিলেক্ট করা পপুলার খাবারগুলো ফিল্টার করা হচ্ছে
     let filteredList = allFoods.filter((food) => food.popular === true);
 
+    // ২. সিলেক্টেড ট্যাব অনুযায়ী ডিসকাউন্ট-অ্যাওয়ার সর্টিং
     if (activeSort === "price-low") {
       filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
     } else if (activeSort === "price-high") {
@@ -103,13 +90,16 @@ export const Home = () => {
     } else if (activeSort === "rating") {
       filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
+
     return filteredList;
   }, [allFoods, activeSort]);
 
   const previewPopularFoods = useMemo(() => totalPopularFoods.slice(0, PREVIEW_COUNT), [totalPopularFoods]);
   const remainingPopularFoods = useMemo(() => totalPopularFoods.slice(PREVIEW_COUNT), [totalPopularFoods]);
 
+  // ---------------------------------------------------------------------
   // Featured Menu Logic
+  // ---------------------------------------------------------------------
   const totalFeaturedMenu = useMemo(() => {
     return allFoods.filter((food) => food.isAdminFeatured === true);
   }, [allFoods]);
@@ -117,14 +107,22 @@ export const Home = () => {
   const previewFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(0, PREVIEW_COUNT), [totalFeaturedMenu]);
   const remainingFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(PREVIEW_COUNT), [totalFeaturedMenu]);
 
-  // Branches Logic
-  const remainingBranches = useMemo(() => allBranches.slice(PREVIEW_COUNT), [allBranches]);
+  // ---------------------------------------------------------------------
+  // Remaining Branches Logic
+  // ---------------------------------------------------------------------
+  const remainingBranches = useMemo(
+    () => allBranches.slice(PREVIEW_COUNT),
+    [allBranches],
+  );
 
-  // Brands Logic
-  const previewBrands = useMemo(() => brands.slice(0, PREVIEW_COUNT), [brands]);
-  const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
-
-  const foodsById = useMemo(() => allFoods.reduce((map, food) => { map[food.id] = food; return map; }, {}), [allFoods]);
+  const foodsById = useMemo(
+    () =>
+      allFoods.reduce((map, food) => {
+        map[food.id] = food;
+        return map;
+      }, {}),
+    [allFoods],
+  );
 
   const { addToCart, openCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -136,14 +134,17 @@ export const Home = () => {
 
   const staggerContainer = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
   };
 
   return (
     <div className="w-full">
       {/* GLOBAL MAINTENANCE NOTICE LINE */}
       <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-primary-600 text-white text-center py-2 px-4 text-xs font-semibold uppercase tracking-wider select-none">
-        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes).
+        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!
       </div>
 
       {/* 1. HERO BANNER CAROUSEL */}
@@ -159,11 +160,14 @@ export const Home = () => {
             className="w-full h-full 
               [&_.swiper-button-next]:!bg-transparent [&_.swiper-button-prev]:!bg-transparent 
               [&_.swiper-button-next]:after:text-primary-500 [&_.swiper-button-prev]:after:text-primary-500 
-              [&_.swiper-button-next]:after:!text-lg [&_.swiper-button-prev]:after:!text-lg"
+              [&_.swiper-button-next]:after:!text-lg [&_.swiper-button-prev]:after:!text-lg 
+              [&_.swiper-button-prev]:!left-2 sm:[&_.swiper-button-prev]:!left-4 lg:[&_.swiper-button-prev]:!left-8
+              [&_.swiper-button-next]:!right-2 sm:[&_.swiper-button-next]:!right-4 lg:[&_.swiper-button-next]:!right-8"
           >
             {heroSlides.map((slide, index) => {
               const featuredFood = foodsById[slide.featuredFoodId];
-              const showOrderButton = slide.type === "promo" && Boolean(featuredFood);
+              const showOrderButton =
+                slide.type === "promo" && Boolean(featuredFood);
 
               return (
                 <SwiperSlide key={slide.id ?? index} className="relative w-full h-full">
@@ -171,13 +175,15 @@ export const Home = () => {
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 ease-out transform scale-105"
                     style={{ backgroundImage: `url(${slide.image})` }}
                   />
+
                   <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-6 sm:pb-8 gap-3">
                     <div className="max-w-3xl text-white flex flex-col items-center select-none pointer-events-none">
-                      {slide.type === "promo" && (slide.offerText || (featuredFood && hasFoodDiscount(featuredFood))) && (
-                        <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg">
-                          🔥 {slide.offerText || foodDiscountLabel(featuredFood)}
-                        </span>
-                      )}
+                      {slide.type === "promo" &&
+                        (slide.offerText || (featuredFood && hasFoodDiscount(featuredFood))) && (
+                          <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg shadow-red-500/35">
+                            🔥 {slide.offerText || foodDiscountLabel(featuredFood)}
+                          </span>
+                        )}
                       <h2 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow-lg">
                         {slide.title}
                       </h2>
@@ -185,11 +191,15 @@ export const Home = () => {
                         {slide.subtitle}
                       </p>
                     </div>
+
                     {showOrderButton && (
                       <div className="z-10">
                         <button
-                          onClick={() => { addToCart(featuredFood); openCart(); }}
-                          className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold flex items-center gap-2 group shadow-xl transition-all duration-300 pointer-events-auto"
+                          onClick={() => {
+                            addToCart(featuredFood);
+                            openCart();
+                          }}
+                          className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold flex items-center gap-2 group shadow-xl shadow-primary-500/20 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-95 transition-all duration-300 pointer-events-auto"
                         >
                           {slide.cta || "Order Now"}
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -208,29 +218,44 @@ export const Home = () => {
       <section className="max-w-7xl mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
           <div className="flex-1 flex justify-start">
-            <Link to="/branches" className="inline-block px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-primary-500 text-primary-500 font-semibold text-xs sm:text-sm whitespace-nowrap">
+            <Link
+              to="/branches"
+              className="inline-block px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-primary-500 text-primary-500 font-semibold hover:bg-primary-500/5 hover:scale-[1.03] active:scale-95 transition-all duration-300 text-xs sm:text-sm whitespace-nowrap"
+            >
               Find Near Me
             </Link>
           </div>
+
           <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 text-center shrink-0 px-2">
             Our Branches
           </h2>
+
           <div className="flex-1 flex justify-end">
-            {remainingBranches.length > 0 && (
+            {remainingBranches.length > 0 ? (
               <button
                 onClick={() => setShowAllBranches((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
               >
                 {showAllBranches ? "Show Fewer" : "View All"}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllBranches ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllBranches ? "rotate-180" : ""}`}
+                />
               </button>
+            ) : (
+              <div className="w-1" />
             )}
           </div>
         </div>
 
         <div className="sm:hidden -mx-2">
           {previewBranches.length > 0 && (
-            <Swiper slidesPerView={1.15} spaceBetween={16} className="!px-2 !pb-8">
+            <Swiper
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-2 !pb-8"
+            >
               {previewBranches.map((branch) => (
                 <SwiperSlide key={branch.id}>
                   <BranchCard branch={branch} variants={fadeInUp} />
@@ -258,6 +283,7 @@ export const Home = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4 }}
               className="overflow-hidden"
             >
               <motion.div
@@ -278,31 +304,41 @@ export const Home = () => {
       {/* 3. POPULAR FOODS SECTION (OUR BESTSELLERS) */}
       <section className="max-w-7xl mx-auto px-2 pt-8 pb-0 sm:px-4 sm:pt-10 sm:pb-0 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
-          <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
-            Our Bestsellers
-          </h2>
+          <div className="shrink-0">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
+              Our Bestsellers
+            </h2>
+          </div>
+
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1 md:justify-center">
             {sortTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveSort(tab.id)}
                 className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                  activeSort === tab.id ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300"
+                  activeSort === tab.id
+                    ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                    : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
+
           <div className="shrink-0 flex justify-end">
-            {totalPopularFoods.length > PREVIEW_COUNT && (
+            {totalPopularFoods.length > PREVIEW_COUNT ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
               >
                 {showAllPopular ? "Show Fewer" : "View All"}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllPopular ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllPopular ? "rotate-180" : ""}`}
+                />
               </button>
+            ) : (
+              <div className="w-1" />
             )}
           </div>
         </div>
@@ -315,18 +351,49 @@ export const Home = () => {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
         >
-          {previewPopularFoods.map((food) => (
-            <FoodCard key={food.id} food={food} favorited={isFavorite(food.id)} onToggleFavorite={toggleFavorite} onAddToCart={addToCart} variants={fadeInUp} />
-          ))}
+          {previewPopularFoods.map((food) => {
+            const favorited = isFavorite(food.id);
+            return (
+              <FoodCard
+                key={food.id}
+                food={food}
+                favorited={favorited}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
+                variants={fadeInUp}
+              />
+            );
+          })}
         </motion.div>
 
         <AnimatePresence>
           {showAllPopular && remainingPopularFoods.length > 0 && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6">
-                {remainingPopularFoods.map((food) => (
-                  <FoodCard key={food.id} food={food} favorited={isFavorite(food.id)} onToggleFavorite={toggleFavorite} onAddToCart={addToCart} variants={fadeInUp} />
-                ))}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4 }}
+              className="overflow-hidden"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+              >
+                {remainingPopularFoods.map((food) => {
+                  const favorited = isFavorite(food.id);
+                  return (
+                    <FoodCard
+                      key={food.id}
+                      food={food}
+                      favorited={favorited}
+                      onToggleFavorite={toggleFavorite}
+                      onAddToCart={addToCart}
+                      variants={fadeInUp}
+                    />
+                  );
+                })}
               </motion.div>
             </motion.div>
           )}
@@ -339,127 +406,142 @@ export const Home = () => {
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
           </h2>
+
           <div className="flex justify-end">
-            {remainingFeaturedMenu.length > 0 && (
+            {remainingFeaturedMenu.length > 0 ? (
               <button
                 onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
               >
                 {showAllFeatured ? "Show Fewer" : "View All"}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllFeatured ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllFeatured ? "rotate-180" : ""}`}
+                />
               </button>
+            ) : (
+              <div className="w-1" />
             )}
           </div>
         </div>
 
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
-        >
-          {previewFeaturedMenu.map((food) => (
-            <FoodCard key={food.id} food={food} favorited={isFavorite(food.id)} onToggleFavorite={toggleFavorite} onAddToCart={addToCart} variants={fadeInUp} />
-          ))}
-        </motion.div>
-
-        <AnimatePresence>
-          {showAllFeatured && remainingFeaturedMenu.length > 0 && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6">
-                {remainingFeaturedMenu.map((food) => (
-                  <FoodCard key={food.id} food={food} favorited={isFavorite(food.id)} onToggleFavorite={toggleFavorite} onAddToCart={addToCart} variants={fadeInUp} />
-                ))}
-              </motion.div>
+        {previewFeaturedMenu.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl">
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">No featured items available right now.</p>
+          </div>
+        ) : (
+          <>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            >
+              {previewFeaturedMenu.map((food) => {
+                const favorited = isFavorite(food.id);
+                return (
+                  <FoodCard
+                    key={food.id}
+                    food={food}
+                    favorited={favorited}
+                    onToggleFavorite={toggleFavorite}
+                    onAddToCart={addToCart}
+                    variants={fadeInUp}
+                  />
+                );
+              })}
             </motion.div>
-          )}
-        </AnimatePresence>
+
+            <AnimatePresence>
+              {showAllFeatured && remainingFeaturedMenu.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <motion.div
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                  >
+                    {remainingFeaturedMenu.map((food) => {
+                      const favorited = isFavorite(food.id);
+                      return (
+                        <FoodCard
+                          key={food.id}
+                          food={food}
+                          favorited={favorited}
+                          onToggleFavorite={toggleFavorite}
+                          onAddToCart={addToCart}
+                          variants={fadeInUp}
+                        />
+                      );
+                    })}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </section>
 
-      {/* 5. OUR BRANDS SECTION */}
+      {/* 1b. OUR BRANDS SECTION */}
       {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pt-10 pb-12 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 mb-6 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
-            <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
-              Our Family of Brands
-            </h2>
-            {remainingBrands.length > 0 && (
-              <button
-                onClick={() => setShowAllBrands((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold text-xs sm:text-sm shadow-sm whitespace-nowrap"
-              >
-                {showAllBrands ? "Show Fewer" : "View All"}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showAllBrands ? "rotate-180" : ""}`} />
-              </button>
-            )}
+        <section className="max-w-7xl mx-auto px-4 pt-10 pb-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
+                Our Family of Brands
+              </h2>
+              <p className="text-xs text-neutral-450 dark:text-neutral-500 mt-0.5">Explore Chittagong's finest restaurant concepts</p>
+            </div>
+            <Link
+              to="/brands"
+              className="flex items-center gap-1 text-primary-500 hover:text-primary-650 font-bold group transition-colors text-xs sm:text-sm whitespace-nowrap"
+            >
+              Explore All
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
-
-          {/* ৬টি প্রিভিউ ব্র্যান্ড গ্রিড */}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
           >
-            {previewBrands.map((brand) => (
+            {brands.slice(0, 10).map((brand) => (
               <motion.div key={brand.id} variants={fadeInUp} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                 <Link
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
-                    {brand.logo ? (
-                      <BrandImage src={brand.logo} alt={brand.name} brandSlug={brand.slug} />
+                  {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে আসবে */}
+                  <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
+                    {brand.logoLight ? (
+                      <img src={brand.logoLight} alt={brand.name} className="w-full h-full object-contain" />
                     ) : (
-                      <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
-                        {brand.name.charAt(0)}
-                      </span>
+                      <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
                   </div>
-                  <div className="py-2.5 px-3 text-center">
+                  {/* নাম এবং ডেসক্রিপশন নিচে পর্যাপ্ত প্যাডিং সহ সেট করা হয়েছে */}
+                  <div className="p-4 text-center space-y-0.5">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
+                    {brand.tagline && (
+                      <span className="block text-[10px] text-neutral-400 dark:text-neutral-500 truncate max-w-full">
+                        {brand.tagline}
+                      </span>
+                )}
                   </div>
                 </Link>
               </motion.div>
             ))}
           </motion.div>
-
-          {/* বাকি ব্র্যান্ডগুলো নিচে টগল হবে */}
-          <AnimatePresence>
-            {showAllBrands && remainingBrands.length > 0 && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6">
-                  {remainingBrands.map((brand) => (
-                    <motion.div key={brand.id} variants={fadeInUp} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                      <Link
-                        to={`/brands/${brand.slug}`}
-                        className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
-                      >
-                        <div className="w-full h-28 bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 relative">
-                          {brand.logo ? (
-                            <BrandImage src={brand.logo} alt={brand.name} brandSlug={brand.slug} />
-                          ) : (
-                            <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
-                              {brand.name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="py-2.5 px-3 text-center">
-                          <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
-                            {brand.name}
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
       )}
     </div>
@@ -467,27 +549,43 @@ export const Home = () => {
 };
 
 // ---------------------------------------------------------------------------
-// FoodCard Component
+// FoodCard Component (মেইন সার্ভারের অরিজিনাল প্রোডিউসড কার্ড ডিজাইন অনুযায়ী)
 // ---------------------------------------------------------------------------
 const FoodCard = memo(({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
   const hasDiscount = hasFoodDiscount(food);
   const discountedPrice = applyFoodDiscount(food.price || 0, food);
 
   return (
-    <motion.div variants={variants} whileHover={{ y: -6 }} className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+    <motion.div
+      variants={variants}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+    >
       <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         {hasDiscount && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase z-10">
+          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
             {foodDiscountLabel(food)}
           </div>
         )}
         <Link to={`/menu/${food.id}`} className="block w-full h-full">
-          <img src={food.image} alt={food.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+          <img
+            src={food.image}
+            alt={food.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            loading="lazy"
+          />
         </Link>
-        <button onClick={() => onToggleFavorite(food.id)} className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 z-10 ${favorited ? "text-red-500" : "text-neutral-450"}`}>
+        <button
+          onClick={() => onToggleFavorite(food.id)}
+          className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
+            favorited ? "text-red-500" : "text-neutral-450 hover:text-red-500"
+          }`}
+          aria-label="Toggle Favorite"
+        >
           <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
         </button>
       </div>
+
       <div className="p-4 grow flex flex-col justify-between gap-3">
         <div>
           <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
@@ -500,18 +598,30 @@ const FoodCard = memo(({ food, favorited, onToggleFavorite, onAddToCart, variant
             </h3>
           </Link>
         </div>
+
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex flex-wrap items-baseline gap-1">
             {hasDiscount ? (
               <>
-                <span className="font-display font-extrabold text-red-500 text-base">৳{discountedPrice.toFixed(2)}</span>
-                <span className="text-xs text-neutral-450 line-through">৳{(food.price || 0).toFixed(2)}</span>
+                <span className="font-display font-extrabold text-red-500 text-base">
+                  ৳{discountedPrice.toFixed(2)}
+                </span>
+                <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
+                  ৳{(food.price || 0).toFixed(2)}
+                </span>
               </>
             ) : (
-              <span className="font-display font-extrabold text-primary-500 text-base">৳{(food.price || 0).toFixed(2)}</span>
+              <span className="font-display font-extrabold text-primary-500 text-base">
+                ৳{(food.price || 0).toFixed(2)}
+              </span>
             )}
           </div>
-          <button onClick={() => onAddToCart(food)} className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-white transition-all duration-300">
+
+          <button
+            onClick={() => onAddToCart(food)}
+            className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
+            title="Order Now"
+          >
             <ShoppingBag className="w-4 h-4" />
           </button>
         </div>
@@ -525,16 +635,30 @@ FoodCard.displayName = "FoodCard";
 // BranchCard Component
 // ---------------------------------------------------------------------------
 const BranchCard = memo(({ branch, variants }) => {
+  const handleDetailsClick = () => {
+    localStorage.setItem("selectedBranchId", String(branch.id));
+  };
+
   return (
-    <motion.div variants={variants} whileHover={{ y: -6 }} className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+    <motion.div
+      variants={variants}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+    >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <Link to={`/branches/${branch.id}`}>
-          <img src={branch.image} alt={branch.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+          <img
+            src={branch.image}
+            alt={branch.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
         </Link>
-        <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-primary-500 text-[10px] font-bold text-white">
+        <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider">
           ★ {branch.rating}
         </div>
       </div>
+
       <div className="p-4 grow flex flex-col justify-between gap-4">
         <div>
           <Link to={`/branches/${branch.id}`}>
@@ -542,17 +666,22 @@ const BranchCard = memo(({ branch, variants }) => {
               {branch.name}
             </h3>
           </Link>
-          <div className="flex gap-2 items-start text-xs text-neutral-500">
+          <div className="flex gap-2 items-start text-xs text-neutral-500 dark:text-neutral-400">
             <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0 mt-0.5" />
             <span className="line-clamp-2">{branch.location}</span>
           </div>
         </div>
+
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
-          <div className="flex items-center gap-1.5 text-neutral-500">
+          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
           </div>
-          <Link to={`/branches/${branch.id}`} className="text-primary-500 flex items-center gap-0.5 group">
+          <Link
+            to={`/branches/${branch.id}`}
+            onClick={handleDetailsClick}
+            className="text-primary-500 hover:text-primary-650 flex items-center gap-0.5 group"
+          >
             Details
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </Link>
