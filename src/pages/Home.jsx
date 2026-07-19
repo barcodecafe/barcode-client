@@ -34,7 +34,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-const PREVIEW_COUNT = 6; // প্রিভিউ সেকশনে ৬টি কার্ড দেখানোর জন্য গ্লোবাল ভ্যারিয়েবল
+const PREVIEW_COUNT = 6; 
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -47,7 +47,7 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
 
-  // Bestsellers & Featured Menu এর জন্য টগল স্টেট
+  // Bestsellers & Featured Menu 
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
 
@@ -522,21 +522,17 @@ export const Home = () => {
                   {/* ইমেজ এখন পুরো টপ এরিয়া জুড়ে আসবে */}
                   <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="w-full h-full object-contain" />
+                      <img src={brand.logoLight} alt={brand.name} className="object-contain" />
                     ) : (
                       <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
                     )}
                   </div>
                   {/* নাম এবং ডেসক্রিপশন নিচে পর্যাপ্ত প্যাডিং সহ সেট করা হয়েছে */}
-                  <div className="p-4 text-center space-y-0.5">
+                  <div className="p-2 text-center">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
-                    {brand.tagline && (
-                      <span className="block text-[10px] text-neutral-400 dark:text-neutral-500 truncate max-w-full">
-                        {brand.tagline}
-                      </span>
-                )}
+                    
                   </div>
                 </Link>
               </motion.div>
