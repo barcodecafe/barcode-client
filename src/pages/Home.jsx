@@ -37,18 +37,18 @@ import "swiper/css/effect-fade";
 const PREVIEW_COUNT = 6; 
 
 
+
 const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
-  
   const isColoredBackground = ["omerta", "bir-chattala", "barcode-sweets"].includes(brandSlug);
 
   return (
     <img
       src={src}
       alt={alt}
-      className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
+      className={`transition-transform duration-300 group-hover:scale-105 ${
         isColoredBackground 
-          ? "object-cover " // coloured logo
-          : "object-contain p-2" // white logo
+          ? "w-full h-auto object-contain" // Use w-full and h-auto to extend the floral design to both sides without height overflow or clipping.
+          : "w-full h-full object-contain p-2" // Keep white or standard logos displayed perfectly as before.
       } ${className}`}
     />
   );
