@@ -47,8 +47,8 @@ const BrandImage = ({ src, alt, brandSlug, className = "" }) => {
       alt={alt}
       className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
         isColoredBackground 
-          ? "object-cover py-4" // coloured logo
-          : "object-cover p-2" // white logo
+          ? "object-cover " // coloured logo
+          : "object-contain p-2" // white logo
       } ${className}`}
     />
   );
