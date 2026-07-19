@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,14 +6,15 @@ import {
   MessageSquare,
   Send,
   LogOut,
-  CheckCircle,
   ShieldAlert,
   Phone,
   MapPin,
   X,
+  Calendar,
+  DollarSign,
+  TrendingUp,
   Clock,
-  Package,
-  Wallet,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -23,79 +24,24 @@ import {
   acceptRiderOrder,
   rejectRiderOrder,
 } from "../services/ordersService";
-import { updateRiderStatus } from "../services/ridersService";
 
-// small stat tile for the rider overview row
-const StatTile = ({ icon: Icon, label, value, tint }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tint}`}>
-      <Icon className="w-5 h-5" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-lg font-extrabold text-neutral-800 dark:text-white leading-none truncate">{value}</p>
-      <p className="text-[11px] text-neutral-400 font-medium mt-1">{label}</p>
-    </div>
-  </div>
-);
-
-// Canonical order statuses (must match the server's ORDER_STATUSES).
 const getStatusColor = (status) => {
   switch (status) {
     case "Placed":
       return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
     case "Accepted":
-      return "bg-sky-500/10 text-sky-500 border border-sky-500/20";
+      return "bg-green-500/10 text-green-500 border border-green-500/20";
     case "Preparing":
       return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
     case "Out for Delivery":
       return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
     case "Delivered":
-      return "bg-green-500/10 text-green-500 border border-green-500/20";
+      return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
     case "Rejected":
       return "bg-red-500/10 text-red-500 border border-red-500/20";
     default:
       return "bg-neutral-500/10 text-neutral-500 border border-neutral-500/20";
   }
-};
-
-// The rider's next one-click action for an accepted, in-flight order.
-// Returns null when there's nothing for the rider to do (delivered/rejected).
-const nextDeliveryAction = (status) => {
-  if (status === "Out for Delivery") return { label: "Mark Delivered", next: "Delivered" };
-  if (status === "Delivered" || status === "Rejected") return null;
-  // Placed / Accepted / Preparing → rider heads out with the food
-  return { label: "Picked Up — On the Way", next: "Out for Delivery" };
-};
-
-// Compact 3-step progress for a rider's delivery: Accepted → On the Way → Delivered.
-const DELIVERY_STAGES = ["Accepted", "Out for Delivery", "Delivered"];
-const STAGE_LABELS = { Accepted: "Accepted", "Out for Delivery": "On the Way", Delivered: "Delivered" };
-const StageStepper = ({ status }) => {
-  // Map any pre-dispatch status onto the "Accepted" step.
-  const norm = status === "Delivered" || status === "Out for Delivery" ? status : "Accepted";
-  const currentIdx = DELIVERY_STAGES.indexOf(norm);
-  return (
-    <div className="flex items-center gap-1.5">
-      {DELIVERY_STAGES.map((stage, i) => {
-        const done = i <= currentIdx;
-        return (
-          <div key={stage} className="flex items-center gap-1.5">
-            <span
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wide ${
-                done ? "bg-primary-500/15 text-primary-500" : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400"
-              }`}
-            >
-              {done && <CheckCircle className="w-2.5 h-2.5" />}
-              {STAGE_LABELS[stage]}
-            </span>
-            {i < DELIVERY_STAGES.length - 1 && (
-              <span className={`h-px w-3 ${i < currentIdx ? "bg-primary-500/40" : "bg-neutral-200 dark:bg-neutral-700"}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
 };
 
 export const RiderDashboard = () => {
@@ -106,36 +52,19 @@ export const RiderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [riderChatMessage, setRiderChatMessage] = useState("");
-  const [availability, setAvailability] = useState(user?.riderStatus || "Available");
-  const [updatingAvail, setUpdatingAvail] = useState(false);
+  
+  // Earning & Delivery Filter States
+  const [timeFilter, setTimeFilter] = useState("daily"); // daily, weekly, monthly, yearly, custom
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   const chatEndRef = useRef(null);
-
-  // keep the toggle in sync with the hydrated user
-  useEffect(() => {
-    if (user?.riderStatus) setAvailability(user.riderStatus);
-  }, [user?.riderStatus]);
-
-  const handleToggleAvailability = async () => {
-    if (!user) return;
-    const next = availability === "Available" ? "Busy" : "Available";
-    setUpdatingAvail(true);
-    try {
-      await updateRiderStatus(user.id, next);
-      setAvailability(next);
-    } catch (err) {
-      alert("Failed to update availability: " + err.message);
-    } finally {
-      setUpdatingAvail(false);
-    }
-  };
-  // const activeChatLength = orders.find((o) => o.id === activeChatOrderId)?.chatHistory?.length || 0;
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  const fetchRiderOrders = () => {
+  const fetchRiderOrders = useCallback(() => {
     if (!user) return;
     getAllOrders().then((data) => {
-      // Filter orders assigned to this rider
       const assigned = data.filter(
         (o) =>
           o.riderId === user.id ||
@@ -144,20 +73,14 @@ export const RiderDashboard = () => {
       setOrders(assigned);
       setLoading(false);
     });
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchRiderOrders();
     const interval = setInterval(fetchRiderOrders, 3000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [fetchRiderOrders]);
 
-  // Scroll to bottom of chat
-  // useEffect(() => {
-  //   if (chatEndRef.current) {
-  //     chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  //   }
-  // }, [activeChatOrderId, orders]);
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
       chatEndRef.current.scrollIntoView({
@@ -218,53 +141,64 @@ export const RiderDashboard = () => {
     }
   };
 
-  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+  // --- Filtering Logic for Earnings and Deliveries ---
+  const getFilteredStats = () => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // Rider not yet approved → show a status screen instead of the order console.
-  // (legacy riders / approved riders have status 'none' or 'approved'.)
-  const approval = user?.riderApprovalStatus;
-  if (approval === "pending" || approval === "rejected") {
-    const pending = approval === "pending";
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-8 shadow-xl text-center"
-        >
-          <div
-            className={`w-16 h-16 rounded-2xl ${pending ? "bg-amber-500/10" : "bg-red-500/10"} flex items-center justify-center mx-auto mb-6 ${pending ? "animate-pulse" : ""}`}
-          >
-            {pending ? (
-              <Bike className="w-8 h-8 text-amber-500" />
-            ) : (
-              <ShieldAlert className="w-8 h-8 text-red-500" />
-            )}
-          </div>
-          <h1 className="font-display text-2xl font-extrabold text-neutral-800 dark:text-white tracking-tight">
-            {pending ? "Application Under Review" : "Application Not Approved"}
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3 leading-relaxed">
-            {pending
-              ? `Thanks for signing up, ${user.name}! Your rider profile and documents are being reviewed by our team. Once approved, your delivery orders will appear here automatically.`
-              : "Unfortunately your rider application was not approved this time. Please contact the Barcode team if you believe this was a mistake."}
-          </p>
-          <div
-            className={`mt-6 p-3 rounded-2xl border text-xs flex items-center justify-center gap-2 ${pending ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"}`}
-          >
-            <Clock className="w-4 h-4" />
-            Status: <span className="font-bold capitalize">{approval}</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-sm transition-all active:scale-95"
-          >
-            <LogOut className="w-4 h-4" /> Log Out
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
+    // Filter only Delivered orders for calculation
+    const deliveredOrders = orders.filter((o) => o.status === "Delivered");
+
+    const filtered = deliveredOrders.filter((order) => {
+      const orderDate = new Date(order.createdAt);
+
+      if (timeFilter === "daily") {
+        return orderDate >= startOfToday;
+      }
+      if (timeFilter === "weekly") {
+        const oneWeekAgo = new Date(startOfToday);
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        return orderDate >= oneWeekAgo;
+      }
+      if (timeFilter === "monthly") {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return orderDate >= startOfMonth;
+      }
+      if (timeFilter === "yearly") {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return orderDate >= startOfYear;
+      }
+      if (timeFilter === "custom") {
+        let matches = true;
+        if (fromDate) {
+          const start = new Date(fromDate);
+          start.setHours(0, 0, 0, 0);
+          matches = matches && orderDate >= start;
+        }
+        if (toDate) {
+          const end = new Date(toDate);
+          end.setHours(23, 59, 59, 999);
+          matches = matches && orderDate <= end;
+        }
+        return matches;
+      }
+      return true;
+    });
+
+    const totalEarnings = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
+    return {
+      deliveryCount: filtered.length,
+      earnings: totalEarnings,
+    };
+  };
+
+  const filteredStats = getFilteredStats();
+  
+  // Other general stats
+  const activeOrdersCount = orders.filter((o) => o.status !== "Delivered" && o.status !== "Rejected").length;
+  const pendingAcceptCount = orders.filter((o) => o.riderAcceptStatus === "pending").length;
+
+  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
   if (loading) {
     return (
@@ -273,15 +207,6 @@ export const RiderDashboard = () => {
       </div>
     );
   }
-
-  // Overview stats derived from assigned orders (canonical statuses)
-  const deliveredOrders = orders.filter((o) => o.status === "Delivered");
-  const activeOrders = orders.filter(
-    (o) => o.status !== "Delivered" && o.status !== "Rejected",
-  );
-  const pendingAccept = orders.filter((o) => o.riderAcceptStatus === "pending");
-  // Rider's delivery earnings = the delivery charge collected on completed orders.
-  const earnings = deliveredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
@@ -298,47 +223,126 @@ export const RiderDashboard = () => {
               </h1>
               <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium mt-0.5">
                 Welcome back,{" "}
-                <span className="text-primary-500 font-bold">{user.name}</span>
+                <span className="text-primary-500 font-bold">{user?.name}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Availability toggle */}
-            <button
-              onClick={handleToggleAvailability}
-              disabled={updatingAvail}
-              title="Toggle your availability for new deliveries"
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-semibold text-xs transition-all active:scale-95 disabled:opacity-60 ${
-                availability === "Available"
-                  ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  availability === "Available" ? "bg-green-500 animate-pulse" : "bg-amber-500"
-                }`}
-              />
-              {updatingAvail ? "Updating…" : availability}
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Log Out
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95 shrink-0"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Log Out
+          </button>
         </div>
 
-        {/* Overview stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatTile icon={Package} label="Active Orders" value={activeOrders.length} tint="bg-indigo-500/10 text-indigo-500" />
-          <StatTile icon={Clock} label="Pending Accept" value={pendingAccept.length} tint="bg-amber-500/10 text-amber-500" />
-          <StatTile icon={CheckCircle} label="Delivered" value={deliveredOrders.length} tint="bg-green-500/10 text-green-500" />
-          <StatTile icon={Wallet} label="Delivery Earnings" value={`৳${earnings.toFixed(0)}`} tint="bg-primary-500/10 text-primary-500" />
+        {/* --- MARKED AREA: FILTER AND STATS CARDS --- */}
+        <div className="space-y-4">
+          {/* Filter Controls Bar */}
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary-500" />
+              <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                Filter Earnings & Performance:
+              </span>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3 grow sm:grow-0 justify-end">
+              <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="daily">Daily (Today)</option>
+                <option value="weekly">Weekly (Last 7 Days)</option>
+                <option value="monthly">Monthly (This Month)</option>
+                <option value="yearly">Yearly (This Year)</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
+
+              {timeFilter === "custom" && (
+                <div className="flex items-center gap-2 animate-fadeIn">
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <span className="text-xs text-neutral-400">to</span>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Active Orders */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                  {activeOrdersCount}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-400 uppercase mt-1 block">
+                  Active Orders
+                </span>
+              </div>
+            </div>
+
+            {/* Pending Accept */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                  {pendingAcceptCount}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-400 uppercase mt-1 block">
+                  Pending Accept
+                </span>
+              </div>
+            </div>
+
+            {/* Filtered Delivered Count */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-emerald-500">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-neutral-850 dark:text-white leading-none">
+                  {filteredStats.deliveryCount}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-500 uppercase mt-1 block">
+                  Delivered ({timeFilter})
+                </span>
+              </div>
+            </div>
+
+            {/* Filtered Earnings */}
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex items-center gap-4 border-l-4 border-l-primary-500">
+              <div className="w-12 h-12 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-primary-500 dark:text-primary-400 leading-none">
+                  ৳{filteredStats.earnings.toFixed(2)}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-500 uppercase mt-1 block">
+                  Earnings ({timeFilter})
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Main Work Area */}
@@ -400,13 +404,6 @@ export const RiderDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Delivery workflow progress (accepted, in-flight orders) */}
-                      {ord.riderAcceptStatus === "accepted" && ord.status !== "Rejected" && (
-                        <div className="overflow-x-auto scrollbar-none">
-                          <StageStepper status={ord.status} />
-                        </div>
-                      )}
-
                       {/* Location & customer info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-850 py-3">
                         <div className="space-y-1.5">
@@ -414,20 +411,12 @@ export const RiderDashboard = () => {
                             Customer
                           </span>
                           <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                            <span>{ord.user.name}</span>
+                            <span>{ord.user?.name}</span>
                           </div>
-                          {ord.user.phone ? (
-                            <a
-                              href={`tel:${ord.user.phone}`}
-                              className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline"
-                              title="Call the customer"
-                            >
-                              <Phone className="w-3 h-3" />
-                              {ord.user.phone}
-                            </a>
-                          ) : (
-                            <span className="block text-[10px] text-neutral-400 italic">No phone on file</span>
-                          )}
+                          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                            <Phone className="w-3 h-3 text-primary-500" />
+                            <span>{ord.user?.phone}</span>
+                          </div>
                         </div>
 
                         <div className="space-y-1.5">
@@ -437,19 +426,9 @@ export const RiderDashboard = () => {
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
                             <span className="leading-tight">
-                              {ord.user.address || "—"} {ord.user.pickArea ? `(${ord.user.pickArea})` : ""}
+                              {ord.user?.address} ({ord.user?.pickArea})
                             </span>
                           </div>
-                          {(ord.user.address || ord.user.pickArea) && (
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ord.user.address || ""} ${ord.user.pickArea || ""}`.trim())}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-600 dark:text-primary-400 hover:underline"
-                            >
-                              <MapPin className="w-3 h-3" /> Open in Maps
-                            </a>
-                          )}
                         </div>
                       </div>
 
@@ -478,22 +457,21 @@ export const RiderDashboard = () => {
                                 Reject Job
                               </button>
                             </div>
-                          ) : ord.status === "Delivered" ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-xs">
-                              <CheckCircle className="w-4 h-4" /> Delivered
-                            </span>
                           ) : (
-                            (() => {
-                              const action = nextDeliveryAction(ord.status);
-                              return action ? (
-                                <button
-                                  onClick={() => handleStatusChange(ord.id, action.next)}
-                                  className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all"
-                                >
-                                  {action.label}
-                                </button>
-                              ) : null;
-                            })()
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={ord.status}
+                                onChange={(e) =>
+                                  handleStatusChange(ord.id, e.target.value)
+                                }
+                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              >
+                                <option value="Out for Delivery">On Way</option>
+                                <option value="Delivered">
+                                  Delivered
+                                </option>
+                              </select>
+                            </div>
                           )}
 
                           <button
@@ -527,7 +505,7 @@ export const RiderDashboard = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="lg:col-span-5 flex flex-col h-[560px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
+                className="lg:col-span-5 flex flex-col h-140 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
               >
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
@@ -536,7 +514,7 @@ export const RiderDashboard = () => {
                       Chat for #{chatOrder.id.toUpperCase()}
                     </h3>
                     <span className="block text-[9px] text-neutral-400">
-                      Customer: {chatOrder.user.name} ({chatOrder.user.phone})
+                      Customer: {chatOrder.user?.name} ({chatOrder.user?.phone})
                     </span>
                   </div>
                   <button
@@ -582,7 +560,7 @@ export const RiderDashboard = () => {
                     } else if (isCustomer) {
                       bubbleClass =
                         "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
-                      labelColor = "text-emerald-505";
+                      labelColor = "text-emerald-555";
                     }
 
                     return (
@@ -625,7 +603,7 @@ export const RiderDashboard = () => {
                     value={riderChatMessage}
                     onChange={(e) => setRiderChatMessage(e.target.value)}
                     placeholder="Type message to Customer/Admin..."
-                    className="flex-grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                   <button
                     type="submit"
@@ -645,6 +623,3 @@ export const RiderDashboard = () => {
 };
 
 export default RiderDashboard;
-
-
-// before paste 
