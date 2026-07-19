@@ -34,7 +34,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-const PREVIEW_COUNT = 6; 
+const PREVIEW_COUNT = 6;
 
 export const Home = () => {
   // ---------------------------------------------------------------------
@@ -47,7 +47,7 @@ export const Home = () => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
 
-  // Bestsellers & Featured Menu 
+  // Bestsellers & Featured Menu
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
 
@@ -94,8 +94,14 @@ export const Home = () => {
     return filteredList;
   }, [allFoods, activeSort]);
 
-  const previewPopularFoods = useMemo(() => totalPopularFoods.slice(0, PREVIEW_COUNT), [totalPopularFoods]);
-  const remainingPopularFoods = useMemo(() => totalPopularFoods.slice(PREVIEW_COUNT), [totalPopularFoods]);
+  const previewPopularFoods = useMemo(
+    () => totalPopularFoods.slice(0, PREVIEW_COUNT),
+    [totalPopularFoods],
+  );
+  const remainingPopularFoods = useMemo(
+    () => totalPopularFoods.slice(PREVIEW_COUNT),
+    [totalPopularFoods],
+  );
 
   // ---------------------------------------------------------------------
   // Featured Menu Logic
@@ -104,8 +110,14 @@ export const Home = () => {
     return allFoods.filter((food) => food.isAdminFeatured === true);
   }, [allFoods]);
 
-  const previewFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(0, PREVIEW_COUNT), [totalFeaturedMenu]);
-  const remainingFeaturedMenu = useMemo(() => totalFeaturedMenu.slice(PREVIEW_COUNT), [totalFeaturedMenu]);
+  const previewFeaturedMenu = useMemo(
+    () => totalFeaturedMenu.slice(0, PREVIEW_COUNT),
+    [totalFeaturedMenu],
+  );
+  const remainingFeaturedMenu = useMemo(
+    () => totalFeaturedMenu.slice(PREVIEW_COUNT),
+    [totalFeaturedMenu],
+  );
 
   // ---------------------------------------------------------------------
   // Remaining Branches Logic
@@ -144,7 +156,9 @@ export const Home = () => {
     <div className="w-full">
       {/* GLOBAL MAINTENANCE NOTICE LINE */}
       <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-primary-600 text-white text-center py-2 px-4 text-xs font-semibold uppercase tracking-wider select-none">
-        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!
+        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly
+        for experimental purposes). Also, we are updating our server system
+        right now, so some features might be slower than usual!
       </div>
 
       {/* 1. HERO BANNER CAROUSEL */}
@@ -170,7 +184,10 @@ export const Home = () => {
                 slide.type === "promo" && Boolean(featuredFood);
 
               return (
-                <SwiperSlide key={slide.id ?? index} className="relative w-full h-full">
+                <SwiperSlide
+                  key={slide.id ?? index}
+                  className="relative w-full h-full"
+                >
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 ease-out transform scale-105"
                     style={{ backgroundImage: `url(${slide.image})` }}
@@ -179,9 +196,11 @@ export const Home = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-6 sm:pb-8 gap-3">
                     <div className="max-w-3xl text-white flex flex-col items-center select-none pointer-events-none">
                       {slide.type === "promo" &&
-                        (slide.offerText || (featuredFood && hasFoodDiscount(featuredFood))) && (
+                        (slide.offerText ||
+                          (featuredFood && hasFoodDiscount(featuredFood))) && (
                           <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg shadow-red-500/35">
-                            🔥 {slide.offerText || foodDiscountLabel(featuredFood)}
+                            🔥{" "}
+                            {slide.offerText || foodDiscountLabel(featuredFood)}
                           </span>
                         )}
                       <h2 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow-lg">
@@ -293,7 +312,11 @@ export const Home = () => {
                 className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
               >
                 {remainingBranches.map((branch) => (
-                  <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
+                  <BranchCard
+                    key={branch.id}
+                    branch={branch}
+                    variants={fadeInUp}
+                  />
                 ))}
               </motion.div>
             </motion.div>
@@ -426,7 +449,9 @@ export const Home = () => {
 
         {previewFeaturedMenu.length === 0 ? (
           <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl">
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">No featured items available right now.</p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+              No featured items available right now.
+            </p>
           </div>
         ) : (
           <>
@@ -496,7 +521,9 @@ export const Home = () => {
               <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-neutral-800 dark:text-neutral-100">
                 Our Family of Brands
               </h2>
-              <p className="text-xs text-neutral-450 dark:text-neutral-500 mt-0.5">Explore Chittagong's finest restaurant concepts</p>
+              <p className="text-xs text-neutral-450 dark:text-neutral-500 mt-0.5">
+                Explore Chittagong's finest restaurant concepts
+              </p>
             </div>
             <Link
               to="/brands"
@@ -514,25 +541,39 @@ export const Home = () => {
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
           >
             {brands.slice(0, 10).map((brand) => (
-              <motion.div key={brand.id} variants={fadeInUp} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <motion.div
+                key={brand.id}
+                variants={fadeInUp}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              >
                 <Link
                   to={`/brands/${brand.slug}`}
                   className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                 >
-                  
-                  <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
                     {brand.logoLight ? (
-                      <img src={brand.logoLight} alt={brand.name} className="object-contain py-4" />
+                      <img
+                        src={brand.logoLight}
+                        alt={brand.name}
+                        className={`w-full h-[calc(100%-12px)] block ${
+                          ["omerta", "bir-chattala", "barcode-sweets"].includes(
+                            brand.slug,
+                          )
+                            ? "object-cover object-center rounded-lg" // ৩টি লোগো নির্দিষ্ট হাইটের ভেতর কভার হবে এবং কোনা রাউন্ড থাকবে
+                            : "object-contain" // বাকি সব লোগো কনটেইন হয়ে সমান স্পেস পাবে
+                        }`}
+                      />
                     ) : (
-                      <span className="font-display font-black text-primary-500 text-xl leading-none select-none">{brand.name.charAt(0)}</span>
+                      <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
+                        {brand.name.charAt(0)}
+                      </span>
                     )}
                   </div>
-                 
+
                   <div className="p-2 text-center">
                     <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
                       {brand.name}
                     </span>
-                    
                   </div>
                 </Link>
               </motion.div>
@@ -547,84 +588,86 @@ export const Home = () => {
 // ---------------------------------------------------------------------------
 // FoodCard Component (মেইন সার্ভারের অরিজিনাল প্রোডিউসড কার্ড ডিজাইন অনুযায়ী)
 // ---------------------------------------------------------------------------
-const FoodCard = memo(({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
-  const hasDiscount = hasFoodDiscount(food);
-  const discountedPrice = applyFoodDiscount(food.price || 0, food);
+const FoodCard = memo(
+  ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
+    const hasDiscount = hasFoodDiscount(food);
+    const discountedPrice = applyFoodDiscount(food.price || 0, food);
 
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-    >
-      <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-            {foodDiscountLabel(food)}
-          </div>
-        )}
-        <Link to={`/menu/${food.id}`} className="block w-full h-full">
-          <img
-            src={food.image}
-            alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        </Link>
-        <button
-          onClick={() => onToggleFavorite(food.id)}
-          className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
-            favorited ? "text-red-500" : "text-neutral-450 hover:text-red-500"
-          }`}
-          aria-label="Toggle Favorite"
-        >
-          <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
-        </button>
-      </div>
-
-      <div className="p-4 grow flex flex-col justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            <span>{food.rating || 0}</span>
-          </div>
-          <Link to={`/menu/${food.id}`} className="block">
-            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-              {food.name}
-            </h3>
+    return (
+      <motion.div
+        variants={variants}
+        whileHover={{ y: -6, transition: { duration: 0.2 } }}
+        className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+      >
+        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+          {hasDiscount && (
+            <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
+              {foodDiscountLabel(food)}
+            </div>
+          )}
+          <Link to={`/menu/${food.id}`} className="block w-full h-full">
+            <img
+              src={food.image}
+              alt={food.name}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+            />
           </Link>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-          <div className="flex flex-wrap items-baseline gap-1">
-            {hasDiscount ? (
-              <>
-                <span className="font-display font-extrabold text-red-500 text-base">
-                  ৳{discountedPrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
-                  ৳{(food.price || 0).toFixed(2)}
-                </span>
-              </>
-            ) : (
-              <span className="font-display font-extrabold text-primary-500 text-base">
-                ৳{(food.price || 0).toFixed(2)}
-              </span>
-            )}
-          </div>
-
           <button
-            onClick={() => onAddToCart(food)}
-            className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
-            title="Order Now"
+            onClick={() => onToggleFavorite(food.id)}
+            className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
+              favorited ? "text-red-500" : "text-neutral-450 hover:text-red-500"
+            }`}
+            aria-label="Toggle Favorite"
           >
-            <ShoppingBag className="w-4 h-4" />
+            <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
           </button>
         </div>
-      </div>
-    </motion.div>
-  );
-});
+
+        <div className="p-4 grow flex flex-col justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span>{food.rating || 0}</span>
+            </div>
+            <Link to={`/menu/${food.id}`} className="block">
+              <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
+                {food.name}
+              </h3>
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-wrap items-baseline gap-1">
+              {hasDiscount ? (
+                <>
+                  <span className="font-display font-extrabold text-red-500 text-base">
+                    ৳{discountedPrice.toFixed(2)}
+                  </span>
+                  <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
+                    ৳{(food.price || 0).toFixed(2)}
+                  </span>
+                </>
+              ) : (
+                <span className="font-display font-extrabold text-primary-500 text-base">
+                  ৳{(food.price || 0).toFixed(2)}
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={() => onAddToCart(food)}
+              className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
+              title="Order Now"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  },
+);
 FoodCard.displayName = "FoodCard";
 
 // ---------------------------------------------------------------------------
