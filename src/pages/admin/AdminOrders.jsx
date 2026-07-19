@@ -12,6 +12,8 @@ import {
   Phone,
   DollarSign,
   Bike,
+  Utensils,
+  TrendingUp,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -99,11 +101,6 @@ export const AdminOrders = () => {
   // below), so the poll only needs to surface changes made elsewhere.
   useVisiblePolling(fetchOrdersAndFleet, { intervalMs: 20000 });
 
-  // useEffect(() => {
-  //   if (chatEndRef.current) {
-  //     chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  //   }
-  // }, [activeChatOrderId, orders]);
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
       chatEndRef.current.scrollIntoView({
@@ -112,6 +109,23 @@ export const AdminOrders = () => {
       });
     }
   }, [activeChatOrderId, chatMessagesCount]);
+
+  // Helper logic to calculate individual rider statistics from successfully delivered orders
+  const getRiderPerformanceStats = (riderId, riderName) => {
+    const deliveredOrders = orders.filter(
+      (o) =>
+        o.status === "Delivered" &&
+        (o.riderId === riderId || o.riderName?.toLowerCase() === riderName?.toLowerCase())
+    );
+
+    const totalEarnings = deliveredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+    const totalFoodPrice = deliveredOrders.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
+
+    return {
+      foodDelivered: totalFoodPrice,
+      income: totalEarnings,
+    };
+  };
 
   if (loading) {
     return (
@@ -187,57 +201,80 @@ export const AdminOrders = () => {
 
       {/* Fleet Overview */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs">
-        <h3 className="text-xs font-bold font-display text-neutral-850 dark:text-white mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold font-display text-neutral-855 dark:text-white mb-3 flex items-center gap-2">
           <Bike className="w-4 h-4 text-primary-500" />
           Riders Fleet Overview
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {riders.map((r) => (
-            <div
-              key={r.id}
-              className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between"
-            >
-              <div>
-                <span className="block font-bold text-xs text-neutral-800 dark:text-neutral-100">
-                  {r.name}
-                </span>
-                <span className="block text-[10px] text-neutral-400 mt-0.5">
-                  Phone: {r.phone}
-                </span>
-                <span className="block text-[10px] text-neutral-400 mt-0.5">
-                  Vehicle: {r.vehicle}
-                </span>
-                <span className="block text-[10px] font-semibold mt-0.5 text-neutral-500 dark:text-neutral-300">
-                  {r.activeOrders > 0
-                    ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
-                    : "No active delivery"}
-                </span>
+          {riders.map((r) => {
+            const stats = getRiderPerformanceStats(r.id, r.name);
+            return (
+              <div
+                key={r.id}
+                className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between"
+              >
+                <div>
+                  <span className="block font-bold text-xs text-neutral-800 dark:text-neutral-100">
+                    {r.name}
+                  </span>
+                  <span className="block text-[10px] text-neutral-400 mt-0.5">
+                    Phone: {r.phone}
+                  </span>
+                  <span className="block text-[10px] text-neutral-400 mt-0.5">
+                    Vehicle: {r.vehicle}
+                  </span>
+                  <span className="block text-[10px] font-semibold mt-0.5 text-neutral-500 dark:text-neutral-300">
+                    {r.activeOrders > 0
+                      ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
+                      : "No active delivery"}
+                  </span>
+
+                  {/* Added Stats Container */}
+                  <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="flex flex-col">
+                      <span className="text-neutral-400 font-medium flex items-center gap-0.5">
+                        <Utensils className="w-2.5 h-2.5 text-indigo-500" /> Food Deliv.
+                      </span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                        ৳{stats.foodDelivered.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-neutral-400 font-medium flex items-center gap-0.5">
+                        <TrendingUp className="w-2.5 h-2.5 text-primary-500" /> Net Earned
+                      </span>
+                      <span className="font-bold text-primary-500">
+                        ৳{stats.income.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-neutral-150 dark:border-neutral-850">
+                  <span
+                    className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
+                      r.status === "Available"
+                        ? "bg-green-500/10 text-green-500"
+                        : "bg-amber-500/10 text-amber-500"
+                    }`}
+                  >
+                    {r.status}
+                  </span>
+                  <select
+                    value={r.status}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value;
+                      await updateRiderStatus(r.id, newStatus);
+                      fetchOrdersAndFleet();
+                    }}
+                    className="text-[9px] font-bold border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 rounded p-0.5 cursor-pointer"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Busy">Busy</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-150 dark:border-neutral-850">
-                <span
-                  className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
-                    r.status === "Available"
-                      ? "bg-green-500/10 text-green-500"
-                      : "bg-amber-500/10 text-amber-500"
-                  }`}
-                >
-                  {r.status}
-                </span>
-                <select
-                  value={r.status}
-                  onChange={async (e) => {
-                    const newStatus = e.target.value;
-                    await updateRiderStatus(r.id, newStatus);
-                    fetchOrdersAndFleet();
-                  }}
-                  className="text-[9px] font-bold border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 rounded p-0.5 cursor-pointer"
-                >
-                  <option value="Available">Available</option>
-                  <option value="Busy">Busy</option>
-                </select>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -760,6 +797,3 @@ export const AdminOrders = () => {
 };
 
 export default AdminOrders;
-
-
-// before accept or decline
