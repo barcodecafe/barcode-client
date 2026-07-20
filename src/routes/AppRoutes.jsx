@@ -16,6 +16,8 @@ import { SignUp } from '../pages/SignUp';
 import { Profile } from '../pages/Profile';
 import { Checkout } from '../pages/Checkout';
 import { OrderTracking } from '../pages/OrderTracking';
+import { PaymentResult } from '../pages/PaymentResult';
+import { PaymentDemo } from '../pages/PaymentDemo';
 import { RiderDashboard } from '../pages/RiderDashboard';
 import { AdminDashboard } from '../pages/admin/AdminDashboard';
 import { AdminDishes } from '../pages/admin/AdminDishes';
@@ -73,6 +75,11 @@ export const AppRoutes = () => {
                 <Route path="checkout" element={<Checkout />} />
                 <Route path="rider-application" element={<RiderApplication />} />
                 <Route path="order-tracking/:id" element={<OrderTracking />} />
+                {/* Gateway return pages — the server redirects here after settling */}
+                <Route path="payment/success" element={<PaymentResult variant="success" />} />
+                <Route path="payment/fail" element={<PaymentResult variant="fail" />} />
+                <Route path="payment/cancel" element={<PaymentResult variant="cancel" />} />
+                <Route path="payment/demo" element={<PaymentDemo />} />
                 <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
               </Route>
 

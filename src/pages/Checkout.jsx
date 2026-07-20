@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag, Tag, Phone, MapPin, Mail, Lock, User, LogOut, ArrowRight,
-  Loader2, Coins, Truck, CreditCard, Wallet, Check, ShieldCheck, Minus, Plus,
+  Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ import { createOrder } from '../services/ordersService';
 import { getAllRegions } from '../services/regionsService';
 import { getDiscountedPrice } from '../services/foodsService';
 import { getRegionDeliveryCharge } from '../services/deliveryService';
+import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 
 // ---------------------------------------------------------------------------
 // Checkout.jsx — dedicated /checkout page (replaces the in-drawer wizard).
@@ -63,9 +64,6 @@ export const Checkout = () => {
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'sslcommerz'
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
 
   // Coupon + points
   const [couponInput, setCouponInput] = useState('');
@@ -114,6 +112,15 @@ export const Checkout = () => {
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
   const deliveryCharge = getRegionDeliveryCharge(region, area);
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
+  // The gateway rejects totals below its configured minimum, so keep small
+  // orders on cash-on-delivery instead of failing at the payment page.
+  const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
+
+  // If the total drops below the gateway minimum (item removed, coupon applied),
+  // don't leave the customer stuck on an online method they can't use.
+  useEffect(() => {
+    if (!canPayOnline && paymentMethod === 'sslcommerz') setPaymentMethod('cod');
+  }, [canPayOnline, paymentMethod]);
   const pointsToEarn = Math.floor(cartTotal / 100) * 5;
   const canPlaceOrder = isAuthenticated && !!regionId;
 
@@ -160,8 +167,8 @@ export const Checkout = () => {
     if (!phone.trim()) return setOrderError('Delivery phone number is required.');
     if (!address.trim()) return setOrderError('Delivery address is required.');
     if (!billingSame && !billingAddress.trim()) return setOrderError('Billing address is required.');
-    if (paymentMethod === 'sslcommerz' && (!cardNumber.trim() || !cardExpiry.trim() || !cardCvv.trim())) {
-      return setOrderError('Please complete the card details, or switch to Cash on Delivery.');
+    if (paymentMethod === 'sslcommerz' && !canPayOnline) {
+      return setOrderError(`Online payment needs a total of at least ৳${MIN_ONLINE_AMOUNT}. Please switch to Cash on Delivery.`);
     }
 
     setIsLoading(true);
@@ -185,6 +192,27 @@ export const Checkout = () => {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }
       clearCart();
+
+      // Online payment: hand the browser to SSLCommerz's hosted page. The server
+      // settles the order from the gateway's verified callback, so we never see
+      // card details. On failure the order still exists — payable from tracking.
+      if (paymentMethod === 'sslcommerz') {
+        try {
+          const { gatewayUrl } = await initPayment(newOrder.id);
+          if (gatewayUrl) {
+            window.location.href = gatewayUrl;
+            return;
+          }
+          throw new Error('The payment gateway did not return a checkout link.');
+        } catch (payErr) {
+          // Order is placed; only the gateway hand-off failed. Send them to
+          // tracking so they can retry payment instead of losing the order.
+          console.error('Payment init failed:', payErr);
+          navigate(`/order-tracking/${newOrder.id}?payment=unstarted`);
+          return;
+        }
+      }
+
       navigate(`/order-tracking/${newOrder.id}`);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
@@ -405,18 +433,35 @@ export const Checkout = () => {
                 <button type="button" onClick={() => setPaymentMethod('cod')} className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${paymentMethod === 'cod' ? 'border-primary-500 bg-primary-500/5 text-primary-500' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300'}`}>
                   <Wallet className="w-5 h-5" /><span className="text-xs font-bold">Cash on Delivery</span><span className="text-[9px] opacity-75">Pay at your door</span>
                 </button>
-                <button type="button" onClick={() => setPaymentMethod('sslcommerz')} className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${paymentMethod === 'sslcommerz' ? 'border-primary-500 bg-primary-500/5 text-primary-500' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300'}`}>
+                <button
+                  type="button"
+                  disabled={!canPayOnline}
+                  onClick={() => setPaymentMethod('sslcommerz')}
+                  title={canPayOnline ? 'Pay securely on SSLCommerz' : `Available on orders of ৳${MIN_ONLINE_AMOUNT} or more`}
+                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${
+                    !canPayOnline
+                      ? 'border-neutral-200 dark:border-neutral-800 text-neutral-400 opacity-60 cursor-not-allowed'
+                      : paymentMethod === 'sslcommerz'
+                        ? 'border-primary-500 bg-primary-500/5 text-primary-500'
+                        : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300'
+                  }`}
+                >
                   <CreditCard className="w-5 h-5" /><span className="text-xs font-bold">Online (SSLCommerz)</span><span className="text-[9px] opacity-75">Card, bKash, Nagad</span>
                 </button>
               </div>
-              {paymentMethod === 'sslcommerz' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden mt-3 space-y-3 bg-neutral-50 dark:bg-neutral-950 rounded-xl p-3 border border-neutral-200 dark:border-neutral-800">
-                  <div><label className="block text-[9px] font-bold text-neutral-400 uppercase mb-1">Card Number</label><input type="text" value={cardNumber} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="4242 4242 4242 4242" className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" /></div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-[9px] font-bold text-neutral-400 uppercase mb-1">Expiry</label><input type="text" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} placeholder="MM/YY" className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" /></div>
-                    <div><label className="block text-[9px] font-bold text-neutral-400 uppercase mb-1">CVV</label><input type="password" value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 3))} placeholder="•••" className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" /></div>
-                  </div>
-                  <p className="text-[9px] text-neutral-400 flex items-center gap-1"><Check className="w-3 h-3 text-emerald-500" /> Demo gateway — no real charge is made.</p>
+
+              {!canPayOnline && (
+                <p className="mt-3 text-[11px] text-amber-600 dark:text-amber-400">
+                  Online payment is available on orders of ৳{MIN_ONLINE_AMOUNT} or more — this order is Cash on Delivery.
+                </p>
+              )}
+
+              {paymentMethod === 'sslcommerz' && canPayOnline && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden mt-3 bg-neutral-50 dark:bg-neutral-950 rounded-xl p-3 border border-neutral-200 dark:border-neutral-800">
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-300 flex items-start gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-px" />
+                    You'll be taken to SSLCommerz's secure page to pay by card, bKash, Nagad or bank. We never see or store your card details.
+                  </p>
                 </motion.div>
               )}
             </section>
