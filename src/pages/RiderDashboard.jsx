@@ -143,7 +143,7 @@ export const RiderDashboard = () => {
     }
   };
 
-  // --- Fixed Calculation: Separate Rider Earnings and Food Price ---
+  // --- Filtered Stats Calculation ---
   const getFilteredStats = () => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -181,9 +181,7 @@ export const RiderDashboard = () => {
       return true;
     });
 
-    // Rider Earnings = delivery charge only
     const totalEarnings = filtered.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
-    // Food Price = total invoice amount minus delivery charge
     const totalFoodPrice = filtered.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
 
     return {
@@ -193,7 +191,7 @@ export const RiderDashboard = () => {
     };
   };
 
-  // --- Performance Log Grouped by Date (Updated with separate columns) ---
+  // --- Performance Log Grouped by Date (With Detailed Money Calculations) ---
   const getDailyPerformanceLog = () => {
     const logMap = {};
 
@@ -207,14 +205,28 @@ export const RiderDashboard = () => {
       });
 
       if (!logMap[dateKey]) {
-        logMap[dateKey] = { delivered: 0, rejected: 0, earnings: 0, foodPrice: 0 };
+        logMap[dateKey] = {
+          delivered: 0,
+          rejected: 0,
+          foodPrice: 0,
+          deliveryCharge: 0,
+          riderCommission: 0,
+          totalCollection: 0,
+        };
       }
 
       if (order.status === "Delivered") {
         logMap[dateKey].delivered += 1;
-        const riderFee = order.deliveryCharge || 0;
-        logMap[dateKey].earnings += riderFee;
-        logMap[dateKey].foodPrice += ((order.total - riderFee) || 0);
+        
+        const delCharge = order.deliveryCharge || 0;
+        const totalInvoice = order.total || 0;
+        const pureFoodPrice = totalInvoice - delCharge;
+        const commission = delCharge; // রাইডারের কমিশন (ডেলিভারি ফি)
+
+        logMap[dateKey].foodPrice += pureFoodPrice > 0 ? pureFoodPrice : 0;
+        logMap[dateKey].deliveryCharge += delCharge;
+        logMap[dateKey].riderCommission += commission;
+        logMap[dateKey].totalCollection += totalInvoice;
       } else if (order.status === "Rejected") {
         logMap[dateKey].rejected += 1;
       }
@@ -230,7 +242,6 @@ export const RiderDashboard = () => {
   
   const activeOrdersCount = orders.filter((o) => o.status !== "Delivered" && o.status !== "Rejected").length;
   const pendingAcceptCount = orders.filter((o) => o.riderAcceptStatus === "pending").length;
-  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
   if (loading) {
     return (
@@ -387,7 +398,7 @@ export const RiderDashboard = () => {
           </div>
         </div>
 
-        {/* Daily Performance Log Table */}
+        {/* Daily Performance Track Log Table (Updated With Scrollbar & New Detailed Columns) */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-4 h-4 text-primary-500" />
@@ -399,15 +410,17 @@ export const RiderDashboard = () => {
           {dailyLog.length === 0 ? (
             <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">No history logs recorded yet.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="max-h-[280px] overflow-y-auto overflow-x-auto pr-1">
               <table className="w-full text-left border-collapse text-xs">
-                <thead>
+                <thead className="sticky top-0 bg-white dark:bg-neutral-900 z-10 shadow-xs">
                   <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-450 dark:text-neutral-500 uppercase tracking-wider font-bold">
                     <th className="py-2.5 px-3">Date</th>
                     <th className="py-2.5 px-3">Delivered</th>
                     <th className="py-2.5 px-3">Rejected</th>
-                    <th className="py-2.5 px-3">Food Total Delivered</th>
-                    <th className="py-2.5 px-3 text-right">Rider Net Income</th>
+                    <th className="py-2.5 px-3">Food Price</th>
+                    <th className="py-2.5 px-3">Delivery Charge</th>
+                    <th className="py-2.5 px-3">Rider Commission</th>
+                    <th className="py-2.5 px-3 text-right">Total Money Collection</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
@@ -427,8 +440,14 @@ export const RiderDashboard = () => {
                       <td className="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">
                         ৳{log.foodPrice.toFixed(2)}
                       </td>
+                      <td className="py-3 px-3 font-bold text-amber-600 dark:text-amber-400">
+                        ৳{log.deliveryCharge.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-3 font-black text-emerald-500">
+                        ৳{log.riderCommission.toFixed(2)}
+                      </td>
                       <td className="py-3 px-3 text-right font-black text-primary-500">
-                        ৳{log.earnings.toFixed(2)}
+                        ৳{log.totalCollection.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -496,7 +515,7 @@ export const RiderDashboard = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="font-bold text-xs">Total Invoice: <span className="text-primary-500">৳{ord.total.toFixed(2)}</span></div>
+                        <div className="font-bold text-xs">Total Invoice: <span className="text-primary-500">৳{ord.total?.toFixed(2)}</span></div>
                         <div className="flex items-center gap-2">
                           {ord.riderAcceptStatus === "pending" ? (
                             <div className="flex gap-2">
