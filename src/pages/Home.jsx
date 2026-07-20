@@ -456,7 +456,7 @@ export const Home = () => {
         </div>
 
         {previewFeaturedMenu.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl">
+          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none">
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">
               No featured items available right now.
             </p>
@@ -559,7 +559,7 @@ export const Home = () => {
                 >
                   <Link
                     to={`/brands/${brand.slug}`}
-                    className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+                    className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                   >
                     <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
                       {brand.logoLight ? (
@@ -571,6 +571,7 @@ export const Home = () => {
                               "omerta",
                               "bir-chattala",
                               "barcode-sweets",
+                              "teheriwala"
                             ].includes(brand.slug)
                               ? "object-contain object-center "
                               : "object-contain"
@@ -617,7 +618,7 @@ export const Home = () => {
                     >
                       <Link
                         to={`/brands/${brand.slug}`}
-                        className="group flex flex-col rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+                        className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
                       >
                         <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
                           {brand.logoLight ? (
@@ -630,7 +631,7 @@ export const Home = () => {
                                   "bir-chattala",
                                   "barcode-sweets",
                                 ].includes(brand.slug)
-                                  ? "object-cover object-center rounded-lg"
+                                  ? "object-cover object-center rounded-none"
                                   : "object-contain"
                           }`}
                             />
@@ -668,11 +669,11 @@ const FoodCard = memo(
       <motion.div
         variants={variants}
         whileHover={{ y: -6, transition: { duration: 0.2 } }}
-        className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+        className="group relative flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
       >
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           {hasDiscount && (
-            <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
+            <div className="absolute top-3 left-3 px-2 py-0.5 rounded-none bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
               {foodDiscountLabel(food)}
             </div>
           )}
@@ -686,7 +687,7 @@ const FoodCard = memo(
           </Link>
           <button
             onClick={() => onToggleFavorite(food.id)}
-            className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
+            className={`absolute top-3 right-3 p-1.5 rounded-none bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
               favorited ? "text-red-500" : "text-neutral-450 hover:text-red-500"
             }`}
             aria-label="Toggle Favorite"
@@ -728,7 +729,7 @@ const FoodCard = memo(
 
             <button
               onClick={() => onAddToCart(food)}
-              className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
+              className="p-2 rounded-none bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
               title="Order Now"
             >
               <ShoppingBag className="w-4 h-4" />
@@ -750,7 +751,7 @@ const BranchCard = memo(({ branch, variants }) => {
     <motion.div
       variants={variants}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+      className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <Link to={`/branches/${branch.id}`}>
@@ -761,7 +762,7 @@ const BranchCard = memo(({ branch, variants }) => {
             loading="lazy"
           />
         </Link>
-        <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider">
+        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider">
           ★ {branch.rating}
         </div>
       </div>
