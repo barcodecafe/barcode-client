@@ -16,7 +16,9 @@ import {
   CheckCircle,
   XCircle,
   ClipboardList,
-  Utensils
+  Utensils,
+  CheckCircle2,
+  Clock3
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -191,7 +193,7 @@ export const RiderDashboard = () => {
     };
   };
 
-  // --- Performance Log Grouped by Date (With Detailed Money Calculations) ---
+  // --- Performance Log Grouped by Date (With Admin Submission Tracking) ---
   const getDailyPerformanceLog = () => {
     const logMap = {};
 
@@ -212,6 +214,8 @@ export const RiderDashboard = () => {
           deliveryCharge: 0,
           riderCommission: 0,
           totalCollection: 0,
+          // অ্যাডমিন সাবমিশন চেক (অর্ডারে adminSubmitted ফিল্ড ট্র্যাকিং করার জন্য)
+          isSubmitted: true, 
         };
       }
 
@@ -221,12 +225,17 @@ export const RiderDashboard = () => {
         const delCharge = order.deliveryCharge || 0;
         const totalInvoice = order.total || 0;
         const pureFoodPrice = totalInvoice - delCharge;
-        const commission = delCharge; // রাইডারের কমিশন (ডেলিভারি ফি)
+        const commission = delCharge;
 
         logMap[dateKey].foodPrice += pureFoodPrice > 0 ? pureFoodPrice : 0;
         logMap[dateKey].deliveryCharge += delCharge;
         logMap[dateKey].riderCommission += commission;
         logMap[dateKey].totalCollection += totalInvoice;
+
+        // যদি ওই দিনের কোনো একটি অর্ডারও অ্যাডমিনকে জমা না দেয়া হয়ে থাকে, তবে পেন্ডিং দেখাবে
+        if (!order.isSubmittedToAdmin) {
+          logMap[dateKey].isSubmitted = false;
+        }
       } else if (order.status === "Rejected") {
         logMap[dateKey].rejected += 1;
       }
@@ -398,7 +407,7 @@ export const RiderDashboard = () => {
           </div>
         </div>
 
-        {/* Daily Performance Track Log Table (Updated With Scrollbar & New Detailed Columns) */}
+        {/* Daily Performance Track Log Table (Admin Cash Submission Status Column Added) */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-4 h-4 text-primary-500" />
@@ -420,7 +429,8 @@ export const RiderDashboard = () => {
                     <th className="py-2.5 px-3">Food Price</th>
                     <th className="py-2.5 px-3">Delivery Charge</th>
                     <th className="py-2.5 px-3">Rider Commission</th>
-                    <th className="py-2.5 px-3 text-right">Total Money Collection</th>
+                    <th className="py-2.5 px-3">Total Money Collection</th>
+                    <th className="py-2.5 px-3 text-right">Admin Cash Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
@@ -446,8 +456,19 @@ export const RiderDashboard = () => {
                       <td className="py-3 px-3 font-black text-emerald-500">
                         ৳{log.riderCommission.toFixed(2)}
                       </td>
-                      <td className="py-3 px-3 text-right font-black text-primary-500">
+                      <td className="py-3 px-3 font-black text-primary-500">
                         ৳{log.totalCollection.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {log.isSubmitted ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                            <CheckCircle2 className="w-3 h-3" /> Submitted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                            <Clock3 className="w-3 h-3" /> Pending Cash
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
