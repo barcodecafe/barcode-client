@@ -34,3 +34,8 @@ export async function getTopDishes(limit = 5) {
 export async function getTopCustomers(limit = 0) {
   return apiClient.get(`/analytics/top-customers?limit=${limit}`);
 }
+
+/** GET /api/analytics/top-riders?limit=5 */
+export async function getTopRiders(limit = 5) {
+  return apiClient.get(`/analytics/top-riders?limit=${limit}`);
+}

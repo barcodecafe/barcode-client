@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Coins, Wallet, DollarSign, ShoppingBag, Building2, Star, Flame } from 'lucide-react';
+import { Coins, Wallet, DollarSign, ShoppingBag, Building2, Star, Flame, Bike, User } from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
 import { ChartCard } from '../../components/admin/charts/ChartCard';
@@ -14,6 +14,8 @@ import {
   getOrdersByCategory,
   getRevenueTrend,
   getTopDishes,
+  getTopCustomers,
+  getTopRiders,
 } from '../../services/analyticsService';
 
 const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
@@ -30,6 +32,8 @@ export const AdminDashboard = () => {
   const [ordersByCategory, setOrdersByCategory] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [topDishes, setTopDishes] = useState([]);
+  const [topCustomers, setTopCustomers] = useState([]);
+  const [topRiders, setTopRiders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,12 +43,16 @@ export const AdminDashboard = () => {
       getOrdersByCategory(),
       getRevenueTrend(12),
       getTopDishes(5),
-    ]).then(([summaryData, branchData, categoryData, trendData, dishesData]) => {
+      getTopCustomers(5),
+      getTopRiders ? getTopRiders(5) : Promise.resolve([]),
+    ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
       setSummary(summaryData);
       setRevenueByBranch(branchData);
       setOrdersByCategory(categoryData);
       setRevenueTrend(trendData);
       setTopDishes(dishesData);
+      setTopCustomers(customersData || []);
+      setTopRiders(ridersData || []);
       setIsLoading(false);
     });
   }, []);
@@ -144,7 +152,7 @@ export const AdminDashboard = () => {
           <div className="flex flex-col gap-1">
             {topDishes.map((dish, i) => (
               <div
-                key={dish.id}
+                key={dish.id || i}
                 className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
               >
                 <span className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-bold flex items-center justify-center shrink-0">
@@ -164,6 +172,79 @@ export const AdminDashboard = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </ChartCard>
+      </div>
+
+      {/* Row 3: Top Customers + Top Riders */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Top Customers */}
+        <ChartCard
+          title="Top Customers"
+          subtitle="Ranked by total spend & orders"
+        >
+          <div className="flex flex-col gap-1">
+            {topCustomers.length > 0 ? (
+              topCustomers.map((customer, i) => (
+                <div
+                  key={customer._id || customer.id || i}
+                  className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
+                >
+                  <span className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">
+                      {customer.name || customer.fullName || 'Customer'}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {customer.totalOrders || customer.ordersCount || 0} Orders
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 font-semibold text-sm shrink-0">
+                    <User className="w-4 h-4 text-neutral-400" />
+                    {currency(customer.totalSpent || customer.totalSpend || 0)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-neutral-400 py-4 text-center">No customer data available</p>
+            )}
+          </div>
+        </ChartCard>
+
+        {/* Top Riders */}
+        <ChartCard
+          title="Top Riders"
+          subtitle="Ranked by completed deliveries"
+        >
+          <div className="flex flex-col gap-1">
+            {topRiders.length > 0 ? (
+              topRiders.map((rider, i) => (
+                <div
+                  key={rider._id || rider.id || i}
+                  className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
+                >
+                  <span className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">
+                      {rider.name || rider.fullName || 'Rider'}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      Rating: {rider.rating || '5.0'} ⭐
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-primary-500 font-semibold text-sm shrink-0">
+                    <Bike className="w-4 h-4" />
+                    {rider.completedDeliveries || rider.deliveries || 0} Deliveries
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-neutral-400 py-4 text-center">No rider data available</p>
+            )}
           </div>
         </ChartCard>
       </div>
