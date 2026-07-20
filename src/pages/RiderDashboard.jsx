@@ -27,6 +27,7 @@ import {
   addChatMessage,
   acceptRiderOrder,
   rejectRiderOrder,
+  submitRiderDailyCash, // Live API Service Function
 } from "../services/ordersService";
 
 const getStatusColor = (status) => {
@@ -54,34 +55,40 @@ export const RiderDashboard = () => {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submittingCashDate, setSubmittingCashDate] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [riderChatMessage, setRiderChatMessage] = useState("");
-  
+
   // Earning & Delivery Filter States
   const [timeFilter, setTimeFilter] = useState("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
   const chatEndRef = useRef(null);
-  const currentChat = orders.find((o) => o.id === activeChatOrderId);
-  const chatMessagesCount = currentChat?.chatHistory?.length || 0;
+  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+  const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
-    getAllOrders().then((data) => {
-      const assigned = data.filter(
-        (o) =>
-          o.riderId === user.id ||
-          o.riderName?.toLowerCase() === user.name?.toLowerCase(),
-      );
-      setOrders(assigned);
-      setLoading(false);
-    });
+    getAllOrders()
+      .then((data) => {
+        const assigned = (data || []).filter(
+          (o) =>
+            o.riderId === user.id ||
+            o.riderName?.toLowerCase() === user.name?.toLowerCase()
+        );
+        setOrders(assigned);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch orders:", err);
+        setLoading(false);
+      });
   }, [user]);
 
   useEffect(() => {
     fetchRiderOrders();
-    const interval = setInterval(fetchRiderOrders, 3000);
+    const interval = setInterval(fetchRiderOrders, 4000);
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
@@ -104,7 +111,7 @@ export const RiderDashboard = () => {
       await acceptRiderOrder(orderId);
       fetchRiderOrders();
     } catch (err) {
-      alert("Failed to accept order: " + err.message);
+      alert("Failed to accept order: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -113,7 +120,7 @@ export const RiderDashboard = () => {
       await rejectRiderOrder(orderId);
       fetchRiderOrders();
     } catch (err) {
-      alert("Failed to reject order: " + err.message);
+      alert("Failed to reject order: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -122,7 +129,26 @@ export const RiderDashboard = () => {
       await updateOrderStatus(orderId, newStatus);
       fetchRiderOrders();
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      alert("Failed to update status: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // Submit cash collection to admin via Live API
+  const handleSubmitCash = async (date) => {
+    const confirmSubmit = window.confirm(
+      `Are you sure you want to mark all collected cash as submitted for ${date}?`
+    );
+    if (!confirmSubmit) return;
+
+    try {
+      setSubmittingCashDate(date);
+      await submitRiderDailyCash(date);
+      alert(`Cash submission request sent to Admin for ${date}!`);
+      fetchRiderOrders();
+    } catch (err) {
+      alert("Failed to submit cash: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmittingCashDate(null);
     }
   };
 
@@ -132,16 +158,14 @@ export const RiderDashboard = () => {
 
     try {
       const updated = await addChatMessage(activeChatOrderId, {
-        sender: "rider",
-        senderName: user.name,
         text: riderChatMessage.trim(),
       });
       setOrders((prev) =>
-        prev.map((o) => (o.id === activeChatOrderId ? updated : o)),
+        prev.map((o) => (o.id === activeChatOrderId ? updated : o))
       );
       setRiderChatMessage("");
     } catch (err) {
-      alert("Failed to send message: " + err.message);
+      alert("Failed to send message: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -184,7 +208,10 @@ export const RiderDashboard = () => {
     });
 
     const totalEarnings = filtered.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
-    const totalFoodPrice = filtered.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
+    const totalFoodPrice = filtered.reduce(
+      (sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0),
+      0
+    );
 
     return {
       deliveryCount: filtered.length,
@@ -193,13 +220,13 @@ export const RiderDashboard = () => {
     };
   };
 
-  // --- Performance Log Grouped by Date (With Admin Submission Tracking) ---
+  // --- Performance Log Grouped by Date ---
   const getDailyPerformanceLog = () => {
     const logMap = {};
 
     orders.forEach((order) => {
       if (!order.createdAt) return;
-      
+
       const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -214,14 +241,13 @@ export const RiderDashboard = () => {
           deliveryCharge: 0,
           riderCommission: 0,
           totalCollection: 0,
-          // অ্যাডমিন সাবমিশন চেক (অর্ডারে adminSubmitted ফিল্ড ট্র্যাকিং করার জন্য)
-          isSubmitted: true, 
+          isSubmitted: true,
         };
       }
 
       if (order.status === "Delivered") {
         logMap[dateKey].delivered += 1;
-        
+
         const delCharge = order.deliveryCharge || 0;
         const totalInvoice = order.total || 0;
         const pureFoodPrice = totalInvoice - delCharge;
@@ -232,7 +258,6 @@ export const RiderDashboard = () => {
         logMap[dateKey].riderCommission += commission;
         logMap[dateKey].totalCollection += totalInvoice;
 
-        // যদি ওই দিনের কোনো একটি অর্ডারও অ্যাডমিনকে জমা না দেয়া হয়ে থাকে, তবে পেন্ডিং দেখাবে
         if (!order.isSubmittedToAdmin) {
           logMap[dateKey].isSubmitted = false;
         }
@@ -248,9 +273,13 @@ export const RiderDashboard = () => {
 
   const filteredStats = getFilteredStats();
   const dailyLog = getDailyPerformanceLog();
-  
-  const activeOrdersCount = orders.filter((o) => o.status !== "Delivered" && o.status !== "Rejected").length;
-  const pendingAcceptCount = orders.filter((o) => o.riderAcceptStatus === "pending").length;
+
+  const activeOrdersCount = orders.filter(
+    (o) => o.status !== "Delivered" && o.status !== "Rejected"
+  ).length;
+  const pendingAcceptCount = orders.filter(
+    (o) => o.riderAcceptStatus === "pending"
+  ).length;
 
   if (loading) {
     return (
@@ -261,7 +290,7 @@ export const RiderDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Dashboard Banner */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -282,7 +311,7 @@ export const RiderDashboard = () => {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95 shrink-0"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-semibold text-xs transition-all active:scale-95 shrink-0 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Log Out
@@ -298,12 +327,12 @@ export const RiderDashboard = () => {
                 Filter Earnings & Performance:
               </span>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3 grow sm:grow-0 justify-end">
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="daily">Daily (Today)</option>
                 <option value="weekly">Weekly (Last 7 Days)</option>
@@ -318,14 +347,14 @@ export const RiderDashboard = () => {
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
-                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                   <span className="text-xs text-neutral-400">to</span>
                   <input
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-neutral-50 dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
               )}
@@ -375,7 +404,6 @@ export const RiderDashboard = () => {
               </div>
             </div>
 
-            {/* Total Food Value Delivered */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-indigo-500">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
                 <Utensils className="w-5 h-5" />
@@ -390,7 +418,6 @@ export const RiderDashboard = () => {
               </div>
             </div>
 
-            {/* Rider Actual Income */}
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-primary-500">
               <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-5 h-5" />
@@ -407,7 +434,7 @@ export const RiderDashboard = () => {
           </div>
         </div>
 
-        {/* Daily Performance Track Log Table (Admin Cash Submission Status Column Added) */}
+        {/* Daily Performance Track Log Table */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-4 h-4 text-primary-500" />
@@ -417,7 +444,9 @@ export const RiderDashboard = () => {
           </div>
 
           {dailyLog.length === 0 ? (
-            <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">No history logs recorded yet.</p>
+            <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">
+              No history logs recorded yet.
+            </p>
           ) : (
             <div className="max-h-[280px] overflow-y-auto overflow-x-auto pr-1">
               <table className="w-full text-left border-collapse text-xs">
@@ -433,10 +462,15 @@ export const RiderDashboard = () => {
                     <th className="py-2.5 px-3 text-right">Admin Cash Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {dailyLog.map((log, index) => (
-                    <tr key={index} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors">
-                      <td className="py-3 px-3 font-bold text-neutral-700 dark:text-neutral-300">{log.date}</td>
+                    <tr
+                      key={index}
+                      className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
+                    >
+                      <td className="py-3 px-3 font-bold text-neutral-700 dark:text-neutral-300">
+                        {log.date}
+                      </td>
                       <td className="py-3 px-3">
                         <span className="inline-flex items-center gap-1 font-extrabold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
                           <CheckCircle className="w-3 h-3" /> {log.delivered}
@@ -460,14 +494,26 @@ export const RiderDashboard = () => {
                         ৳{log.totalCollection.toFixed(2)}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {log.isSubmitted ? (
+                        {log.totalCollection === 0 ? (
+                          <span className="text-neutral-400 font-medium text-[10px]">
+                            N/A
+                          </span>
+                        ) : log.isSubmitted ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
                             <CheckCircle2 className="w-3 h-3" /> Submitted
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
-                            <Clock3 className="w-3 h-3" /> Pending Cash
-                          </span>
+                          <button
+                            onClick={() => handleSubmitCash(log.date)}
+                            disabled={submittingCashDate === log.date}
+                            className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50"
+                            title="Click to submit collected cash to admin"
+                          >
+                            <Clock3 className="w-3 h-3 animate-pulse" />
+                            {submittingCashDate === log.date
+                              ? "Submitting..."
+                              : "Pay to Admin"}
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -481,7 +527,11 @@ export const RiderDashboard = () => {
         {/* Main Work Area */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Active Orders List */}
-          <div className={`${activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"} space-y-4 transition-all duration-300`}>
+          <div
+            className={`${
+              activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"
+            } space-y-4 transition-all duration-300`}
+          >
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
               <h3 className="font-display font-extrabold text-sm text-neutral-850 dark:text-white mb-4 uppercase tracking-wider">
                 Assigned Delivery Orders ({orders.length})
@@ -490,69 +540,129 @@ export const RiderDashboard = () => {
               {orders.length === 0 ? (
                 <div className="text-center py-12 text-neutral-400 dark:text-neutral-500 space-y-2">
                   <ShieldAlert className="w-8 h-8 mx-auto stroke-1" />
-                  <p className="text-xs font-semibold">No orders assigned to you yet.</p>
-                  <p className="text-[10px] font-light">Assigned orders will pop up here in real-time.</p>
+                  <p className="text-xs font-semibold">
+                    No orders assigned to you yet.
+                  </p>
+                  <p className="text-[10px] font-light">
+                    Assigned orders will pop up here in real-time.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {orders.map((ord) => (
-                    <div key={ord.id} className="border border-neutral-100 dark:border-neutral-850 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between">
+                    <div
+                      key={ord.id}
+                      className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
+                    >
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div>
-                          <span className="font-bold text-xs uppercase text-neutral-805 dark:text-white">Order #{ord.id}</span>
+                          <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
+                            Order #{ord.id}
+                          </span>
                           <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
                             Placed: {new Date(ord.createdAt).toLocaleTimeString()}
                           </span>
                         </div>
                         <div className="flex gap-2 items-center">
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(ord.status)}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(
+                              ord.status
+                            )}`}
+                          >
                             {ord.status}
                           </span>
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${ord.riderAcceptStatus === "accepted" ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-orange-500/10 text-orange-500 border border-orange-500/20"}`}>
-                            {ord.riderAcceptStatus === "accepted" ? "Accepted" : "Pending Accept"}
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                              ord.riderAcceptStatus === "accepted"
+                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                            }`}
+                          >
+                            {ord.riderAcceptStatus === "accepted"
+                              ? "Accepted"
+                              : "Pending Accept"}
                           </span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-850 py-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
                         <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Customer</span>
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+                            Customer
+                          </span>
                           <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                            <span>{ord.user?.name}</span>
+                            <span>{ord.deliveryPhone ? ord.deliveryPhone : ord.user?.name}</span>
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-neutral-500">
                             <Phone className="w-3 h-3 text-primary-500" />
-                            <span>{ord.user?.phone}</span>
+                            <span>{ord.deliveryPhone || ord.user?.phone}</span>
                           </div>
                         </div>
 
                         <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Delivery Address</span>
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+                            Delivery Address
+                          </span>
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
-                            <span className="leading-tight">{ord.user?.address} ({ord.user?.pickArea})</span>
+                            <span className="leading-tight">
+                              {ord.deliveryAddress || ord.user?.address} ({ord.deliveryArea || ord.user?.pickArea})
+                            </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="font-bold text-xs">Total Invoice: <span className="text-primary-500">৳{ord.total?.toFixed(2)}</span></div>
+                        <div className="font-bold text-xs">
+                          Total Invoice:{" "}
+                          <span className="text-primary-500">
+                            ৳{ord.total?.toFixed(2)}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2">
                           {ord.riderAcceptStatus === "pending" ? (
                             <div className="flex gap-2">
-                              <button onClick={() => handleAccept(ord.id)} className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all">Accept Job</button>
-                              <button onClick={() => handleReject(ord.id)} className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all">Reject Job</button>
+                              <button
+                                onClick={() => handleAccept(ord.id)}
+                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                              >
+                                Accept Job
+                              </button>
+                              <button
+                                onClick={() => handleReject(ord.id)}
+                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                              >
+                                Reject Job
+                              </button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <select value={ord.status} onChange={(e) => handleStatusChange(ord.id, e.target.value)} className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 text-neutral-805 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500">
+                              <select
+                                value={ord.status}
+                                onChange={(e) =>
+                                  handleStatusChange(ord.id, e.target.value)
+                                }
+                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              >
                                 <option value="Out for Delivery">On Way</option>
                                 <option value="Delivered">Delivered</option>
                               </select>
                             </div>
                           )}
 
-                          <button onClick={() => setActiveChatOrderId(ord.id === activeChatOrderId ? null : ord.id)} className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${activeChatOrderId === ord.id ? "bg-primary-500/10 text-primary-500 border-primary-500/30" : ""}`} title="Chat Console">
+                          <button
+                            onClick={() =>
+                              setActiveChatOrderId(
+                                ord.id === activeChatOrderId ? null : ord.id
+                              )
+                            }
+                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                              activeChatOrderId === ord.id
+                                ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                                : ""
+                            }`}
+                            title="Chat Console"
+                          >
                             <MessageSquare className="w-4 h-4" />
                           </button>
                         </div>
@@ -567,54 +677,85 @@ export const RiderDashboard = () => {
           {/* Chat Console Panel */}
           <AnimatePresence>
             {activeChatOrderId && chatOrder && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="lg:col-span-5 flex flex-col h-140 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="lg:col-span-5 flex flex-col h-[500px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
+              >
                 <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                   <div>
-                    <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">Chat for #{chatOrder.id.toUpperCase()}</h3>
-                    <span className="block text-[9px] text-neutral-400">Customer: {chatOrder.user?.name} ({chatOrder.user?.phone})</span>
+                    <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                      Chat for #{chatOrder.id}
+                    </h3>
+                    <span className="block text-[9px] text-neutral-400">
+                      Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
+                    </span>
                   </div>
-                  <button onClick={() => setActiveChatOrderId(null)} className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-650">
+                  <button
+                    onClick={() => setActiveChatOrderId(null)}
+                    className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer"
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-                  {chatOrder.chatHistory.map((msg, i) => {
-                    const isSelf = msg.sender === "rider" && msg.senderName === user.name;
+                  {(chatOrder.chatHistory || []).map((msg, i) => {
+                    const isSelf =
+                      msg.sender === "rider" && msg.senderName === user.name;
                     const isSystem = msg.senderName === "System";
-                    const isAdmin = msg.sender === "admin" && msg.senderName !== "System";
+                    const isAdmin =
+                      msg.sender === "admin" && msg.senderName !== "System";
                     const isCustomer = msg.sender === "customer";
 
                     let alignClass = "justify-start";
-                    let bubbleClass = "bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-805 dark:text-neutral-100 rounded-2xl rounded-tl-none";
+                    let bubbleClass =
+                      "bg-white dark:bg-neutral-800 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
                     let labelColor = "text-neutral-400";
 
                     if (isSelf) {
                       alignClass = "justify-end";
-                      bubbleClass = "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
+                      bubbleClass =
+                        "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
                       labelColor = "text-primary-500";
                     } else if (isSystem) {
                       return (
                         <div key={i} className="flex justify-center my-1">
-                          <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">{msg.text}</span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">
+                            {msg.text}
+                          </span>
                         </div>
                       );
                     } else if (isAdmin) {
-                      bubbleClass = "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+                      bubbleClass =
+                        "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
                       labelColor = "text-indigo-500";
                     } else if (isCustomer) {
-                      bubbleClass = "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-805 dark:text-neutral-150 rounded-2xl rounded-tl-none";
-                      labelColor = "text-emerald-555";
+                      bubbleClass =
+                        "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+                      labelColor = "text-emerald-500";
                     }
 
                     return (
                       <div key={i} className={`flex ${alignClass}`}>
                         <div className="max-w-[85%] flex flex-col gap-1">
-                          {!isSelf && <span className={`text-[10px] font-bold ${labelColor} px-1.5`}>{msg.senderName} ({msg.sender.toUpperCase()})</span>}
+                          {!isSelf && (
+                            <span className={`text-[10px] font-bold ${labelColor} px-1.5`}>
+                              {msg.senderName} ({msg.sender?.toUpperCase()})
+                            </span>
+                          )}
                           <div className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}>
                             <p>{msg.text}</p>
-                            <span className={`block text-[9px] text-right mt-1 font-light ${isSelf ? "text-white/60" : "text-neutral-400"}`}>
-                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            <span
+                              className={`block text-[9px] text-right mt-1 font-light ${
+                                isSelf ? "text-white/60" : "text-neutral-400"
+                              }`}
+                            >
+                              {new Date(msg.timestamp).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                           </div>
                         </div>
@@ -624,9 +765,22 @@ export const RiderDashboard = () => {
                   <div ref={chatEndRef} />
                 </div>
 
-                <form onSubmit={handleSendRiderMessage} className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0">
-                  <input type="text" value={riderChatMessage} onChange={(e) => setRiderChatMessage(e.target.value)} placeholder="Type message to Customer/Admin..." className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                  <button type="submit" disabled={!riderChatMessage.trim()} className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10">
+                <form
+                  onSubmit={handleSendRiderMessage}
+                  className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
+                >
+                  <input
+                    type="text"
+                    value={riderChatMessage}
+                    onChange={(e) => setRiderChatMessage(e.target.value)}
+                    placeholder="Type message to Customer/Admin..."
+                    className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!riderChatMessage.trim()}
+                    className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10 cursor-pointer"
+                  >
                     <Send className="w-4 h-4" />
                   </button>
                 </form>

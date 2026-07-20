@@ -73,3 +73,11 @@ export async function rejectRiderOrder(orderId) {
 export async function addChatMessage(id, message) {
   return apiClient.post(`/orders/${id}/messages`, { text: message.text });
 }
+
+/**
+ * POST /api/orders/submit-daily-cash (rider)
+ * নির্দিষ্ট তারিখের সংগৃহীত ক্যাশ জমা দেওয়ার জন্য ব্যাকএন্ডে রিকোয়েস্ট পাঠায়
+ */
+export async function submitRiderDailyCash(dateString) {
+  return apiClient.post('/orders/submit-daily-cash', { date: dateString });
+}
