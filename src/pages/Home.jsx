@@ -572,7 +572,7 @@ export const Home = () => {
                               "bir-chattala",
                               "barcode-sweets",
                             ].includes(brand.slug)
-                              ? "object-cover object-center rounded-lg"
+                              ? "object-contain object-center "
                               : "object-contain"
                           }`}
                         />
