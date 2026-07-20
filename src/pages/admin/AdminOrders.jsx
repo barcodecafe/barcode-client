@@ -14,6 +14,9 @@ import {
   Bike,
   Utensils,
   TrendingUp,
+  CheckCircle2,
+  Clock3,
+  AlertCircle
 } from "lucide-react";
 import {
   getAllOrders,
@@ -22,6 +25,7 @@ import {
   assignRiderToOrder,
   acceptRiderOrder,
   rejectRiderOrder,
+  confirmRiderCashSettlement, // New API function
 } from "../../services/ordersService";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
@@ -59,6 +63,7 @@ export const AdminOrders = () => {
   const [branches, setBranches] = useState([]);
   const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingRiderId, setConfirmingRiderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
@@ -66,7 +71,7 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Live data only
+  // Live data fetch
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
@@ -99,18 +104,15 @@ export const AdminOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // Enhanced Helper logic to calculate daily, weekly, and monthly stats
+  // Enhanced Helper logic to calculate daily stats and cash submission status
   const getRiderPerformanceStats = (riderId, riderName) => {
     const now = new Date();
-    
-    // Start of Today
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // Start of This Week (Sunday as start of week)
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-    
-    // Start of This Month
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dateKeyToday = startOfToday.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
     const deliveredOrders = orders.filter(
       (o) =>
@@ -118,22 +120,56 @@ export const AdminOrders = () => {
         (o.riderId === riderId || o.riderName?.toLowerCase() === riderName?.toLowerCase())
     );
 
-    const calculateTotals = (filteredOrders) => {
-      const totalEarnings = filteredOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
-      const totalFoodPrice = filteredOrders.reduce((sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0), 0);
-      return { foodDelivered: totalFoodPrice, income: totalEarnings };
-    };
+    const dailyOrders = deliveredOrders.filter(
+      (o) => new Date(o.createdAt || o.updatedAt) >= startOfToday
+    );
 
-    // Filter by date ranges
-    const dailyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfToday);
-    const weeklyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfWeek);
-    const monthlyOrders = deliveredOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= startOfMonth);
+    const totalFoodPrice = dailyOrders.reduce(
+      (sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0),
+      0
+    );
+    const totalEarnings = dailyOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+    const totalCashCollected = dailyOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    // Check if rider submitted cash to admin and if admin verified it
+    const hasUnsubmittedCash = dailyOrders.some((o) => !o.isSubmittedToAdmin);
+    const isSubmittedByRider = dailyOrders.some((o) => o.isSubmittedToAdmin);
+    const isConfirmedByAdmin = dailyOrders.length > 0 && dailyOrders.every((o) => o.isCashSettledByAdmin);
 
     return {
-      daily: calculateTotals(dailyOrders),
-      weekly: calculateTotals(weeklyOrders),
-      monthly: calculateTotals(monthlyOrders)
+      dateKey: dateKeyToday,
+      daily: {
+        foodDelivered: totalFoodPrice,
+        income: totalEarnings,
+        cashCollected: totalCashCollected,
+        deliveredCount: dailyOrders.length,
+      },
+      cashStatus: {
+        hasOrders: dailyOrders.length > 0,
+        isSubmittedByRider,
+        hasUnsubmittedCash,
+        isConfirmedByAdmin,
+      },
     };
+  };
+
+  // Handle Admin Settlement Confirmation
+  const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
+    const confirmSettle = window.confirm(
+      `Confirm cash settlement for Rider ${riderName} on ${dateKey}?`
+    );
+    if (!confirmSettle) return;
+
+    try {
+      setConfirmingRiderId(riderId);
+      await confirmRiderCashSettlement(riderId, dateKey);
+      alert(`Cash settlement confirmed successfully for ${riderName}!`);
+      fetchOrdersAndFleet();
+    } catch (err) {
+      alert("Failed to confirm cash settlement: " + (err.response?.data?.message || err.message));
+    } fontFinally {
+      setConfirmingRiderId(null);
+    }
   };
 
   if (loading) {
@@ -212,73 +248,104 @@ export const AdminOrders = () => {
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs">
         <h3 className="text-xs font-bold font-display text-neutral-855 dark:text-white mb-3 flex items-center gap-2">
           <Bike className="w-4 h-4 text-primary-500" />
-          Riders Fleet Overview
+          Riders Fleet Overview & Cash Settlement
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {riders.map((r) => {
             const stats = getRiderPerformanceStats(r.id, r.name);
+            const { cashStatus } = stats;
+
             return (
               <div
                 key={r.id}
-                className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between"
+                className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between space-y-3"
               >
                 <div>
-                  <span className="block font-bold text-xs text-neutral-800 dark:text-neutral-100">
-                    {r.name}
-                  </span>
-                  <span className="block text-[10px] text-neutral-400 mt-0.5">
-                    Phone: {r.phone}
-                  </span>
-                  <span className="block text-[10px] text-neutral-400 mt-0.5">
-                    Vehicle: {r.vehicle}
-                  </span>
-                  <span className="block text-[10px] font-semibold mt-0.5 text-neutral-500 dark:text-neutral-300">
+                  <div className="flex items-start justify-between gap-1">
+                    <div>
+                      <span className="block font-bold text-xs text-neutral-800 dark:text-neutral-100">
+                        {r.name}
+                      </span>
+                      <span className="block text-[10px] text-neutral-400 mt-0.5">
+                        Phone: {r.phone}
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        r.status === "Available"
+                          ? "bg-green-500/10 text-green-500"
+                          : "bg-amber-500/10 text-amber-500"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+
+                  <span className="block text-[10px] font-semibold mt-1 text-neutral-500 dark:text-neutral-300">
                     {r.activeOrders > 0
                       ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
                       : "No active delivery"}
                   </span>
 
-                  {/* Period Stats Breakdowns (Daily, Weekly, Monthly) */}
-                  <div className="mt-3 pt-2.5 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
-                    {/* Daily */}
-                    <div>
-                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Today</span>
-                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
-                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.daily.foodDelivered.toFixed(0)}</span>
-                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.daily.income.toFixed(0)}</span>
+                  {/* Today Cash & Collection Stats */}
+                  <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
+                    <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400">
+                      Today's Collection ({stats.daily.deliveredCount} Delivered)
+                    </span>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/60 dark:bg-neutral-950/40 p-2 rounded-lg">
+                      <div>
+                        <span className="text-neutral-400 text-[9px] block">Cash Collected</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                          ৳{stats.daily.cashCollected.toFixed(0)}
+                        </span>
                       </div>
-                    </div>
-                    
-                    {/* Weekly */}
-                    <div>
-                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">This Week</span>
-                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
-                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.weekly.foodDelivered.toFixed(0)}</span>
-                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.weekly.income.toFixed(0)}</span>
+                      <div className="text-right">
+                        <span className="text-neutral-400 text-[9px] block">Rider Share</span>
+                        <span className="font-bold text-primary-500">
+                          ৳{stats.daily.income.toFixed(0)}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Monthly */}
-                    <div>
-                      <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400 mb-1">This Month</span>
-                      <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/50 dark:bg-neutral-950/40 p-1.5 rounded-lg">
-                        <span className="text-neutral-500 dark:text-neutral-400 truncate">🍔 ৳{stats.monthly.foodDelivered.toFixed(0)}</span>
-                        <span className="font-bold text-primary-500 text-right">💰 ৳{stats.monthly.income.toFixed(0)}</span>
-                      </div>
+                    {/* Admin Cash Status & Action Trigger */}
+                    <div className="pt-1">
+                      {!cashStatus.hasOrders ? (
+                        <div className="text-[10px] text-neutral-400 font-medium text-center py-1 bg-neutral-100/30 dark:bg-neutral-900/30 rounded-md">
+                          No Cash Pending Today
+                        </div>
+                      ) : cashStatus.isConfirmedByAdmin ? (
+                        <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 py-1 rounded-lg">
+                          <CheckCircle2 className="w-3 h-3" /> Cash Settled & Confirmed
+                        </div>
+                      ) : cashStatus.isSubmittedByRider ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
+                            <span className="flex items-center gap-1">
+                              <Clock3 className="w-3 h-3 animate-pulse" /> Submitted by Rider
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleConfirmCashSettlement(r.id, r.name, stats.dateKey)
+                            }
+                            disabled={confirmingRiderId === r.id}
+                            className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            {confirmingRiderId === r.id ? "Confirming..." : "Approve & Mark Succeeded"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-red-500 bg-red-500/10 border border-red-500/20 py-1 rounded-lg">
+                          <AlertCircle className="w-3 h-3" /> Cash Not Submitted Yet
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-neutral-150 dark:border-neutral-850">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
-                      r.status === "Available"
-                        ? "bg-green-500/10 text-green-500"
-                        : "bg-amber-500/10 text-amber-500"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
+
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-150 dark:border-neutral-850">
+                  <span className="text-[9px] font-bold text-neutral-400">Rider Status:</span>
                   <select
                     value={r.status}
                     onChange={async (e) => {
@@ -392,11 +459,6 @@ export const AdminOrders = () => {
                           <option value="Rejected">Rejected</option>
                         </select>
                       )}
-                      {ord.riderId && ord.riderAcceptStatus !== "accepted" && ord.status !== "Rejected" && (
-                        <span className="block text-[9px] text-orange-500 font-bold mt-1.5 tracking-tight">
-                          Awaiting Accept
-                        </span>
-                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5">
@@ -413,55 +475,12 @@ export const AdminOrders = () => {
                           }`}
                         >
                           <option value="">-- Assign Rider --</option>
-                          {riders.map((r) => {
-                            const busy = r.status === "Busy";
-                            const load = r.activeOrders || 0;
-                            const disabled = busy && ord.riderId !== r.id;
-                            const tag = busy
-                              ? `Busy${load ? ` · ${load} active` : ""}`
-                              : load
-                                ? `${load} active`
-                                : "Free";
-                            return (
-                              <option key={r.id} value={r.id} disabled={disabled}>
-                                {r.name} ({r.vehicle}) — {tag}
-                              </option>
-                            );
-                          })}
+                          {riders.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name} ({r.vehicle})
+                            </option>
+                          ))}
                         </select>
-                        {ord.riderId && ord.status !== "Rejected" && ord.status !== "Delivered" && (
-                          <div className="shrink-0 flex items-center">
-                            {ord.riderAcceptStatus === "pending" ? (
-                              <div className="flex gap-1 shrink-0">
-                                <button
-                                  onClick={() => handleAcceptRider(ord.id)}
-                                  className="px-1 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs"
-                                  title="Simulate Rider Accept"
-                                >
-                                  Accept?
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      await rejectRiderOrder(ord.id);
-                                      fetchOrdersAndFleet();
-                                    } catch (err) {
-                                      alert("Failed to reject rider: " + err.message);
-                                    }
-                                  }}
-                                  className="px-1 py-0.5 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs"
-                                  title="Simulate Rider Reject"
-                                >
-                                  Reject?
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold text-[8px] uppercase">
-                                Accepted
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-right">
@@ -492,87 +511,30 @@ export const AdminOrders = () => {
             exit={{ opacity: 0, x: 20 }}
             className="lg:col-span-5 flex flex-col h-[560px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
           >
-            {/* Header */}
             <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
                   Chat for #{chatOrder.id.toUpperCase()}
                 </h3>
-                <span className="block text-[9px] text-neutral-400">
-                  Customer: {chatOrder.user.name} ({chatOrder.user.phone})
-                </span>
               </div>
               <button
                 onClick={() => setActiveChatOrderId(null)}
-                className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-650"
+                className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-400"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Messages feed */}
             <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-              {chatOrder.chatHistory.map((msg, i) => {
-                const isAdmin =
-                  msg.sender === "admin" && msg.senderName !== "System";
-                const isSystem = msg.senderName === "System";
-                const isRider = msg.sender === "rider";
-
-                let alignClass = "justify-start";
-                let bubbleClass =
-                  "bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
-                let labelColor = "text-neutral-400";
-
-                if (isAdmin) {
-                  alignClass = "justify-end";
-                  bubbleClass =
-                    "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
-                  labelColor = "text-primary-500";
-                } else if (isSystem) {
-                  return (
-                    <div key={i} className="flex justify-center my-1">
-                      <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">
-                        {msg.text}
-                      </span>
-                    </div>
-                  );
-                } else if (isRider) {
-                  bubbleClass =
-                    "bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-neutral-855 dark:text-neutral-150 rounded-2xl rounded-tl-none";
-                  labelColor = "text-amber-500";
-                }
-
-                return (
-                  <div key={i} className={`flex ${alignClass}`}>
-                    <div className="max-w-[85%] flex flex-col gap-1">
-                      {!isAdmin && (
-                        <span
-                          className={`text-[10px] font-bold ${labelColor} px-1.5`}
-                        >
-                          {msg.senderName} ({msg.sender.toUpperCase()})
-                        </span>
-                      )}
-                      <div
-                        className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}
-                      >
-                        <p>{msg.text}</p>
-                        <span
-                          className={`block text-[9px] text-right mt-1 font-light ${isAdmin ? "text-white/60" : "text-neutral-400"}`}
-                        >
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {(chatOrder.chatHistory || []).map((msg, i) => (
+                <div key={i} className="text-xs">
+                  <span className="font-bold">{msg.senderName}: </span>
+                  <span>{msg.text}</span>
+                </div>
+              ))}
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input Form */}
             <form
               onSubmit={handleSendAdminMessage}
               className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
@@ -582,12 +544,11 @@ export const AdminOrders = () => {
                 value={adminChatMessage}
                 onChange={(e) => setAdminChatMessage(e.target.value)}
                 placeholder="Type message as Barcode Admin..."
-                className="flex-grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="flex-grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <button
                 type="submit"
-                disabled={!adminChatMessage.trim()}
-                className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10"
+                className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -595,220 +556,6 @@ export const AdminOrders = () => {
           </motion.div>
         )}
       </div>
-
-      {/* Order Details Modal */}
-      <AnimatePresence>
-        {selectedOrderDetails && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedOrderDetails(null)}
-              className="absolute inset-0 bg-neutral-950/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[85vh]"
-            >
-              {/* Modal Header */}
-              <div className="p-5 border-b border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 flex items-center justify-between">
-                <div>
-                  <h3 className="font-display font-extrabold text-base text-neutral-850 dark:text-white uppercase flex items-center gap-1.5">
-                    Order Items: #{selectedOrderDetails.id}
-                  </h3>
-                  <span className="block text-[10px] text-neutral-400 mt-0.5">
-                    Placed on{" "}
-                    {new Date(selectedOrderDetails.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedOrderDetails(null)}
-                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/10 rounded-xl space-y-1.5">
-                    <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
-                      Customer Details
-                    </span>
-                    <span className="block text-xs font-bold text-neutral-800 dark:text-neutral-100">
-                      {selectedOrderDetails.user.name}
-                    </span>
-                    <span className="block text-[11px] text-neutral-500">
-                      Phone: {selectedOrderDetails.user.phone}
-                    </span>
-                    <span className="block text-[11px] text-neutral-500">
-                      Email: {selectedOrderDetails.user.email || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className="p-3 border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/10 rounded-xl space-y-1.5">
-                    <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
-                      {selectedOrderDetails.regionId ? "Delivery Region" : "Branch Details"}
-                    </span>
-                    <span className="block text-xs font-bold text-neutral-800 dark:text-neutral-100">
-                      {selectedOrderDetails.regionId
-                        ? regions.find((r) => r.id === selectedOrderDetails.regionId)?.name ||
-                          `Region #${selectedOrderDetails.regionId}`
-                        : branches.find((b) => b.id === selectedOrderDetails.branchId)?.name ||
-                          `Branch #${selectedOrderDetails.branchId}`}
-                    </span>
-                    <span className="block text-[11px] text-neutral-500 truncate">
-                      {selectedOrderDetails.deliveryArea
-                        ? `Area: ${selectedOrderDetails.deliveryArea}`
-                        : branches.find((b) => b.id === selectedOrderDetails.branchId)?.location || "General Area"}
-                    </span>
-                  </div>
-
-                  <div className="p-3 border border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/10 rounded-xl space-y-1.5 md:col-span-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
-                          Shipping Address
-                        </span>
-                        <span className="block text-[11px] text-neutral-600 dark:text-neutral-300 font-light mt-1">
-                          {selectedOrderDetails.user.address} (
-                          {selectedOrderDetails.user.pickArea})
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-wider">
-                          Billing Address
-                        </span>
-                        <span className="block text-[11px] text-neutral-600 dark:text-neutral-300 font-light mt-1">
-                          {selectedOrderDetails.user.billingAddress ||
-                            selectedOrderDetails.user.address}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Products Ordered Table */}
-                <div className="border border-neutral-150 dark:border-neutral-850 rounded-xl overflow-hidden">
-                  <table className="w-full text-xs text-left">
-                    <thead>
-                      <tr className="border-b border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 font-semibold text-neutral-450 uppercase tracking-wider">
-                        <th className="px-4 py-2.5">Dish</th>
-                        <th className="px-4 py-2.5 text-center">Qty</th>
-                        <th className="px-4 py-2.5 text-right">Unit Price</th>
-                        <th className="px-4 py-2.5 text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrderDetails.items.map((item) => {
-                        return (
-                          <tr
-                            key={item.id}
-                            className="border-b border-neutral-100 dark:border-neutral-850 last:border-b-0 animate-fade-in"
-                          >
-                            <td className="px-4 py-3 flex items-center gap-2.5">
-                              <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-                                {item.name}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center font-bold text-neutral-600 dark:text-neutral-300">
-                              {item.quantity}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              ৳{item.price.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-neutral-800 dark:text-neutral-100">
-                              ৳{(item.price * item.quantity).toFixed(2)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Subtotal, Coupon discount, and Total */}
-                <div className="flex justify-end pt-2">
-                  <div className="w-64 space-y-1.5 text-xs text-right border-t border-neutral-100 dark:border-neutral-800 pt-3">
-                    <div className="flex justify-between text-neutral-500">
-                      <span>Basket Subtotal:</span>
-                      <span>৳{selectedOrderDetails.subtotal.toFixed(2)}</span>
-                    </div>
-                    {selectedOrderDetails.discount > 0 && (
-                      <div className="flex justify-between text-emerald-500 font-semibold">
-                        <span>
-                          Coupon Discount ({selectedOrderDetails.couponCode}):
-                        </span>
-                        <span>
-                          -৳{selectedOrderDetails.discount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-bold text-sm text-neutral-855 dark:text-white pt-1">
-                      <span>Total Invoice:</span>
-                      <span className="text-primary-500">
-                        ৳{selectedOrderDetails.total.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Method / Gateway Status Info */}
-                <div className="p-3.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-xl flex flex-col sm:flex-row justify-between gap-3 text-xs">
-                  <div>
-                    <span className="block font-bold text-neutral-450 uppercase text-[9px] tracking-wider">
-                      Payment Method
-                    </span>
-                    <span className="block font-bold text-neutral-855 dark:text-neutral-100 mt-1 uppercase text-[10px]">
-                      {selectedOrderDetails.paymentMethod === "sslcommerz"
-                        ? "SSLCommerz (Online)"
-                        : "Cash on Delivery (COD)"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block font-bold text-neutral-450 uppercase text-[9px] tracking-wider">
-                      Payment Status
-                    </span>
-                    <span
-                      className={`inline-block font-extrabold px-2 py-0.5 rounded text-[9px] uppercase mt-1 ${
-                        selectedOrderDetails.paymentStatus === "Paid"
-                          ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                          : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                      }`}
-                    >
-                      {selectedOrderDetails.paymentStatus || "Pending"}
-                    </span>
-                  </div>
-                  {selectedOrderDetails.transactionId && (
-                    <div>
-                      <span className="block font-bold text-neutral-450 uppercase text-[9px] tracking-wider">
-                        Transaction ID
-                      </span>
-                      <span className="block font-mono text-[9px] text-neutral-600 dark:text-neutral-450 mt-1">
-                        {selectedOrderDetails.transactionId}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-4 border-t border-neutral-150 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/20 flex justify-end shrink-0">
-                <button
-                  onClick={() => setSelectedOrderDetails(null)}
-                  className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs transition-all active:scale-95"
-                >
-                  Close details
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
