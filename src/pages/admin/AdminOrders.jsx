@@ -167,7 +167,7 @@ export const AdminOrders = () => {
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to confirm cash settlement: " + (err.response?.data?.message || err.message));
-    } fontFinally {
+    } finally {
       setConfirmingRiderId(null);
     }
   };
