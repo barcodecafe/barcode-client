@@ -81,3 +81,8 @@ export async function addChatMessage(id, message) {
 export async function submitRiderDailyCash(dateString) {
   return apiClient.post('/orders/submit-daily-cash', { date: dateString });
 }
+
+/** POST /api/orders/confirm-cash-settlement (admin) added by Sajib khan */
+export async function confirmRiderCashSettlement(riderId, dateString) {
+  return apiClient.post('/orders/confirm-cash-settlement', { riderId, date: dateString });
+}

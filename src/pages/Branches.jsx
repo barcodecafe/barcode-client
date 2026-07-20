@@ -1,539 +1,563 @@
-import { useState, useEffect, useMemo, memo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Search, MapPin, Phone, ArrowRight, Star, Heart, ShoppingBag, ChevronDown } from 'lucide-react';
-import { getAllBranches } from '../services/branchesService';
-import { getAllRegions } from '../services/regionsService';
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  getAllFoods,
-  hasFoodDiscount,
-  foodDiscountLabel,
-  applyFoodDiscount,
-} from '../services/foodsService';
+  ShoppingBag,
+  MessageSquare,
+  Send,
+  X,
+  Check,
+  Calendar,
+  MapPin,
+  User,
+  Phone,
+  DollarSign,
+  Bike,
+  Utensils,
+  TrendingUp,
+  CheckCircle2,
+  Clock3,
+  AlertCircle
+} from "lucide-react";
+import {
+  getAllOrders,
+  updateOrderStatus,
+  addChatMessage,
+  assignRiderToOrder,
+  acceptRiderOrder,
+  rejectRiderOrder,
+  confirmRiderCashSettlement, // New API function
+} from "../../services/ordersService";
+import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
+import { getAllBranches } from "../../services/branchesService";
+import { getAllRegions } from "../../services/regionsService";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
-import { useCart } from '../context/CartContext';
-import { useFavorites } from '../context/FavoritesContext';
+const getStatusColor = (status) => {
+  switch (status) {
+    case "Placed":
+    case "pick order":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    case "Accepted":
+      return "bg-green-500/10 text-green-500 border-green-500/20";
+    case "Rejected":
+      return "bg-red-500/10 text-red-500 border-red-500/20";
+    case "Preparing":
+    case "ready to cook":
+      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse";
+    case "ready to pick":
+      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
+    case "Out for Delivery":
+    case "on the way":
+      return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+    case "Delivered":
+    case "order handover":
+      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    default:
+      return "bg-neutral-500/10 text-neutral-500 border-neutral-500/20";
+  }
+};
 
-const PREVIEW_COUNT = 6;
-
-export const Branches = () => {
+export const AdminOrders = () => {
+  const [orders, setOrders] = useState([]);
+  const [riders, setRiders] = useState([]);
   const [branches, setBranches] = useState([]);
   const [regions, setRegions] = useState([]);
-  const [allFoods, setAllFoods] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeRegion, setActiveRegion] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [confirmingRiderId, setConfirmingRiderId] = useState(null);
+  const [activeChatOrderId, setActiveChatOrderId] = useState(null);
+  const [adminChatMessage, setAdminChatMessage] = useState("");
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const chatEndRef = useRef(null);
+  const currentChat = orders.find((o) => o.id === activeChatOrderId);
+  const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Bestsellers & Featured Toggles & Sorting
-  const [showAllPopular, setShowAllPopular] = useState(false);
-  const [showAllFeatured, setShowAllFeatured] = useState(false);
-  const [activeSort, setActiveSort] = useState('popular');
+  // Live data fetch
+  const fetchOrdersAndFleet = () =>
+    Promise.all([getAllOrders(), getAllRiders()])
+      .then(([ordersData, ridersData]) => {
+        setOrders(ordersData || []);
+        setRiders(ridersData || []);
+      })
+      .catch((err) => console.error("Orders/fleet sync failed:", err));
 
-  const { addToCart } = useCart();
-  const { isFavorite, toggleFavorite } = useFavorites();
-
+  // Initial load
   useEffect(() => {
-    Promise.all([getAllBranches(), getAllRegions(), getAllFoods()]).then(
-      ([branchData, regionData, foodsData]) => {
-        setBranches(branchData || []);
-        setRegions(Array.isArray(regionData) ? regionData : []);
-        setAllFoods(foodsData || []);
-        setIsLoading(false);
-      }
-    );
+    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllRegions()])
+      .then(([ordersData, ridersData, branchesData, regionsData]) => {
+        setOrders(ordersData || []);
+        setRiders(ridersData || []);
+        setBranches(branchesData || []);
+        setRegions(Array.isArray(regionsData) ? regionsData : []);
+      })
+      .catch((err) => console.error("Error loading admin orders data:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Filters branches by search text + selected region (by regionId)
-  const filteredBranches = useMemo(
-    () =>
-      branches.filter((branch) => {
-        const matchesSearch =
-          branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          branch.location.toLowerCase().includes(searchQuery.toLowerCase());
+  useVisiblePolling(fetchOrdersAndFleet, { intervalMs: 20000 });
 
-        const matchesRegion = activeRegion === 'All' || branch.regionId === activeRegion;
-
-        return matchesSearch && matchesRegion;
-      }),
-    [branches, searchQuery, activeRegion]
-  );
-
-  const regionTabs = [{ id: 'All', name: 'All' }, ...regions];
-
-  const sortTabs = [
-    { id: 'popular', label: 'Popular' },
-    { id: 'price-low', label: 'Price: Low to High' },
-    { id: 'price-high', label: 'Price: High to Low' },
-    { id: 'rating', label: 'Highest Rated' },
-  ];
-
-  const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
-
-  // ---------------------------------------------------------------------
-  // Bestsellers (Popular Foods) Logic
-  // ---------------------------------------------------------------------
-  const totalPopularFoods = useMemo(() => {
-    if (!allFoods || allFoods.length === 0) return [];
-    let filteredList = allFoods.filter((food) => food.popular === true);
-
-    if (activeSort === 'price-low') {
-      filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (activeSort === 'price-high') {
-      filteredList.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (activeSort === 'rating') {
-      filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  useEffect(() => {
+    if (chatEndRef.current && activeChatOrderId) {
+      chatEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     }
-    return filteredList;
-  }, [allFoods, activeSort]);
+  }, [activeChatOrderId, chatMessagesCount]);
 
-  const previewPopularFoods = useMemo(
-    () => totalPopularFoods.slice(0, PREVIEW_COUNT),
-    [totalPopularFoods]
-  );
-  const remainingPopularFoods = useMemo(
-    () => totalPopularFoods.slice(PREVIEW_COUNT),
-    [totalPopularFoods]
-  );
+  // Enhanced Helper logic to calculate daily stats and cash submission status
+  const getRiderPerformanceStats = (riderId, riderName) => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateKeyToday = startOfToday.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
-  // ---------------------------------------------------------------------
-  // Featured Menu Logic
-  // ---------------------------------------------------------------------
-  const totalFeaturedMenu = useMemo(() => {
-    return allFoods.filter((food) => food.isAdminFeatured === true);
-  }, [allFoods]);
+    const deliveredOrders = orders.filter(
+      (o) =>
+        o.status === "Delivered" &&
+        (o.riderId === riderId || o.riderName?.toLowerCase() === riderName?.toLowerCase())
+    );
 
-  const previewFeaturedMenu = useMemo(
-    () => totalFeaturedMenu.slice(0, PREVIEW_COUNT),
-    [totalFeaturedMenu]
-  );
-  const remainingFeaturedMenu = useMemo(
-    () => totalFeaturedMenu.slice(PREVIEW_COUNT),
-    [totalFeaturedMenu]
-  );
+    const dailyOrders = deliveredOrders.filter(
+      (o) => new Date(o.createdAt || o.updatedAt) >= startOfToday
+    );
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+    const totalFoodPrice = dailyOrders.reduce(
+      (sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0),
+      0
+    );
+    const totalEarnings = dailyOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+    const totalCashCollected = dailyOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    // Check if rider submitted cash to admin and if admin verified it
+    const hasUnsubmittedCash = dailyOrders.some((o) => !o.isSubmittedToAdmin);
+    const isSubmittedByRider = dailyOrders.some((o) => o.isSubmittedToAdmin);
+    const isConfirmedByAdmin = dailyOrders.length > 0 && dailyOrders.every((o) => o.isCashSettledByAdmin);
+
+    return {
+      dateKey: dateKeyToday,
+      daily: {
+        foodDelivered: totalFoodPrice,
+        income: totalEarnings,
+        cashCollected: totalCashCollected,
+        deliveredCount: dailyOrders.length,
+      },
+      cashStatus: {
+        hasOrders: dailyOrders.length > 0,
+        isSubmittedByRider,
+        hasUnsubmittedCash,
+        isConfirmedByAdmin,
+      },
+    };
   };
 
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 },
-    },
+  // Handle Admin Settlement Confirmation
+  const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
+    const confirmSettle = window.confirm(
+      `Confirm cash settlement for Rider ${riderName} on ${dateKey}?`
+    );
+    if (!confirmSettle) return;
+
+    try {
+      setConfirmingRiderId(riderId);
+      await confirmRiderCashSettlement(riderId, dateKey);
+      alert(`Cash settlement confirmed successfully for ${riderName}!`);
+      fetchOrdersAndFleet();
+    } catch (err) {
+      alert("Failed to confirm cash settlement: " + (err.response?.data?.message || err.message));
+    } fontFinally {
+      setConfirmingRiderId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      fetchOrdersAndFleet();
+    } catch (err) {
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
+  const handleAssignRider = async (orderId, riderId) => {
+    const selectedRider = riders.find((r) => r.id === riderId);
+    if (!selectedRider) return;
+    try {
+      await assignRiderToOrder(orderId, riderId, selectedRider.name);
+      fetchOrdersAndFleet();
+    } catch (err) {
+      alert("Failed to assign rider: " + err.message);
+    }
+  };
+
+  const handleAcceptRider = async (orderId) => {
+    try {
+      await acceptRiderOrder(orderId);
+      fetchOrdersAndFleet();
+    } catch (err) {
+      alert("Failed to simulate rider acceptance: " + err.message);
+    }
+  };
+
+  const handleSendAdminMessage = async (e) => {
+    e.preventDefault();
+    if (!adminChatMessage.trim() || !activeChatOrderId) return;
+
+    try {
+      const updated = await addChatMessage(activeChatOrderId, {
+        sender: "admin",
+        senderName: "Barcode Admin",
+        text: adminChatMessage.trim(),
+      });
+      setOrders((prev) =>
+        prev.map((o) => (o.id === activeChatOrderId ? updated : o)),
+      );
+      setAdminChatMessage("");
+    } catch (err) {
+      alert("Failed to send message: " + err.message);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      {/* Filters and Search Bar Container */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        {/* Regions Horizontal Navigation Toggle */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-          {regionTabs.map((region) => (
-            <button
-              key={region.id}
-              onClick={() => setActiveRegion(region.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                activeRegion === region.id
-                  ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                  : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
-              }`}
-            >
-              {region.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Input Search Field */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search branches..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-          />
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+            Orders & Live Chat
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Monitor incoming food deliveries, update delivery stages, and chat
+            with customers/riders.
+          </p>
         </div>
       </div>
 
-      {/* Main Content Showcase Section */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200 mb-2">
-          Available Venues ({filteredBranches.length})
-        </h2>
+      {/* Fleet Overview */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs">
+        <h3 className="text-xs font-bold font-display text-neutral-855 dark:text-white mb-3 flex items-center gap-2">
+          <Bike className="w-4 h-4 text-primary-500" />
+          Riders Fleet Overview & Cash Settlement
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {riders.map((r) => {
+            const stats = getRiderPerformanceStats(r.id, r.name);
+            const { cashStatus } = stats;
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+            return (
               <div
-                key={i}
-                className="rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden animate-pulse"
+                key={r.id}
+                className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between space-y-3"
               >
-                <div className="h-48 w-full bg-neutral-100 dark:bg-neutral-800" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 w-3/4 bg-neutral-100 dark:bg-neutral-800 rounded" />
-                  <div className="h-3 w-full bg-neutral-100 dark:bg-neutral-800 rounded" />
-                  <div className="h-3 w-1/2 bg-neutral-100 dark:bg-neutral-800 rounded" />
+                <div>
+                  <div className="flex items-start justify-between gap-1">
+                    <div>
+                      <span className="block font-bold text-xs text-neutral-800 dark:text-neutral-100">
+                        {r.name}
+                      </span>
+                      <span className="block text-[10px] text-neutral-400 mt-0.5">
+                        Phone: {r.phone}
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        r.status === "Available"
+                          ? "bg-green-500/10 text-green-500"
+                          : "bg-amber-500/10 text-amber-500"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+
+                  <span className="block text-[10px] font-semibold mt-1 text-neutral-500 dark:text-neutral-300">
+                    {r.activeOrders > 0
+                      ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
+                      : "No active delivery"}
+                  </span>
+
+                  {/* Today Cash & Collection Stats */}
+                  <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
+                    <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400">
+                      Today's Collection ({stats.daily.deliveredCount} Delivered)
+                    </span>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/60 dark:bg-neutral-950/40 p-2 rounded-lg">
+                      <div>
+                        <span className="text-neutral-400 text-[9px] block">Cash Collected</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                          ৳{stats.daily.cashCollected.toFixed(0)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-neutral-400 text-[9px] block">Rider Share</span>
+                        <span className="font-bold text-primary-500">
+                          ৳{stats.daily.income.toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Admin Cash Status & Action Trigger */}
+                    <div className="pt-1">
+                      {!cashStatus.hasOrders ? (
+                        <div className="text-[10px] text-neutral-400 font-medium text-center py-1 bg-neutral-100/30 dark:bg-neutral-900/30 rounded-md">
+                          No Cash Pending Today
+                        </div>
+                      ) : cashStatus.isConfirmedByAdmin ? (
+                        <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 py-1 rounded-lg">
+                          <CheckCircle2 className="w-3 h-3" /> Cash Settled & Confirmed
+                        </div>
+                      ) : cashStatus.isSubmittedByRider ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
+                            <span className="flex items-center gap-1">
+                              <Clock3 className="w-3 h-3 animate-pulse" /> Submitted by Rider
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleConfirmCashSettlement(r.id, r.name, stats.dateKey)
+                            }
+                            disabled={confirmingRiderId === r.id}
+                            className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            {confirmingRiderId === r.id ? "Confirming..." : "Approve & Mark Succeeded"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-red-500 bg-red-500/10 border border-red-500/20 py-1 rounded-lg">
+                          <AlertCircle className="w-3 h-3" /> Cash Not Submitted Yet
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-150 dark:border-neutral-850">
+                  <span className="text-[9px] font-bold text-neutral-400">Rider Status:</span>
+                  <select
+                    value={r.status}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value;
+                      await updateRiderStatus(r.id, newStatus);
+                      fetchOrdersAndFleet();
+                    }}
+                    className="text-[9px] font-bold border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 rounded p-0.5 cursor-pointer"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Busy">Busy</option>
+                  </select>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : filteredBranches.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl">
-            <p className="text-neutral-500 dark:text-neutral-400 font-medium">
-              No branches match your search or filter.
-            </p>
-          </div>
-        ) : (
-          /* Grid layout with BranchCard Component */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-            {filteredBranches.map((branch) => (
-              <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* OUR BESTSELLERS SECTION */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="pt-16 pb-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
-          <div className="shrink-0">
-            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
-              Our Bestsellers
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1 md:justify-center">
-            {sortTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveSort(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                  activeSort === tab.id
-                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                    : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="shrink-0 flex justify-end">
-            {totalPopularFoods.length > PREVIEW_COUNT ? (
-              <button
-                onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-              >
-                {showAllPopular ? 'Show Fewer' : 'View All'}
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${
-                    showAllPopular ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-            ) : (
-              <div className="w-1" />
-            )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Table List */}
+        <div
+          className={`${activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"} bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs overflow-hidden`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
+                  <th className="px-4 py-3">Order ID</th>
+                  <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Address</th>
+                  <th className="px-4 py-3">Total Amount</th>
+                  <th className="px-4 py-3">Delivery Status</th>
+                  <th className="px-4 py-3">Assigned Rider</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((ord) => (
+                  <tr
+                    key={ord.id}
+                    className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
+                  >
+                    <td
+                      onClick={() => setSelectedOrderDetails(ord)}
+                      className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
+                      title="Click to view details"
+                    >
+                      {ord.id}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
+                        {ord.user.name}
+                      </span>
+                      <span className="block text-[10px] text-neutral-400 mt-0.5">
+                        {ord.user.phone}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[150px]">
+                        {ord.user.address}
+                      </span>
+                      <span className="block text-[10px] text-neutral-400 mt-0.5">
+                        {ord.user.pickArea}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 font-bold text-primary-500">
+                      ৳{ord.total.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {ord.status === "Placed" ? (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleStatusChange(ord.id, "Accepted")}
+                            className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                            title="Accept Order"
+                          >
+                            <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(ord.id, "Rejected")}
+                            className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                            title="Reject Order"
+                          >
+                            <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
+                          </button>
+                        </div>
+                      ) : ord.status === "Rejected" ? (
+                        <span className="px-2 py-1 rounded border border-red-500/25 bg-red-500/10 text-red-500 font-bold text-[9px] uppercase tracking-wide">
+                          Rejected
+                        </span>
+                      ) : (
+                        <select
+                          value={ord.status}
+                          disabled={
+                            ord.riderId && ord.riderAcceptStatus !== "accepted"
+                          }
+                          onChange={(e) =>
+                            handleStatusChange(ord.id, e.target.value)
+                          }
+                          className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                            ord.riderId && ord.riderAcceptStatus !== "accepted"
+                              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                              : getStatusColor(ord.status)
+                          }`}
+                        >
+                          <option value="Accepted">Accepted</option>
+                          <option value="Preparing">Preparing</option>
+                          <option value="Out for Delivery">Out for Delivery</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={ord.riderId || ""}
+                          disabled={ord.status === "Placed" || ord.status === "Rejected" || ord.status === "Delivered"}
+                          onChange={(e) =>
+                            handleAssignRider(ord.id, e.target.value)
+                          }
+                          className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                            ord.status === "Placed" || ord.status === "Rejected" || ord.status === "Delivered"
+                              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                              : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
+                          }`}
+                        >
+                          <option value="">-- Assign Rider --</option>
+                          {riders.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name} ({r.vehicle})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <button
+                        onClick={() => setActiveChatOrderId(ord.id)}
+                        className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
+                          activeChatOrderId === ord.id
+                            ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                            : ""
+                        }`}
+                        title="Chat Console"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {previewPopularFoods.length > 0 && (
+        {/* Chat Console Panel */}
+        {activeChatOrderId && chatOrder && (
           <motion.div
-            key={activeSort}
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="lg:col-span-5 flex flex-col h-[560px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
           >
-            {previewPopularFoods.map((food) => {
-              const favorited = isFavorite(food.id);
-              return (
-                <FoodCard
-                  key={food.id}
-                  food={food}
-                  favorited={favorited}
-                  onToggleFavorite={toggleFavorite}
-                  onAddToCart={addToCart}
-                  variants={fadeInUp}
-                />
-              );
-            })}
+            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                  Chat for #{chatOrder.id.toUpperCase()}
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveChatOrderId(null)}
+                className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
+              {(chatOrder.chatHistory || []).map((msg, i) => (
+                <div key={i} className="text-xs">
+                  <span className="font-bold">{msg.senderName}: </span>
+                  <span>{msg.text}</span>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            <form
+              onSubmit={handleSendAdminMessage}
+              className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
+            >
+              <input
+                type="text"
+                value={adminChatMessage}
+                onChange={(e) => setAdminChatMessage(e.target.value)}
+                placeholder="Type message as Barcode Admin..."
+                className="flex-grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <button
+                type="submit"
+                className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </motion.div>
         )}
-
-        <AnimatePresence>
-          {showAllPopular && remainingPopularFoods.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.4 }}
-              className="overflow-hidden"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
-              >
-                {remainingPopularFoods.map((food) => {
-                  const favorited = isFavorite(food.id);
-                  return (
-                    <FoodCard
-                      key={food.id}
-                      food={food}
-                      favorited={favorited}
-                      onToggleFavorite={toggleFavorite}
-                      onAddToCart={addToCart}
-                      variants={fadeInUp}
-                    />
-                  );
-                })}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
-      {/* ----------------------------------------------------------------- */}
-      {/* FEATURED MENU SECTION */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="pt-12 pb-8">
-        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
-          <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
-            Featured Menu
-          </h2>
-
-          <div className="flex justify-end">
-            {remainingFeaturedMenu.length > 0 ? (
-              <button
-                onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-              >
-                {showAllFeatured ? 'Show Fewer' : 'View All'}
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${
-                    showAllFeatured ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-            ) : (
-              <div className="w-1" />
-            )}
-          </div>
-        </div>
-
-        {previewFeaturedMenu.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none">
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-              No featured items available right now.
-            </p>
-          </div>
-        ) : (
-          <>
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
-            >
-              {previewFeaturedMenu.map((food) => {
-                const favorited = isFavorite(food.id);
-                return (
-                  <FoodCard
-                    key={food.id}
-                    food={food}
-                    favorited={favorited}
-                    onToggleFavorite={toggleFavorite}
-                    onAddToCart={addToCart}
-                    variants={fadeInUp}
-                  />
-                );
-              })}
-            </motion.div>
-
-            <AnimatePresence>
-              {showAllFeatured && remainingFeaturedMenu.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="overflow-hidden"
-                >
-                  <motion.div
-                    variants={staggerContainer}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
-                  >
-                    {remainingFeaturedMenu.map((food) => {
-                      const favorited = isFavorite(food.id);
-                      return (
-                        <FoodCard
-                          key={food.id}
-                          food={food}
-                          favorited={favorited}
-                          onToggleFavorite={toggleFavorite}
-                          onAddToCart={addToCart}
-                          variants={fadeInUp}
-                        />
-                      );
-                    })}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </section>
+      </div>
     </div>
   );
 };
 
-// Reusable Branch Card Component with Details link & localStorage selection
-const BranchCard = memo(({ branch, variants }) => {
-  const handleDetailsClick = () => {
-    localStorage.setItem('selectedBranchId', String(branch.id));
-  };
-
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        <Link to={`/branches/${branch.id}`}>
-          <img
-            src={branch.image}
-            alt={branch.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-        </Link>
-        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider">
-          ★ {branch.rating}
-        </div>
-      </div>
-
-      <div className="p-4 grow flex flex-col justify-between gap-4">
-        <div>
-          <Link to={`/branches/${branch.id}`}>
-            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 line-clamp-1">
-              {branch.name}
-            </h3>
-          </Link>
-          <div className="flex gap-2 items-start text-xs text-neutral-500 dark:text-neutral-400">
-            <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0 mt-0.5" />
-            <span className="line-clamp-2">{branch.location}</span>
-          </div>
-        </div>
-
-        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
-          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-            <Phone className="w-3.5 h-3.5 text-primary-500" />
-            <span>Call</span>
-          </div>
-          <Link
-            to={`/branches/${branch.id}`}
-            onClick={handleDetailsClick}
-            className="text-primary-500 hover:text-primary-650 flex items-center gap-0.5 group"
-          >
-            Details
-            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-BranchCard.displayName = 'BranchCard';
-
-// Reusable Food Card Component
-const FoodCard = memo(({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
-  const hasDiscount = hasFoodDiscount(food);
-  const discountedPrice = applyFoodDiscount(food.price || 0, food);
-
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-    >
-      <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-none bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-            {foodDiscountLabel(food)}
-          </div>
-        )}
-        <Link to={`/menu/${food.id}`} className="block w-full h-full">
-          <img
-            src={food.image}
-            alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        </Link>
-        <button
-          onClick={() => onToggleFavorite(food.id)}
-          className={`absolute top-3 right-3 p-1.5 rounded-none bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
-            favorited ? 'text-red-500' : 'text-neutral-450 hover:text-red-500'
-          }`}
-          aria-label="Toggle Favorite"
-        >
-          <Heart className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`} />
-        </button>
-      </div>
-
-      <div className="p-4 grow flex flex-col justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            <span>{food.rating || 0}</span>
-          </div>
-          <Link to={`/menu/${food.id}`} className="block">
-            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-              {food.name}
-            </h3>
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-          <div className="flex flex-wrap items-baseline gap-1">
-            {hasDiscount ? (
-              <>
-                <span className="font-display font-extrabold text-red-500 text-base">
-                  ৳{discountedPrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
-                  ৳{(food.price || 0).toFixed(2)}
-                </span>
-              </>
-            ) : (
-              <span className="font-display font-extrabold text-primary-500 text-base">
-                ৳{(food.price || 0).toFixed(2)}
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={() => onAddToCart(food)}
-            className="p-2 rounded-none bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
-            title="Order Now"
-          >
-            <ShoppingBag className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-FoodCard.displayName = 'FoodCard';
-
-export default Branches;
+export default AdminOrders;
