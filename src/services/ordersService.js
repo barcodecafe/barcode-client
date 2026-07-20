@@ -76,7 +76,7 @@ export async function addChatMessage(id, message) {
 
 /**
  * POST /api/orders/submit-daily-cash (rider)
- * নির্দিষ্ট তারিখের সংগৃহীত ক্যাশ জমা দেওয়ার জন্য ব্যাকএন্ডে রিকোয়েস্ট পাঠায়
+ * Sends a request to the backend to deposit the cash collected for a specific date added by Sajib khan
  */
 export async function submitRiderDailyCash(dateString) {
   return apiClient.post('/orders/submit-daily-cash', { date: dateString });
