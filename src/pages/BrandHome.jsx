@@ -2,11 +2,18 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, ArrowRight, UtensilsCrossed, Building2 } from "lucide-react";
+
+// Swiper imports (matching Home.jsx pattern)
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+
 import { useBrand } from "../context/BrandContext";
 import { getBrandBranches } from "../services/brandsService";
 
-// Brand microsite landing: the brand's hero + the branches that belong to it
-// (the client's "inside a brand, show that brand's branches").
+// Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+
 export const BrandHome = () => {
   const brand = useBrand();
   const [branches, setBranches] = useState([]);
@@ -73,33 +80,69 @@ export const BrandHome = () => {
             <p className="text-sm">No branches listed for {brand.name} yet.</p>
           </div>
         ) : (
-          <motion.div
-            initial="hidden" animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {branches.map((br) => (
-              <motion.div key={br.id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
-                <Link
-                  to={`/branches/${br.id}`}
-                  className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
-                >
-                  <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
-                    {br.image && <img src={br.image} alt={br.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                  </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
-                    <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{br.location}</span>
-                    </p>
-                    <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs mt-auto pt-4 group-hover:gap-1.5 transition-all">
-                      View branch <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+          <>
+            {/* Mobile View: Swiper Slider (Same as Home.jsx) */}
+            <div className="sm:hidden -mx-4">
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-4 !pb-8"
+              >
+                {branches.map((br) => (
+                  <SwiperSlide key={br.id}>
+                    <Link
+                      to={`/branches/${br.id}`}
+                      className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
+                    >
+                      <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
+                        {br.image && <img src={br.image} alt={br.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                      </div>
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
+                        <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{br.location}</span>
+                        </p>
+                        <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs mt-auto pt-4 group-hover:gap-1.5 transition-all">
+                          View branch <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    </Link>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+
+            {/* Desktop & Tablet View: Grid */}
+            <motion.div
+              initial="hidden" animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {branches.map((br) => (
+                <motion.div key={br.id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
+                  <Link
+                    to={`/branches/${br.id}`}
+                    className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
+                  >
+                    <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
+                      {br.image && <img src={br.image} alt={br.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
+                      <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{br.location}</span>
+                      </p>
+                      <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs mt-auto pt-4 group-hover:gap-1.5 transition-all">
+                        View branch <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </>
         )}
       </section>
     </div>
