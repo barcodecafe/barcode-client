@@ -272,11 +272,12 @@ export const Home = () => {
           </div>
         </div>
 
+        {/* Mobile View: Swiper Slider */}
         <div className="sm:hidden -mx-2">
           {previewBranches.length > 0 && (
             <Swiper
               modules={[Pagination]}
-              slidesPerView={1.15}
+              slidesPerView={1.25}
               spaceBetween={16}
               pagination={{ clickable: true }}
               className="!px-2 !pb-8"
@@ -290,6 +291,7 @@ export const Home = () => {
           )}
         </div>
 
+        {/* Desktop View: Grid */}
         {previewBranches.length > 0 && (
           <motion.div
             variants={staggerContainer}
@@ -373,13 +375,43 @@ export const Home = () => {
           </div>
         </div>
 
+        {/* Mobile View: Swiper Slider */}
+        <div className="sm:hidden -mx-2">
+          {previewPopularFoods.length > 0 && (
+            <Swiper
+              key={activeSort}
+              modules={[Pagination]}
+              slidesPerView={1.25}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-2 !pb-8"
+            >
+              {previewPopularFoods.map((food) => {
+                const favorited = isFavorite(food.id);
+                return (
+                  <SwiperSlide key={food.id}>
+                    <FoodCard
+                      food={food}
+                      favorited={favorited}
+                      onToggleFavorite={toggleFavorite}
+                      onAddToCart={addToCart}
+                      variants={fadeInUp}
+                    />
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          )}
+        </div>
+
+        {/* Desktop View: Grid */}
         {previewPopularFoods.length > 0 && (
           <motion.div
             key={activeSort}
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -463,11 +495,38 @@ export const Home = () => {
           </div>
         ) : (
           <>
+            {/* Mobile View: Swiper Slider */}
+            <div className="sm:hidden -mx-2">
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={1.25}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {previewFeaturedMenu.map((food) => {
+                  const favorited = isFavorite(food.id);
+                  return (
+                    <SwiperSlide key={food.id}>
+                      <FoodCard
+                        food={food}
+                        favorited={favorited}
+                        onToggleFavorite={toggleFavorite}
+                        onAddToCart={addToCart}
+                        variants={fadeInUp}
+                      />
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+            </div>
+
+            {/* Desktop View: Grid */}
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -544,53 +603,35 @@ export const Home = () => {
             </div>
           </div>
 
+          {/* Mobile View: Swiper Slider */}
+          <div className="sm:hidden -mx-2">
+            {previewBrands.length > 0 && (
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={2.15}
+                spaceBetween={12}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {previewBrands.map((brand) => (
+                  <SwiperSlide key={brand.id}>
+                    <BrandCard brand={brand} variants={fadeInUp} />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )}
+          </div>
+
+          {/* Desktop View: Grid */}
           {previewBrands.length > 0 && (
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewBrands.map((brand) => (
-                <motion.div
-                  key={brand.id}
-                  variants={fadeInUp}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                >
-                  <Link
-                    to={`/brands/${brand.slug}`}
-                    className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
-                  >
-                    <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
-                      {brand.logoLight ? (
-                        <img
-                          src={brand.logoLight}
-                          alt={brand.name}
-                          className={`w-full h-[calc(100%-12px)] block ${
-                            [
-                              "omerta",
-                              "bir-chattala",
-                              "barcode-sweets",
-                              "teheriwala"
-                            ].includes(brand.slug)
-                              ? "object-contain object-center "
-                              : "object-contain"
-                          }`}
-                        />
-                      ) : (
-                        <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
-                          {brand.name.charAt(0)}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="py-2.5 px-3 text-center">
-                      <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
-                        {brand.name}
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
+                <BrandCard key={brand.id} brand={brand} variants={fadeInUp} />
               ))}
             </motion.div>
           )}
@@ -611,44 +652,11 @@ export const Home = () => {
                   className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
                 >
                   {remainingBrands.map((brand) => (
-                    <motion.div
+                    <BrandCard
                       key={brand.id}
+                      brand={brand}
                       variants={fadeInUp}
-                      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                    >
-                      <Link
-                        to={`/brands/${brand.slug}`}
-                        className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
-                      >
-                        <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
-                          {brand.logoLight ? (
-                            <img
-                              src={brand.logoLight}
-                              alt={brand.name}
-                              className={`w-full h-[calc(100%-12px)] block ${
-                                [
-                                  "omerta",
-                                  "bir-chattala",
-                                  "barcode-sweets",
-                                ].includes(brand.slug)
-                                  ? "object-cover object-center rounded-none"
-                                  : "object-contain"
-                          }`}
-                            />
-                          ) : (
-                            <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
-                              {brand.name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="py-2.5 px-3 text-center">
-                          <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
-                            {brand.name}
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
+                    />
                   ))}
                 </motion.div>
               </motion.div>
@@ -659,6 +667,50 @@ export const Home = () => {
     </div>
   );
 };
+
+const BrandCard = memo(({ brand, variants }) => {
+  return (
+    <motion.div
+      variants={variants}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    >
+      <Link
+        to={`/brands/${brand.slug}`}
+        className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
+      >
+        <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
+          {brand.logoLight ? (
+            <img
+              src={brand.logoLight}
+              alt={brand.name}
+              className={`w-full h-[calc(100%-12px)] block ${
+                [
+                  "omerta",
+                  "bir-chattala",
+                  "barcode-sweets",
+                  "teheriwala",
+                ].includes(brand.slug)
+                  ? "object-contain object-center"
+                  : "object-contain"
+              }`}
+            />
+          ) : (
+            <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
+              {brand.name.charAt(0)}
+            </span>
+          )}
+        </div>
+
+        <div className="py-2.5 px-3 text-center">
+          <span className="block text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-tight group-hover:text-primary-500 transition-colors truncate max-w-full">
+            {brand.name}
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+});
+BrandCard.displayName = "BrandCard";
 
 const FoodCard = memo(
   ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
