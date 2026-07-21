@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, ShoppingBag, Heart, ArrowLeft, Minus, Plus, Check, Zap } from 'lucide-react';
+
+// Swiper imports (matching Home.jsx pattern)
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+
 import { getFoodById, getPopularFoods, getActivePrice, applyFoodDiscount, hasFoodDiscount, foodDiscountLabel } from '../services/foodsService';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
+
+// Swiper styles
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 export const DishDetail = () => {
   const { id } = useParams();
@@ -23,10 +32,6 @@ export const DishDetail = () => {
   const [selectedVariation, setSelectedVariation] = useState(null);
 
   const branchIdParam = searchParams.get('branchId');
-  
-  // FIX 1: localStorage এর 'selectedBranchId' ডিপেন্ডেন্সি পুরোপুরি রিমুভ করা হয়েছে।
-  // এখন মেনু পেজ থেকে ক্লিক করে এখানে আসলে এটি সবসময় null বা All Branches মোডে থাকবে।
-  // শুধুমাত্র তখনই ব্রাঞ্চ ফিল্টার হবে যদি URL-এ সরাসরি "?branchId=..." প্যারামিটার পাস করা হয়।
   const branchId = branchIdParam ? Number(branchIdParam) : null;
 
   useEffect(() => {
@@ -83,9 +88,6 @@ export const DishDetail = () => {
     );
   }
 
-  // Price calculations — go through getActivePrice so the selected variant's
-  // price AND any per-branch adjustment are both applied (matches the server's
-  // getUnitPrice), instead of using the raw variation price in isolation.
   const hasDiscount = hasFoodDiscount(food);
   const activePrice = getActivePrice(food, branchId, selectedVariation ? selectedVariation.name : null);
   const discountedPrice = applyFoodDiscount(activePrice, food);
@@ -103,6 +105,8 @@ export const DishDetail = () => {
     setIsAdded(true);
     openCart(); 
   };
+
+  const recommendedFoods = featuredMenu.filter(f => f.id !== food.id).slice(0, 6);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -253,56 +257,109 @@ export const DishDetail = () => {
         </div>
       </div>
 
-      {/* Recommended Items */}
-      <section className="mt-16 space-y-6">
-        <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800/50 pb-3">
-          <h2 className="text-xl font-black text-neutral-900 dark:text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-500 fill-amber-500" /> You Might Also Like
-          </h2>
-          {/* FIX 3: লিংকের ভেতরে থাকা ভুল ক্লোজিং ট্যাগটি সংশোধন করা হলো */}
-          <Link to="/menu" className="text-xs font-bold text-primary-500 hover:underline">View All</Link>
-        </div>
+      {/* Recommended Items Section */}
+      {recommendedFoods.length > 0 && (
+        <section className="mt-16 space-y-6">
+          <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800/50 pb-3">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-white flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-500 fill-amber-500" /> You Might Also Like
+            </h2>
+            <Link to="/menu" className="text-xs font-bold text-primary-500 hover:underline">View All</Link>
+          </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {featuredMenu.filter(f => f.id !== food.id).slice(0, 6).map((recFood) => {
-            const recHasDiscount = hasFoodDiscount(recFood);
-            const recPrice = applyFoodDiscount(recFood.price, recFood);
-            return (
-              <div key={recFood.id} className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                <div className="space-y-2">
-                  <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
-                    <Link to={`/menu/${recFood.id}`}>
-                      <img src={recFood.image || ""} alt={recFood.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          {/* Mobile View: Swiper Slider (Same as Home.jsx pattern) */}
+          <div className="sm:hidden -mx-4">
+            <Swiper
+              modules={[Pagination]}
+              slidesPerView={1.8}
+              spaceBetween={12}
+              pagination={{ clickable: true }}
+              className="!px-4 !pb-8"
+            >
+              {recommendedFoods.map((recFood) => {
+                const recHasDiscount = hasFoodDiscount(recFood);
+                const recPrice = applyFoodDiscount(recFood.price, recFood);
+                return (
+                  <SwiperSlide key={recFood.id}>
+                    <div className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all h-full">
+                      <div className="space-y-2">
+                        <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
+                          <Link to={`/menu/${recFood.id}`}>
+                            <img src={recFood.image || ""} alt={recFood.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          </Link>
+                        </div>
+                        <Link to={`/menu/${recFood.id}`} className="block font-bold text-xs text-neutral-800 dark:text-neutral-200 line-clamp-2 hover:text-primary-500 transition-colors">
+                          {recFood.name}
+                        </Link>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-neutral-50 dark:border-neutral-800/50">
+                        <div className="flex flex-col">
+                          {recHasDiscount ? (
+                            <>
+                              <span className="font-black text-red-500 text-[11px]">৳{recPrice.toFixed(2)}</span>
+                              <span className="text-[9px] text-neutral-400 line-through">৳{recFood.price.toFixed(2)}</span>
+                            </>
+                          ) : (
+                            <span className="font-black text-primary-500 text-[11px]">৳{recFood.price.toFixed(2)}</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addToCart(recFood, branchId, null, 1)}
+                          className="p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-primary-500 hover:text-white transition-all"
+                        >
+                          <ShoppingBag className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          </div>
+
+          {/* Desktop & Tablet View: Grid */}
+          <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {recommendedFoods.map((recFood) => {
+              const recHasDiscount = hasFoodDiscount(recFood);
+              const recPrice = applyFoodDiscount(recFood.price, recFood);
+              return (
+                <div key={recFood.id} className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                  <div className="space-y-2">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
+                      <Link to={`/menu/${recFood.id}`}>
+                        <img src={recFood.image || ""} alt={recFood.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </Link>
+                    </div>
+                    <Link to={`/menu/${recFood.id}`} className="block font-bold text-xs text-neutral-800 dark:text-neutral-200 line-clamp-2 hover:text-primary-500 transition-colors">
+                      {recFood.name}
                     </Link>
                   </div>
-                  <Link to={`/menu/${recFood.id}`} className="block font-bold text-xs text-neutral-800 dark:text-neutral-200 line-clamp-2 hover:text-primary-500 transition-colors">
-                    {recFood.name}
-                  </Link>
-                </div>
-                <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-neutral-50 dark:border-neutral-800/50">
-                  <div className="flex flex-col">
-                    {recHasDiscount ? (
-                      <>
-                        <span className="font-black text-red-500 text-[11px]">৳{recPrice.toFixed(2)}</span>
-                        <span className="text-[9px] text-neutral-400 line-through">৳{recFood.price.toFixed(2)}</span>
-                      </>
-                    ) : (
-                      <span className="font-black text-primary-500 text-[11px]">৳{recFood.price.toFixed(2)}</span>
-                    )}
+                  <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-neutral-50 dark:border-neutral-800/50">
+                    <div className="flex flex-col">
+                      {recHasDiscount ? (
+                        <>
+                          <span className="font-black text-red-500 text-[11px]">৳{recPrice.toFixed(2)}</span>
+                          <span className="text-[9px] text-neutral-400 line-through">৳{recFood.price.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span className="font-black text-primary-500 text-[11px]">৳{recFood.price.toFixed(2)}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addToCart(recFood, branchId, null, 1)}
+                      className="p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-primary-500 hover:text-white transition-all"
+                    >
+                      <ShoppingBag className="w-3 h-3" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => addToCart(recFood, branchId, null, 1)}
-                    className="p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-primary-500 hover:text-white transition-all"
-                  >
-                    <ShoppingBag className="w-3 h-3" />
-                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
