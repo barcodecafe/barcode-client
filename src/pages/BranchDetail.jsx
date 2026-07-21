@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'; // CHANGE: Added useSearchParams for URL-based category filtering
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin,
@@ -19,6 +21,10 @@ import { useCart } from '../context/CartContext';
 import { getFoodsByBranch, getActivePrice, getDiscountedPrice, hasFoodDiscount, foodDiscountLabel } from '../services/foodsService';
 import { getBranchById } from '../services/branchesService';
 import LeafletMap from '../components/LeafletMap';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 // ---------------------------------------------------------------------------
 // HeroImageCarousel — handles banner photo transitions, drag & autoplay
@@ -151,21 +157,14 @@ export const BranchDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [searchParams, setSearchParams] = useSearchParams(); // CHANGE: Added searchParams hook for reading/writing category query parameter
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [branch, setBranch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [branchMenu, setBranchMenu] = useState([]);
   
-  // Category filter is URL-driven (?category=...). `rawCategory` is the URL's
-  // literal value; `activeCategory` (computed below, once we know the branch's
-  // real categories) sanitises it so a stale/unknown category can't strand the
-  // user on an empty grid.
   const rawCategory = searchParams.get('category') || 'All';
 
-  // Update the filter. 'All' clears the param; { replace: true } means switching
-  // categories doesn't pile up browser-history entries — so Back returns to the
-  // branches list instead of walking back through every filter that was clicked.
   const handleCategoryChange = (catName) => {
     if (!catName || catName === 'All') {
       setSearchParams({}, { replace: true });
@@ -181,14 +180,8 @@ export const BranchDetail = () => {
     getBranchById(id).then((data) => {
       setBranch(data);
       if (data) {
-        // NOTE: viewing a branch must NOT set the ordering branch. That is
-        // chosen explicitly at checkout (chooseBranch) — browsing a branch
-        // page used to silently pre-select it, so the customer could order
-        // from a branch they never picked. Per-branch prices on this page
-        // use branch.id directly, so nothing here needs localStorage.
         getFoodsByBranch(data.id, 24).then((menuData) => {
           setBranchMenu(menuData);
-          // CHANGE: Removed setActiveCategory('All') because URL parameter manages this state now
           setLoading(false);
         });
       } else {
@@ -197,7 +190,6 @@ export const BranchDetail = () => {
     });
   }, [id]);
 
-// 1. Get the admin's custom sort order list from localStorage
   const sortedCategoriesList = useMemo(() => {
     const savedOrder = localStorage.getItem("custom_category_order");
     if (savedOrder) {
@@ -210,7 +202,6 @@ export const BranchDetail = () => {
     return [];
   }, []);
 
-// 2. Arrange the category tabs according to the admin's drag-and-drop sequence
   const categories = useMemo(() => {
     if (!branchMenu || branchMenu.length === 0) return ['All'];
     const uniqueCats = Array.from(new Set(branchMenu.map((item) => item.category?.trim()).filter(Boolean)));
@@ -228,9 +219,6 @@ export const BranchDetail = () => {
     return ['All', ...finalSortedCategories];
   }, [branchMenu, sortedCategoriesList]);
 
-// 2b. Sanitise the URL category against what this branch actually serves. A
-//     deep-link like ?category=Sushi (or a filter left over from another branch)
-//     falls back to 'All' so we never render a dead "no items" grid.
   const activeCategory = useMemo(() => {
     if (rawCategory === 'All') return 'All';
     const match = categories.find(
@@ -239,7 +227,6 @@ export const BranchDetail = () => {
     return match || 'All';
   }, [rawCategory, categories]);
 
-// 3. Arrange the food items according to the admin's preferred category order
   const filteredMenu = useMemo(() => {
     const matched = activeCategory === 'All'
       ? branchMenu
@@ -285,7 +272,6 @@ export const BranchDetail = () => {
     features: branch.features || ["Premium Seating", "AC Venue", "Wi-Fi Access", "Parking Available"]
   };
 
-  // Map / contact helpers
   const hasCoords =
     typeof branch.lat === 'number' &&
     typeof branch.lng === 'number' &&
@@ -396,9 +382,9 @@ export const BranchDetail = () => {
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => handleCategoryChange(cat)} // CHANGE: Updated to handleCategoryChange to update URL
+                  onClick={() => handleCategoryChange(cat)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center ${
-                    activeCategory?.trim().toLowerCase() === cat?.trim().toLowerCase() // CHANGE: Case-insensitive styling comparison
+                    activeCategory?.trim().toLowerCase() === cat?.trim().toLowerCase()
                       ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                       : 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/30 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800'
                   }`}
@@ -435,101 +421,67 @@ export const BranchDetail = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={gridVariants}
-            initial="hidden"
-            animate="visible" // CHANGE: Changed whileInView to animate to prevent items from disappearing on subsequent category clicks
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
-          >
-            {filteredMenu.map((food) => {
-              const basePrice = getActivePrice(food, branch.id);
-              const purchasePrice = getDiscountedPrice(food, branch.id);
-              const hasDiscount = hasFoodDiscount(food);
-              return (
-                <motion.div
-                  key={food.id}
-                  variants={cardVariants}
-                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                    {hasDiscount && (
-                      <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-                        {foodDiscountLabel(food)}
-                      </div>
-                    )}
-                    <Link to={`/menu/${food.id}?branchId=${branch.id}`} className="block w-full h-full">
-                      <img
-                        src={food.image}
-                        alt={food.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        loading="lazy"
+          <>
+            {/* Mobile View: Swiper Carousel */}
+            <div className="sm:hidden -mx-2">
+              <Swiper
+                key={activeCategory}
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {filteredMenu.map((food) => {
+                  const basePrice = getActivePrice(food, branch.id);
+                  const purchasePrice = getDiscountedPrice(food, branch.id);
+                  const hasDiscount = hasFoodDiscount(food);
+                  return (
+                    <SwiperSlide key={food.id}>
+                      <FoodCardItem
+                        food={food}
+                        branchId={branch.id}
+                        basePrice={basePrice}
+                        purchasePrice={purchasePrice}
+                        hasDiscount={hasDiscount}
+                        onAddToCart={addToCart}
+                        onCategoryChange={handleCategoryChange}
+                        variants={cardVariants}
                       />
-                    </Link>
-                  </div>
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+            </div>
 
-                  <div className="p-4 flex-grow flex flex-col justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                        {/* CHANGE: Converted span category badge to button with onClick handler to filter category on badge click */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleCategoryChange(food.category);
-                          }}
-                          className="uppercase tracking-wider hover:text-primary-500 transition-colors cursor-pointer text-left"
-                        >
-                          {food.category}
-                        </button>
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-0.5 text-primary-500 font-bold">
-                            <Star className="w-3 h-3 fill-current" />
-                            <span>{food.rating}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Link to={`/menu/${food.id}?branchId=${branch.id}`} className="block">
-                        <h3 className="font-semibold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-                          {food.name}
-                        </h3>
-                      </Link>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light line-clamp-2">
-                        {food.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800/60 mt-1 font-display">
-                      <div className="flex flex-wrap items-baseline gap-1">
-                        {hasDiscount ? (
-                          <>
-                            <span className="font-extrabold text-red-500 text-base">
-                              ৳{purchasePrice.toFixed(2)}
-                            </span>
-                            <span className="text-xs text-neutral-455 dark:text-neutral-500 line-through">
-                              ৳{basePrice.toFixed(2)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="font-extrabold text-primary-500 text-base">
-                            ৳{basePrice.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => addToCart(food, branch.id)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        Order Now
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+            {/* Desktop View: Responsive Grid */}
+            <motion.div
+              key={activeCategory}
+              variants={gridVariants}
+              initial="hidden"
+              animate="visible"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            >
+              {filteredMenu.map((food) => {
+                const basePrice = getActivePrice(food, branch.id);
+                const purchasePrice = getDiscountedPrice(food, branch.id);
+                const hasDiscount = hasFoodDiscount(food);
+                return (
+                  <FoodCardItem
+                    key={food.id}
+                    food={food}
+                    branchId={branch.id}
+                    basePrice={basePrice}
+                    purchasePrice={purchasePrice}
+                    hasDiscount={hasDiscount}
+                    onAddToCart={addToCart}
+                    onCategoryChange={handleCategoryChange}
+                    variants={cardVariants}
+                  />
+                );
+              })}
+            </motion.div>
+          </>
         )}
       </section>
 
@@ -630,6 +582,100 @@ export const BranchDetail = () => {
         </div>
       </section>
     </div>
+  );
+};
+
+// Reusable Food Card Item Component for BranchDetail
+const FoodCardItem = ({
+  food,
+  branchId,
+  basePrice,
+  purchasePrice,
+  hasDiscount,
+  onAddToCart,
+  onCategoryChange,
+  variants,
+}) => {
+  return (
+    <motion.div
+      variants={variants}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300 h-full"
+    >
+      <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+        {hasDiscount && (
+          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
+            {foodDiscountLabel(food)}
+          </div>
+        )}
+        <Link to={`/menu/${food.id}?branchId=${branchId}`} className="block w-full h-full">
+          <img
+            src={food.image}
+            alt={food.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            loading="lazy"
+          />
+        </Link>
+      </div>
+
+      <div className="p-4 flex-grow flex flex-col justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onCategoryChange(food.category);
+              }}
+              className="uppercase tracking-wider hover:text-primary-500 transition-colors cursor-pointer text-left"
+            >
+              {food.category}
+            </button>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5 text-primary-500 font-bold">
+                <Star className="w-3 h-3 fill-current" />
+                <span>{food.rating}</span>
+              </div>
+            </div>
+          </div>
+          <Link to={`/menu/${food.id}?branchId=${branchId}`} className="block">
+            <h3 className="font-semibold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
+              {food.name}
+            </h3>
+          </Link>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light line-clamp-2">
+            {food.description}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800/60 mt-1 font-display">
+          <div className="flex flex-wrap items-baseline gap-1">
+            {hasDiscount ? (
+              <>
+                <span className="font-extrabold text-red-500 text-base">
+                  ৳{purchasePrice.toFixed(2)}
+                </span>
+                <span className="text-xs text-neutral-455 dark:text-neutral-500 line-through">
+                  ৳{basePrice.toFixed(2)}
+                </span>
+              </>
+            ) : (
+              <span className="font-extrabold text-primary-500 text-base">
+                ৳{basePrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => onAddToCart(food, branchId)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            Order Now
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
