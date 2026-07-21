@@ -283,7 +283,7 @@ export const AdminOrders = () => {
 
                   <span className="block text-[10px] font-semibold mt-1 text-neutral-500 dark:text-neutral-300">
                     {r.activeOrders > 0
-                      ? `🛵 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
+                      ? `🚴 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
                       : "No active delivery"}
                   </span>
 
@@ -398,22 +398,22 @@ export const AdminOrders = () => {
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
-                        {ord.user.name}
+                        {ord.user?.name}
                       </span>
                       <span className="block text-[10px] text-neutral-400 mt-0.5">
-                        {ord.user.phone}
+                        {ord.user?.phone}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[150px]">
-                        {ord.user.address}
+                        {ord.user?.address}
                       </span>
                       <span className="block text-[10px] text-neutral-400 mt-0.5">
-                        {ord.user.pickArea}
+                        {ord.user?.pickArea}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 font-bold text-primary-500">
-                      ৳{ord.total.toFixed(2)}
+                      ৳{ord.total?.toFixed(2)}
                     </td>
                     <td className="px-4 py-3.5">
                       {ord.status === "Placed" ? (
@@ -556,6 +556,132 @@ export const AdminOrders = () => {
           </motion.div>
         )}
       </div>
+
+      {/* ------------------ Order Details Modal ------------------ */}
+      <AnimatePresence>
+        {selectedOrderDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                <div>
+                  <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
+                    Order Details #{selectedOrderDetails.id?.toUpperCase()}
+                  </h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Status:{" "}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(selectedOrderDetails.status)}`}>
+                      {selectedOrderDetails.status}
+                    </span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Customer Info */}
+              <div className="bg-neutral-50 dark:bg-neutral-950/50 p-3.5 rounded-xl space-y-2 text-xs">
+                <h4 className="font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider text-[10px]">
+                  Customer Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-600 dark:text-neutral-300">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span className="font-semibold">{selectedOrderDetails.user?.name || "N/A"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span>{selectedOrderDetails.user?.phone || "N/A"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 sm:col-span-2">
+                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span>
+                      {selectedOrderDetails.user?.address}{" "}
+                      {selectedOrderDetails.user?.pickArea && `(${selectedOrderDetails.user?.pickArea})`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Ordered List */}
+              <div>
+                <h4 className="font-bold text-neutral-700 dark:text-neutral-300 text-xs mb-2 flex items-center gap-1.5">
+                  <Utensils className="w-3.5 h-3.5 text-primary-500" />
+                  Ordered Items ({selectedOrderDetails.items?.length || selectedOrderDetails.cart?.length || 0})
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {(selectedOrderDetails.items || selectedOrderDetails.cart || []).map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center p-2.5 bg-neutral-50/60 dark:bg-neutral-950/30 rounded-xl text-xs border border-neutral-100 dark:border-neutral-800/60"
+                    >
+                      <div>
+                        <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                          {item.name}
+                        </span>
+                        {item.selectedSize && (
+                          <span className="text-[10px] font-semibold text-primary-500 ml-1">
+                            ({item.selectedSize})
+                          </span>
+                        )}
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          Qty: {item.quantity} × ৳{item.price}
+                        </span>
+                      </div>
+                      <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                        ৳{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment & Summary */}
+              <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs space-y-2">
+                <div className="flex justify-between text-neutral-500">
+                  <span>Payment Method:</span>
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
+                    {selectedOrderDetails.paymentMethod || "Cash on Delivery"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-neutral-500">
+                  <span>Payment Status:</span>
+                  <span
+                    className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
+                      selectedOrderDetails.paymentStatus === "Paid"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-amber-500/10 text-amber-500"
+                    }`}
+                  >
+                    {selectedOrderDetails.paymentStatus || "Pending"}
+                  </span>
+                </div>
+                {selectedOrderDetails.deliveryCharge !== undefined && (
+                  <div className="flex justify-between text-neutral-500">
+                    <span>Delivery Charge:</span>
+                    <span>৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-neutral-100 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800">
+                  <span>Total Amount:</span>
+                  <span className="text-primary-500">
+                    ৳{(selectedOrderDetails.total || 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
