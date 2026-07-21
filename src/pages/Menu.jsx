@@ -1,40 +1,42 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom"; // CHANGE: Added Link and useSearchParams from react-router-dom
+import { Link, useSearchParams } from "react-router-dom"; 
 import { motion } from "framer-motion";
 import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+
+// Swiper imports (matching Home.jsx)
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+
 import { getFoodsByBranch, getPopularFoods } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
 
+// Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
 
-  // CHANGE: Added searchParams hook for reading/writing category query parameter
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  // CHANGE: activeCategory now reads from URL search parameters instead of local state
   const activeCategory = searchParams.get("category") || "All";
 
-  // ?filter=popular — the home page's Popular section links here so "Explore All"
-  // shows every popular dish rather than the whole menu.
   const activeFilter = searchParams.get("filter");
   const popularOnly = activeFilter === "popular";
 
-  // CHANGE: Added helper function to update URL search parameters on category change
   const handleCategoryChange = (catName) => {
     const next = { category: catName };
-    if (activeFilter) next.filter = activeFilter; // keep the popular view while switching categories
+    if (activeFilter) next.filter = activeFilter;
     setSearchParams(next);
   };
 
   const [sortBy, setSortBy] = useState("featured");
 
-  // Arrow visibility states
   const tabsRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -43,13 +45,10 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    // Popular is defined server-side (admin's picks + best sellers), so the
-    // popular view asks for the same list the home page shows — just unlimited.
     if (popularOnly) getPopularFoods(100).then(setFoods);
     else getFoodsByBranch(null, 100).then(setFoods);
   }, [popularOnly]);
 
-  // 1. Load Admin Sort Order from LocalStorage & Map categories exactly like admin
   const sortedCategoriesList = useMemo(() => {
     const savedOrder = localStorage.getItem("custom_category_order");
     if (savedOrder) {
@@ -62,7 +61,6 @@ export const Menu = () => {
     return [];
   }, [foods]);
 
-  // 2. Dynamic sorted unique categories generation for the Horizontal Tab Bar
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
     
@@ -107,7 +105,6 @@ export const Menu = () => {
     }
   };
 
-  // 3. Filter & Apply Admin Sorting to the main foods rendering grid
   const filteredFoods = useMemo(() => {
     const matched = foods.filter(
       (food) => activeCategory.trim().toLowerCase() === "all" || food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase(),
@@ -183,9 +180,9 @@ export const Menu = () => {
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => handleCategoryChange(cat)} // CHANGE: Updated to handleCategoryChange to update URL
+                onClick={() => handleCategoryChange(cat)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 shrink-0 ${
-                  activeCategory.trim().toLowerCase() === cat.trim().toLowerCase() // CHANGE: Case-insensitive styling comparison
+                  activeCategory.trim().toLowerCase() === cat.trim().toLowerCase()
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
                 }`}
@@ -223,7 +220,7 @@ export const Menu = () => {
         </div>
       </div>
 
-      {/* Main Foods Grid */}
+      {/* Main Foods Section */}
       {filteredFoods.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-neutral-500 dark:text-neutral-400 text-lg font-medium">
@@ -231,23 +228,49 @@ export const Menu = () => {
           </p>
         </div>
       ) : (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
-          {filteredFoods.map((food) => (
-            <FoodCard
-              key={food.id}
-              food={food}
-              favorited={isFavorite(food.id)}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
-              variants={itemVariants}
-            />
-          ))}
-        </motion.div>
+        <>
+          {/* Mobile View: Swiper Slider (Exactly like Home.jsx) */}
+          <div className="sm:hidden -mx-4">
+            <Swiper
+              key={activeCategory}
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-4 !pb-8"
+            >
+              {filteredFoods.map((food) => (
+                <SwiperSlide key={food.id}>
+                  <FoodCard
+                    food={food}
+                    favorited={isFavorite(food.id)}
+                    onToggleFavorite={toggleFavorite}
+                    onAddToCart={addToCart}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Desktop & Tablet View: Grid */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {filteredFoods.map((food) => (
+              <FoodCard
+                key={food.id}
+                food={food}
+                favorited={isFavorite(food.id)}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
+                variants={itemVariants}
+              />
+            ))}
+          </motion.div>
+        </>
       )}
     </div>
   );
