@@ -1,11 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { UtensilsCrossed } from "lucide-react";
+
+// Swiper imports (matching Home.jsx pattern)
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+
 import { useBrand } from "../context/BrandContext";
 import { getBrandMenu } from "../services/brandsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
+
+// Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
 
 // The brand's menu: dishes served at any of the brand's branches, grouped by
 // category, reusing the same FoodCard as the group menu.
@@ -75,22 +84,48 @@ export const BrandMenu = () => {
           <p className="text-sm">No dishes available for {brand.name} yet.</p>
         </div>
       ) : (
-        <motion.div
-          initial="hidden" animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
-          {shown.map((food) => (
-            <FoodCard
-              key={food.id}
-              food={food}
-              favorited={isFavorite(food.id)}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            />
-          ))}
-        </motion.div>
+        <>
+          {/* Mobile View: Swiper Slider (Same as Home.jsx) */}
+          <div className="sm:hidden -mx-4">
+            <Swiper
+              key={activeCategory}
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-4 !pb-8"
+            >
+              {shown.map((food) => (
+                <SwiperSlide key={food.id}>
+                  <FoodCard
+                    food={food}
+                    favorited={isFavorite(food.id)}
+                    onToggleFavorite={toggleFavorite}
+                    onAddToCart={addToCart}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Desktop & Tablet View: Grid */}
+          <motion.div
+            initial="hidden" animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {shown.map((food) => (
+              <FoodCard
+                key={food.id}
+                food={food}
+                favorited={isFavorite(food.id)}
+                onToggleFavorite={toggleFavorite}
+                onAddToCart={addToCart}
+                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+              />
+            ))}
+          </motion.div>
+        </>
       )}
     </div>
   );
