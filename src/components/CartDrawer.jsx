@@ -3,9 +3,6 @@ import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2 } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
-// ---------------------------------------------------------------------------
-// CartDrawer — lightweight basket preview.
-// ---------------------------------------------------------------------------
 export const CartDrawer = () => {
   const {
     cart,
@@ -14,8 +11,7 @@ export const CartDrawer = () => {
     cartTotal,
     updateCartQuantity,
     closeCart,
-    clearCart, // 👈 Clear All/Delete All এর জন্য
-    removeFromCart, // 👈 সিঙ্গেল আইটেম রিমুভ এর জন্য (যদি আপনার CartContext এ থাকে)
+    removeFromCart, // 👈 সিঙ্গেল আইটেম পুরো রিমুভ করার জন্য
   } = useCart();
 
   const navigate = useNavigate();
@@ -27,7 +23,15 @@ export const CartDrawer = () => {
 
   const handleAddMoreItems = () => {
     closeCart();
-    navigate('/menu'); // কাস্টমারকে মেনু পেজে নিয়ে যাবে
+    navigate('/menu');
+  };
+
+  const handleRemoveItem = (itemId) => {
+    if (typeof removeFromCart === 'function') {
+      removeFromCart(itemId);
+    } else {
+      updateCartQuantity(itemId, 0); // fallback: পরিমাণ ০ করে রিমুভ করা
+    }
   };
 
   return (
@@ -74,26 +78,12 @@ export const CartDrawer = () => {
                   <ShoppingBag className="w-5 h-5 text-primary-500" />
                   <h3 className="font-display font-bold text-lg text-neutral-800 dark:text-white">Your Order Selection</h3>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  {/* Delete All Button */}
-                  {cart.length > 0 && (
-                    <button
-                      onClick={clearCart}
-                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-semibold px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
-                      title="Clear All Items"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Clear All
-                    </button>
-                  )}
-                  <button
-                    onClick={closeCart}
-                    className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  onClick={closeCart}
+                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Items List */}
@@ -110,7 +100,7 @@ export const CartDrawer = () => {
                         key={item.cartId || item.id}
                         className="flex gap-3 items-center justify-between bg-neutral-50 dark:bg-neutral-950 p-3 rounded-xl border border-neutral-200/50 dark:border-neutral-800/60"
                       >
-                        <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover bg-neutral-100" />
+                        <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover bg-neutral-100 shrink-0" />
 
                         <div className="flex-grow min-w-0">
                           <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
@@ -127,25 +117,37 @@ export const CartDrawer = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
+                        {/* Quantity Controls & Delete Icon */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
+                            <button
+                              onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
+                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
+                            <button
+                              onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
+                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Delete Item Button */}
                           <button
-                            onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
-                            className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                            onClick={() => handleRemoveItem(item.cartId || item.id)}
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                            title="Remove item"
                           >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
-                          <button
-                            onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
-                            className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                     ))}
 
-                    {/* + Add New Item Button */}
+                    {/* + Add More Items Button */}
                     <button
                       onClick={handleAddMoreItems}
                       className="w-full py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-500 hover:text-primary-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 bg-neutral-50/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/20"
