@@ -47,6 +47,7 @@ export const Navbar = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
   const userMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null); // 👈 মোবাইল ড্রয়ার এরিয়ার জন্য Ref
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -63,17 +64,34 @@ export const Navbar = () => {
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role;
 
-  // 1. Close mobile drawer automatically when user scrolls the page
+  // 1. Scroll & Outside Tap/Click Event Listener for Mobile Menu
   useEffect(() => {
     if (!isOpen) return;
 
+    // স্ক্রোল করলে হাইড হবে
     const handleScroll = () => {
       setIsOpen(false);
     };
 
+    // মেনুর বাইরে ক্লিক/ট্যাপ করলে হাইড হবে
+    const handleOutsideTouchOrClick = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        // মেনু ওপেন করার বাটনটিতে ক্লিক করা হলেও যেন কনফ্লিক্ট না করে
+        const toggleBtn = e.target.closest('[aria-label="Toggle menu"]');
+        if (!toggleBtn) {
+          setIsOpen(false);
+        }
+      }
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('mousedown', handleOutsideTouchOrClick);
+    document.addEventListener('touchstart', handleOutsideTouchOrClick);
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleOutsideTouchOrClick);
+      document.removeEventListener('touchstart', handleOutsideTouchOrClick);
     };
   }, [isOpen]);
 
@@ -335,18 +353,18 @@ export const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop — onClick & onTouchMove added */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              onTouchMove={() => setIsOpen(false)}
               className="fixed inset-0 top-14 z-40 bg-neutral-950/40 backdrop-blur-sm md:hidden"
             />
 
-            {/* Panel */}
+            {/* Panel (Ref যুক্ত করা হয়েছে) */}
             <motion.div
+              ref={mobileMenuRef}
               initial={{ x: 40, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 40, opacity: 0 }}
