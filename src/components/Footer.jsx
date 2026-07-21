@@ -17,13 +17,11 @@ import barW from "../assets/Barcode_cafe_W.png";
 import resB from "../assets/Barcode_restaurant_group-B.png";
 import resW from "../assets/Barcode_restaurant_groupW.png";
 
-// If the SSLCOMMERZ banner image exists in your project's assets folder,
-// you can import it here.
 import sslBanner from "../assets/ssldynamic.jpg";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const location = useLocation();
   const { settings } = useSettings();
 
@@ -64,7 +62,7 @@ export const Footer = () => {
           {/* 1 — Brand */}
           <div className="lg:col-span-4 flex flex-col gap-5">
             <Link to="/" className="w-fit">
-              <div className="h-12 w-fit flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-md transition-transform duration-300 hover:scale-[1.02]">
+              <div className="h-12 w-fit flex items-center rounded-md px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-transform duration-300 hover:scale-[1.02]">
                 <img
                   src={
                     theme === "dark"
@@ -72,7 +70,7 @@ export const Footer = () => {
                       : settings.logoLight || resB
                   }
                   alt="Barcode Cafe"
-                  className="h-9 w-auto"
+                  className="h-9 w-auto object-contain"
                 />
               </div>
             </Link>
@@ -232,6 +230,5 @@ export const Footer = () => {
     </footer>
   );
 };
+
 export default Footer;
-
-
