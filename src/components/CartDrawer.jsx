@@ -11,7 +11,7 @@ export const CartDrawer = () => {
     cartTotal,
     updateCartQuantity,
     closeCart,
-    removeFromCart, // 👈 সিঙ্গেল আইটেম পুরো রিমুভ করার জন্য
+    removeFromCart,
   } = useCart();
 
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ export const CartDrawer = () => {
     if (typeof removeFromCart === 'function') {
       removeFromCart(itemId);
     } else {
-      updateCartQuantity(itemId, 0); // fallback: পরিমাণ ০ করে রিমুভ করা
+      updateCartQuantity(itemId, 0);
     }
   };
 
@@ -110,9 +110,14 @@ export const CartDrawer = () => {
                             </span>
                           )}
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs text-primary-500 font-bold">৳{item.price.toFixed(2)}</span>
+                            {/* 👈 পরিমাণ অনুযায়ী মোট প্রাইস দেখানো হচ্ছে */}
+                            <span className="text-xs text-primary-500 font-bold">
+                              ৳{(item.price * item.quantity).toFixed(2)}
+                            </span>
                             {item.originalPrice && item.originalPrice > item.price && (
-                              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">৳{item.originalPrice.toFixed(2)}</span>
+                              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">
+                                ৳{(item.originalPrice * item.quantity).toFixed(2)}
+                              </span>
                             )}
                           </div>
                         </div>
