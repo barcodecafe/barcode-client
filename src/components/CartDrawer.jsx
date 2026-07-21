@@ -1,13 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Check, X, ArrowRight, Minus, Plus } from 'lucide-react';
+import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 // ---------------------------------------------------------------------------
-// CartDrawer — lightweight basket preview. The full checkout (account,
-// delivery, coupon, points, payment) now lives on the dedicated /checkout
-// page, so this drawer only lists items, allows quantity edits, and hands
-// off to /checkout. Mounted once in RootLayout so "Order Now" works anywhere.
+// CartDrawer — lightweight basket preview.
 // ---------------------------------------------------------------------------
 export const CartDrawer = () => {
   const {
@@ -17,6 +14,8 @@ export const CartDrawer = () => {
     cartTotal,
     updateCartQuantity,
     closeCart,
+    clearCart, // 👈 Clear All/Delete All এর জন্য
+    removeFromCart, // 👈 সিঙ্গেল আইটেম রিমুভ এর জন্য (যদি আপনার CartContext এ থাকে)
   } = useCart();
 
   const navigate = useNavigate();
@@ -24,6 +23,11 @@ export const CartDrawer = () => {
   const goToCheckout = () => {
     closeCart();
     navigate('/checkout');
+  };
+
+  const handleAddMoreItems = () => {
+    closeCart();
+    navigate('/menu'); // কাস্টমারকে মেনু পেজে নিয়ে যাবে
   };
 
   return (
@@ -70,15 +74,29 @@ export const CartDrawer = () => {
                   <ShoppingBag className="w-5 h-5 text-primary-500" />
                   <h3 className="font-display font-bold text-lg text-neutral-800 dark:text-white">Your Order Selection</h3>
                 </div>
-                <button
-                  onClick={closeCart}
-                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                
+                <div className="flex items-center gap-2">
+                  {/* Delete All Button */}
+                  {cart.length > 0 && (
+                    <button
+                      onClick={clearCart}
+                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-semibold px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+                      title="Clear All Items"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Clear All
+                    </button>
+                  )}
+                  <button
+                    onClick={closeCart}
+                    className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Items */}
+              {/* Items List */}
               <div className="flex-grow overflow-y-auto py-4 pr-1">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center gap-3 text-neutral-400 dark:text-neutral-500">
@@ -126,6 +144,15 @@ export const CartDrawer = () => {
                         </div>
                       </div>
                     ))}
+
+                    {/* + Add New Item Button */}
+                    <button
+                      onClick={handleAddMoreItems}
+                      className="w-full py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-500 hover:text-primary-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 bg-neutral-50/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/20"
+                    >
+                      <Plus className="w-4 h-4 text-primary-500" />
+                      Add More Items
+                    </button>
                   </div>
                 )}
               </div>
