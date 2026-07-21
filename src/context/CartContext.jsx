@@ -1,11 +1,20 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'; // ADDED: useEffect ইম্পোর্ট করা হয়েছে[cite: 2]
 import { getActivePrice, applyFoodDiscount } from '../services/foodsService';
 
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
   // Cart items
-  const [cart, setCart] = useState([]);
+  // NEW CHANGE: পেজ রিফ্রেশ দিলে ডাটা যেন হারিয়ে না যায়, তাই localStorage থেকে স্টেট ইনিশিয়ালাইজ করা হচ্ছে[cite: 2]
+  const [cart, setCart] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem('app_cart_items');
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("Cart load error:", error);
+      return [];
+    }
+  });
 
   // UI state — lifted out of Menu.jsx so any page/component can trigger them
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -15,6 +24,15 @@ export const CartProvider = ({ children }) => {
   // Home, one from Menu, seconds apart) don't have an earlier timer cut short
   // a newer toast's visible duration.
   const notificationTimeoutRef = useRef(null);
+
+  // NEW CHANGE: কার্টে কোনো পরিবর্তন হলেই তা স্বয়ংক্রিয়ভাবে localStorage-এ সেভ হবে[cite: 2]
+  useEffect(() => {
+    try {
+      localStorage.setItem('app_cart_items', JSON.stringify(cart));
+    } catch (error) {
+      console.error("Cart save error:", error);
+    }
+  }, [cart]);
 
   const showNotification = useCallback((message) => {
     if (notificationTimeoutRef.current) {
