@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Search, MapPin, Phone, ArrowRight, Star, Heart, ShoppingBag, ChevronDown } from 'lucide-react';
 import { getAllBranches } from '../services/branchesService';
@@ -13,6 +15,10 @@ import {
 
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 const PREVIEW_COUNT = 6;
 
@@ -125,9 +131,9 @@ export const Branches = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-2 py-8 sm:px-6 lg:px-8">
       {/* Filters and Search Bar Container */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-2 sm:px-0">
         {/* Regions Horizontal Navigation Toggle */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
           {regionTabs.map((region) => (
@@ -160,7 +166,7 @@ export const Branches = () => {
 
       {/* Main Content Showcase Section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200 mb-2">
+        <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200 mb-2 px-2 sm:px-0">
           Available Venues ({filteredBranches.length})
         </h2>
 
@@ -181,26 +187,45 @@ export const Branches = () => {
             ))}
           </div>
         ) : filteredBranches.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl">
+          <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl mx-2 sm:mx-0">
             <p className="text-neutral-500 dark:text-neutral-400 font-medium">
               No branches match your search or filter.
             </p>
           </div>
         ) : (
-          /* Grid layout with BranchCard Component */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-            {filteredBranches.map((branch) => (
-              <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
-            ))}
-          </div>
+          <>
+            {/* Mobile View: Swiper Carousel */}
+            <div className="sm:hidden -mx-2">
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {filteredBranches.map((branch) => (
+                  <SwiperSlide key={branch.id}>
+                    <BranchCard branch={branch} variants={fadeInUp} />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+
+            {/* Desktop View: Grid */}
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {filteredBranches.map((branch) => (
+                <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {/* ----------------------------------------------------------------- */}
       {/* OUR BESTSELLERS SECTION */}
       {/* ----------------------------------------------------------------- */}
-      <section className="pt-16 pb-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
+      <section className="pt-12 sm:pt-16 pb-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60 px-2 sm:px-0">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
               Our Bestsellers
@@ -242,13 +267,43 @@ export const Branches = () => {
           </div>
         </div>
 
+        {/* Mobile View: Swiper Slider */}
+        <div className="sm:hidden -mx-2">
+          {previewPopularFoods.length > 0 && (
+            <Swiper
+              key={activeSort}
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-2 !pb-8"
+            >
+              {previewPopularFoods.map((food) => {
+                const favorited = isFavorite(food.id);
+                return (
+                  <SwiperSlide key={food.id}>
+                    <FoodCard
+                      food={food}
+                      favorited={favorited}
+                      onToggleFavorite={toggleFavorite}
+                      onAddToCart={addToCart}
+                      variants={fadeInUp}
+                    />
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          )}
+        </div>
+
+        {/* Desktop View: Grid */}
         {previewPopularFoods.length > 0 && (
           <motion.div
             key={activeSort}
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -266,6 +321,7 @@ export const Branches = () => {
           </motion.div>
         )}
 
+        {/* View All Expansion Grid */}
         <AnimatePresence>
           {showAllPopular && remainingPopularFoods.length > 0 && (
             <motion.div
@@ -279,7 +335,7 @@ export const Branches = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingPopularFoods.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -303,8 +359,8 @@ export const Branches = () => {
       {/* ----------------------------------------------------------------- */}
       {/* FEATURED MENU SECTION */}
       {/* ----------------------------------------------------------------- */}
-      <section className="pt-12 pb-8">
-        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
+      <section className="pt-10 sm:pt-12 pb-8">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60 px-2 sm:px-0">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
           </h2>
@@ -329,18 +385,45 @@ export const Branches = () => {
         </div>
 
         {previewFeaturedMenu.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none">
+          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none mx-2 sm:mx-0">
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">
               No featured items available right now.
             </p>
           </div>
         ) : (
           <>
+            {/* Mobile View: Swiper Slider */}
+            <div className="sm:hidden -mx-2">
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {previewFeaturedMenu.map((food) => {
+                  const favorited = isFavorite(food.id);
+                  return (
+                    <SwiperSlide key={food.id}>
+                      <FoodCard
+                        food={food}
+                        favorited={favorited}
+                        onToggleFavorite={toggleFavorite}
+                        onAddToCart={addToCart}
+                        variants={fadeInUp}
+                      />
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+            </div>
+
+            {/* Desktop View: Grid */}
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -357,6 +440,7 @@ export const Branches = () => {
               })}
             </motion.div>
 
+            {/* View All Expansion Grid */}
             <AnimatePresence>
               {showAllFeatured && remainingFeaturedMenu.length > 0 && (
                 <motion.div
@@ -370,7 +454,7 @@ export const Branches = () => {
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
                     {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);
@@ -406,7 +490,7 @@ const BranchCard = memo(({ branch, variants }) => {
     <motion.div
       variants={variants}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+      className="group flex flex-col justify-between h-full rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <Link to={`/branches/${branch.id}`}>
@@ -464,7 +548,7 @@ const FoodCard = memo(({ food, favorited, onToggleFavorite, onAddToCart, variant
     <motion.div
       variants={variants}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
+      className="group relative flex flex-col justify-between h-full rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
       <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         {hasDiscount && (
