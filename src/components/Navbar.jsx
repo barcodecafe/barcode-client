@@ -11,8 +11,7 @@ import { SearchBar } from './SearchBar';
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
 
-// Human-friendly labels for the account role badge (display only — the
-// underlying user.role stays 'user' | 'rider' | 'admin').
+// Human-friendly labels for the account role badge
 const ROLE_LABELS = { admin: 'Administrator', rider: 'Delivery Rider', user: 'Customer' };
 
 // Derive up-to-two initials from a display name for the avatar chip.
@@ -24,7 +23,6 @@ const getInitials = (name) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-// Clean initial-based avatar — no external network call, no shadow-card look.
 const Avatar = ({ name, size = 'sm' }) => {
   const dim = size === 'lg' ? 'w-11 h-11 text-sm' : 'w-8 h-8 text-xs';
   return (
@@ -48,7 +46,6 @@ export const Navbar = () => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
-  // Ref to handle outside clicks for user dropdown (both logged in & guest)
   const userMenuRef = useRef(null);
 
   const navLinks = [
@@ -59,8 +56,6 @@ export const Navbar = () => {
     { name: 'About', path: '/about' },
   ];
 
-  // Account destinations shown inside the dropdown / mobile drawer. Role-specific
-  // dashboards come first, then the shared profile & orders link.
   const accountLinks = [];
   if (isAdmin) accountLinks.push({ to: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard });
   if (isRider) accountLinks.push({ to: '/rider', label: 'Rider Portal', icon: Bike });
@@ -68,7 +63,21 @@ export const Navbar = () => {
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role;
 
-  // Close the account dropdown on outside-click or Escape.
+  // 1. Close mobile drawer automatically when user scrolls the page
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScroll = () => {
+      setIsOpen(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isOpen]);
+
+  // 2. Close account dropdown on outside-click or Escape.
   useEffect(() => {
     if (!isUserDropdownOpen) return;
     const onKey = (e) => { if (e.key === 'Escape') setIsUserDropdownOpen(false); };
@@ -91,7 +100,6 @@ export const Navbar = () => {
     logout();
   };
 
-  // Shared class recipe for the small square icon controls (theme / cart).
   const iconBtn =
     'relative p-2 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white/50 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-300 hover:text-primary-500 hover:border-primary-500/40 dark:hover:text-primary-500 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200';
 
@@ -100,7 +108,7 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between h-full gap-4">
 
-          {/* Logo — clean, no card / no shadow */}
+          {/* Logo */}
           <Link to="/" className="flex items-center shrink-0 group" aria-label="Barcode Restaurant — home">
             <img
               src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
@@ -147,12 +155,10 @@ export const Navbar = () => {
 
           {/* Right Controls (desktop) */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
-            {/* Theme Toggle */}
             <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* Cart Trigger */}
             <button onClick={openCart} className={iconBtn} aria-label="Open order cart">
               <ShoppingBag className="w-4 h-4" />
               {cartItemCount > 0 && (
@@ -162,13 +168,10 @@ export const Navbar = () => {
               )}
             </button>
 
-            {/* Divider */}
             <span className="w-px h-6 bg-neutral-200 dark:bg-neutral-800 mx-1" aria-hidden="true" />
 
-            {/* Auth area with Unified Dropdown */}
             <div className="relative" ref={userMenuRef}>
               {isAuthenticated ? (
-                // Logged In User Trigger
                 <button
                   onClick={() => setIsUserDropdownOpen((v) => !v)}
                   className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full border border-neutral-200/70 dark:border-neutral-800/70 bg-white/50 dark:bg-neutral-900/50 hover:border-primary-500/40 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
@@ -185,7 +188,6 @@ export const Navbar = () => {
                   />
                 </button>
               ) : (
-                // Guest / Logged Out User Trigger (Brings up Sign Up / Log In Dropdown)
                 <button
                   onClick={() => setIsUserDropdownOpen((v) => !v)}
                   className="p-2 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white/50 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-300 hover:text-primary-500 hover:border-primary-500/40 dark:hover:text-primary-500 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
@@ -197,7 +199,7 @@ export const Navbar = () => {
                 </button>
               )}
 
-              {/* Unified Dropdown Menu */}
+              {/* Dropdown Menu */}
               <AnimatePresence>
                 {isUserDropdownOpen && (
                   <motion.div
@@ -209,9 +211,7 @@ export const Navbar = () => {
                     className="absolute right-0 mt-3 w-64 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
                   >
                     {isAuthenticated ? (
-                      // ---------------- LOGGED IN DROPDOWN CONTENT ----------------
                       <>
-                        {/* Identity header */}
                         <div className="flex items-center gap-3 px-4 py-4 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
                           <Avatar name={user.name} size="lg" />
                           <div className="min-w-0">
@@ -223,7 +223,6 @@ export const Navbar = () => {
                           </div>
                         </div>
 
-                        {/* Links */}
                         <div className="p-1.5">
                           {accountLinks.map((item) => (
                             <Link
@@ -239,7 +238,6 @@ export const Navbar = () => {
                           ))}
                         </div>
 
-                        {/* Log out */}
                         <div className="p-1.5 border-t border-neutral-100 dark:border-neutral-800">
                           <button
                             onClick={handleLogout}
@@ -252,15 +250,12 @@ export const Navbar = () => {
                         </div>
                       </>
                     ) : (
-                      // ---------------- LOGGED OUT (GUEST) DROPDOWN CONTENT ----------------
                       <>
-                        {/* Header Box */}
                         <div className="px-4 py-4 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
                           <p className="text-sm font-bold text-neutral-800 dark:text-white">Welcome to Barcode</p>
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Login to manage your orders</p>
                         </div>
 
-                        {/* Action buttons */}
                         <div className="p-1.5 flex flex-col gap-1">
                           <Link
                             to="/login"
@@ -340,12 +335,13 @@ export const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop — onClick & onTouchMove added */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
+              onTouchMove={() => setIsOpen(false)}
               className="fixed inset-0 top-14 z-40 bg-neutral-950/40 backdrop-blur-sm md:hidden"
             />
 
