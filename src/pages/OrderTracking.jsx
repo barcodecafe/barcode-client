@@ -83,19 +83,13 @@ export const OrderTracking = () => {
   const currentStepIdx = getStepIndex(order.status);
 
   // Calculate rider position (t along Bezier path)
-  // t goes from 0 (Restaurant) to 1 (Customer Home)
-  let riderT = 0.05; // default close to restaurant
+  let riderT = 0.05;
   if (order.status === 'Accepted') riderT = 0.08;
   else if (order.status === 'Preparing') riderT = 0.15;
   else if (order.status === 'Out for Delivery') {
-    // We can simulate motion over time using seconds in Date.now()
-    riderT = 0.20 + (Date.now() % 30000) / 30000 * 0.7; // oscillates smoothly between 0.20 and 0.90
+    riderT = 0.20 + (Date.now() % 30000) / 30000 * 0.7;
   } else if (order.status === 'Delivered') riderT = 0.95;
 
-  // Bezier curve calculations for SVG map
-  // P0 = (50, 100) -> Restaurant
-  // P1 = (250, 40) -> Curve apex
-  // P2 = (450, 100) -> Customer House
   const getBezierPoint = (t) => {
     const x = (1 - t) * (1 - t) * 50 + 2 * (1 - t) * t * 250 + t * t * 450;
     const y = (1 - t) * (1 - t) * 100 + 2 * (1 - t) * t * 40 + t * t * 100;
@@ -163,10 +157,9 @@ export const OrderTracking = () => {
           </div>
         </div>
       ) : (
-        /* Stepper progress (Horizontal on wide screen, Vertical on small) */
+        /* Stepper progress */
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 mb-8 shadow-xs">
           <div className="hidden md:flex items-center justify-between relative">
-            {/* Progress bar line backing */}
             <div className="absolute top-[18px] left-[7%] right-[7%] h-[3px] bg-neutral-150 dark:bg-neutral-800 z-0 rounded-full" />
             <div 
               className="absolute top-[18px] left-[7%] h-[3px] bg-gradient-to-r from-primary-500 to-emerald-500 z-0 rounded-full transition-all duration-1000"
@@ -203,7 +196,6 @@ export const OrderTracking = () => {
 
           {/* Mobile Stepper */}
           <div className="md:hidden flex flex-col gap-4 relative pl-8">
-            {/* Vertical line backing */}
             <div className="absolute left-[15px] top-4 bottom-4 w-[2px] bg-neutral-150 dark:bg-neutral-800 z-0 rounded-full" />
             <div 
               className="absolute left-[15px] top-4 w-[2px] bg-primary-500 z-0 rounded-full transition-all duration-1000"
@@ -245,7 +237,7 @@ export const OrderTracking = () => {
       {/* Main Panel grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Side: Map/Details (8 cols) */}
+        {/* Left Side: Map/Details */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           
           {/* Tabs Selector */}
@@ -290,14 +282,11 @@ export const OrderTracking = () => {
                   </p>
                 </div>
 
-                {/* Styled SVG Map */}
+                {/* SVG Map */}
                 <div className="relative w-full aspect-[5/2.2] bg-neutral-950 rounded-xl overflow-hidden border border-neutral-800 shadow-inner flex items-center justify-center p-4">
-                  
-                  {/* Decorative background grids */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
 
                   <svg viewBox="0 0 500 160" className="w-full h-full relative z-10 overflow-visible">
-                    {/* Path Connection Line */}
                     <path
                       d="M 50 100 Q 250 40 450 100"
                       fill="none"
@@ -306,7 +295,6 @@ export const OrderTracking = () => {
                       strokeLinecap="round"
                     />
 
-                    {/* Active completed path overlay */}
                     <path
                       d="M 50 100 Q 250 40 450 100"
                       fill="none"
@@ -314,12 +302,10 @@ export const OrderTracking = () => {
                       strokeWidth="4"
                       strokeLinecap="round"
                       strokeDasharray="500"
-                      // StrokeDashoffset goes from 500 (none) to 0 (all)
                       strokeDashoffset={500 - riderT * 500}
                       className="transition-all duration-300"
                     />
 
-                    {/* SVG Path Gradients */}
                     <defs>
                       <linearGradient id="gradient-path" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="#ef4444" />
@@ -332,7 +318,6 @@ export const OrderTracking = () => {
                       </filter>
                     </defs>
 
-                    {/* Dotted path details */}
                     <path
                       d="M 50 100 Q 250 40 450 100"
                       fill="none"
@@ -342,7 +327,6 @@ export const OrderTracking = () => {
                       className="opacity-40"
                     />
 
-                    {/* Restaurant Anchor Point */}
                     <g transform="translate(50, 100)" className="cursor-pointer">
                       <circle r="12" fill="#ef4444" fillOpacity="0.2" className="animate-ping" style={{ animationDuration: '3s' }} />
                       <circle r="7" fill="#ef4444" />
@@ -352,7 +336,6 @@ export const OrderTracking = () => {
                       </text>
                     </g>
 
-                    {/* Customer Home Anchor Point */}
                     <g transform="translate(450, 100)">
                       <circle r="12" fill="#10b981" fillOpacity="0.2" className="animate-ping" style={{ animationDuration: '4s' }} />
                       <circle r="7" fill="#10b981" />
@@ -362,7 +345,6 @@ export const OrderTracking = () => {
                       </text>
                     </g>
 
-                    {/* Rider Marker (Bike Icon) */}
                     <g 
                       transform={`translate(${riderPos.x}, ${riderPos.y})`}
                       className="transition-transform duration-300"
@@ -376,8 +358,6 @@ export const OrderTracking = () => {
                   </svg>
                 </div>
 
-                {/* Rider info card — shows the real assigned rider once they've
-                    accepted; the Call button dials their actual number. */}
                 {order.riderName && order.riderAcceptStatus === 'accepted' ? (
                   <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-2xl">
                     <div className="flex items-center gap-3 min-w-0">
@@ -433,7 +413,7 @@ export const OrderTracking = () => {
 
                 {/* Items List */}
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-850 max-h-60 overflow-y-auto pr-1">
-                  {order.items.map((item) => (
+                  {(order.items || order.cart || []).map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-3 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <img
@@ -442,7 +422,9 @@ export const OrderTracking = () => {
                           className="w-10 h-10 rounded-lg object-cover bg-neutral-100 shrink-0"
                         />
                         <div className="min-w-0">
-                          <span className="block text-xs font-semibold text-neutral-850 dark:text-neutral-100 truncate">{item.name}</span>
+                          <span className="block text-xs font-semibold text-neutral-850 dark:text-neutral-100 truncate">
+                            {item.name} {item.selectedSize && `(${item.selectedSize})`}
+                          </span>
                           <span className="block text-[10px] text-neutral-400">Qty: {item.quantity} × ৳{item.price.toFixed(2)}</span>
                         </div>
                       </div>
@@ -460,7 +442,7 @@ export const OrderTracking = () => {
                     <div>
                       <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Delivery Address</span>
                       <span className="block text-xs text-neutral-700 dark:text-neutral-300 font-medium mt-0.5 leading-normal">
-                        {order.user.address}, {order.user.pickArea}
+                        {order.user?.address}, {order.user?.pickArea}
                       </span>
                     </div>
                   </div>
@@ -470,17 +452,37 @@ export const OrderTracking = () => {
                     <div>
                       <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Receiver Info</span>
                       <span className="block text-xs text-neutral-700 dark:text-neutral-300 font-medium mt-0.5 leading-normal">
-                        {order.user.name} ({order.user.phone})
+                        {order.user?.name} ({order.user?.phone})
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Financial Summary */}
+                {/* Financial Summary (Payment Details added here) */}
                 <div className="border-t border-neutral-100 dark:border-neutral-850 pt-4 space-y-2">
-                  <div className="flex justify-between text-xs text-neutral-400">
+                  <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                    <span>Payment Method:</span>
+                    <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
+                      {order.paymentMethod || "Cash on Delivery"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                    <span>Payment Status:</span>
+                    <span
+                      className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase border ${
+                        order.paymentStatus === "Paid"
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                          : "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                      }`}
+                    >
+                      {order.paymentStatus || "Pending"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs text-neutral-400 pt-1 border-t border-dashed border-neutral-100 dark:border-neutral-850">
                     <span>Subtotal Basket</span>
-                    <span>৳{order.subtotal.toFixed(2)}</span>
+                    <span>৳{order.subtotal?.toFixed(2) || "0.00"}</span>
                   </div>
                   {order.discount > 0 && (
                     <div className="flex justify-between text-xs text-emerald-500 font-semibold">
@@ -499,8 +501,8 @@ export const OrderTracking = () => {
                     <span>৳{(order.deliveryCharge || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-white border-t border-dashed border-neutral-200 dark:border-neutral-850 pt-2.5">
-                    <span>Total Amount Paid</span>
-                    <span className="text-primary-500">৳{order.total.toFixed(2)}</span>
+                    <span>Total Amount</span>
+                    <span className="text-primary-500">৳{order.total?.toFixed(2) || "0.00"}</span>
                   </div>
                   {order.pointsEarned > 0 && (
                     <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-0.5">
@@ -513,9 +515,8 @@ export const OrderTracking = () => {
           </AnimatePresence>
         </div>
 
-        {/* Right Side: Chat Console (5 cols) */}
+        {/* Right Side: Chat Console */}
         <div className="lg:col-span-5 flex flex-col h-[520px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-sm">
-          {/* Chat Header */}
           <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 shrink-0 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -529,9 +530,8 @@ export const OrderTracking = () => {
             </span>
           </div>
 
-          {/* Messages Scroll Panel */}
           <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-            {order.chatHistory.map((msg, i) => {
+            {(order.chatHistory || []).map((msg, i) => {
               const isMe = msg.sender === 'customer';
               const isRider = msg.sender === 'rider';
               const isAdmin = msg.sender === 'admin';
@@ -548,7 +548,6 @@ export const OrderTracking = () => {
                 bubbleClass = 'bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none';
                 senderLabelColor = 'text-amber-600 dark:text-amber-400';
               } else if (isAdmin && msg.senderName === 'System') {
-                // system status alert
                 return (
                   <div key={i} className="flex justify-center my-1.5">
                     <span className="px-3 py-1 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 font-semibold border border-neutral-200/20">
@@ -579,7 +578,6 @@ export const OrderTracking = () => {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Chat Form Input */}
           <form onSubmit={handleSendMessage} className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0">
             <input
               type="text"
