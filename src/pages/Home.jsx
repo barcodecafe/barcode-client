@@ -272,12 +272,12 @@ export const Home = () => {
           </div>
         </div>
 
-        {/* Mobile View: Swiper Slider */}
+        {/* Mobile View: Carousel */}
         <div className="sm:hidden -mx-2">
           {previewBranches.length > 0 && (
             <Swiper
               modules={[Pagination]}
-              slidesPerView={1.25}
+              slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
               className="!px-2 !pb-8"
@@ -305,6 +305,7 @@ export const Home = () => {
           </motion.div>
         )}
 
+        {/* View All Expansion Grid */}
         <AnimatePresence>
           {showAllBranches && remainingBranches.length > 0 && (
             <motion.div
@@ -318,7 +319,7 @@ export const Home = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingBranches.map((branch) => (
                   <BranchCard
@@ -381,7 +382,7 @@ export const Home = () => {
             <Swiper
               key={activeSort}
               modules={[Pagination]}
-              slidesPerView={1.25}
+              slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
               className="!px-2 !pb-8"
@@ -411,7 +412,7 @@ export const Home = () => {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -429,6 +430,7 @@ export const Home = () => {
           </motion.div>
         )}
 
+        {/* View All Expansion Grid */}
         <AnimatePresence>
           {showAllPopular && remainingPopularFoods.length > 0 && (
             <motion.div
@@ -442,7 +444,7 @@ export const Home = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingPopularFoods.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -499,7 +501,7 @@ export const Home = () => {
             <div className="sm:hidden -mx-2">
               <Swiper
                 modules={[Pagination]}
-                slidesPerView={1.25}
+                slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
                 className="!px-2 !pb-8"
@@ -526,7 +528,7 @@ export const Home = () => {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -543,6 +545,7 @@ export const Home = () => {
               })}
             </motion.div>
 
+            {/* View All Expansion Grid */}
             <AnimatePresence>
               {showAllFeatured && remainingFeaturedMenu.length > 0 && (
                 <motion.div
@@ -556,7 +559,7 @@ export const Home = () => {
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
                     {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);
@@ -608,8 +611,8 @@ export const Home = () => {
             {previewBrands.length > 0 && (
               <Swiper
                 modules={[Pagination]}
-                slidesPerView={2.15}
-                spaceBetween={12}
+                slidesPerView={1.15}
+                spaceBetween={16}
                 pagination={{ clickable: true }}
                 className="!px-2 !pb-8"
               >
@@ -636,6 +639,7 @@ export const Home = () => {
             </motion.div>
           )}
 
+          {/* View All Expansion Grid */}
           <AnimatePresence>
             {showAllBrands && remainingBrands.length > 0 && (
               <motion.div
@@ -649,7 +653,7 @@ export const Home = () => {
                   variants={staggerContainer}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                 >
                   {remainingBrands.map((brand) => (
                     <BrandCard
