@@ -278,7 +278,7 @@ export const Checkout = () => {
                 </select>
               )}
               {deliverableRegions.length > 1 && !regionId && (
-                <p className="text-[10px] text-amber-500 font-semibold mt-1.5">অর্ডার করতে আগে region বাছুন</p>
+                <p className="text-[10px] text-amber-500 font-semibold mt-1.5">Please select a region before placing your order.</p>
               )}
             </div>
 

@@ -9,7 +9,7 @@ import apiClient from './apiClient';
 
 // SSLCommerz rejects anything under this for our store ("Transaction amount is
 // not allowed as per admin configuration"), so smaller orders stay cash-only.
-export const MIN_ONLINE_AMOUNT = 100;
+export const MIN_ONLINE_AMOUNT = 5;
 
 /** POST /api/payments/init → { gatewayUrl, tranId, isDemo } */
 export async function initPayment(orderId) {
