@@ -1,7 +1,17 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Building2, Store, Star, Heart, ShoppingBag, ChevronDown } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Store,
+  Star,
+  Heart,
+  ShoppingBag,
+  ChevronDown,
+} from "lucide-react";
 
 import { getAllBrands } from "../services/brandsService";
 import { getAllBranches } from "../services/branchesService";
@@ -14,6 +24,10 @@ import {
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+
+// Import Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
 
 const PREVIEW_COUNT = 6;
 
@@ -114,13 +128,13 @@ export const Brands = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-2 py-8 sm:px-6 lg:px-8">
       {/* BRAND HEADER & GRID */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
+      <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+        <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
           Our Brands
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
+        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-2 sm:mt-3">
           One group, many flavours. Explore each brand in the Barcode Restaurant family and find your favourite.
         </p>
       </div>
@@ -137,56 +151,47 @@ export const Brands = () => {
           <p className="text-sm">No brands have been added yet.</p>
         </div>
       ) : (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {brands.map((brand) => (
-            <motion.div
-              key={brand.id}
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+        <>
+          {/* Mobile View: Brands Swiper Slider */}
+          <div className="sm:hidden -mx-2">
+            <Swiper
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-2 !pb-8"
             >
-              <Link
-                to={`/brands/${brand.slug}`}
-                className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              {brands.map((brand) => (
+                <SwiperSlide key={brand.id}>
+                  <BrandMainCard brand={brand} branchCount={branchCountByBrand[brand.id] || 0} />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Desktop View: Brands Grid */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {brands.map((brand) => (
+              <motion.div
+                key={brand.id}
+                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
               >
-                <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
-                  {brand.cover ? (
-                    <img src={brand.cover} alt={brand.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  ) : brand.logoLight ? (
-                    <img src={brand.logoLight} alt={brand.name} className="max-h-20 max-w-[70%] object-contain" />
-                  ) : (
-                    <Building2 className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
-                  )}
-                </div>
-                <div className="flex flex-col flex-1 p-5">
-                  <h2 className="font-display text-lg font-extrabold text-neutral-800 dark:text-white">
-                    {brand.name}
-                  </h2>
-                  {brand.tagline && (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2">{brand.tagline}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-auto pt-4">
-                    <span className="text-[11px] font-semibold text-neutral-400">
-                      {branchCountByBrand[brand.id] || 0} branch{(branchCountByBrand[brand.id] || 0) === 1 ? "" : "es"}
-                    </span>
-                    <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs group-hover:gap-1.5 transition-all">
-                      Explore <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
+                <BrandMainCard brand={brand} branchCount={branchCountByBrand[brand.id] || 0} />
+              </motion.div>
+            ))}
+          </motion.div>
+        </>
       )}
 
       {/* ----------------------------------------------------------------- */}
       {/* OUR BESTSELLERS SECTION */}
       {/* ----------------------------------------------------------------- */}
-      <section className="pt-16 pb-0">
+      <section className="pt-12 sm:pt-16 pb-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
@@ -227,13 +232,43 @@ export const Brands = () => {
           </div>
         </div>
 
+        {/* Mobile View: Swiper Slider */}
+        <div className="sm:hidden -mx-2">
+          {previewPopularFoods.length > 0 && (
+            <Swiper
+              key={activeSort}
+              modules={[Pagination]}
+              slidesPerView={1.15}
+              spaceBetween={16}
+              pagination={{ clickable: true }}
+              className="!px-2 !pb-8"
+            >
+              {previewPopularFoods.map((food) => {
+                const favorited = isFavorite(food.id);
+                return (
+                  <SwiperSlide key={food.id}>
+                    <FoodCard
+                      food={food}
+                      favorited={favorited}
+                      onToggleFavorite={toggleFavorite}
+                      onAddToCart={addToCart}
+                      variants={fadeInUp}
+                    />
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          )}
+        </div>
+
+        {/* Desktop View: Grid */}
         {previewPopularFoods.length > 0 && (
           <motion.div
             key={activeSort}
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -251,6 +286,7 @@ export const Brands = () => {
           </motion.div>
         )}
 
+        {/* View All Expansion Grid */}
         <AnimatePresence>
           {showAllPopular && remainingPopularFoods.length > 0 && (
             <motion.div
@@ -264,7 +300,7 @@ export const Brands = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingPopularFoods.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -288,7 +324,7 @@ export const Brands = () => {
       {/* ----------------------------------------------------------------- */}
       {/* FEATURED MENU SECTION */}
       {/* ----------------------------------------------------------------- */}
-      <section className="pt-12 pb-8">
+      <section className="pt-10 sm:pt-12 pb-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
@@ -319,11 +355,38 @@ export const Brands = () => {
           </div>
         ) : (
           <>
+            {/* Mobile View: Swiper Slider */}
+            <div className="sm:hidden -mx-2">
+              <Swiper
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!px-2 !pb-8"
+              >
+                {previewFeaturedMenu.map((food) => {
+                  const favorited = isFavorite(food.id);
+                  return (
+                    <SwiperSlide key={food.id}>
+                      <FoodCard
+                        food={food}
+                        favorited={favorited}
+                        onToggleFavorite={toggleFavorite}
+                        onAddToCart={addToCart}
+                        variants={fadeInUp}
+                      />
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+            </div>
+
+            {/* Desktop View: Grid */}
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -340,6 +403,7 @@ export const Brands = () => {
               })}
             </motion.div>
 
+            {/* View All Expansion Grid */}
             <AnimatePresence>
               {showAllFeatured && remainingFeaturedMenu.length > 0 && (
                 <motion.div
@@ -353,7 +417,7 @@ export const Brands = () => {
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mt-6"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
                     {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);
@@ -378,6 +442,53 @@ export const Brands = () => {
     </div>
   );
 };
+
+// Top Brands Item Card Component
+const BrandMainCard = memo(({ brand, branchCount }) => {
+  return (
+    <Link
+      to={`/brands/${brand.slug}`}
+      className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+    >
+      <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
+        {brand.cover ? (
+          <img
+            src={brand.cover}
+            alt={brand.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : brand.logoLight ? (
+          <img
+            src={brand.logoLight}
+            alt={brand.name}
+            className="max-h-20 max-w-[70%] object-contain"
+          />
+        ) : (
+          <Building2 className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
+        )}
+      </div>
+      <div className="flex flex-col flex-1 p-5">
+        <h2 className="font-display text-lg font-extrabold text-neutral-800 dark:text-white">
+          {brand.name}
+        </h2>
+        {brand.tagline && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2">
+            {brand.tagline}
+          </p>
+        )}
+        <div className="flex items-center justify-between mt-auto pt-4">
+          <span className="text-[11px] font-semibold text-neutral-400">
+            {branchCount} branch{branchCount === 1 ? "" : "es"}
+          </span>
+          <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs group-hover:gap-1.5 transition-all">
+            Explore <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+});
+BrandMainCard.displayName = "BrandMainCard";
 
 // Reusable Food Card Component
 const FoodCard = memo(
