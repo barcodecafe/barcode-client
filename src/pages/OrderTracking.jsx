@@ -1,13 +1,35 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MapPin, Phone, MessageSquare, Clock, ArrowLeft, Check, X,
-  Send, Bike, Home, Building, ChevronRight, ShoppingBag, 
-  Map, User, DollarSign, Calendar, CreditCard, RefreshCw, AlertTriangle
-} from 'lucide-react';
-import { getOrderById, addChatMessage } from '../services/ordersService';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect, useRef } from "react";
+import {
+  useParams,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MapPin,
+  Phone,
+  MessageSquare,
+  Clock,
+  ArrowLeft,
+  Check,
+  X,
+  Send,
+  Bike,
+  Home,
+  Building,
+  ChevronRight,
+  ShoppingBag,
+  Map,
+  User,
+  DollarSign,
+  Calendar,
+  CreditCard,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
+import { getOrderById, addChatMessage } from "../services/ordersService";
+import { useAuth } from "../context/AuthContext";
 
 export const OrderTracking = () => {
   const { id } = useParams();
@@ -16,14 +38,14 @@ export const OrderTracking = () => {
 
   // URL Parameter পড়ার জন্য searchParams যুক্ত করা হলো
   const [searchParams] = useSearchParams();
-  const paymentParam = searchParams.get('payment'); // 'fail', 'cancel' ইত্যাদি রিড করবে
+  const paymentParam = searchParams.get("payment"); // 'fail', 'cancel' ইত্যাদি রিড করবে
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [retryLoading, setRetryLoading] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('map'); // 'map' or 'details'
-  
+  const [chatMessage, setChatMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("map"); // 'map' or 'details'
+
   // Ref for auto-scrolling chat
   const chatEndRef = useRef(null);
 
@@ -36,14 +58,14 @@ export const OrderTracking = () => {
         const data = await getOrderById(id);
         if (active) {
           if (!data) {
-            navigate('/', { replace: true });
+            navigate("/", { replace: true });
             return;
           }
           setOrder(data);
           setLoading(false);
         }
       } catch (err) {
-        console.error('Error fetching order:', err);
+        console.error("Error fetching order:", err);
       }
     };
 
@@ -59,21 +81,35 @@ export const OrderTracking = () => {
   // Auto-scroll chat to bottom when chatHistory updates
   useEffect(() => {
     if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [order?.chatHistory?.length]);
 
   // পেমেন্ট পুনরায় চেষ্টা করার হ্যান্ডলার
+  // handleRetryPayment ফাংশনটি রিপ্লেস করুন:
   const handleRetryPayment = async () => {
     try {
       setRetryLoading(true);
-      // TODO: আপনার ব্যাকএন্ডের পেমেন্ট ইনিশিয়লাইজ API কল করুন
-      // const res = await initiatePaymentApi(order.id);
-      // if (res?.url) window.location.href = res.url;
-      alert('Redirecting to payment gateway...');
+
+      const response = await fetch(`${API_BASE_URL}/payments/init`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data?.gatewayUrl) {
+        window.location.href = result.data.gatewayUrl; // SSLCommerz Gateway-তে রিডাইরেক্ট করবে
+      } else {
+        alert(result.message || "Failed to initialize payment gateway.");
+      }
     } catch (err) {
-      console.error('Retry payment error:', err);
-      alert('Failed to initiate payment. Please try again.');
+      console.error("Retry payment error:", err);
+      alert("Something went wrong. Please try again.");
     } finally {
       setRetryLoading(false);
     }
@@ -83,18 +119,28 @@ export const OrderTracking = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-neutral-500 font-medium">Locating your order tracker...</span>
+        <span className="text-sm text-neutral-500 font-medium">
+          Locating your order tracker...
+        </span>
       </div>
     );
   }
 
   // Stepper configurations
   const steps = [
-    { key: 'Placed', label: 'Order Placed', desc: 'Waiting for confirmation' },
-    { key: 'Accepted', label: 'Accepted', desc: 'Kitchen preparing soon' },
-    { key: 'Preparing', label: 'Preparing', desc: 'Chefs are cooking your meal' },
-    { key: 'Out for Delivery', label: 'On The Way', desc: 'Rider is out for delivery' },
-    { key: 'Delivered', label: 'Delivered', desc: 'Handed over successfully' }
+    { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
+    { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
+    {
+      key: "Preparing",
+      label: "Preparing",
+      desc: "Chefs are cooking your meal",
+    },
+    {
+      key: "Out for Delivery",
+      label: "On The Way",
+      desc: "Rider is out for delivery",
+    },
+    { key: "Delivered", label: "Delivered", desc: "Handed over successfully" },
   ];
 
   const getStepIndex = (status) => {
@@ -105,11 +151,11 @@ export const OrderTracking = () => {
 
   // Calculate rider position (t along Bezier path)
   let riderT = 0.05;
-  if (order.status === 'Accepted') riderT = 0.08;
-  else if (order.status === 'Preparing') riderT = 0.15;
-  else if (order.status === 'Out for Delivery') {
-    riderT = 0.20 + (Date.now() % 30000) / 30000 * 0.7;
-  } else if (order.status === 'Delivered') riderT = 0.95;
+  if (order.status === "Accepted") riderT = 0.08;
+  else if (order.status === "Preparing") riderT = 0.15;
+  else if (order.status === "Out for Delivery") {
+    riderT = 0.2 + ((Date.now() % 30000) / 30000) * 0.7;
+  } else if (order.status === "Delivered") riderT = 0.95;
 
   const getBezierPoint = (t) => {
     const x = (1 - t) * (1 - t) * 50 + 2 * (1 - t) * t * 250 + t * t * 450;
@@ -125,23 +171,25 @@ export const OrderTracking = () => {
 
     try {
       const updatedOrder = await addChatMessage(order.id, {
-        sender: 'customer',
-        senderName: user?.name || 'Customer',
-        text: chatMessage.trim()
+        sender: "customer",
+        senderName: user?.name || "Customer",
+        text: chatMessage.trim(),
       });
       setOrder(updatedOrder);
-      setChatMessage('');
+      setChatMessage("");
     } catch (err) {
-      alert('Failed to send message: ' + err.message);
+      alert("Failed to send message: " + err.message);
     }
   };
 
   // চেক করা হচ্ছে পেমেন্ট ফেইল বা ক্যানসেল হয়েছে কিনা
-  const isPaymentFailedOrCancelled = 
-    paymentParam === 'fail' || 
-    paymentParam === 'cancel' || 
-    order.paymentStatus === 'Failed' || 
-    (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Pending' && paymentParam);
+  const isPaymentFailedOrCancelled =
+    paymentParam === "fail" ||
+    paymentParam === "cancel" ||
+    order.paymentStatus === "Failed" ||
+    (order.paymentMethod !== "Cash on Delivery" &&
+      order.paymentStatus === "Pending" &&
+      paymentParam);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -155,25 +203,29 @@ export const OrderTracking = () => {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <span className="text-xs text-primary-500 font-bold uppercase tracking-wider">Live Tracking Panel</span>
+            <span className="text-xs text-primary-500 font-bold uppercase tracking-wider">
+              Live Tracking Panel
+            </span>
             <h1 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-800 dark:text-white mt-0.5">
               Track Order #{order.id.toUpperCase()}
             </h1>
           </div>
         </div>
 
-        <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border font-bold text-xs uppercase tracking-wide ${
-          order.status === 'Rejected'
-            ? 'bg-red-500/10 border-red-500/20 text-red-500'
-            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-        }`}>
+        <div
+          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border font-bold text-xs uppercase tracking-wide ${
+            order.status === "Rejected"
+              ? "bg-red-500/10 border-red-500/20 text-red-500"
+              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+          }`}
+        >
           <Clock className="w-3.5 h-3.5" />
           <span>Status: {steps[currentStepIdx]?.label || order.status}</span>
         </div>
       </div>
 
       {/* Payment Failed / Cancelled Banner */}
-      {order.status !== 'Rejected' && isPaymentFailedOrCancelled && (
+      {order.status !== "Rejected" && isPaymentFailedOrCancelled && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -181,10 +233,13 @@ export const OrderTracking = () => {
             </div>
             <div>
               <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100">
-                {paymentParam === 'cancel' ? 'Payment Cancelled' : 'Payment Unsuccessful'}
+                {paymentParam === "cancel"
+                  ? "Payment Cancelled"
+                  : "Payment Unsuccessful"}
               </h3>
               <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 font-normal">
-                Your order is safely recorded, but payment was not completed. You can retry paying online right now.
+                Your order is safely recorded, but payment was not completed.
+                You can retry paying online right now.
               </p>
             </div>
           </div>
@@ -206,7 +261,7 @@ export const OrderTracking = () => {
         </div>
       )}
 
-      {order.status === 'Rejected' ? (
+      {order.status === "Rejected" ? (
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/60 rounded-2xl p-5 mb-8 flex items-center gap-4 text-red-850 dark:text-red-400">
           <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-650 shrink-0">
             <X className="w-5 h-5 stroke-[2.5]" />
@@ -214,7 +269,8 @@ export const OrderTracking = () => {
           <div>
             <h3 className="font-bold text-sm">Order Rejected</h3>
             <p className="text-xs mt-1 font-light opacity-95">
-              We regret to inform you that your order has been rejected. Any online transactions will be refunded automatically.
+              We regret to inform you that your order has been rejected. Any
+              online transactions will be refunded automatically.
             </p>
           </div>
         </div>
@@ -223,9 +279,11 @@ export const OrderTracking = () => {
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 mb-8 shadow-xs">
           <div className="hidden md:flex items-center justify-between relative">
             <div className="absolute top-[18px] left-[7%] right-[7%] h-[3px] bg-neutral-150 dark:bg-neutral-800 z-0 rounded-full" />
-            <div 
+            <div
               className="absolute top-[18px] left-[7%] h-[3px] bg-gradient-to-r from-primary-500 to-emerald-500 z-0 rounded-full transition-all duration-1000"
-              style={{ width: `${(currentStepIdx / (steps.length - 1)) * 86}%` }}
+              style={{
+                width: `${(currentStepIdx / (steps.length - 1)) * 86}%`,
+              }}
             />
 
             {steps.map((s, idx) => {
@@ -233,19 +291,24 @@ export const OrderTracking = () => {
               const isActive = idx === currentStepIdx;
 
               return (
-                <div key={s.key} className="flex flex-col items-center text-center z-10 w-36">
-                  <div 
+                <div
+                  key={s.key}
+                  className="flex flex-col items-center text-center z-10 w-36"
+                >
+                  <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shadow-md border-2 transition-all ${
-                      isCompleted 
-                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/10' 
-                        : isActive 
-                        ? 'bg-primary-500 border-primary-400 text-white shadow-primary-500/25 ring-4 ring-primary-500/10 animate-pulse'
-                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-400'
+                      isCompleted
+                        ? "bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/10"
+                        : isActive
+                          ? "bg-primary-500 border-primary-400 text-white shadow-primary-500/25 ring-4 ring-primary-500/10 animate-pulse"
+                          : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-400"
                     }`}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
                   </div>
-                  <span className={`text-xs font-bold mt-2.5 block ${isActive ? 'text-primary-500' : 'text-neutral-850 dark:text-neutral-200'}`}>
+                  <span
+                    className={`text-xs font-bold mt-2.5 block ${isActive ? "text-primary-500" : "text-neutral-850 dark:text-neutral-200"}`}
+                  >
                     {s.label}
                   </span>
                   <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-light mt-0.5 line-clamp-1 max-w-[120px]">
@@ -259,9 +322,11 @@ export const OrderTracking = () => {
           {/* Mobile Stepper */}
           <div className="md:hidden flex flex-col gap-4 relative pl-8">
             <div className="absolute left-[15px] top-4 bottom-4 w-[2px] bg-neutral-150 dark:bg-neutral-800 z-0 rounded-full" />
-            <div 
+            <div
               className="absolute left-[15px] top-4 w-[2px] bg-primary-500 z-0 rounded-full transition-all duration-1000"
-              style={{ height: `${(currentStepIdx / (steps.length - 1)) * 88}%` }}
+              style={{
+                height: `${(currentStepIdx / (steps.length - 1)) * 88}%`,
+              }}
             />
 
             {steps.map((s, idx) => {
@@ -270,19 +335,21 @@ export const OrderTracking = () => {
 
               return (
                 <div key={s.key} className="flex gap-4 relative z-10">
-                  <div 
+                  <div
                     className={`absolute -left-[25px] w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shadow-sm border transition-all ${
-                      isCompleted 
-                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/10' 
-                        : isActive 
-                        ? 'bg-primary-500 border-primary-400 text-white shadow-primary-500/20 ring-2 ring-primary-500/10 animate-pulse'
-                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-400'
+                      isCompleted
+                        ? "bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/10"
+                        : isActive
+                          ? "bg-primary-500 border-primary-400 text-white shadow-primary-500/20 ring-2 ring-primary-500/10 animate-pulse"
+                          : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-400"
                     }`}
                   >
                     {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
                   </div>
                   <div>
-                    <span className={`text-xs font-bold ${isActive ? 'text-primary-500' : 'text-neutral-800 dark:text-white'}`}>
+                    <span
+                      className={`text-xs font-bold ${isActive ? "text-primary-500" : "text-neutral-800 dark:text-white"}`}
+                    >
                       {s.label}
                     </span>
                     <span className="block text-[10px] text-neutral-400 font-light mt-0.5">
@@ -298,29 +365,27 @@ export const OrderTracking = () => {
 
       {/* Main Panel grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
         {/* Left Side: Map/Details */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          
           {/* Tabs Selector */}
           <div className="flex bg-neutral-100 dark:bg-neutral-900 p-1 rounded-xl w-fit">
             <button
-              onClick={() => setActiveTab('map')}
+              onClick={() => setActiveTab("map")}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                activeTab === 'map'
-                  ? 'bg-white dark:bg-neutral-850 text-neutral-850 dark:text-white shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white'
+                activeTab === "map"
+                  ? "bg-white dark:bg-neutral-850 text-neutral-850 dark:text-white shadow-xs"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white"
               }`}
             >
               <Map className="w-4 h-4" />
               Live Route Map
             </button>
             <button
-              onClick={() => setActiveTab('details')}
+              onClick={() => setActiveTab("details")}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                activeTab === 'details'
-                  ? 'bg-white dark:bg-neutral-850 text-neutral-850 dark:text-white shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white'
+                activeTab === "details"
+                  ? "bg-white dark:bg-neutral-850 text-neutral-850 dark:text-white shadow-xs"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white"
               }`}
             >
               <ShoppingBag className="w-4 h-4" />
@@ -329,7 +394,7 @@ export const OrderTracking = () => {
           </div>
 
           <AnimatePresence>
-            {activeTab === 'map' ? (
+            {activeTab === "map" ? (
               <motion.div
                 key="map"
                 initial={{ opacity: 0, y: 10 }}
@@ -338,9 +403,12 @@ export const OrderTracking = () => {
                 className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col gap-5"
               >
                 <div>
-                  <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">Active Delivery Path</h3>
+                  <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">
+                    Active Delivery Path
+                  </h3>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                    View the courier riding path connecting the restaurant and your location in real time.
+                    View the courier riding path connecting the restaurant and
+                    your location in real time.
                   </p>
                 </div>
 
@@ -348,7 +416,10 @@ export const OrderTracking = () => {
                 <div className="relative w-full aspect-[5/2.2] bg-neutral-950 rounded-xl overflow-hidden border border-neutral-800 shadow-inner flex items-center justify-center p-4">
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
 
-                  <svg viewBox="0 0 500 160" className="w-full h-full relative z-10 overflow-visible">
+                  <svg
+                    viewBox="0 0 500 160"
+                    className="w-full h-full relative z-10 overflow-visible"
+                  >
                     <path
                       d="M 50 100 Q 250 40 450 100"
                       fill="none"
@@ -369,14 +440,30 @@ export const OrderTracking = () => {
                     />
 
                     <defs>
-                      <linearGradient id="gradient-path" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <linearGradient
+                        id="gradient-path"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="0%"
+                      >
                         <stop offset="0%" stopColor="#ef4444" />
                         <stop offset="50%" stopColor="#f59e0b" />
                         <stop offset="100%" stopColor="#10b981" />
                       </linearGradient>
-                      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <filter
+                        id="glow"
+                        x="-20%"
+                        y="-20%"
+                        width="140%"
+                        height="140%"
+                      >
                         <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        <feComposite
+                          in="SourceGraphic"
+                          in2="blur"
+                          operator="over"
+                        />
                       </filter>
                     </defs>
 
@@ -389,48 +476,82 @@ export const OrderTracking = () => {
                       className="opacity-40"
                     />
 
-                    <g transform="translate(50, 100)" className="cursor-pointer">
-                      <circle r="12" fill="#ef4444" fillOpacity="0.2" className="animate-ping" style={{ animationDuration: '3s' }} />
+                    <g
+                      transform="translate(50, 100)"
+                      className="cursor-pointer"
+                    >
+                      <circle
+                        r="12"
+                        fill="#ef4444"
+                        fillOpacity="0.2"
+                        className="animate-ping"
+                        style={{ animationDuration: "3s" }}
+                      />
                       <circle r="7" fill="#ef4444" />
                       <circle r="4" fill="#ffffff" />
-                      <text y="-14" textAnchor="middle" fill="#ef4444" className="text-[9px] font-extrabold uppercase tracking-wide font-sans">
+                      <text
+                        y="-14"
+                        textAnchor="middle"
+                        fill="#ef4444"
+                        className="text-[9px] font-extrabold uppercase tracking-wide font-sans"
+                      >
                         Barcode Kitchen
                       </text>
                     </g>
 
                     <g transform="translate(450, 100)">
-                      <circle r="12" fill="#10b981" fillOpacity="0.2" className="animate-ping" style={{ animationDuration: '4s' }} />
+                      <circle
+                        r="12"
+                        fill="#10b981"
+                        fillOpacity="0.2"
+                        className="animate-ping"
+                        style={{ animationDuration: "4s" }}
+                      />
                       <circle r="7" fill="#10b981" />
                       <circle r="4" fill="#ffffff" />
-                      <text y="-14" textAnchor="middle" fill="#10b981" className="text-[9px] font-extrabold uppercase tracking-wide font-sans">
+                      <text
+                        y="-14"
+                        textAnchor="middle"
+                        fill="#10b981"
+                        className="text-[9px] font-extrabold uppercase tracking-wide font-sans"
+                      >
                         Your House
                       </text>
                     </g>
 
-                    <g 
+                    <g
                       transform={`translate(${riderPos.x}, ${riderPos.y})`}
                       className="transition-transform duration-300"
                       filter="url(#glow)"
                     >
                       <circle r="16" fill="#f59e0b" className="animate-pulse" />
-                      <g transform="translate(-8, -8) scale(0.65)" className="text-white">
+                      <g
+                        transform="translate(-8, -8) scale(0.65)"
+                        className="text-white"
+                      >
                         <Bike className="w-6 h-6 stroke-[2.5]" />
                       </g>
                     </g>
                   </svg>
                 </div>
 
-                {order.riderName && order.riderAcceptStatus === 'accepted' ? (
+                {order.riderName && order.riderAcceptStatus === "accepted" ? (
                   <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-850 rounded-2xl">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-11 h-11 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
                         <Bike className="w-5 h-5 stroke-[2]" />
                       </div>
                       <div className="min-w-0">
-                        <span className="block text-xs text-neutral-400">Delivery Courier</span>
-                        <span className="block text-sm font-semibold text-neutral-800 dark:text-white truncate">{order.riderName}</span>
+                        <span className="block text-xs text-neutral-400">
+                          Delivery Courier
+                        </span>
+                        <span className="block text-sm font-semibold text-neutral-800 dark:text-white truncate">
+                          {order.riderName}
+                        </span>
                         {order.riderPhone && (
-                          <span className="block text-[11px] text-neutral-400">{order.riderPhone}</span>
+                          <span className="block text-[11px] text-neutral-400">
+                            {order.riderPhone}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -444,7 +565,9 @@ export const OrderTracking = () => {
                         Call Rider
                       </a>
                     ) : (
-                      <span className="text-[11px] text-neutral-400 shrink-0">No contact number</span>
+                      <span className="text-[11px] text-neutral-400 shrink-0">
+                        No contact number
+                      </span>
                     )}
                   </div>
                 ) : (
@@ -453,7 +576,9 @@ export const OrderTracking = () => {
                       <Bike className="w-5 h-5 stroke-[2]" />
                     </div>
                     <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {order.riderName ? `${order.riderName} is confirming your delivery…` : 'Assigning a delivery rider…'}
+                      {order.riderName
+                        ? `${order.riderName} is confirming your delivery…`
+                        : "Assigning a delivery rider…"}
                     </span>
                   </div>
                 )}
@@ -467,7 +592,9 @@ export const OrderTracking = () => {
                 className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm flex flex-col gap-6"
               >
                 <div>
-                  <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">Basket Summary</h3>
+                  <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">
+                    Basket Summary
+                  </h3>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
                     Invoice items list and customer delivery address details.
                   </p>
@@ -476,7 +603,10 @@ export const OrderTracking = () => {
                 {/* Items List */}
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-850 max-h-60 overflow-y-auto pr-1">
                   {(order.items || order.cart || []).map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-3 gap-3">
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between py-3 gap-3"
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={item.image}
@@ -485,9 +615,12 @@ export const OrderTracking = () => {
                         />
                         <div className="min-w-0">
                           <span className="block text-xs font-semibold text-neutral-850 dark:text-neutral-100 truncate">
-                            {item.name} {item.selectedSize && `(${item.selectedSize})`}
+                            {item.name}{" "}
+                            {item.selectedSize && `(${item.selectedSize})`}
                           </span>
-                          <span className="block text-[10px] text-neutral-400">Qty: {item.quantity} × ৳{item.price.toFixed(2)}</span>
+                          <span className="block text-[10px] text-neutral-400">
+                            Qty: {item.quantity} × ৳{item.price.toFixed(2)}
+                          </span>
                         </div>
                       </div>
                       <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
@@ -502,7 +635,9 @@ export const OrderTracking = () => {
                   <div className="flex gap-2.5">
                     <MapPin className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Delivery Address</span>
+                      <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                        Delivery Address
+                      </span>
                       <span className="block text-xs text-neutral-700 dark:text-neutral-300 font-medium mt-0.5 leading-normal">
                         {order.user?.address}, {order.user?.pickArea}
                       </span>
@@ -512,7 +647,9 @@ export const OrderTracking = () => {
                   <div className="flex gap-2.5">
                     <User className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Receiver Info</span>
+                      <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                        Receiver Info
+                      </span>
                       <span className="block text-xs text-neutral-700 dark:text-neutral-300 font-medium mt-0.5 leading-normal">
                         {order.user?.name} ({order.user?.phone})
                       </span>
@@ -548,7 +685,10 @@ export const OrderTracking = () => {
                   </div>
                   {order.discount > 0 && (
                     <div className="flex justify-between text-xs text-emerald-500 font-semibold">
-                      <span>Promo Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
+                      <span>
+                        Promo Discount{" "}
+                        {order.couponCode ? `(${order.couponCode})` : ""}
+                      </span>
                       <span>-৳{order.discount.toFixed(2)}</span>
                     </div>
                   )}
@@ -559,16 +699,24 @@ export const OrderTracking = () => {
                     </div>
                   )}
                   <div className="flex justify-between text-xs text-neutral-400">
-                    <span>Delivery Charge {order.deliveryArea ? `(${order.deliveryArea})` : ''}</span>
+                    <span>
+                      Delivery Charge{" "}
+                      {order.deliveryArea ? `(${order.deliveryArea})` : ""}
+                    </span>
                     <span>৳{(order.deliveryCharge || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-white border-t border-dashed border-neutral-200 dark:border-neutral-850 pt-2.5">
                     <span>Total Amount</span>
-                    <span className="text-primary-500">৳{order.total?.toFixed(2) || "0.00"}</span>
+                    <span className="text-primary-500">
+                      ৳{order.total?.toFixed(2) || "0.00"}
+                    </span>
                   </div>
                   {order.pointsEarned > 0 && (
                     <div className="flex items-center gap-1.5 text-[10px] text-amber-500 font-semibold pt-0.5">
-                      <span>🎁 You earned {order.pointsEarned} reward points on this order</span>
+                      <span>
+                        🎁 You earned {order.pointsEarned} reward points on this
+                        order
+                      </span>
                     </div>
                   )}
                 </div>
@@ -583,8 +731,12 @@ export const OrderTracking = () => {
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">Order Discussion</h3>
-                <span className="block text-[9px] text-neutral-400">Live feed with rider & support staff</span>
+                <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                  Order Discussion
+                </h3>
+                <span className="block text-[9px] text-neutral-400">
+                  Live feed with rider & support staff
+                </span>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-md bg-neutral-250 dark:bg-neutral-800 text-[9px] font-bold text-neutral-500 dark:text-neutral-400">
@@ -594,22 +746,25 @@ export const OrderTracking = () => {
 
           <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
             {(order.chatHistory || []).map((msg, i) => {
-              const isMe = msg.sender === 'customer';
-              const isRider = msg.sender === 'rider';
-              const isAdmin = msg.sender === 'admin';
-              
-              let alignClass = 'justify-start';
-              let bubbleClass = 'bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none';
-              let senderLabelColor = 'text-neutral-550 dark:text-neutral-400';
+              const isMe = msg.sender === "customer";
+              const isRider = msg.sender === "rider";
+              const isAdmin = msg.sender === "admin";
+
+              let alignClass = "justify-start";
+              let bubbleClass =
+                "bg-white dark:bg-neutral-850 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
+              let senderLabelColor = "text-neutral-550 dark:text-neutral-400";
 
               if (isMe) {
-                alignClass = 'justify-end';
-                bubbleClass = 'bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10';
-                senderLabelColor = 'text-primary-500';
+                alignClass = "justify-end";
+                bubbleClass =
+                  "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
+                senderLabelColor = "text-primary-500";
               } else if (isRider) {
-                bubbleClass = 'bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none';
-                senderLabelColor = 'text-amber-600 dark:text-amber-400';
-              } else if (isAdmin && msg.senderName === 'System') {
+                bubbleClass =
+                  "bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
+                senderLabelColor = "text-amber-600 dark:text-amber-400";
+              } else if (isAdmin && msg.senderName === "System") {
                 return (
                   <div key={i} className="flex justify-center my-1.5">
                     <span className="px-3 py-1 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 font-semibold border border-neutral-200/20">
@@ -623,14 +778,23 @@ export const OrderTracking = () => {
                 <div key={i} className={`flex ${alignClass}`}>
                   <div className="max-w-[85%] flex flex-col gap-1">
                     {!isMe && (
-                      <span className={`text-[10px] font-bold ${senderLabelColor} px-1.5`}>
+                      <span
+                        className={`text-[10px] font-bold ${senderLabelColor} px-1.5`}
+                      >
                         {msg.senderName}
                       </span>
                     )}
-                    <div className={`px-3.5 py-2.5 text-xs font-normal leading-relaxed ${bubbleClass}`}>
+                    <div
+                      className={`px-3.5 py-2.5 text-xs font-normal leading-relaxed ${bubbleClass}`}
+                    >
                       <p>{msg.text}</p>
-                      <span className={`block text-[9px] text-right mt-1 font-light ${isMe ? 'text-white/60' : 'text-neutral-400'}`}>
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span
+                        className={`block text-[9px] text-right mt-1 font-light ${isMe ? "text-white/60" : "text-neutral-400"}`}
+                      >
+                        {new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
                   </div>
@@ -640,7 +804,10 @@ export const OrderTracking = () => {
             <div ref={chatEndRef} />
           </div>
 
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0">
+          <form
+            onSubmit={handleSendMessage}
+            className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
+          >
             <input
               type="text"
               value={chatMessage}
