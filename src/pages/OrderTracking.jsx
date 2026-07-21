@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Phone, MessageSquare, Clock, ArrowLeft, Check, X,
   Send, Bike, Home, Building, ChevronRight, ShoppingBag, 
-  Map, User, DollarSign, Calendar
+  Map, User, DollarSign, Calendar, CreditCard, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { getOrderById, addChatMessage } from '../services/ordersService';
 import { useAuth } from '../context/AuthContext';
@@ -14,8 +14,13 @@ export const OrderTracking = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // URL Parameter পড়ার জন্য searchParams যুক্ত করা হলো
+  const [searchParams] = useSearchParams();
+  const paymentParam = searchParams.get('payment'); // 'fail', 'cancel' ইত্যাদি রিড করবে
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retryLoading, setRetryLoading] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [activeTab, setActiveTab] = useState('map'); // 'map' or 'details'
   
@@ -57,6 +62,22 @@ export const OrderTracking = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [order?.chatHistory?.length]);
+
+  // পেমেন্ট পুনরায় চেষ্টা করার হ্যান্ডলার
+  const handleRetryPayment = async () => {
+    try {
+      setRetryLoading(true);
+      // TODO: আপনার ব্যাকএন্ডের পেমেন্ট ইনিশিয়লাইজ API কল করুন
+      // const res = await initiatePaymentApi(order.id);
+      // if (res?.url) window.location.href = res.url;
+      alert('Redirecting to payment gateway...');
+    } catch (err) {
+      console.error('Retry payment error:', err);
+      alert('Failed to initiate payment. Please try again.');
+    } finally {
+      setRetryLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -115,6 +136,13 @@ export const OrderTracking = () => {
     }
   };
 
+  // চেক করা হচ্ছে পেমেন্ট ফেইল বা ক্যানসেল হয়েছে কিনা
+  const isPaymentFailedOrCancelled = 
+    paymentParam === 'fail' || 
+    paymentParam === 'cancel' || 
+    order.paymentStatus === 'Failed' || 
+    (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Pending' && paymentParam);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -143,6 +171,40 @@ export const OrderTracking = () => {
           <span>Status: {steps[currentStepIdx]?.label || order.status}</span>
         </div>
       </div>
+
+      {/* Payment Failed / Cancelled Banner */}
+      {order.status !== 'Rejected' && isPaymentFailedOrCancelled && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100">
+                {paymentParam === 'cancel' ? 'Payment Cancelled' : 'Payment Unsuccessful'}
+              </h3>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 font-normal">
+                Your order is safely recorded, but payment was not completed. You can retry paying online right now.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRetryPayment}
+              disabled={retryLoading}
+              className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-md shadow-primary-500/20 disabled:opacity-50"
+            >
+              {retryLoading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <CreditCard className="w-4 h-4" />
+              )}
+              <span>Retry Online Payment</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {order.status === 'Rejected' ? (
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/60 rounded-2xl p-5 mb-8 flex items-center gap-4 text-red-850 dark:text-red-400">
@@ -458,7 +520,7 @@ export const OrderTracking = () => {
                   </div>
                 </div>
 
-                {/* Financial Summary (Payment Details added here) */}
+                {/* Financial Summary */}
                 <div className="border-t border-neutral-100 dark:border-neutral-850 pt-4 space-y-2">
                   <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
                     <span>Payment Method:</span>
