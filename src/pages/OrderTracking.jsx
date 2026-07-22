@@ -87,6 +87,22 @@ export const OrderTracking = () => {
     }
   }, [order?.chatHistory?.length]);
 
+  // Checkout deliberately keeps the basket until an online payment lands, so the
+  // customer doesn't lose it on a failed attempt. Clear it once we know it worked.
+  //
+  // ⚠️ Must sit up here with the other hooks. This component returns early while
+  // loading, and a hook placed after that return runs on some renders but not
+  // others — React then throws and the page renders completely blank, for cash
+  // orders as well as online ones.
+  const cartClearedRef = useRef(false);
+  useEffect(() => {
+    const paid = paymentParam === "success" && order?.paymentStatus === "Paid";
+    if (paid && !cartClearedRef.current) {
+      cartClearedRef.current = true;
+      clearCart();
+    }
+  }, [paymentParam, order?.paymentStatus, clearCart]);
+
   // পেমেন্ট পুনরায় চেষ্টা করার হ্যান্ডলার
   // handleRetryPayment ফাংশনটি রিপ্লেস করুন:
   const handleRetryPayment = async () => {
@@ -216,16 +232,6 @@ export const OrderTracking = () => {
   // arrival. The persistent value lives in the Payment Status row further down.
   const showPaymentSuccess =
     paymentParam === "success" && order.paymentStatus === "Paid";
-
-  // Checkout deliberately keeps the basket until an online payment lands, so the
-  // customer doesn't lose it on a failed attempt. Clear it once we know it worked.
-  const cartClearedRef = useRef(false);
-  useEffect(() => {
-    if (showPaymentSuccess && !cartClearedRef.current) {
-      cartClearedRef.current = true;
-      clearCart();
-    }
-  }, [showPaymentSuccess, clearCart]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
