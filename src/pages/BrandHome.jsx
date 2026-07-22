@@ -127,7 +127,7 @@ export const BrandHome = () => {
                     className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                   >
                     <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
-                      {br.image && <img src={br.image} alt={br.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                      {br.image && <img src={br.image} alt={br.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />}
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
