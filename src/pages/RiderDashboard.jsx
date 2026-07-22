@@ -21,6 +21,7 @@ import {
   Clock3
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { buildDailySettlementLog, formatDateKey } from "../utils/settlement";
 import {
   getAllOrders,
   updateOrderStatus,
@@ -133,17 +134,20 @@ export const RiderDashboard = () => {
     }
   };
 
-  // Submit cash collection to admin via Live API
-  const handleSubmitCash = async (date) => {
+  // Submit cash collection to admin via Live API.
+  // dateKey is the stable YYYY-MM-DD business day, not the display string — the
+  // server settles by that key, so a locale-formatted date must never be sent.
+  const handleSubmitCash = async (dateKey) => {
+    const label = formatDateKey(dateKey);
     const confirmSubmit = window.confirm(
-      `Are you sure you want to mark all collected cash as submitted for ${date}?`
+      `Are you sure you want to mark all collected cash as submitted for ${label}?`
     );
     if (!confirmSubmit) return;
 
     try {
-      setSubmittingCashDate(date);
-      await submitRiderDailyCash(date);
-      alert(`Cash submission request sent to Admin for ${date}!`);
+      setSubmittingCashDate(dateKey);
+      await submitRiderDailyCash(dateKey);
+      alert(`Cash submission request sent to Admin for ${label}!`);
       fetchRiderOrders();
     } catch (err) {
       alert("Failed to submit cash: " + (err.response?.data?.message || err.message));
@@ -221,55 +225,10 @@ export const RiderDashboard = () => {
   };
 
   // --- Performance Log Grouped by Date ---
-  const getDailyPerformanceLog = () => {
-    const logMap = {};
-
-    orders.forEach((order) => {
-      if (!order.createdAt) return;
-
-      const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-
-      if (!logMap[dateKey]) {
-        logMap[dateKey] = {
-          delivered: 0,
-          rejected: 0,
-          foodPrice: 0,
-          deliveryCharge: 0,
-          riderCommission: 0,
-          totalCollection: 0,
-          isSubmitted: true,
-        };
-      }
-
-      if (order.status === "Delivered") {
-        logMap[dateKey].delivered += 1;
-
-        const delCharge = order.deliveryCharge || 0;
-        const totalInvoice = order.total || 0;
-        const pureFoodPrice = totalInvoice - delCharge;
-        const commission = delCharge;
-
-        logMap[dateKey].foodPrice += pureFoodPrice > 0 ? pureFoodPrice : 0;
-        logMap[dateKey].deliveryCharge += delCharge;
-        logMap[dateKey].riderCommission += commission;
-        logMap[dateKey].totalCollection += totalInvoice;
-
-        if (!order.isSubmittedToAdmin) {
-          logMap[dateKey].isSubmitted = false;
-        }
-      } else if (order.status === "Rejected") {
-        logMap[dateKey].rejected += 1;
-      }
-    });
-
-    return Object.keys(logMap)
-      .map((date) => ({ date, ...logMap[date] }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  };
+  // The maths lives in utils/settlement.js so this screen, the admin fleet view
+  // and the server all agree — in particular that an order paid online is ৳0 of
+  // cash in the rider's hands, not its full total.
+  const getDailyPerformanceLog = () => buildDailySettlementLog(orders);
 
   const filteredStats = getFilteredStats();
   const dailyLog = getDailyPerformanceLog();
@@ -458,7 +417,8 @@ export const RiderDashboard = () => {
                     <th className="py-2.5 px-3">Food Price</th>
                     <th className="py-2.5 px-3">Delivery Charge</th>
                     <th className="py-2.5 px-3">Rider Commission</th>
-                    <th className="py-2.5 px-3">Total Money Collection</th>
+                    <th className="py-2.5 px-3">Cash Collected</th>
+                    <th className="py-2.5 px-3">Payable to Admin</th>
                     <th className="py-2.5 px-3 text-right">Admin Cash Status</th>
                   </tr>
                 </thead>
@@ -491,26 +451,46 @@ export const RiderDashboard = () => {
                         ৳{log.riderCommission.toFixed(2)}
                       </td>
                       <td className="py-3 px-3 font-black text-primary-500">
-                        ৳{log.totalCollection.toFixed(2)}
+                        ৳{log.cashCollected.toFixed(2)}
+                        {log.onlinePaid > 0 && (
+                          <span
+                            className="block text-[9px] font-semibold text-neutral-400 normal-case"
+                            title="Paid online — the rider collected no cash for these"
+                          >
+                            +৳{log.onlinePaid.toFixed(2)} paid online
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400">
+                        ৳{log.outstandingNetPayable.toFixed(2)}
+                        {log.outstandingNetPayable < 0 && (
+                          <span className="block text-[9px] font-semibold text-emerald-500 normal-case">
+                            admin owes you
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {log.totalCollection === 0 ? (
+                        {log.delivered === 0 ? (
                           <span className="text-neutral-400 font-medium text-[10px]">
                             N/A
                           </span>
-                        ) : log.isSubmitted ? (
+                        ) : log.isSettled ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                            <CheckCircle2 className="w-3 h-3" /> Submitted
+                            <CheckCircle2 className="w-3 h-3" /> Settled
+                          </span>
+                        ) : log.isSubmitted ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">
+                            <Clock3 className="w-3 h-3" /> Awaiting admin
                           </span>
                         ) : (
                           <button
-                            onClick={() => handleSubmitCash(log.date)}
-                            disabled={submittingCashDate === log.date}
+                            onClick={() => handleSubmitCash(log.dateKey)}
+                            disabled={submittingCashDate === log.dateKey}
                             className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50"
                             title="Click to submit collected cash to admin"
                           >
                             <Clock3 className="w-3 h-3 animate-pulse" />
-                            {submittingCashDate === log.date
+                            {submittingCashDate === log.dateKey
                               ? "Submitting..."
                               : "Pay to Admin"}
                           </button>

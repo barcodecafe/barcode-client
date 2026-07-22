@@ -99,11 +99,23 @@ const paymentMethodLabel = (method) => {
 };
 
 // Display-only derivation from order state — no invented data.
+// A cash order becomes 'Paid' when the admin confirms the rider handed the money
+// over; until that existed, nothing ever marked one paid and this page showed
+// ৳0.00 paid no matter how many orders a customer had received.
 const derivePaymentStatus = (order) => {
   if (order.paymentStatus) return order.paymentStatus;
   if (order.status === 'Rejected') return 'Cancelled';
   if (order.status === 'Delivered') return 'Paid';
   return 'Pending';
+};
+
+// "Pending" reads as "we're waiting on you" — for a cash order nothing is owed
+// until the food arrives, so say that instead.
+const paymentStatusLabel = (order) => {
+  const status = derivePaymentStatus(order);
+  if (status !== 'Pending') return status;
+  const isCod = String(order.paymentMethod || 'cod').toLowerCase() === 'cod';
+  return isCod ? 'Pay on delivery' : 'Awaiting payment';
 };
 
 const getPaymentStatusColor = (status) => {
@@ -551,13 +563,28 @@ export const Profile = () => {
     const pending = orders
       .filter((o) => derivePaymentStatus(o) === 'Pending')
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
+    // Failed and cancelled payments belong to neither tile above, so without
+    // this they vanished from the summary entirely.
+    const failedOrders = orders.filter((o) =>
+      ['Failed', 'Cancelled'].includes(derivePaymentStatus(o))
+    );
+    const failed = failedOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatTile icon={Wallet} label="Total Paid" value={taka(paid)} hint="Completed payments" delay={0} />
-          <StatTile icon={CreditCard} label="Pending" value={taka(pending)} hint="Awaiting settlement" delay={0.05} />
+          <StatTile icon={CreditCard} label="Pending" value={taka(pending)} hint="Not yet paid" delay={0.05} />
           <StatTile icon={Receipt} label="Transactions" value={orders.length} hint="All time" delay={0.1} />
+          {failedOrders.length > 0 && (
+            <StatTile
+              icon={CreditCard}
+              label="Unsuccessful"
+              value={taka(failed)}
+              hint={`${failedOrders.length} payment${failedOrders.length === 1 ? '' : 's'} — retry from tracking`}
+              delay={0.15}
+            />
+          )}
         </div>
 
         <Card className="p-5 sm:p-6">
@@ -589,7 +616,7 @@ export const Profile = () => {
                         <td className="px-3 py-3.5 text-right font-bold text-primary-500">{taka(order.total)}</td>
                         <td className="px-3 py-3.5 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getPaymentStatusColor(payStatus)}`}>
-                            {payStatus}
+                            {paymentStatusLabel(order)}
                           </span>
                         </td>
                       </tr>

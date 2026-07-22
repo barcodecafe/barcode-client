@@ -29,6 +29,7 @@ import {
   confirmRiderCashSettlement, // New API function
 } from "../../services/ordersService";
 import { recheckPayment } from "../../services/paymentsService";
+import { buildDailySettlementLog, businessDateKey, formatDateKey } from "../../utils/settlement";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
@@ -133,51 +134,46 @@ export const AdminOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // Enhanced Helper logic to calculate daily stats and cash submission status
-  const getRiderPerformanceStats = (riderId, riderName) => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dateKeyToday = startOfToday.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  // Today's settlement position for one rider.
+  // Shares utils/settlement.js with the rider's own dashboard and the server, so
+  // all three agree — notably that an order paid online is ৳0 of cash in hand.
+  const getRiderPerformanceStats = (riderId) => {
+    const todayKey = businessDateKey(new Date());
 
-    const deliveredOrders = orders.filter(
-      (o) =>
-        o.status === "Delivered" &&
-        (o.riderId === riderId || o.riderName?.toLowerCase() === riderName?.toLowerCase())
-    );
+    // ⚠️ riderId ONLY. Matching on riderName as well showed the admin orders the
+    // server would never settle (it filters by riderId), so the figure on screen
+    // couldn't be actioned — and two riders sharing a name merged their cash.
+    const riderOrders = orders.filter((o) => o.riderId === riderId);
 
-    const dailyOrders = deliveredOrders.filter(
-      (o) => new Date(o.createdAt || o.updatedAt) >= startOfToday
-    );
+    const log = buildDailySettlementLog(riderOrders);
+    const today = log.find((r) => r.dateKey === todayKey);
 
-    const totalFoodPrice = dailyOrders.reduce(
-      (sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0),
-      0
-    );
-    const totalEarnings = dailyOrders.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
-    const totalCashCollected = dailyOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-
-    // Check if rider submitted cash to admin and if admin verified it
-    const hasUnsubmittedCash = dailyOrders.some((o) => !o.isSubmittedToAdmin);
-    const isSubmittedByRider = dailyOrders.some((o) => o.isSubmittedToAdmin);
-    const isConfirmedByAdmin = dailyOrders.length > 0 && dailyOrders.every((o) => o.isCashSettledByAdmin);
+    // Earlier days that are still owed. Without this the admin could only ever
+    // confirm today, so a day missed yesterday had no surface to settle from
+    // even though the rider's own dashboard kept offering to submit it.
+    // Oldest first: these are shown truncated, and the oldest debt is the one
+    // that most needs a Confirm button — newest-first would hide exactly the
+    // days that have been stuck longest.
+    const pastDue = log
+      .filter((r) => r.dateKey !== todayKey && r.delivered > 0 && !r.isSettled)
+      .sort((a, b) => (a.dateKey < b.dateKey ? -1 : 1));
 
     return {
-      dateKey: dateKeyToday,
+      dateKey: todayKey,
+      pastDue,
       daily: {
-        foodDelivered: totalFoodPrice,
-        income: totalEarnings,
-        cashCollected: totalCashCollected,
-        deliveredCount: dailyOrders.length,
+        foodDelivered: today?.foodPrice || 0,
+        income: today?.riderCommission || 0,
+        cashCollected: today?.cashCollected || 0,
+        onlinePaid: today?.onlinePaid || 0,
+        payable: today?.outstandingNetPayable || 0,
+        deliveredCount: today?.delivered || 0,
       },
       cashStatus: {
-        hasOrders: dailyOrders.length > 0,
-        isSubmittedByRider,
-        hasUnsubmittedCash,
-        isConfirmedByAdmin,
+        hasOrders: (today?.delivered || 0) > 0,
+        isSubmittedByRider: !!today?.isSubmitted,
+        hasUnsubmittedCash: !today?.isSubmitted,
+        isConfirmedByAdmin: !!today?.isSettled,
       },
     };
   };
@@ -202,10 +198,12 @@ export const AdminOrders = () => {
     }
   };
 
-  // Handle Admin Settlement Confirmation
+  // Handle Admin Settlement Confirmation.
+  // dateKey is the stable YYYY-MM-DD business day the server settles by.
   const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
     const confirmSettle = window.confirm(
-      `Confirm cash settlement for Rider ${riderName} on ${dateKey}?`
+      `Confirm you have received ${riderName}'s cash for ${formatDateKey(dateKey)}?\n\n` +
+        `This marks their collection settled and cannot be undone.`
     );
     if (!confirmSettle) return;
 
@@ -301,7 +299,7 @@ export const AdminOrders = () => {
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {riders.map((r) => {
-            const stats = getRiderPerformanceStats(r.id, r.name);
+            const stats = getRiderPerformanceStats(r.id);
             const { cashStatus } = stats;
 
             return (
@@ -347,11 +345,31 @@ export const AdminOrders = () => {
                         <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                           ৳{stats.daily.cashCollected.toFixed(0)}
                         </span>
+                        {stats.daily.onlinePaid > 0 && (
+                          <span
+                            className="block text-[8px] text-neutral-400 font-semibold"
+                            title="Paid online — no cash passed through the rider"
+                          >
+                            ৳{stats.daily.onlinePaid.toFixed(0)} online
+                          </span>
+                        )}
                       </div>
                       <div className="text-right">
                         <span className="text-neutral-400 text-[9px] block">Rider Share</span>
                         <span className="font-bold text-primary-500">
                           ৳{stats.daily.income.toFixed(0)}
+                        </span>
+                      </div>
+                      <div className="col-span-2 pt-1.5 mt-0.5 border-t border-dashed border-neutral-200 dark:border-neutral-800 flex items-baseline justify-between">
+                        <span className="text-neutral-400 text-[9px]">
+                          {stats.daily.payable < 0 ? "You owe rider" : "Payable to admin"}
+                        </span>
+                        <span
+                          className={`font-black text-[11px] ${
+                            stats.daily.payable < 0 ? "text-blue-500" : "text-amber-600 dark:text-amber-400"
+                          }`}
+                        >
+                          ৳{Math.abs(stats.daily.payable).toFixed(0)}
                         </span>
                       </div>
                     </div>
@@ -387,6 +405,42 @@ export const AdminOrders = () => {
                       ) : (
                         <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-red-500 bg-red-500/10 border border-red-500/20 py-1 rounded-lg">
                           <AlertCircle className="w-3 h-3" /> Cash Not Submitted Yet
+                        </div>
+                      )}
+
+                      {/* Earlier days still owed — otherwise a day missed
+                          yesterday could never be confirmed from anywhere. */}
+                      {stats.pastDue.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-1.5">
+                          <span className="block text-[9px] uppercase tracking-wider font-bold text-red-400">
+                            Earlier days unsettled ({stats.pastDue.length})
+                            {stats.pastDue.length > 5 && " · oldest 5 shown"}
+                          </span>
+                          {stats.pastDue.slice(0, 5).map((day) => (
+                            <div key={day.dateKey} className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] text-neutral-500 dark:text-neutral-400 font-semibold">
+                                {day.date} · ৳{day.outstandingNetPayable.toFixed(0)}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleConfirmCashSettlement(r.id, r.name, day.dateKey)
+                                }
+                                disabled={confirmingRiderId === r.id}
+                                className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase transition-all active:scale-95 disabled:opacity-50 ${
+                                  day.isSubmitted
+                                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                                    : "bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300"
+                                }`}
+                                title={
+                                  day.isSubmitted
+                                    ? "Rider submitted this day — confirm you received it"
+                                    : "Rider has not submitted this day yet"
+                                }
+                              >
+                                {day.isSubmitted ? "Confirm" : "Not submitted"}
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
