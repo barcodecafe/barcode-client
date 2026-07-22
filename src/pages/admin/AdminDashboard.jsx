@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Coins, Wallet, DollarSign, ShoppingBag, Building2, Star, Flame, User } from 'lucide-react';
+import { Coins, Wallet, DollarSign, ShoppingBag, Building2, Star, Flame, User, Bike } from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
 import { ChartCard } from '../../components/admin/charts/ChartCard';
@@ -15,6 +15,7 @@ import {
   getRevenueTrend,
   getTopDishes,
   getTopCustomers, // getTopCustomers সার্ভিস যুক্ত করা হয়েছে
+  getTopRiders,
 } from '../../services/analyticsService';
 
 const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
@@ -32,6 +33,7 @@ export const AdminDashboard = () => {
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [topDishes, setTopDishes] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]); // টপ কাস্টমারের স্টেট
+  const [topRiders, setTopRiders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -42,13 +44,15 @@ export const AdminDashboard = () => {
       getRevenueTrend(12).catch(() => []),
       getTopDishes(5).catch(() => []),
       getTopCustomers(5).catch(() => []), // ৫ জন টপ কাস্টমার ডাটা ফেচ করা হচ্ছে
-    ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData]) => {
+      getTopRiders(5).catch(() => []),
+    ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
       setSummary(summaryData);
       setRevenueByBranch(branchData || []);
       setOrdersByCategory(categoryData || []);
       setRevenueTrend(trendData || []);
       setTopDishes(dishesData || []);
       setTopCustomers(customersData || []);
+      setTopRiders(ridersData || []);
       setIsLoading(false);
     });
   }, []);
@@ -204,6 +208,60 @@ export const AdminDashboard = () => {
           ) : (
             <p className="text-xs text-neutral-400 py-4 text-center col-span-full">
               No customer data available
+            </p>
+          )}
+        </div>
+      </ChartCard>
+
+      {/* Row 4: Top Riders — ranked on deliveries completed, since that is what
+          a rider controls. Earnings are shown but never the ranking: carrying
+          expensive orders doesn't make someone a better rider. */}
+      <ChartCard
+        title="Top Riders"
+        subtitle="Ranked by completed deliveries"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {topRiders.length > 0 ? (
+            topRiders.map((rider, i) => (
+              <div
+                key={rider.riderId || i}
+                className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50"
+              >
+                <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-bold flex items-center justify-center shrink-0">
+                  #{rider.rank || i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
+                    {rider.name}
+                  </p>
+                  {/* Reliability is the whole point of this list, so show it
+                      always — not only for riders who have refused something. */}
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {rider.deliveries} {rider.deliveries === 1 ? 'delivery' : 'deliveries'}
+                    {' · '}
+                    <span
+                      className={rider.acceptanceRate < 80 ? 'text-amber-600 dark:text-amber-400 font-semibold' : ''}
+                    >
+                      {rider.acceptanceRate}% accepted
+                    </span>
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  {/* The rider's own earnings lead; the value they carried is
+                      context, not their money. */}
+                  <span className="flex items-center justify-end gap-1 text-primary-500 font-bold text-sm">
+                    <Bike className="w-3.5 h-3.5" />
+                    {currency(rider.earnings || 0)}
+                  </span>
+                  <span className="block text-[10px] text-neutral-400 font-medium">
+                    {currency(rider.deliveredValue || 0)} delivered
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-neutral-400 py-4 text-center col-span-full">
+              No rider deliveries yet
             </p>
           )}
         </div>
