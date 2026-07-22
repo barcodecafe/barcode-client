@@ -16,7 +16,8 @@ import {
   TrendingUp,
   CheckCircle2,
   Clock3,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import {
   getAllOrders,
@@ -27,10 +28,36 @@ import {
   rejectRiderOrder,
   confirmRiderCashSettlement, // New API function
 } from "../../services/ordersService";
+import { recheckPayment } from "../../services/paymentsService";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
+
+// The server stores paymentMethod as 'cod' / 'sslcommerz' — never the label.
+const isOnlineOrder = (ord) =>
+  String(ord?.paymentMethod || "cod").toLowerCase() !== "cod";
+
+/**
+ * An online order that hasn't been paid for must not look like a normal one:
+ * before this, a customer whose payment failed left behind an order that was
+ * indistinguishable from a fresh cash order, and the kitchen would cook it.
+ * Returns null for anything that needs no warning (COD, or already paid).
+ */
+const getPaymentAlert = (ord) => {
+  if (!isOnlineOrder(ord)) return null;
+  const status = ord?.paymentStatus || "Pending";
+  if (status === "Paid") return null;
+  if (status === "Failed" || status === "Cancelled")
+    return { label: `Payment ${status}`, tone: "bg-red-500/10 text-red-500 border-red-500/20" };
+  return { label: "Awaiting payment", tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" };
+};
+
+const getPaymentStatusColor = (status) => {
+  if (status === "Paid") return "bg-emerald-500/10 text-emerald-500";
+  if (status === "Failed" || status === "Cancelled") return "bg-red-500/10 text-red-500";
+  return "bg-amber-500/10 text-amber-500";
+};
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -64,6 +91,7 @@ export const AdminOrders = () => {
   const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmingRiderId, setConfirmingRiderId] = useState(null);
+  const [recheckingOrderId, setRecheckingOrderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
@@ -77,6 +105,7 @@ export const AdminOrders = () => {
       .then(([ordersData, ridersData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
+        return ordersData || []; // callers may need the fresh list, not just the state update
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
@@ -151,6 +180,26 @@ export const AdminOrders = () => {
         isConfirmedByAdmin,
       },
     };
+  };
+
+  // Ask the gateway what really happened to an online payment we never heard
+  // about, and settle the order if it confirms one.
+  const handleRecheckPayment = async (orderId) => {
+    try {
+      setRecheckingOrderId(orderId);
+      const result = await recheckPayment(orderId);
+      const updated = await fetchOrdersAndFleet();
+      // keep the open modal in sync with what the re-check just changed
+      if (Array.isArray(updated)) {
+        const fresh = updated.find((o) => o.id === orderId);
+        if (fresh) setSelectedOrderDetails(fresh);
+      }
+      alert(result?.reason || result?.message || "Re-check complete.");
+    } catch (err) {
+      alert("Re-check failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setRecheckingOrderId(null);
+    }
   };
 
   // Handle Admin Settlement Confirmation
@@ -395,6 +444,13 @@ export const AdminOrders = () => {
                       title="Click to view details"
                     >
                       {ord.id}
+                      {getPaymentAlert(ord) && (
+                        <span
+                          className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide normal-case ${getPaymentAlert(ord).tone}`}
+                        >
+                          {getPaymentAlert(ord).label}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
@@ -656,15 +712,39 @@ export const AdminOrders = () => {
                 <div className="flex justify-between text-neutral-500">
                   <span>Payment Status:</span>
                   <span
-                    className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
-                      selectedOrderDetails.paymentStatus === "Paid"
-                        ? "bg-emerald-500/10 text-emerald-500"
-                        : "bg-amber-500/10 text-amber-500"
-                    }`}
+                    className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
+                      selectedOrderDetails.paymentStatus
+                    )}`}
                   >
                     {selectedOrderDetails.paymentStatus || "Pending"}
                   </span>
                 </div>
+
+                {/* Recovery path for an online order the gateway never told us
+                    about. The server asks SSLCommerz what really happened — it
+                    can only settle a payment the gateway itself confirms. */}
+                {isOnlineOrder(selectedOrderDetails) &&
+                  selectedOrderDetails.paymentStatus !== "Paid" && (
+                    <div className="pt-1">
+                      <button
+                        onClick={() => handleRecheckPayment(selectedOrderDetails.id)}
+                        disabled={recheckingOrderId === selectedOrderDetails.id}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wide hover:bg-primary-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={`w-3 h-3 ${
+                            recheckingOrderId === selectedOrderDetails.id ? "animate-spin" : ""
+                          }`}
+                        />
+                        {recheckingOrderId === selectedOrderDetails.id
+                          ? "Checking with gateway…"
+                          : "Re-check payment with gateway"}
+                      </button>
+                      <p className="text-[9px] text-neutral-400 mt-1 text-center normal-case">
+                        Use this if the customer says they paid but the order still shows unpaid.
+                      </p>
+                    </div>
+                  )}
                 {selectedOrderDetails.deliveryCharge !== undefined && (
                   <div className="flex justify-between text-neutral-500">
                     <span>Delivery Charge:</span>

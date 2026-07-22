@@ -22,6 +22,17 @@ export async function getPaymentStatus(orderId) {
 }
 
 /**
+ * POST /api/payments/recheck/:orderId (admin) → { changed, paymentStatus, reason }
+ *
+ * Asks the gateway what actually happened and settles the order if it confirms
+ * the payment. This is the recovery path for orders whose callback never
+ * arrived — it can only ever settle a payment the gateway itself vouches for.
+ */
+export async function recheckPayment(orderId) {
+  return apiClient.post(`/payments/recheck/${orderId}`);
+}
+
+/**
  * Absolute API origin — needed when the browser must be *navigated* to a server
  * route (the gateway return URLs) rather than fetched from it.
  */
