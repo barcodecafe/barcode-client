@@ -1,13 +1,24 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
-import { hasFoodDiscount, applyFoodDiscount, foodDiscountLabel } from "../services/foodsService";
+import {
+  hasFoodDiscount,
+  applyFoodDiscount,
+  foodDiscountLabel,
+} from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
 // FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ
 // ---------------------------------------------------------------------------
-const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
-  const hasVariants = Array.isArray(food.variations) && food.variations.length > 0;
+const FoodCard = ({
+  food,
+  favorited,
+  onToggleFavorite,
+  onAddToCart,
+  variants,
+}) => {
+  const hasVariants =
+    Array.isArray(food.variations) && food.variations.length > 0;
   const basePrice = hasVariants
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
     : food.price;
@@ -78,22 +89,24 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
         </p>
 
         {/* ── Footer: price + order ───────────────────────────── */}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
-          <div className="flex flex-col font-display">
-            <span className="text-base sm:text-lg font-extrabold leading-tight text-primary-500">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-1.5 pt-3">
+          {/* 💡 Price Section (min-w-0 & responsive font size added) */}
+          <div className="flex flex-col font-display min-w-0">
+            <span className="text-sm sm:text-base font-extrabold leading-tight text-primary-500 truncate">
               ৳{discountedPrice.toFixed(2)}
             </span>
             {hasDiscount && (
-              <span className="text-[10px] font-semibold leading-none text-neutral-400 line-through dark:text-neutral-500">
+              <span className="text-[10px] font-semibold leading-none text-neutral-400 line-through dark:text-neutral-500 truncate">
                 ৳{basePrice.toFixed(2)}
               </span>
             )}
           </div>
 
+          {/* 💡 Button Section (optimized padding px-2.5) */}
           {hasVariants ? (
             <Link
               to={`/menu/${food.id}`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-none bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Choose
@@ -101,7 +114,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           ) : (
             <button
               onClick={() => onAddToCart(food)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-none bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               Order
