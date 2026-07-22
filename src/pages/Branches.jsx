@@ -18,7 +18,7 @@ import FoodCard from '../components/FoodCard';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
-const PREVIEW_COUNT = 6;
+const PREVIEW_COUNT = 5;
 
 export const Branches = () => {
   const [branches, setBranches] = useState([]);

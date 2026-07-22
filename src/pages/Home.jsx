@@ -34,7 +34,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-const PREVIEW_COUNT = 6;
+const PREVIEW_COUNT = 5;
 
 export const Home = () => {
   // ---------------------------------------------------------------------
