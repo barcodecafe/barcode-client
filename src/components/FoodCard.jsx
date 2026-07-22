@@ -4,20 +4,9 @@ import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { hasFoodDiscount, applyFoodDiscount, foodDiscountLabel } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
-// FoodCard — একটাই শেয়ারড প্রোডাক্ট কার্ড, যা Home এবং Menu দুই পেজেই ব্যবহার
-// হয় যাতে দুই জায়গার কার্ড হুবহু একই রকম (সমান) দেখায়।
-//
-// Props:
-//   food             — খাবারের অবজেক্ট (API shape)
-//   favorited        — boolean
-//   onToggleFavorite — (foodId) => void
-//   onAddToCart      — (food) => void
-//   variants         — framer-motion variants (ঐচ্ছিক)
+// FoodCard — একটাই শেয়ারড প্রোডাক্ট কার্ড
 // ---------------------------------------------------------------------------
 const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
-  // Dishes with size/weight variants have no single price — show the cheapest as
-  // "from ৳X" and send the shopper to the detail page to pick a variant, instead
-  // of quietly quick-adding the base price without a choice.
   const hasVariants = Array.isArray(food.variations) && food.variations.length > 0;
   const basePrice = hasVariants
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
@@ -28,8 +17,8 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
   return (
     <motion.div
       variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-500/30 hover:shadow-xl dark:shadow-neutral-950/20"
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md"
     >
       {/* ── Image ─────────────────────────────────────────────── */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
@@ -43,7 +32,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
         </Link>
 
         {hasDiscount && (
-          <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-primary-500/30">
+          <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
             {foodDiscountLabel(food)}
           </span>
         )}
@@ -89,11 +78,6 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
         {/* ── Footer: price + order ───────────────────────────── */}
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="flex items-baseline gap-1.5 font-display">
-            {hasVariants && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-                from
-              </span>
-            )}
             <span className="text-lg font-extrabold leading-none text-primary-500">
               ৳{discountedPrice.toFixed(2)}
             </span>
@@ -107,7 +91,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           {hasVariants ? (
             <Link
               to={`/menu/${food.id}`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Choose
@@ -115,7 +99,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           ) : (
             <button
               onClick={() => onAddToCart(food)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:scale-[1.03] hover:bg-primary-600 hover:shadow-primary-500/35 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               Order
