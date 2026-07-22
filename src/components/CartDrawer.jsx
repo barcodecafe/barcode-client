@@ -91,7 +91,7 @@ export const CartDrawer = () => {
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center gap-3 text-neutral-400 dark:text-neutral-500">
                     <ShoppingBag className="w-12 h-12 stroke-[1.5]" />
-                    <p className="text-sm font-medium">Your basket is empty.</p>
+                    <p className="text-sm font-medium">Your cart is empty.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">

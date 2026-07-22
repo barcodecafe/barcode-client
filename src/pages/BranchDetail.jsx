@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,14 +13,17 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
-  ShoppingBag,
   Sparkles,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { getFoodsByBranch, getActivePrice, getDiscountedPrice, hasFoodDiscount, foodDiscountLabel } from '../services/foodsService';
+import { useFavorites } from '../context/FavoritesContext';
+import { getFoodsByBranch } from '../services/foodsService';
 import { getBranchById } from '../services/branchesService';
 import LeafletMap from '../components/LeafletMap';
+
+// 💡 Shared Global FoodCard Component
+import FoodCard from '../components/FoodCard';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -157,6 +160,7 @@ export const BranchDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [branch, setBranch] = useState(null);
@@ -433,19 +437,15 @@ export const BranchDetail = () => {
                 className="!px-2 !pb-8"
               >
                 {filteredMenu.map((food) => {
-                  const basePrice = getActivePrice(food, branch.id);
-                  const purchasePrice = getDiscountedPrice(food, branch.id);
-                  const hasDiscount = hasFoodDiscount(food);
+                  const favorited = isFavorite(food.id);
                   return (
                     <SwiperSlide key={food.id}>
-                      <FoodCardItem
+                      <FoodCard
                         food={food}
                         branchId={branch.id}
-                        basePrice={basePrice}
-                        purchasePrice={purchasePrice}
-                        hasDiscount={hasDiscount}
+                        favorited={favorited}
+                        onToggleFavorite={toggleFavorite}
                         onAddToCart={addToCart}
-                        onCategoryChange={handleCategoryChange}
                         variants={cardVariants}
                       />
                     </SwiperSlide>
@@ -463,19 +463,15 @@ export const BranchDetail = () => {
               className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
             >
               {filteredMenu.map((food) => {
-                const basePrice = getActivePrice(food, branch.id);
-                const purchasePrice = getDiscountedPrice(food, branch.id);
-                const hasDiscount = hasFoodDiscount(food);
+                const favorited = isFavorite(food.id);
                 return (
-                  <FoodCardItem
+                  <FoodCard
                     key={food.id}
                     food={food}
                     branchId={branch.id}
-                    basePrice={basePrice}
-                    purchasePrice={purchasePrice}
-                    hasDiscount={hasDiscount}
+                    favorited={favorited}
+                    onToggleFavorite={toggleFavorite}
                     onAddToCart={addToCart}
-                    onCategoryChange={handleCategoryChange}
                     variants={cardVariants}
                   />
                 );
@@ -582,100 +578,6 @@ export const BranchDetail = () => {
         </div>
       </section>
     </div>
-  );
-};
-
-// Reusable Food Card Item Component for BranchDetail
-const FoodCardItem = ({
-  food,
-  branchId,
-  basePrice,
-  purchasePrice,
-  hasDiscount,
-  onAddToCart,
-  onCategoryChange,
-  variants,
-}) => {
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300 h-full"
-    >
-      <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-            {foodDiscountLabel(food)}
-          </div>
-        )}
-        <Link to={`/menu/${food.id}?branchId=${branchId}`} className="block w-full h-full">
-          <img
-            src={food.image}
-            alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        </Link>
-      </div>
-
-      <div className="p-4 flex-grow flex flex-col justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onCategoryChange(food.category);
-              }}
-              className="uppercase tracking-wider hover:text-primary-500 transition-colors cursor-pointer text-left"
-            >
-              {food.category}
-            </button>
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-0.5 text-primary-500 font-bold">
-                <Star className="w-3 h-3 fill-current" />
-                <span>{food.rating}</span>
-              </div>
-            </div>
-          </div>
-          <Link to={`/menu/${food.id}?branchId=${branchId}`} className="block">
-            <h3 className="font-semibold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-              {food.name}
-            </h3>
-          </Link>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light line-clamp-2">
-            {food.description}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800/60 mt-1 font-display">
-          <div className="flex flex-wrap items-baseline gap-1">
-            {hasDiscount ? (
-              <>
-                <span className="font-extrabold text-red-500 text-base">
-                  ৳{purchasePrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-neutral-455 dark:text-neutral-500 line-through">
-                  ৳{basePrice.toFixed(2)}
-                </span>
-              </>
-            ) : (
-              <span className="font-extrabold text-primary-500 text-base">
-                ৳{basePrice.toFixed(2)}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => onAddToCart(food, branchId)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:scale-[1.02] active:scale-95 shadow-md transition-all font-sans bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/10 hover:shadow-primary-500/25"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            Order Now
-          </button>
-        </div>
-      </div>
-    </motion.div>
   );
 };
 

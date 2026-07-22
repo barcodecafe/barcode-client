@@ -10,6 +10,9 @@ import { getFoodById, getPopularFoods, getActivePrice, applyFoodDiscount, hasFoo
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 
+// 💡 Shared Global FoodCard Component
+import FoodCard from '../components/FoodCard';
+
 // Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -279,47 +282,22 @@ export const DishDetail = () => {
           <div className="sm:hidden -mx-4">
             <Swiper
               modules={[Pagination]}
-              slidesPerView={1.8}
-              spaceBetween={12}
+              slidesPerView={1.15}
+              spaceBetween={16}
               pagination={{ clickable: true }}
               className="!px-4 !pb-8"
             >
               {recommendedFoods.map((recFood) => {
-                const recHasDiscount = hasFoodDiscount(recFood);
-                const recPrice = applyFoodDiscount(recFood.price, recFood);
+                const favorited = isFavorite(recFood.id);
                 return (
                   <SwiperSlide key={recFood.id}>
-                    <div className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all h-full">
-                      <div className="space-y-2">
-                        <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
-                          <Link to={`/menu/${recFood.id}`}>
-                            <img src={recFood.image || ""} alt={recFood.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          </Link>
-                        </div>
-                        <Link to={`/menu/${recFood.id}`} className="block font-bold text-xs text-neutral-800 dark:text-neutral-200 line-clamp-2 hover:text-primary-500 transition-colors">
-                          {recFood.name}
-                        </Link>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-neutral-50 dark:border-neutral-800/50">
-                        <div className="flex flex-col">
-                          {recHasDiscount ? (
-                            <>
-                              <span className="font-black text-red-500 text-[11px]">৳{recPrice.toFixed(2)}</span>
-                              <span className="text-[9px] text-neutral-400 line-through">৳{recFood.price.toFixed(2)}</span>
-                            </>
-                          ) : (
-                            <span className="font-black text-primary-500 text-[11px]">৳{recFood.price.toFixed(2)}</span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => addToCart(recFood, branchId, null, 1)}
-                          className="p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-primary-500 hover:text-white transition-all"
-                        >
-                          <ShoppingBag className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
+                    <FoodCard
+                      food={recFood}
+                      branchId={branchId}
+                      favorited={favorited}
+                      onToggleFavorite={toggleFavorite}
+                      onAddToCart={addToCart}
+                    />
                   </SwiperSlide>
                 );
               })}
@@ -327,42 +305,18 @@ export const DishDetail = () => {
           </div>
 
           {/* Desktop & Tablet View: Grid */}
-          <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             {recommendedFoods.map((recFood) => {
-              const recHasDiscount = hasFoodDiscount(recFood);
-              const recPrice = applyFoodDiscount(recFood.price, recFood);
+              const favorited = isFavorite(recFood.id);
               return (
-                <div key={recFood.id} className="group flex flex-col justify-between bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/40 p-3 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                  <div className="space-y-2">
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
-                      <Link to={`/menu/${recFood.id}`}>
-                        <img src={recFood.image || ""} alt={recFood.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      </Link>
-                    </div>
-                    <Link to={`/menu/${recFood.id}`} className="block font-bold text-xs text-neutral-800 dark:text-neutral-200 line-clamp-2 hover:text-primary-500 transition-colors">
-                      {recFood.name}
-                    </Link>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-neutral-50 dark:border-neutral-800/50">
-                    <div className="flex flex-col">
-                      {recHasDiscount ? (
-                        <>
-                          <span className="font-black text-red-500 text-[11px]">৳{recPrice.toFixed(2)}</span>
-                          <span className="text-[9px] text-neutral-400 line-through">৳{recFood.price.toFixed(2)}</span>
-                        </>
-                      ) : (
-                        <span className="font-black text-primary-500 text-[11px]">৳{recFood.price.toFixed(2)}</span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(recFood, branchId, null, 1)}
-                      className="p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-primary-500 hover:text-white transition-all"
-                    >
-                      <ShoppingBag className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
+                <FoodCard
+                  key={recFood.id}
+                  food={recFood}
+                  branchId={branchId}
+                  favorited={favorited}
+                  onToggleFavorite={toggleFavorite}
+                  onAddToCart={addToCart}
+                />
               );
             })}
           </div>

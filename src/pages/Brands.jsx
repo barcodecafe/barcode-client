@@ -7,9 +7,6 @@ import {
   ArrowRight,
   Building2,
   Store,
-  Star,
-  Heart,
-  ShoppingBag,
   ChevronDown,
 } from "lucide-react";
 
@@ -17,13 +14,14 @@ import { getAllBrands } from "../services/brandsService";
 import { getAllBranches } from "../services/branchesService";
 import {
   getAllFoods,
-  hasFoodDiscount,
-  foodDiscountLabel,
   applyFoodDiscount,
 } from "../services/foodsService";
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+
+// 💡 Global FoodCard Import
+import FoodCard from "../components/FoodCard";
 
 // Import Swiper styles
 import "swiper/css";
@@ -489,88 +487,5 @@ const BrandMainCard = memo(({ brand, branchCount }) => {
   );
 });
 BrandMainCard.displayName = "BrandMainCard";
-
-// Reusable Food Card Component
-const FoodCard = memo(
-  ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
-    const hasDiscount = hasFoodDiscount(food);
-    const discountedPrice = applyFoodDiscount(food.price || 0, food);
-
-    return (
-      <motion.div
-        variants={variants}
-        whileHover={{ y: -6, transition: { duration: 0.2 } }}
-        className="group relative flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
-      >
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-          {hasDiscount && (
-            <div className="absolute top-3 left-3 px-2 py-0.5 rounded-none bg-primary-500 text-white font-bold text-[10px] uppercase shadow-lg shadow-red-500/35 z-10 pointer-events-none">
-              {foodDiscountLabel(food)}
-            </div>
-          )}
-          <Link to={`/menu/${food.id}`} className="block w-full h-full">
-            <img
-              src={food.image}
-              alt={food.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              loading="lazy"
-            />
-          </Link>
-          <button
-            onClick={() => onToggleFavorite(food.id)}
-            className={`absolute top-3 right-3 p-1.5 rounded-none bg-white/80 dark:bg-neutral-900/80 transition-colors z-10 ${
-              favorited ? "text-red-500" : "text-neutral-450 hover:text-red-500"
-            }`}
-            aria-label="Toggle Favorite"
-          >
-            <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
-          </button>
-        </div>
-
-        <div className="p-4 grow flex flex-col justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1 text-xs text-primary-500 font-medium mb-1">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{food.rating || 0}</span>
-            </div>
-            <Link to={`/menu/${food.id}`} className="block">
-              <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
-                {food.name}
-              </h3>
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-            <div className="flex flex-wrap items-baseline gap-1">
-              {hasDiscount ? (
-                <>
-                  <span className="font-display font-extrabold text-red-500 text-base">
-                    ৳{discountedPrice.toFixed(2)}
-                  </span>
-                  <span className="text-xs text-neutral-450 dark:text-neutral-500 line-through">
-                    ৳{(food.price || 0).toFixed(2)}
-                  </span>
-                </>
-              ) : (
-                <span className="font-display font-extrabold text-primary-500 text-base">
-                  ৳{(food.price || 0).toFixed(2)}
-                </span>
-              )}
-            </div>
-
-            <button
-              onClick={() => onAddToCart(food)}
-              className="p-2 rounded-none bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-500 text-neutral-700 dark:text-neutral-300 group-hover:text-white transition-all duration-300"
-              title="Order Now"
-            >
-              <ShoppingBag className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-);
-FoodCard.displayName = "FoodCard";
 
 export default Brands;
