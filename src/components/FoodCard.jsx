@@ -89,10 +89,10 @@ const FoodCard = ({
         </p>
 
         {/* ── Footer: price + order ───────────────────────────── */}
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-1.5 pt-3">
-          {/* 💡 Price Section (min-w-0 & responsive font size added) */}
-          <div className="flex flex-col font-display min-w-0">
-            <span className="text-sm sm:text-base font-extrabold leading-tight text-primary-500 truncate">
+        <div className="mt-auto flex items-center justify-between gap-1 pt-3">
+          {/* 💡 Price Section (flex-1 & min-w-0 prevents breaking) */}
+          <div className="flex flex-col font-display min-w-0 flex-1">
+            <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
               ৳{discountedPrice.toFixed(2)}
             </span>
             {hasDiscount && (
@@ -102,11 +102,11 @@ const FoodCard = ({
             )}
           </div>
 
-          {/* 💡 Button Section (optimized padding px-2.5) */}
+          {/* 💡 Button Section (shrink-0 ensures it stays on the side) */}
           {hasVariants ? (
             <Link
               to={`/menu/${food.id}`}
-              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Choose
@@ -114,7 +114,7 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => onAddToCart(food)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               Order
