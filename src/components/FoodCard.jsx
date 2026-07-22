@@ -4,7 +4,7 @@ import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { hasFoodDiscount, applyFoodDiscount, foodDiscountLabel } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
-// FoodCard — Branches কার্ডের মতো স্কয়ার/বক্সি শেপে আপডেট করা হয়েছে
+// FoodCard — স্কয়ার শেপ ও ভার্টিকাল ডিসকাউন্ট প্রাইসিং লেআউট
 // ---------------------------------------------------------------------------
 const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) => {
   const hasVariants = Array.isArray(food.variations) && food.variations.length > 0;
@@ -17,8 +17,8 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
   return (
     <motion.div
       variants={variants}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md"
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="group relative flex h-full flex-col overflow-hidden rounded-md border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md"
     >
       {/* ── Image ─────────────────────────────────────────────── */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
@@ -31,8 +31,9 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           />
         </Link>
 
+        {/* 💡 Discount Badge: Top Left Square Corner */}
         {hasDiscount && (
-          <span className="pointer-events-none absolute left-2.5 top-2.5 z-10 rounded bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+          <span className="pointer-events-none absolute left-0 top-0 z-10 rounded-br-md bg-primary-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
             {foodDiscountLabel(food)}
           </span>
         )}
@@ -45,7 +46,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
               : `Add ${food.name} to favorites`
           }
           aria-pressed={favorited}
-          className={`absolute right-2.5 top-2.5 z-20 rounded-full bg-white/80 p-1.5 shadow-sm backdrop-blur-sm transition-colors dark:bg-neutral-900/80 ${
+          className={`absolute right-2 top-2 z-20 rounded-full bg-white/80 p-1.5 shadow-sm backdrop-blur-sm transition-colors dark:bg-neutral-900/80 ${
             favorited ? "text-red-500" : "text-neutral-400 hover:text-red-500"
           }`}
         >
@@ -54,7 +55,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
       </div>
 
       {/* ── Info ──────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col p-3.5">
+      <div className="flex flex-1 flex-col p-3">
         <div className="mb-1 flex items-center justify-between gap-2">
           <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
             {food.category}
@@ -76,13 +77,14 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
         </p>
 
         {/* ── Footer: price + order ───────────────────────────── */}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <div className="flex items-baseline gap-1.5 font-display">
-            <span className="text-lg font-extrabold leading-none text-primary-500">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          {/* 💡 discounted / old price stacked vertically */}
+          <div className="flex flex-col font-display">
+            <span className="text-base sm:text-lg font-extrabold leading-tight text-primary-500">
               ৳{discountedPrice.toFixed(2)}
             </span>
             {hasDiscount && (
-              <span className="text-[11px] leading-none text-neutral-400 line-through dark:text-neutral-500">
+              <span className="text-[10px] font-semibold leading-none text-neutral-400 line-through dark:text-neutral-500">
                 ৳{basePrice.toFixed(2)}
               </span>
             )}
@@ -99,7 +101,7 @@ const FoodCard = ({ food, favorited, onToggleFavorite, onAddToCart, variants }) 
           ) : (
             <button
               onClick={() => onAddToCart(food)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               Order
