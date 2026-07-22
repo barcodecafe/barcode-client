@@ -30,11 +30,13 @@ import {
 } from "lucide-react";
 import { getOrderById, addChatMessage } from "../services/ordersService";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 export const OrderTracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { clearCart } = useCart();
 
   // URL Parameter পড়ার জন্য searchParams যুক্ত করা হলো
   const [searchParams] = useSearchParams();
@@ -147,7 +149,12 @@ export const OrderTracking = () => {
     return steps.findIndex((s) => s.key === status);
   };
 
-  const currentStepIdx = getStepIndex(order.status);
+  // An online order sits at "Awaiting Payment" until the gateway confirms — it is
+  // not a real order yet, so it has no place on the stepper. Showing it at step 1
+  // read as "Order Placed", which is exactly what made an unpaid order look
+  // confirmed. -1 leaves every step inactive.
+  const isAwaitingPayment = order.status === "Awaiting Payment";
+  const currentStepIdx = isAwaitingPayment ? -1 : getStepIndex(order.status);
 
   // Calculate rider position (t along Bezier path)
   let riderT = 0.05;
@@ -195,10 +202,13 @@ export const OrderTracking = () => {
 
   // Either the gateway hand-off never started (Checkout sends ?payment=unstarted)
   // or the customer bounced off the gateway without paying.
+  // An order still held for payment always needs the banner — with or without a
+  // ?payment= param, and however the customer got back to this page.
   const paymentIncomplete =
     isOnlinePayment &&
     order.paymentStatus === "Pending" &&
-    ["fail", "cancel", "unstarted"].includes(paymentParam);
+    (order.status === "Awaiting Payment" ||
+      ["fail", "cancel", "unstarted"].includes(paymentParam));
 
   const isPaymentFailedOrCancelled = paymentFailed || paymentIncomplete;
 
@@ -206,6 +216,16 @@ export const OrderTracking = () => {
   // arrival. The persistent value lives in the Payment Status row further down.
   const showPaymentSuccess =
     paymentParam === "success" && order.paymentStatus === "Paid";
+
+  // Checkout deliberately keeps the basket until an online payment lands, so the
+  // customer doesn't lose it on a failed attempt. Clear it once we know it worked.
+  const cartClearedRef = useRef(false);
+  useEffect(() => {
+    if (showPaymentSuccess && !cartClearedRef.current) {
+      cartClearedRef.current = true;
+      clearCart();
+    }
+  }, [showPaymentSuccess, clearCart]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -232,11 +252,18 @@ export const OrderTracking = () => {
           className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border font-bold text-xs uppercase tracking-wide ${
             order.status === "Rejected"
               ? "bg-red-500/10 border-red-500/20 text-red-500"
+              : isAwaitingPayment
+              ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
               : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
-          <span>Status: {steps[currentStepIdx]?.label || order.status}</span>
+          <span>
+            Status:{" "}
+            {isAwaitingPayment
+              ? "Payment Required"
+              : steps[currentStepIdx]?.label || order.status}
+          </span>
         </div>
       </div>
 

@@ -191,11 +191,14 @@ export const Checkout = () => {
       if (pointsDiscount > 0 && refreshUser) {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }
-      clearCart();
-
       // Online payment: hand the browser to SSLCommerz's hosted page. The server
       // settles the order from the gateway's verified callback, so we never see
-      // card details. On failure the order still exists — payable from tracking.
+      // card details.
+      //
+      // The order is held at "Awaiting Payment" server-side until the gateway
+      // confirms — it is not in the admin queue and nothing is cooked. The cart
+      // is therefore kept until payment succeeds, so a customer whose payment
+      // fails still has their basket instead of losing both.
       if (paymentMethod === 'sslcommerz') {
         try {
           const { gatewayUrl } = await initPayment(newOrder.id);
@@ -213,6 +216,7 @@ export const Checkout = () => {
         }
       }
 
+      clearCart(); // cash order — it is a real order the moment it is placed
       navigate(`/order-tracking/${newOrder.id}`);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
