@@ -38,6 +38,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { SettingsProvider } from '../context/SettingsContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { ScrollToTop } from '../components/ScrollToTop';
+import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 // ---------------------------------------------------------------------------
@@ -59,6 +60,8 @@ export const AppRoutes = () => {
           <CartProvider>
            <BranchProvider>
             <ScrollToTop />
+            {/* Repairs `/path//id` before it can render as a blank page */}
+            <NormalizePath />
             <Routes>
               <Route path="/" element={<RootLayout />}>
                 <Route index element={<Home />} />
