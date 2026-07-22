@@ -32,3 +32,6 @@ package-lock.json
 *.njsproj
 *.sln
 *.sw?
+
+# Local test scaffolding (never committed)
+scratchpad

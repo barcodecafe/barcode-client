@@ -183,13 +183,29 @@ export const OrderTracking = () => {
   };
 
   // চেক করা হচ্ছে পেমেন্ট ফেইল বা ক্যানসেল হয়েছে কিনা
-  const isPaymentFailedOrCancelled =
-    paymentParam === "fail" ||
-    paymentParam === "cancel" ||
-    order.paymentStatus === "Failed" ||
-    (order.paymentMethod !== "Cash on Delivery" &&
-      order.paymentStatus === "Pending" &&
-      paymentParam);
+  // NOTE: the server stores paymentMethod as 'cod' / 'sslcommerz'. The old check
+  // compared against the display label "Cash on Delivery", so it was true even
+  // for COD orders.
+  const isOnlinePayment = String(order.paymentMethod || "cod").toLowerCase() !== "cod";
+
+  // The server now records Failed/Cancelled on the order itself, so the banner
+  // still shows when the customer comes back later without a ?payment= param.
+  const paymentFailed =
+    order.paymentStatus === "Failed" || order.paymentStatus === "Cancelled";
+
+  // Either the gateway hand-off never started (Checkout sends ?payment=unstarted)
+  // or the customer bounced off the gateway without paying.
+  const paymentIncomplete =
+    isOnlinePayment &&
+    order.paymentStatus === "Pending" &&
+    ["fail", "cancel", "unstarted"].includes(paymentParam);
+
+  const isPaymentFailedOrCancelled = paymentFailed || paymentIncomplete;
+
+  // A successful payment now lands the customer straight here, so confirm it on
+  // arrival. The persistent value lives in the Payment Status row further down.
+  const showPaymentSuccess =
+    paymentParam === "success" && order.paymentStatus === "Paid";
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -224,6 +240,24 @@ export const OrderTracking = () => {
         </div>
       </div>
 
+      {/* Payment Confirmed Banner — shown on arrival from the gateway */}
+      {showPaymentSuccess && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-5 mb-8 flex items-start sm:items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <Check className="w-5 h-5 stroke-[3]" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100">
+              Payment Successful
+            </h3>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 font-normal">
+              We've received your payment. Your order is confirmed and we'll
+              start preparing it shortly.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Payment Failed / Cancelled Banner */}
       {order.status !== "Rejected" && isPaymentFailedOrCancelled && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -233,8 +267,10 @@ export const OrderTracking = () => {
             </div>
             <div>
               <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100">
-                {paymentParam === "cancel"
+                {order.paymentStatus === "Cancelled" || paymentParam === "cancel"
                   ? "Payment Cancelled"
+                  : paymentParam === "unstarted"
+                  ? "Payment Not Started"
                   : "Payment Unsuccessful"}
               </h3>
               <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 font-normal">
@@ -672,6 +708,8 @@ export const OrderTracking = () => {
                       className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase border ${
                         order.paymentStatus === "Paid"
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                          : paymentFailed
+                          ? "bg-red-500/10 border-red-500/20 text-red-500"
                           : "bg-amber-500/10 border-amber-500/20 text-amber-500"
                       }`}
                     >
