@@ -85,7 +85,7 @@ export const DishDetail = () => {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
         <p className="text-neutral-500 dark:text-neutral-400 font-medium">Dish not found.</p>
-        <button onClick={() => navigate('/menu')} className="px-5 py-2 rounded-xl bg-primary-500 text-white font-bold text-sm shadow">Back to Menu</button>
+        <button onClick={() => navigate('/menu')} className="px-5 py-2 rounded-none bg-primary-500 text-white font-bold text-sm shadow">Back to Menu</button>
       </div>
     );
   }
@@ -94,7 +94,6 @@ export const DishDetail = () => {
   const activePrice = getActivePrice(food, branchId, selectedVariation ? selectedVariation.name : null);
   const discountedPrice = applyFoodDiscount(activePrice, food);
 
-  // 💡 ভেরিয়েন্ট অনুযায়ী ছবি নির্বাচন করা হচ্ছে
   const displayImage = selectedVariation?.image || food.image || "";
 
   const handleQuantityChange = (newQty) => {
@@ -123,18 +122,17 @@ export const DishDetail = () => {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      {/* Main Container */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-3xl p-6 sm:p-8 shadow-sm">
+      {/* Main Container (rounded-none) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-none p-6 sm:p-8 shadow-sm">
         
-        {/* Left Section: Image Display */}
-        <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-50 dark:bg-neutral-800">
+        {/* Left Section: Image Display (rounded-none) */}
+        <div className="relative aspect-square rounded-none overflow-hidden bg-neutral-50 dark:bg-neutral-800">
           {hasDiscount && (
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-xl bg-primary-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/35 z-10">
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-primary-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/35 z-10">
               {foodDiscountLabel(food)}
             </div>
           )}
           
-          {/* 💡 এখানে displayImage ব্যবহার করা হয়েছে */}
           <img 
             src={displayImage} 
             alt={food.name} 
@@ -143,7 +141,7 @@ export const DishDetail = () => {
           
           <button
             onClick={() => toggleFavorite(food.id)}
-            className={`absolute top-4 right-4 p-2.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all ${
+            className={`absolute top-4 right-4 p-2.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all ${
               isFavorite(food.id) ? "text-red-500 scale-110" : "text-neutral-400 hover:text-red-500"
             }`}
           >
@@ -155,11 +153,11 @@ export const DishDetail = () => {
         <div className="flex flex-col justify-between py-2">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                 {food.category}
               </span>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-lg">
+                <div className="flex items-center gap-1 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-none">
                   <Star className="w-4 h-4 fill-current" />
                   <span>{food.rating}</span>
                 </div>
@@ -186,7 +184,7 @@ export const DishDetail = () => {
               {food.description || "No description available for this delicious item."}
             </p>
 
-            {/* Variations */}
+            {/* Variations (rounded-none) */}
             {food.variations && food.variations.length > 0 && (
               <div className="pt-2 space-y-2">
                 <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Choose {food.variantLabel || 'Size'}</h3>
@@ -200,7 +198,7 @@ export const DishDetail = () => {
                         key={v.name}
                         type="button"
                         onClick={() => setSelectedVariation(v)}
-                        className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${
+                        className={`px-4 py-2.5 rounded-none border text-xs font-bold flex items-center gap-2 transition-all ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20"
                             : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300"
@@ -219,13 +217,13 @@ export const DishDetail = () => {
           {/* Action Row */}
           <div className="mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-800/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
             
-            {/* Quantity Controls */}
-            <div className="flex items-center justify-between border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 rounded-2xl p-1 sm:w-36 h-12 shrink-0">
+            {/* Quantity Controls (rounded-none) */}
+            <div className="flex items-center justify-between border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 rounded-none p-1 sm:w-36 h-12 shrink-0">
               <button
                 type="button"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={quantity <= 1}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
+                className="w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -236,17 +234,17 @@ export const DishDetail = () => {
                 type="button"
                 onClick={() => handleQuantityChange(quantity + 1)}
                 disabled={quantity >= 99}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
+                className="w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Add to Cart Button */}
+            {/* Add to Cart Button (rounded-none) */}
             <button
               type="button"
               onClick={handleAddToCartClick}
-              className={`flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all ${
+              className={`flex-1 h-12 rounded-none font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all ${
                 isAdded
                   ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
                   : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"

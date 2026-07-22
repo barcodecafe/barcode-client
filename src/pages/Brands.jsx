@@ -70,9 +70,7 @@ export const Brands = () => {
 
   const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
 
-  // ---------------------------------------------------------------------
-  // Bestsellers (Popular Foods) Logic
-  // ---------------------------------------------------------------------
+  // Bestsellers Logic
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     let filteredList = allFoods.filter((food) => food.popular === true);
@@ -96,9 +94,7 @@ export const Brands = () => {
     [totalPopularFoods]
   );
 
-  // ---------------------------------------------------------------------
   // Featured Menu Logic
-  // ---------------------------------------------------------------------
   const totalFeaturedMenu = useMemo(() => {
     return allFoods.filter((food) => food.isAdminFeatured === true);
   }, [allFoods]);
@@ -140,7 +136,7 @@ export const Brands = () => {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="h-64 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
+            <div key={n} className="h-64 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
           ))}
         </div>
       ) : brands.length === 0 ? (
@@ -202,7 +198,7 @@ export const Brands = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveSort(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-none text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                   activeSort === tab.id
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
@@ -217,7 +213,7 @@ export const Brands = () => {
             {totalPopularFoods.length > PREVIEW_COUNT ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
               >
                 {showAllPopular ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -332,7 +328,7 @@ export const Brands = () => {
             {remainingFeaturedMenu.length > 0 ? (
               <button
                 onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
               >
                 {showAllFeatured ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -441,12 +437,12 @@ export const Brands = () => {
   );
 };
 
-// Top Brands Item Card Component
+// 💡 Top Brands Item Card Component (rounded-none added)
 const BrandMainCard = memo(({ brand, branchCount }) => {
   return (
     <Link
       to={`/brands/${brand.slug}`}
-      className="group flex flex-col h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+      className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
     >
       <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
         {brand.cover ? (
