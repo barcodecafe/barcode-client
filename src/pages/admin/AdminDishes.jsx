@@ -15,6 +15,7 @@ import {
   Settings,
   GripVertical,
   RefreshCw,
+  ImageIcon,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -39,6 +40,7 @@ export const AdminDishes = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [isCustomVariantLabel, setIsCustomVariantLabel] = useState(false);
 
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
@@ -56,8 +58,6 @@ export const AdminDishes = () => {
     discountType: "percent",
     discountPct: 0,
     discountAmount: 0,
-    // Must stay named `branchIds` — the API's field name, on both read and write.
-    // Any other key silently loses every branch tick on save.
     branchIds: [],
     branchPrices: {},
     variantLabel: "Size",
@@ -65,9 +65,8 @@ export const AdminDishes = () => {
   });
 
   const standardCategories = ["Mains", "Starters", "Desserts", "Beverages"];
+  const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
-  // Initial load. Category order is derived here and only here — the background
-  // sync below just refreshes the rows.
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches()])
         .then(([foodsData, branchesData]) => {
@@ -119,7 +118,6 @@ export const AdminDishes = () => {
           console.error("Error loading admin foods data:", err);
           setIsLoading(false);
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const syncFromServer = useCallback(
@@ -133,11 +131,6 @@ export const AdminDishes = () => {
     [],
   );
 
-  // Background sync, paused while the modal is open so a refetch can never
-  // clobber a form mid-edit. 60s (was 3s): /api/foods is ~1.28MB because dish
-  // images are inlined as base64, so the old interval pulled ~25MB/min and blew
-  // the server's global 500 req/15min limiter — the page 429'd itself, and every
-  // other admin tab with it, in ~12 minutes of sitting idle. See useVisiblePolling.
   useVisiblePolling(syncFromServer, { intervalMs: 60000, enabled: !isModalOpen });
 
   const handleManualRefresh = () => {
@@ -159,6 +152,7 @@ export const AdminDishes = () => {
   const openCreateModal = () => {
     setEditingFood(null);
     setIsCustomCategory(false);
+    setIsCustomVariantLabel(false);
     setImagePreview(null);
     setFormData({
       name: "",
@@ -183,12 +177,14 @@ export const AdminDishes = () => {
 
   const openEditModal = (food) => {
     setEditingFood(food);
-    const isCustom = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
-    setIsCustomCategory(isCustom);
+    const isCustomCat = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
+    setIsCustomCategory(isCustomCat);
+
+    const isCustomVarLabel = food.variantLabel && !standardVariantLabels.map(sv => sv.toLowerCase()).includes(food.variantLabel.trim().toLowerCase());
+    setIsCustomVariantLabel(isCustomVarLabel);
+
     setImagePreview(food.image || null);
 
-    // API পাঠায় `branchIds` (সংখ্যার অ্যারে) — `branches` নামে কিছু আসে না।
-    // ভুল নামে পড়লে টিক ফাঁকা আসে, আর সেভ করলে assignment মুছে যায়।
     const formattedBranches = (food.branchIds || []).map(String).filter(Boolean);
 
     const formattedBranchPrices = {};
@@ -214,7 +210,11 @@ export const AdminDishes = () => {
       branchIds: formattedBranches,
       branchPrices: formattedBranchPrices,
       variantLabel: food.variantLabel || "Size",
-      variations: food.variations || [],
+      variations: (food.variations || []).map(v => ({
+        name: v.name || "",
+        price: v.price || 0,
+        image: v.image || "" // Load variant specific image
+      })),
     });
     setIsModalOpen(true);
   };
@@ -243,7 +243,6 @@ export const AdminDishes = () => {
         delete updatedPrices[targetId];
       } else {
         updatedBranchIds = [...prev.branchIds, targetId];
-        // keep any price adjustment this branch already had
         if (updatedPrices[targetId] === undefined) updatedPrices[targetId] = 0;
       }
 
@@ -274,10 +273,11 @@ export const AdminDishes = () => {
     }
   };
 
+  // Add variation handler with optional image field
   const handleAddVariation = () => {
     setFormData((prev) => ({
       ...prev,
-      variations: [...prev.variations, { name: "", price: prev.price }],
+      variations: [...prev.variations, { name: "", price: prev.price, image: "" }],
     }));
   };
 
@@ -287,6 +287,17 @@ export const AdminDishes = () => {
       updated[index][field] = field === "price" ? parseFloat(val) || 0 : val;
       return { ...prev, variations: updated };
     });
+  };
+
+  // Variant base image upload
+  const handleVariationImageChange = (index, file) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleVariationChange(index, "image", reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemoveVariation = (index) => {
@@ -303,6 +314,7 @@ export const AdminDishes = () => {
       const cleanedFormData = {
         ...formData,
         category: formData.category?.trim(),
+        variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
       };
 
@@ -513,8 +525,6 @@ export const AdminDishes = () => {
                       <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
                       <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
 
-                      {/* Branch availability — an empty branchIds means the dish is
-                          served everywhere, which is how the API reads it too. */}
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                         <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
                         {(food.branchIds || []).length === 0 ? (
@@ -579,7 +589,7 @@ export const AdminDishes = () => {
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
                 {/* Image upload */}
                 <div>
-                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Image *</label>
+                  <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Main Dish Image *</label>
                   <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
                   {imagePreview ? (
                     <div className="relative group w-full h-36 rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50">
@@ -649,39 +659,141 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Variants Component */}
+                {/* Variants Component (Supports Custom Variant Types + Per-Variant Images) */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight Variants</label>
+                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight / Custom Variants</label>
                     <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
-                    <select value={formData.variantLabel} onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer">
-                      <option value="Size">Size (Small / Large / 2XL)</option>
-                      <option value="Weight">Weight (250g / 500g / 1kg)</option>
-                      <option value="Portion">Portion (Half / Full)</option>
-                      <option value="Piece">Piece (6 pcs / 12 pcs)</option>
-                    </select>
+                  {/* Custom Variant Type Selector */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
+                      <select 
+                        value={isCustomVariantLabel ? "Custom" : formData.variantLabel} 
+                        onChange={(e) => {
+                          if (e.target.value === "Custom") {
+                            setIsCustomVariantLabel(true);
+                            setFormData({ ...formData, variantLabel: "" });
+                          } else {
+                            setIsCustomVariantLabel(false);
+                            setFormData({ ...formData, variantLabel: e.target.value });
+                          }
+                        }} 
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer"
+                      >
+                        <option value="Size">Size (Small / Large / 2XL)</option>
+                        <option value="Weight">Weight (250g / 500g / 1kg)</option>
+                        <option value="Portion">Portion (Half / Full)</option>
+                        <option value="Piece">Piece (6 pcs / 12 pcs)</option>
+                        <option value="Custom">Custom Label (Type manually...)</option>
+                      </select>
+                    </div>
+
+                    {isCustomVariantLabel && (
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Flavor, Package, Color" 
+                          value={formData.variantLabel} 
+                          onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })} 
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" 
+                          required 
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => { setIsCustomVariantLabel(false); setFormData({ ...formData, variantLabel: "Size" }); }} 
+                          className="text-[11px] text-neutral-400 hover:text-neutral-600 px-2 py-1"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {formData.variations.length === 0 && (
                     <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price.</p>
                   )}
-                  {formData.variations.map((v, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <input type="text" placeholder={`${formData.variantLabel} name`} value={v.name} onChange={(e) => handleVariationChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
-                      <div className="relative w-28 shrink-0">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                        <input type="number" step="0.01" min="0" placeholder="Price" value={v.price} onChange={(e) => handleVariationChange(index, "price", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+
+                  {/* Variation Items List */}
+                  <div className="space-y-2.5 pt-1">
+                    {formData.variations.map((v, index) => (
+                      <div key={index} className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm">
+                        <div className="flex gap-2 items-center">
+                          <input 
+                            type="text" 
+                            placeholder={`${formData.variantLabel || "Variant"} name`} 
+                            value={v.name} 
+                            onChange={(e) => handleVariationChange(index, "name", e.target.value)} 
+                            className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none font-medium" 
+                            required 
+                          />
+                          <div className="relative w-28 shrink-0">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
+                            <input 
+                              type="number" 
+                              step="0.01" 
+                              min="0" 
+                              placeholder="Price" 
+                              value={v.price} 
+                              onChange={(e) => handleVariationChange(index, "price", e.target.value)} 
+                              className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none font-bold" 
+                              required 
+                            />
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveVariation(index)} 
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Remove variant"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Variant Specific Image Upload Option */}
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-neutral-100 dark:border-neutral-800/60 text-[11px]">
+                          <span className="text-neutral-500 font-medium flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5 text-neutral-400" /> Variant Image:
+                          </span>
+
+                          {v.image ? (
+                            <div className="flex items-center gap-2">
+                              <img src={v.image} alt="Variant preview" className="w-7 h-7 rounded-lg object-cover border border-neutral-200 dark:border-neutral-700" />
+                              <button 
+                                type="button" 
+                                onClick={() => handleVariationChange(index, "image", "")} 
+                                className="text-red-500 hover:underline font-semibold"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="file" 
+                                id={`variant-image-${index}`} 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => handleVariationImageChange(index, e.target.files[0])} 
+                              />
+                              <label 
+                                htmlFor={`variant-image-${index}`} 
+                                className="cursor-pointer px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-bold transition-colors"
+                              >
+                                + Add Variant Image
+                              </label>
+                              <span className="text-neutral-400 italic text-[10px]">(খালি রাখলে Main Image দেখাবে)</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                {/* BULLETPROOF BRANCH AVAILABILITY RENDER - LOCAL + LIVE SERVER SUPPORT */}
+                {/* BULLETPROOF BRANCH AVAILABILITY RENDER */}
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex justify-between items-center flex-wrap gap-2">
@@ -700,13 +812,8 @@ export const AdminDishes = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {branches.map((branch) => {
-                        // লোকালহোস্ট এবং লাইভ সার্ভার উভয়ের আইডি প্রপার্টি ট্র্যাক করার কম্বাইন্ড লজিক
                         const currentBranchId = String(branch._id || branch.id || "");
-                        
-                        // প্রপারলি সিলেক্টেড ব্রাঞ্চের টিক মার্ক ডিটেকশন
                         const isChecked = formData.branchIds.map(id => String(id)).includes(currentBranchId);
-                        
-                        // প্রাইস বক্সের জন্য সঠিক ভ্যালু এসাইনমেন্ট
                         const branchPriceVal = formData.branchPrices[currentBranchId] !== undefined 
                           ? formData.branchPrices[currentBranchId] 
                           : "";

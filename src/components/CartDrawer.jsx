@@ -95,62 +95,72 @@ export const CartDrawer = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div
-                        key={item.cartId || item.id}
-                        className="flex gap-3 items-center justify-between bg-neutral-50 dark:bg-neutral-950 p-3 rounded-xl border border-neutral-200/50 dark:border-neutral-800/60"
-                      >
-                        <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover bg-neutral-100 shrink-0" />
+                    {cart.map((item) => {
+                      {/* 💡 ভেরিয়েন্টের ছবি অথবা মেইন ছবি সিলেক্ট করার লজিক */}
+                      const itemImage = item.selectedVariation?.image || item.image;
+                      const optionName = item.selectedVariation?.name || item.selectedSize;
 
-                        <div className="flex-grow min-w-0">
-                          <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
-                          {item.selectedSize && (
-                            <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5">
-                              Option: {item.selectedSize}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {/* 👈 পরিমাণ অনুযায়ী মোট প্রাইস দেখানো হচ্ছে */}
-                            <span className="text-xs text-primary-500 font-bold">
-                              ৳{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                            {item.originalPrice && item.originalPrice > item.price && (
-                              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">
-                                ৳{(item.originalPrice * item.quantity).toFixed(2)}
+                      return (
+                        <div
+                          key={item.cartId || item.id}
+                          className="flex gap-3 items-center justify-between bg-neutral-50 dark:bg-neutral-950 p-3 rounded-xl border border-neutral-200/50 dark:border-neutral-800/60"
+                        >
+                          {/* 💡 আপডেট করা ছবি */}
+                          <img 
+                            src={itemImage} 
+                            alt={item.name} 
+                            className="w-14 h-14 rounded-lg object-cover bg-neutral-100 shrink-0" 
+                          />
+
+                          <div className="flex-grow min-w-0">
+                            <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
+                            {optionName && (
+                              <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5">
+                                Option: {optionName}
                               </span>
                             )}
-                          </div>
-                        </div>
-
-                        {/* Quantity Controls & Delete Icon */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
-                            <button
-                              onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
-                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
-                            <button
-                              onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
-                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-xs text-primary-500 font-bold">
+                                ৳{(item.price * item.quantity).toFixed(2)}
+                              </span>
+                              {item.originalPrice && item.originalPrice > item.price && (
+                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">
+                                  ৳{(item.originalPrice * item.quantity).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Delete Item Button */}
-                          <button
-                            onClick={() => handleRemoveItem(item.cartId || item.id)}
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                            title="Remove item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {/* Quantity Controls & Delete Icon */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
+                              <button
+                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
+                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
+                              <button
+                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
+                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Delete Item Button */}
+                            <button
+                              onClick={() => handleRemoveItem(item.cartId || item.id)}
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                              title="Remove item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* + Add More Items Button */}
                     <button

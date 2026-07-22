@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Star, ShoppingBag, Heart, ArrowLeft, Minus, Plus, Check, Zap } from 'lucide-react';
 
 // Swiper imports (matching Home.jsx pattern)
@@ -92,6 +91,9 @@ export const DishDetail = () => {
   const activePrice = getActivePrice(food, branchId, selectedVariation ? selectedVariation.name : null);
   const discountedPrice = applyFoodDiscount(activePrice, food);
 
+  // 💡 ভেরিয়েন্ট অনুযায়ী ছবি নির্বাচন করা হচ্ছে
+  const displayImage = selectedVariation?.image || food.image || "";
+
   const handleQuantityChange = (newQty) => {
     if (newQty < 1 || newQty > 99) return;
     setQuantity(newQty);
@@ -128,7 +130,13 @@ export const DishDetail = () => {
               {foodDiscountLabel(food)}
             </div>
           )}
-          <img src={food.image || ""} alt={food.name} className="w-full h-full object-cover" />
+          
+          {/* 💡 এখানে displayImage ব্যবহার করা হয়েছে */}
+          <img 
+            src={displayImage} 
+            alt={food.name} 
+            className="w-full h-full object-cover transition-all duration-300" 
+          />
           
           <button
             onClick={() => toggleFavorite(food.id)}
@@ -267,7 +275,7 @@ export const DishDetail = () => {
             <Link to="/menu" className="text-xs font-bold text-primary-500 hover:underline">View All</Link>
           </div>
 
-          {/* Mobile View: Swiper Slider (Same as Home.jsx pattern) */}
+          {/* Mobile View: Swiper Slider */}
           <div className="sm:hidden -mx-4">
             <Swiper
               modules={[Pagination]}
