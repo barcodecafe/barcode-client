@@ -5,7 +5,7 @@ import { UserPlus, Mail, Lock, User, Phone, Eye, EyeOff, Loader2, AlertCircle, C
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
-// Password policy — kept in sync with the backend (auth.validation.ts).
+// Password rules (সবার জন্য প্রযোজ্য)
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 },
   { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
@@ -13,7 +13,6 @@ const PASSWORD_RULES = [
   { label: 'One number', test: (p) => /[0-9]/.test(p) },
 ];
 
-// Kept in sync with the backend (auth.validation.ts).
 const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
 const STRICT_EMAIL = /^[^\s@.][^\s@]*@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
@@ -31,23 +30,26 @@ export const SignUp = ({ defaultRole = 'user' }) => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // User নাকি Admin/Rider ফ্ল্যাগ
   const isUser = role === 'user';
 
-  // Live password validation state
+  // Live password validation
   const passwordChecks = PASSWORD_RULES.map((r) => ({ label: r.label, passed: r.test(password) }));
   const passwordScore = passwordChecks.filter((c) => c.passed).length;
   const isPasswordValid = passwordScore === PASSWORD_RULES.length;
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
-  // Live email + Bangladeshi phone validation
+  // Live validation
   const emailValid = STRICT_EMAIL.test(email.trim());
   const phoneValid = BD_PHONE.test(phone.trim());
 
-  // User হলে শুধু মোবাইল নাম্বার চেক করবে, Admin/Rider হলে সব ফিল্ড চেক করবে
-  const canSubmit = isUser
-    ? phoneValid && !isSubmitting
-    : name.trim() && emailValid && phoneValid && isPasswordValid && passwordsMatch && !isSubmitting;
+  // Submit button state: User এর জন্য emailValid চেক করার দরকার নেই
+  const canSubmit =
+    name.trim() &&
+    phoneValid &&
+    isPasswordValid &&
+    passwordsMatch &&
+    (!isUser ? emailValid : true) &&
+    !isSubmitting;
 
   const strengthLabel = passwordScore <= 2 ? 'Weak' : passwordScore === 3 ? 'Medium' : 'Strong';
   const strengthColor =
@@ -57,34 +59,46 @@ export const SignUp = ({ defaultRole = 'user' }) => {
     e.preventDefault();
     setError('');
 
-    // সব রোলের জন্যই মোবাইল নম্বর ভ্যালিড হওয়া আবশ্যক
-    if (!phoneValid) {
-      setError('Please enter a valid Bangladeshi mobile number (e.g. 01712345678).');
+    // Admin/Rider এর জন্য Email চেক
+    if (!isUser && !emailValid) {
+      setError('Please enter a valid email address.');
       return;
     }
 
-    // Admin এবং Rider এর ক্ষেত্রে অতিরিক্ত ভ্যালিডেশন
-    if (!isUser) {
-      if (!emailValid) {
-        setError('Please enter a valid email address.');
-        return;
-      }
-      if (!isPasswordValid) {
-        setError('Please meet all the password requirements below.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError("Passwords don't match.");
-        return;
-      }
+    if (!phoneValid) {
+      setError('Please enter a valid Bangladeshi mobile number.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setError('Please meet all the password requirements below.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
     }
 
     setIsSubmitting(true);
     try {
-      // User হলে শুধু phone পাঠানো হবে, Admin/Rider হলে সব ফিল্ড পাঠানো হবে
+      // 🎯 PAYLOAD LOGIC:
+      // User: { name, phone, password, role }
+      // Admin/Rider: { name, email, phone, password, role }
       const payload = isUser
-        ? { phone: phone.trim(), role }
-        : { name: name.trim(), email: email.trim(), phone: phone.trim(), password, role };
+        ? {
+            name: name.trim(),
+            phone: phone.trim(),
+            password,
+            role,
+          }
+        : {
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            password,
+            role,
+          };
 
       const newUser = await register(payload);
       if (newUser?.role === 'admin') {
@@ -116,11 +130,6 @@ export const SignUp = ({ defaultRole = 'user' }) => {
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white capitalize">
             {role === 'admin' ? 'Create Admin Account' : role === 'rider' ? 'Create Rider Account' : 'Create your account'}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2">
-            {isUser
-              ? 'Enter your mobile number to sign up and start ordering.'
-              : 'Sign up to manage your portal.'}
-          </p>
         </div>
 
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm p-6 sm:p-8">
@@ -132,53 +141,52 @@ export const SignUp = ({ defaultRole = 'user' }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Admin and Rider Fields */}
-            {!isUser && (
-              <>
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input
-                      id="name"
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your full name"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                    />
-                  </div>
-                </div>
+            {/* Full Name Field (সবার জন্য) */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
+            </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                    />
-                  </div>
-                  {email.length > 0 && !emailValid && (
-                    <p className="mt-1.5 text-[11px] flex items-center gap-1.5 text-red-500">
-                      <X className="w-3 h-3" /> Please enter a valid email address
-                    </p>
-                  )}
+            {/* Email Field (শুধুমাত্র Admin & Rider এর জন্য) */}
+            {!isUser && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                  />
                 </div>
-              </>
+                {email.length > 0 && !emailValid && (
+                  <p className="mt-1.5 text-[11px] flex items-center gap-1.5 text-red-500">
+                    <X className="w-3 h-3" /> Please enter a valid email address
+                  </p>
+                )}
+              </div>
             )}
 
-            {/* Mobile Input - Required for ALL roles */}
+            {/* Mobile Number Field (সবার জন্য) */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                 Mobile Number
@@ -204,102 +212,98 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               )}
             </div>
 
-            {/* Password Inputs - Only for Admin & Rider */}
-            {!isUser && (
-              <>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      minLength={8}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create a strong password"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+            {/* Password Field (সবার জন্য) */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a strong password"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
 
-                  {password.length > 0 && (
-                    <div className="mt-2.5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex gap-1 flex-1">
-                          {[0, 1, 2, 3].map((i) => (
-                            <div
-                              key={i}
-                              className={`h-1 flex-1 rounded-full transition-colors ${
-                                i < passwordScore
-                                  ? passwordScore <= 2
-                                    ? 'bg-red-400'
-                                    : passwordScore === 3
-                                      ? 'bg-amber-400'
-                                      : 'bg-green-500'
-                                  : 'bg-neutral-200 dark:bg-neutral-800'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className={`text-[11px] font-semibold ${strengthColor}`}>{strengthLabel}</span>
-                      </div>
-                      <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-                        {passwordChecks.map((c) => (
-                          <li
-                            key={c.label}
-                            className={`flex items-center gap-1.5 text-[11px] ${
-                              c.passed ? 'text-green-600 dark:text-green-400' : 'text-neutral-400 dark:text-neutral-500'
-                            }`}
-                          >
-                            {c.passed ? <Check className="w-3 h-3 shrink-0" /> : <X className="w-3 h-3 shrink-0" />}
-                            {c.label}
-                          </li>
-                        ))}
-                      </ul>
+              {password.length > 0 && (
+                <div className="mt-2.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex gap-1 flex-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            i < passwordScore
+                              ? passwordScore <= 2
+                                ? 'bg-red-400'
+                                : passwordScore === 3
+                                  ? 'bg-amber-400'
+                                  : 'bg-green-500'
+                              : 'bg-neutral-200 dark:bg-neutral-800'
+                          }`}
+                        />
+                      ))}
                     </div>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input
-                      id="confirmPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter your password"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                    />
+                    <span className={`text-[11px] font-semibold ${strengthColor}`}>{strengthLabel}</span>
                   </div>
-                  {confirmPassword.length > 0 && (
-                    <p
-                      className={`mt-1.5 text-[11px] flex items-center gap-1.5 ${
-                        passwordsMatch ? 'text-green-600 dark:text-green-400' : 'text-red-500'
-                      }`}
-                    >
-                      {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                      {passwordsMatch ? 'Passwords match' : "Passwords don't match"}
-                    </p>
-                  )}
+                  <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                    {passwordChecks.map((c) => (
+                      <li
+                        key={c.label}
+                        className={`flex items-center gap-1.5 text-[11px] ${
+                          c.passed ? 'text-green-600 dark:text-green-400' : 'text-neutral-400 dark:text-neutral-500'
+                        }`}
+                      >
+                        {c.passed ? <Check className="w-3 h-3 shrink-0" /> : <X className="w-3 h-3 shrink-0" />}
+                        {c.label}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </>
-            )}
+              )}
+            </div>
+
+            {/* Confirm Password Field (সবার জন্য) */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your password"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
+              {confirmPassword.length > 0 && (
+                <p
+                  className={`mt-1.5 text-[11px] flex items-center gap-1.5 ${
+                    passwordsMatch ? 'text-green-600 dark:text-green-400' : 'text-red-500'
+                  }`}
+                >
+                  {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                  {passwordsMatch ? 'Passwords match' : "Passwords don't match"}
+                </p>
+              )}
+            </div>
 
             <button
               type="submit"
