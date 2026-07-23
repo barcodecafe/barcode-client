@@ -71,7 +71,35 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
+  // 💡 Admin Schema অনুযায়ী নিখুঁত Price হিসাবের ফাংশন (FIXED)
+  const getEffectivePrice = (food) => {
+    if (!food) return 0;
+
+    let basePrice = Number(food.price) || 0;
+
+    // ১. এডমিন স্কিমা অনুযায়ী food.variations চেক করা
+    const variationsList = Array.isArray(food.variations)
+      ? food.variations
+      : Array.isArray(food.variants)
+      ? food.variants
+      : [];
+
+    if (variationsList.length > 0) {
+      const validVarPrices = variationsList
+        .map((v) => Number(v.price))
+        .filter((p) => !isNaN(p) && p > 0);
+
+      if (validVarPrices.length > 0) {
+        const minVarPrice = Math.min(...validVarPrices);
+        if (basePrice === 0 || minVarPrice < basePrice) {
+          basePrice = minVarPrice;
+        }
+      }
+    }
+
+    // ২. ডিসকাউন্ট অ্যাপ্লাই করা
+    return applyFoodDiscount(basePrice, food);
+  };
 
   // ---------------------------------------------------------------------
   // Brands Preview Logic
@@ -80,20 +108,25 @@ export const Home = () => {
   const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
 
   // ---------------------------------------------------------------------
-  // Bestsellers (Popular Foods) Logic
+  // Bestsellers (Popular Foods) Logic (FIXED)
   // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
+    
+    // ১. জনপ্রিয় খাবার ফিল্টার
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    if (activeSort === "price-low") {
-      filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (activeSort === "price-high") {
-      filteredList.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (activeSort === "rating") {
-      filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-    return filteredList;
+    // ২. নতুন অ্যারে কপি বানিয়ে নিখুঁত সর্টিং
+    return [...filteredList].sort((a, b) => {
+      const priceA = getEffectivePrice(a);
+      const priceB = getEffectivePrice(b);
+
+      if (activeSort === "price-low") return priceA - priceB;
+      if (activeSort === "price-high") return priceB - priceA;
+      if (activeSort === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+
+      return 0; // Default Order
+    });
   }, [allFoods, activeSort]);
 
   const previewPopularFoods = useMemo(
@@ -682,7 +715,6 @@ const BrandCard = memo(({ brand, variants }) => {
         to={`/brands/${brand.slug}`}
         className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
       >
-        {/* 🛠️ p-3 sm:p-4 দিয়ে লোগোর চারপাশে সুন্দর ও সমান প্যাডিং দেওয়া হয়েছে */}
         <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center border-b border-neutral-100 dark:border-neutral-800/40 p-3 sm:p-4 overflow-hidden">
           {brand.logoLight ? (
             <img
@@ -719,7 +751,6 @@ const BranchCard = memo(({ branch, variants }) => {
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
-      {/* 🛠️ p-3 sm:p-4 প্যাডিং যোগ করা হয়েছে যেন ব্রাঞ্চের ছবি/লোগো বর্ডারে লেগে না যায় */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 p-3 sm:p-4 flex items-center justify-center">
         <Link to={`/branches/${branch.id}`} className="w-full h-full flex items-center justify-center">
           <img
