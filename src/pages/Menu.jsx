@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom"; 
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  SlidersHorizontal,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Swiper imports
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
 // 💡 applyFoodDiscount ইম্পোর্ট করা হলো
-import { getFoodsByBranch, getPopularFoods, applyFoodDiscount } from "../services/foodsService";
+import {
+  getFoodsByBranch,
+  getPopularFoods,
+  applyFoodDiscount,
+} from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
@@ -54,7 +54,9 @@ export const Menu = () => {
     const savedOrder = localStorage.getItem("custom_category_order");
     if (savedOrder) {
       try {
-        return JSON.parse(savedOrder).map(c => c?.trim()).filter(Boolean);
+        return JSON.parse(savedOrder)
+          .map((c) => c?.trim())
+          .filter(Boolean);
       } catch (e) {
         return [];
       }
@@ -64,15 +66,19 @@ export const Menu = () => {
 
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
-    
+
     const rawCats = foods.map((item) => item.category?.trim()).filter(Boolean);
     const uniqueCatsSet = new Set(rawCats);
     const currentUniqueCategories = Array.from(uniqueCatsSet);
 
     const finalSortedCategories = currentUniqueCategories.sort((a, b) => {
-      const indexA = sortedCategoriesList.findIndex(c => c.toLowerCase() === a.toLowerCase());
-      const indexB = sortedCategoriesList.findIndex(c => c.toLowerCase() === b.toLowerCase());
-      
+      const indexA = sortedCategoriesList.findIndex(
+        (c) => c.toLowerCase() === a.toLowerCase(),
+      );
+      const indexB = sortedCategoriesList.findIndex(
+        (c) => c.toLowerCase() === b.toLowerCase(),
+      );
+
       if (indexA !== -1 && indexB !== -1) return indexA - indexB;
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
@@ -80,7 +86,7 @@ export const Menu = () => {
     });
 
     return ["All", ...finalSortedCategories];
-  }, [foods, sortedCategoriesList]); 
+  }, [foods, sortedCategoriesList]);
 
   const checkScroll = () => {
     if (tabsRef.current) {
@@ -94,7 +100,7 @@ export const Menu = () => {
     checkScroll();
     window.addEventListener("resize", checkScroll);
     return () => window.removeEventListener("resize", checkScroll);
-  }, [foods, categories]); 
+  }, [foods, categories]);
 
   const scroll = (direction) => {
     if (tabsRef.current) {
@@ -107,8 +113,32 @@ export const Menu = () => {
   };
 
   // 💡 ডিসকাউন্ট সহ আসল প্রাইস হিসেব করার হেলপার ফাংশন
+  // 💡 Variant এবং Main Price উভায়কে সঠিকভাবে হ্যান্ডেল করার ফিক্সড ফাংশন
   const getEffectivePrice = (food) => {
-    const rawPrice = Number(food?.price) || 0;
+    if (!food) return 0;
+
+    let rawPrice = Number(food.price) || 0;
+
+    // যদি মেইন প্রাইস 0 বা খালি থাকে এবং খাবারটির Variants থাকে, তবে Variant-এর সর্বনিম্ন দাম নেওয়া হবে
+    if (
+      rawPrice === 0 &&
+      Array.isArray(food.variants) &&
+      food.variants.length > 0
+    ) {
+      const variantPrices = food.variants
+        .map((v) => Number(v.price || v.discountPrice))
+        .filter((p) => !isNaN(p) && p > 0);
+
+      if (variantPrices.length > 0) {
+        rawPrice = Math.min(...variantPrices);
+      }
+    }
+
+    // minPrice প্রপার্টি থাকলে সেটাও ব্যাকআপ হিসেবে চেক করবে
+    if (rawPrice === 0 && food.minPrice) {
+      rawPrice = Number(food.minPrice) || 0;
+    }
+
     return applyFoodDiscount ? applyFoodDiscount(rawPrice, food) : rawPrice;
   };
 
@@ -116,7 +146,8 @@ export const Menu = () => {
     const matched = foods.filter(
       (food) =>
         activeCategory.trim().toLowerCase() === "all" ||
-        food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
+        food.category?.trim().toLowerCase() ===
+          activeCategory.trim().toLowerCase(),
     );
 
     return matched.sort((a, b) => {
@@ -130,9 +161,13 @@ export const Menu = () => {
       if (sortBy === "price-high") return priceB - priceA;
       if (sortBy === "rating") return ratingB - ratingA;
 
-      const indexA = sortedCategoriesList.findIndex(c => c.toLowerCase() === a.category?.trim().toLowerCase());
-      const indexB = sortedCategoriesList.findIndex(c => c.toLowerCase() === b.category?.trim().toLowerCase());
-      
+      const indexA = sortedCategoriesList.findIndex(
+        (c) => c.toLowerCase() === a.category?.trim().toLowerCase(),
+      );
+      const indexB = sortedCategoriesList.findIndex(
+        (c) => c.toLowerCase() === b.category?.trim().toLowerCase(),
+      );
+
       if (indexA !== -1 && indexB !== -1) return indexA - indexB;
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
@@ -156,7 +191,6 @@ export const Menu = () => {
 
   return (
     <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-     
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-neutral-100 dark:border-neutral-800/40 w-full overflow-hidden">
         <div className="text-center md:text-left min-w-0">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight truncate">
@@ -166,7 +200,10 @@ export const Menu = () => {
           {popularOnly && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2.5">
               Our team's picks and what customers order most.{" "}
-              <Link to="/menu" className="text-primary-500 font-semibold hover:underline">
+              <Link
+                to="/menu"
+                className="text-primary-500 font-semibold hover:underline"
+              >
                 View the full menu
               </Link>
             </p>
@@ -197,7 +234,8 @@ export const Menu = () => {
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 shrink-0 ${
-                  activeCategory.trim().toLowerCase() === cat.trim().toLowerCase()
+                  activeCategory.trim().toLowerCase() ===
+                  cat.trim().toLowerCase()
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
                 }`}
@@ -226,10 +264,18 @@ export const Menu = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-transparent border-none outline-none cursor-pointer pr-1 font-semibold focus:ring-0 text-neutral-700 dark:text-neutral-200"
             >
-              <option value="featured" className="dark:bg-neutral-900">Featured</option>
-              <option value="price-low" className="dark:bg-neutral-900">Price: Low to High</option>
-              <option value="price-high" className="dark:bg-neutral-900">Price: High to Low</option>
-              <option value="rating" className="dark:bg-neutral-900">Highest Rated</option>
+              <option value="featured" className="dark:bg-neutral-900">
+                Featured
+              </option>
+              <option value="price-low" className="dark:bg-neutral-900">
+                Price: Low to High
+              </option>
+              <option value="price-high" className="dark:bg-neutral-900">
+                Price: High to Low
+              </option>
+              <option value="rating" className="dark:bg-neutral-900">
+                Highest Rated
+              </option>
             </select>
           </div>
         </div>
