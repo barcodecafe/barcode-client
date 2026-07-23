@@ -682,21 +682,13 @@ const BrandCard = memo(({ brand, variants }) => {
         to={`/brands/${brand.slug}`}
         className="group flex flex-col rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-lg hover:border-primary-500/30 transition-all duration-350 overflow-hidden"
       >
-        <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40 group-hover:scale-105 transition-transform duration-300 px-1.5">
+        {/* 🛠️ p-3 sm:p-4 দিয়ে লোগোর চারপাশে সুন্দর ও সমান প্যাডিং দেওয়া হয়েছে */}
+        <div className="w-full h-28 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center border-b border-neutral-100 dark:border-neutral-800/40 p-3 sm:p-4 overflow-hidden">
           {brand.logoLight ? (
             <img
               src={brand.logoLight}
               alt={brand.name}
-              className={`w-full h-[calc(100%-12px)] block ${
-                [
-                  "omerta",
-                  "bir-chattala",
-                  "barcode-sweets",
-                  "teheriwala",
-                ].includes(brand.slug)
-                  ? "object-contain object-center"
-                  : "object-contain"
-              }`}
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
@@ -727,8 +719,9 @@ const BranchCard = memo(({ branch, variants }) => {
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        <Link to={`/branches/${branch.id}`}>
+      {/* 🛠️ p-3 sm:p-4 প্যাডিং যোগ করা হয়েছে যেন ব্রাঞ্চের ছবি/লোগো বর্ডারে লেগে না যায় */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 p-3 sm:p-4 flex items-center justify-center">
+        <Link to={`/branches/${branch.id}`} className="w-full h-full flex items-center justify-center">
           <img
             src={branch.image}
             alt={branch.name}
@@ -736,7 +729,7 @@ const BranchCard = memo(({ branch, variants }) => {
             loading="lazy"
           />
         </Link>
-        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider">
+        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10">
           ★ {branch.rating}
         </div>
       </div>
@@ -744,7 +737,7 @@ const BranchCard = memo(({ branch, variants }) => {
       <div className="p-4 grow flex flex-col justify-between gap-4">
         <div>
           <Link to={`/branches/${branch.id}`}>
-            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 line-clamp-1">
+            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 min-h-[2.5rem] flex items-center">
               {branch.name}
             </h3>
           </Link>
