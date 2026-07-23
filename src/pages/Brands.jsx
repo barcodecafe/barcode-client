@@ -437,20 +437,19 @@ export const Brands = () => {
   );
 };
 
-// 💡 Top Brands Item Card Component (rounded-none & padding/object-contain added)
+// 💡 Top Brands Item Card Component
 const BrandMainCard = memo(({ brand, branchCount }) => {
   return (
     <Link
       to={`/brands/${brand.slug}`}
       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
     >
-      {/* 🛠️ p-3 sm:p-4 প্যাডিং এবং flex items-center justify-center যোগ করা হয়েছে */}
+      {/* 🛠️ brand.logoLight-কে প্রথম অগ্রাধিকার (priority) দেয়া হয়েছে যেন এডমিনের লোগো কার্ডে শো করে */}
       <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
-        {brand.cover || brand.logoLight ? (
+        {brand.logoLight || brand.cover ? (
           <img
-            src={brand.cover || brand.logoLight}
+            src={brand.logoLight || brand.cover}
             alt={brand.name}
-            /* 🛠️ w-full h-full object-contain দেওয়া হয়েছে যেন ছবি কেটে না যায় */
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -482,3 +481,4 @@ const BrandMainCard = memo(({ brand, branchCount }) => {
 BrandMainCard.displayName = "BrandMainCard";
 
 export default Brands;
+
