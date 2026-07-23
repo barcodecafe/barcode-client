@@ -105,12 +105,14 @@ export const BrandHome = () => {
                       to={`/branches/${br.id}`}
                       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                     >
-                      <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
+                      {/* 🛠️ p-3 sm:p-4 প্যাডিং এবং flex items-center justify-center যোগ করা হয়েছে */}
+                      <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
                         {br.image && (
                           <img
                             src={br.image}
                             alt={br.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            /* 🛠️ object-contain দেওয়া হয়েছে যেন ছবি কেটে না যায় */
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                           />
                         )}
                       </div>
@@ -142,12 +144,14 @@ export const BrandHome = () => {
                     to={`/branches/${br.id}`}
                     className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                   >
-                    <div className="h-36 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
+                    {/* 🛠️ p-3 sm:p-4 প্যাডিং এবং flex items-center justify-center যোগ করা হয়েছে */}
+                    <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
                       {br.image && (
                         <img
                           src={br.image}
                           alt={br.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          /* 🛠️ object-contain দেওয়া হয়েছে যেন ছবি কেটে না যায় */
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                         />
                       )}
                     </div>

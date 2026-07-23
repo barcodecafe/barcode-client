@@ -330,12 +330,16 @@ export const DishDetail = () => {
               <Zap className="w-5 h-5 text-amber-500 fill-amber-500" /> You
               Might Also Like
             </h2>
-            <Link
-              to="/menu"
-              className="text-xs font-bold text-primary-500 hover:underline"
-            >
-              View All
-            </Link>
+            
+            {/* 💡 ৫ টার বেশি কার্ড থাকলে কেবল View All বাটন দেখাবে */}
+            {recommendedFoods.length > 5 && (
+              <Link
+                to="/menu"
+                className="text-xs font-bold text-primary-500 hover:underline"
+              >
+                View All
+              </Link>
+            )}
           </div>
 
           {/* Mobile View: Swiper Slider */}
