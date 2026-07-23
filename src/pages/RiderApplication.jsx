@@ -151,6 +151,19 @@ export const RiderApplication = () => {
     }
   };
 
+  // 🟢 Pending Application Check (আবেদন পেন্ডিং অবস্থায় থাকলে এটি দেখাবে)
+  if (isAuthenticated && user?.riderApprovalStatus === 'pending') {
+    return (
+      <CenteredCard
+        icon={<AlertCircle className="w-8 h-8 text-amber-500" />}
+        tint="bg-amber-500/10"
+        title="Application Pending"
+        text="Your rider application is currently under review by our admin team. You will get access to the rider portal once approved."
+        cta={{ to: '/', label: 'Back to Home' }}
+      />
+    );
+  }
+
   // Already Approved Rider Check
   if (isAuthenticated && user?.role === 'rider') {
     return (
