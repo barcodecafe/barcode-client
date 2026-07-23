@@ -365,7 +365,7 @@ export const DishDetail = () => {
           </div>
 
           {/* Desktop & Tablet View: Grid */}
-          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {recommendedFoods.map((recFood) => {
               const favorited = isFavorite(recFood.id);
               return (
