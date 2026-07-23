@@ -75,7 +75,7 @@ export const BrandMenu = () => {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {[1, 2, 3, 4].map((n) => <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
         </div>
       ) : shown.length === 0 ? (
@@ -112,7 +112,7 @@ export const BrandMenu = () => {
           <motion.div
             initial="hidden" animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
           >
             {shown.map((food) => (
               <FoodCard
