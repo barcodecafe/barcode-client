@@ -437,30 +437,27 @@ export const Brands = () => {
   );
 };
 
-// 💡 Top Brands Item Card Component (rounded-none added)
+// 💡 Top Brands Item Card Component (rounded-none & padding/object-contain added)
 const BrandMainCard = memo(({ brand, branchCount }) => {
   return (
     <Link
       to={`/brands/${brand.slug}`}
       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
     >
-      <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
-        {brand.cover ? (
+      {/* 🛠️ p-3 sm:p-4 প্যাডিং এবং flex items-center justify-center যোগ করা হয়েছে */}
+      <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
+        {brand.cover || brand.logoLight ? (
           <img
-            src={brand.cover}
+            src={brand.cover || brand.logoLight}
             alt={brand.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : brand.logoLight ? (
-          <img
-            src={brand.logoLight}
-            alt={brand.name}
-            className="max-h-20 max-w-[70%] object-contain"
+            /* 🛠️ w-full h-full object-contain দেওয়া হয়েছে যেন ছবি কেটে না যায় */
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <Building2 className="w-10 h-10 text-neutral-300 dark:text-neutral-700" />
         )}
       </div>
+
       <div className="flex flex-col flex-1 p-5">
         <h2 className="font-display text-lg font-extrabold text-neutral-800 dark:text-white">
           {brand.name}
