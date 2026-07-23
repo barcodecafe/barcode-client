@@ -495,7 +495,7 @@ const BranchCard = memo(({ branch, variants }) => {
           <img
             src={branch.image}
             alt={branch.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
         </Link>
@@ -504,10 +504,12 @@ const BranchCard = memo(({ branch, variants }) => {
         </div>
       </div>
 
-      <div className="p-4 grow flex flex-col justify-between gap-4">
+      {/* Content Body Container */}
+      <div className="p-4 grow flex flex-col justify-between gap-3 sm:gap-4">
         <div>
           <Link to={`/branches/${branch.id}`}>
-            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 line-clamp-1">
+            {/* 🛠️ line-clamp-1 তুলে নিয়ে leading-snug এবং break-words যুক্ত করা হয়েছে */}
+            <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 leading-snug break-words">
               {branch.name}
             </h3>
           </Link>
@@ -517,7 +519,8 @@ const BranchCard = memo(({ branch, variants }) => {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
+        {/* 🛠️ mt-auto যুক্ত করা হয়েছে যাতে টাইটেল বড়-ছোট যাই হোক, বাটনগুলো নিচে সমান থাকে */}
+        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium mt-auto">
           <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
