@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Bike,
@@ -20,24 +20,19 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Home,
+  LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // ---------------------------------------------------------------------------
-// RiderApplication.jsx — dedicated Rider Sign-Up
-//
-// One form collects the account (name/email/password) + contact/KYC info +
-// documents (photo + license), submits as multipart to POST /api/riders/register,
-// which creates a rider account in "pending" state and logs the rider in
-// immediately. They land on the rider dashboard, shown in a pending state until
-// an admin approves.
+// RiderApplication.jsx — Dedicated Rider Sign-Up
 // ---------------------------------------------------------------------------
 
 const passwordOk = (p) => p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p);
 
 export const RiderApplication = () => {
   const { user, isAuthenticated, registerRider } = useAuth();
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name: '',
@@ -57,6 +52,7 @@ export const RiderApplication = () => {
   const [licenseName, setLicenseName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false); // Success state tracking
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -108,21 +104,60 @@ export const RiderApplication = () => {
       fd.append('expYears', form.expYears);
       fd.append('photo', photo);
       fd.append('license', license);
+
       await registerRider(fd);
-      navigate('/rider', { replace: true });
+      setIsSubmitted(true); // Success Screen দেখাবে, রিডাইরেক্ট করবে না
     } catch (err) {
-      setError(err.message || 'Failed to submit. Please try again.');
+      setError(err.message || 'Failed to submit application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Already a rider → send to the portal
+  // ── 1. Success View (আবেদন সম্পন্ন হওয়ার পর এই স্ক্রিনটি দেখাবে) ────────────────
+  if (isSubmitted) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-3xl p-8 shadow-xl text-center"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-8 h-8" />
+          </div>
+          <h1 className="font-display text-2xl font-black text-neutral-800 dark:text-white">
+            Application Submitted!
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+            Your application has been received successfully. Our admin team will review your details and documents. Once approved, you will be able to log in to your rider account.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 font-bold text-sm transition-all"
+            >
+              <Home className="w-4 h-4" /> Go to Home
+            </Link>
+            <Link
+              to="/rider/login"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 transition-all"
+            >
+              <LogIn className="w-4 h-4" /> Rider Login
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── 2. Already Approved Rider Check ─────────────────────────────────────
   if (isAuthenticated && user?.role === 'rider') {
     return (
       <CenteredCard
-        icon={<CheckCircle className="w-8 h-8 text-green-500" />}
-        tint="bg-green-500/10"
+        icon={<CheckCircle className="w-8 h-8 text-emerald-500" />}
+        tint="bg-emerald-500/10"
         title="You're already a rider"
         text="Head to the Rider Portal to manage your deliveries and approval status."
         cta={{ to: '/rider', label: 'Go to Rider Portal' }}
@@ -130,15 +165,15 @@ export const RiderApplication = () => {
     );
   }
 
-  // Admins manage riders, they don't apply
+  // ── 3. Admin User Check ──────────────────────────────────────────────────
   if (isAuthenticated && user?.role === 'admin') {
     return (
       <CenteredCard
         icon={<User className="w-8 h-8 text-indigo-500" />}
         tint="bg-indigo-500/10"
         title="Administrator account"
-        text="Admins review rider applications from the dashboard rather than applying."
-        cta={{ to: '/admin/rider-applications', label: 'Review Applications' }}
+        text="Admins review rider applications directly from the Admin Dashboard."
+        cta={{ to: '/admin/riders', label: 'Review Applications' }}
       />
     );
   }
@@ -157,8 +192,7 @@ export const RiderApplication = () => {
           Become a Barcode Rider
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2 max-w-md mx-auto">
-          Sign up as a delivery rider in one step. We create your account instantly — you can log in
-          right away, and an admin will approve your profile shortly.
+          Fill in your details and upload your documents. An admin will review and approve your application shortly.
         </p>
       </div>
 
@@ -175,7 +209,7 @@ export const RiderApplication = () => {
 
         {/* Account */}
         <section className="space-y-5">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Account</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Account Info</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className={labelCls}>Full Name</label>
@@ -227,7 +261,7 @@ export const RiderApplication = () => {
                 />
               </div>
               {form.confirm.length > 0 && (
-                <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 ${form.password === form.confirm ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                <p className={`mt-1.5 text-[11px] flex items-center gap-1.5 ${form.password === form.confirm ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                   {form.password === form.confirm ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
                   {form.password === form.confirm ? 'Passwords match' : "Passwords don't match"}
                 </p>
@@ -316,7 +350,7 @@ export const RiderApplication = () => {
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 relative h-40">
                 {license ? (
                   <div className="text-center flex flex-col items-center justify-center">
-                    <FileCheck className="w-8 h-8 text-green-500 mb-2" />
+                    <FileCheck className="w-8 h-8 text-emerald-500 mb-2" />
                     <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 truncate max-w-[200px] block">{licenseName}</span>
                     <button
                       type="button"
@@ -347,15 +381,15 @@ export const RiderApplication = () => {
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Creating your rider account…
+              Submitting Application...
             </>
           ) : (
-            'Sign Up as a Rider'
+            'Submit Application'
           )}
         </button>
 
         <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
-          Already have a rider account?{' '}
+          Already have an approved account?{' '}
           <Link to="/rider/login" className="text-primary-500 font-semibold hover:underline">
             Log in
           </Link>
@@ -365,7 +399,6 @@ export const RiderApplication = () => {
   );
 };
 
-// Small shared card for the "already rider / admin" states
 const CenteredCard = ({ icon, tint, title, text, cta }) => (
   <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
     <motion.div
