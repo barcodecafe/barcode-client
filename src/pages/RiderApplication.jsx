@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2'; // SweetAlert2 Import
 import {
   Bike,
   Upload,
@@ -20,19 +21,18 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Home,
-  LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // ---------------------------------------------------------------------------
-// RiderApplication.jsx — Dedicated Rider Sign-Up
+// RiderApplication.jsx — Dedicated Rider Sign-Up with SweetAlert2
 // ---------------------------------------------------------------------------
 
 const passwordOk = (p) => p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p);
 
 export const RiderApplication = () => {
   const { user, isAuthenticated, registerRider } = useAuth();
+  const navigate = useNavigate(); // Navigation Hook
 
   const [form, setForm] = useState({
     name: '',
@@ -52,15 +52,25 @@ export const RiderApplication = () => {
   const [licenseName, setLicenseName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false); // Success state tracking
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Alert Helper for Warnings
+  const showWarning = (message) => {
+    setError(message);
+    Swal.fire({
+      icon: 'warning',
+      title: 'Validation Failed',
+      text: message,
+      confirmButtonColor: '#f59e0b',
+    });
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return setError('Profile photo must be an image (PNG/JPG).');
-    if (file.size > 5 * 1024 * 1024) return setError('Profile photo must be under 5MB.');
+    if (!file.type.startsWith('image/')) return showWarning('Profile photo must be an image (PNG/JPG).');
+    if (file.size > 5 * 1024 * 1024) return showWarning('Profile photo must be under 5MB.');
     setPhoto(file);
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result);
@@ -72,8 +82,8 @@ export const RiderApplication = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'))
-      return setError('Driving license must be a PDF file.');
-    if (file.size > 5 * 1024 * 1024) return setError('License PDF must be under 5MB.');
+      return showWarning('Driving license must be a PDF file.');
+    if (file.size > 5 * 1024 * 1024) return showWarning('License PDF must be under 5MB.');
     setLicense(file);
     setLicenseName(file.name);
     setError('');
@@ -83,13 +93,17 @@ export const RiderApplication = () => {
     e.preventDefault();
     setError('');
 
+    // Frontend Validations
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.nid.trim())
-      return setError('Please fill in your name, email, phone, and NID.');
+      return showWarning('Please fill in all required fields (Name, Email, Phone, NID).');
     if (!passwordOk(form.password))
-      return setError('Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a number.');
-    if (form.password !== form.confirm) return setError("Passwords don't match.");
-    if (!photo) return setError('Please upload a profile photo.');
-    if (!license) return setError('Please upload your driving license (PDF).');
+      return showWarning('Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a number.');
+    if (form.password !== form.confirm) 
+      return showWarning("Passwords don't match.");
+    if (!photo) 
+      return showWarning('Please upload a profile photo.');
+    if (!license) 
+      return showWarning('Please upload your driving license (PDF).');
 
     setIsSubmitting(true);
     try {
@@ -106,53 +120,38 @@ export const RiderApplication = () => {
       fd.append('license', license);
 
       await registerRider(fd);
-      setIsSubmitted(true); // Success Screen দেখাবে, রিডাইরেক্ট করবে না
+
+      // SUCCESS SWEETALERT
+      Swal.fire({
+        icon: 'success',
+        title: 'Application Submitted!',
+        text: 'Your application has been received successfully. Our admin team will review it shortly.',
+        confirmButtonText: 'Go to Home',
+        confirmButtonColor: '#10b981', // Emerald Color
+        allowOutsideClick: false,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/', { replace: true }); // Redirect to Home Page
+        }
+      });
+
     } catch (err) {
-      setError(err.message || 'Failed to submit application. Please try again.');
+      const errorMsg = err.message || 'Failed to submit application. Please try again.';
+      setError(errorMsg);
+
+      // FAILED SWEETALERT
+      Swal.fire({
+        icon: 'error',
+        title: 'Submission Failed',
+        text: errorMsg,
+        confirmButtonColor: '#ef4444',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ── 1. Success View (আবেদন সম্পন্ন হওয়ার পর এই স্ক্রিনটি দেখাবে) ────────────────
-  if (isSubmitted) {
-    return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-3xl p-8 shadow-xl text-center"
-        >
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="w-8 h-8" />
-          </div>
-          <h1 className="font-display text-2xl font-black text-neutral-800 dark:text-white">
-            Application Submitted!
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-            Your application has been received successfully. Our admin team will review your details and documents. Once approved, you will be able to log in to your rider account.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 font-bold text-sm transition-all"
-            >
-              <Home className="w-4 h-4" /> Go to Home
-            </Link>
-            <Link
-              to="/rider/login"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 transition-all"
-            >
-              <LogIn className="w-4 h-4" /> Rider Login
-            </Link>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── 2. Already Approved Rider Check ─────────────────────────────────────
+  // Already Approved Rider Check
   if (isAuthenticated && user?.role === 'rider') {
     return (
       <CenteredCard
@@ -165,7 +164,7 @@ export const RiderApplication = () => {
     );
   }
 
-  // ── 3. Admin User Check ──────────────────────────────────────────────────
+  // Admin User Check
   if (isAuthenticated && user?.role === 'admin') {
     return (
       <CenteredCard
@@ -207,7 +206,7 @@ export const RiderApplication = () => {
           </div>
         )}
 
-        {/* Account */}
+        {/* Account Info */}
         <section className="space-y-5">
           <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Account Info</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -270,7 +269,7 @@ export const RiderApplication = () => {
           </div>
         </section>
 
-        {/* Contact & KYC */}
+        {/* Contact & Details */}
         <section className="space-y-5 pt-6 border-t border-neutral-100 dark:border-neutral-800">
           <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Contact & Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
