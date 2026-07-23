@@ -257,7 +257,7 @@ export const Menu = () => {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
           >
             {filteredFoods.map((food) => (
               <FoodCard
