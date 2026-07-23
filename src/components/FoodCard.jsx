@@ -32,19 +32,17 @@ const FoodCard = ({
       className="group relative flex h-full flex-col overflow-hidden rounded-none border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md"
     >
       {/* ── Image ─────────────────────────────────────────────── */}
-      {/* 🛠️ p-3 sm:p-4 প্যাডিং এবং flex items-center justify-center যোগ করা হয়েছে */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 p-3 sm:p-4 flex items-center justify-center">
-        <Link to={`/menu/${food.id}`} className="flex h-full w-full items-center justify-center">
+      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+        <Link to={`/menu/${food.id}`} className="block h-full w-full">
           <img
             src={food.image}
             alt={food.name}
             loading="lazy"
-            /* 🛠️ object-cover সরিয়ে object-contain দেওয়া হয়েছে */
-            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
 
-        {/* Discount Badge */}
+        {/* Discount Badge: Sharp Corner */}
         {hasDiscount && (
           <span className="pointer-events-none absolute left-0 top-0 z-10 rounded-none bg-primary-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
             {foodDiscountLabel(food)}
@@ -92,6 +90,7 @@ const FoodCard = ({
 
         {/* ── Footer: price + order ───────────────────────────── */}
         <div className="mt-auto flex items-center justify-between gap-1 pt-3">
+          {/* 💡 Price Section (flex-1 & min-w-0 prevents breaking) */}
           <div className="flex flex-col font-display min-w-0 flex-1">
             <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
               ৳{discountedPrice.toFixed(2)}
@@ -103,6 +102,7 @@ const FoodCard = ({
             )}
           </div>
 
+          {/* 💡 Button Section (shrink-0 ensures it stays on the side) */}
           {hasVariants ? (
             <Link
               to={`/menu/${food.id}`}
