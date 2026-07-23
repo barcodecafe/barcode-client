@@ -7,11 +7,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// Swiper imports (matching Home.jsx)
+// Swiper imports
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
-import { getFoodsByBranch, getPopularFoods } from "../services/foodsService";
+// 💡 applyFoodDiscount ইম্পোর্ট করা হলো
+import { getFoodsByBranch, getPopularFoods, applyFoodDiscount } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
@@ -105,15 +106,29 @@ export const Menu = () => {
     }
   };
 
+  // 💡 ডিসকাউন্ট সহ আসল প্রাইস হিসেব করার হেলপার ফাংশন
+  const getEffectivePrice = (food) => {
+    const rawPrice = Number(food?.price) || 0;
+    return applyFoodDiscount ? applyFoodDiscount(rawPrice, food) : rawPrice;
+  };
+
   const filteredFoods = useMemo(() => {
     const matched = foods.filter(
-      (food) => activeCategory.trim().toLowerCase() === "all" || food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase(),
+      (food) =>
+        activeCategory.trim().toLowerCase() === "all" ||
+        food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
     );
 
     return matched.sort((a, b) => {
-      if (sortBy === "price-low") return a.price - b.price;
-      if (sortBy === "price-high") return b.price - a.price;
-      if (sortBy === "rating") return b.rating - a.rating;
+      // 💡 সেফ নাম্বার পার্সিং এবং ডিসকাউন্টেড প্রাইসের ওপর সর্টিং
+      const priceA = getEffectivePrice(a);
+      const priceB = getEffectivePrice(b);
+      const ratingA = Number(a?.rating) || 0;
+      const ratingB = Number(b?.rating) || 0;
+
+      if (sortBy === "price-low") return priceA - priceB;
+      if (sortBy === "price-high") return priceB - priceA;
+      if (sortBy === "rating") return ratingB - ratingA;
 
       const indexA = sortedCategoriesList.findIndex(c => c.toLowerCase() === a.category?.trim().toLowerCase());
       const indexB = sortedCategoriesList.findIndex(c => c.toLowerCase() === b.category?.trim().toLowerCase());
@@ -121,7 +136,7 @@ export const Menu = () => {
       if (indexA !== -1 && indexB !== -1) return indexA - indexB;
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
-      return a.id - b.id;
+      return (a.id || 0) - (b.id || 0);
     });
   }, [foods, activeCategory, sortBy, sortedCategoriesList]);
 
@@ -229,10 +244,10 @@ export const Menu = () => {
         </div>
       ) : (
         <>
-          {/* Mobile View: Swiper Slider (Exactly like Home.jsx) */}
+          {/* Mobile View: Swiper Slider (key-তে sortBy যুক্ত করে ফিক্স করা হয়েছে) */}
           <div className="sm:hidden -mx-4">
             <Swiper
-              key={activeCategory}
+              key={`${activeCategory}-${sortBy}`}
               modules={[Pagination]}
               slidesPerView={1.15}
               spaceBetween={16}
@@ -254,6 +269,7 @@ export const Menu = () => {
 
           {/* Desktop & Tablet View: Grid */}
           <motion.div
+            key={`${activeCategory}-${sortBy}`}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
