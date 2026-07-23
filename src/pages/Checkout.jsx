@@ -15,18 +15,14 @@ import { getRegionDeliveryCharge } from '../services/deliveryService';
 import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 
 // ---------------------------------------------------------------------------
-// Checkout.jsx — dedicated /checkout page (replaces the in-drawer wizard).
-// Left: live order summary (items, coupon, points, delivery charge, total).
-// Right: step-by-step form (account → delivery → payment).
-// The server re-computes every amount; the client only sends ids/choices.
+// Checkout.jsx — dedicated /checkout page
 // ---------------------------------------------------------------------------
 export const Checkout = () => {
   const { cart, updateCartQuantity, clearCart } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
 
-  // Ordering is region-based: the customer picks a delivery region (auto-picked
-  // when only one region delivers, e.g. a Chattogram-only launch), then an area.
+  // Region state
   const [regions, setRegions] = useState([]);
   const [regionId, setRegionId] = useState(null);
   const deliverableRegions = useMemo(
@@ -41,7 +37,7 @@ export const Checkout = () => {
         const arr = Array.isArray(list) ? list : [];
         setRegions(arr);
         const deliverable = arr.filter((r) => Array.isArray(r.deliveryZones) && r.deliveryZones.length > 0);
-        if (deliverable.length === 1) setRegionId(deliverable[0].id); // only one region delivers → auto-select
+        if (deliverable.length === 1) setRegionId(deliverable[0].id);
       })
       .catch(() => setRegions([]));
   }, []);
@@ -52,18 +48,17 @@ export const Checkout = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
   // Delivery details
   const [phone, setPhone] = useState('');
-  const [area, setArea] = useState(''); // selected zone name; '' = Other/outside zones
+  const [area, setArea] = useState('');
   const [address, setAddress] = useState('');
   const [billingSame, setBillingSame] = useState(true);
   const [billingAddress, setBillingAddress] = useState('');
 
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'sslcommerz'
+  const [paymentMethod, setPaymentMethod] = useState('cod');
 
   // Coupon + points
   const [couponInput, setCouponInput] = useState('');
@@ -80,31 +75,26 @@ export const Checkout = () => {
   useEffect(() => {
     if (user) {
       setPhone(user.phone || '');
-      // delivery `area` is driven by the region's zones (set in the region effect), not here
       setAddress(user.address || '');
       setBillingAddress(user.address || '');
     }
   }, [user]);
 
-  // When the region changes, default the delivery area to its first zone.
   useEffect(() => {
     if (region && Array.isArray(region.deliveryZones) && region.deliveryZones.length > 0) {
       setArea(region.deliveryZones[0].name);
     } else {
       setArea('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionId, regions.length]);
 
-  // ── Prices (region-based → base price, no per-branch adjustment) ─────────
-  // The cart line's own `price` was discounted at add-time, so we price off the
-  // raw base (`basePrice`) to avoid double-applying the discount.
+  // ── Prices ─────────────────────────────────────────────────────────────
   const unitPrice = (item) =>
     getDiscountedPrice({ ...item, price: item.basePrice ?? item.price }, undefined, item.selectedSize);
   const lineTotal = (item) => unitPrice(item) * item.quantity;
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
-  // ── Derived money (mirrors the server) ──────────────────────────────────
+  // ── Derived money ──────────────────────────────────────────────────────
   const couponDiscount = appliedCoupon ? couponDiscountAmount(cartTotal, appliedCoupon) : 0;
   const afterCoupon = cartTotal - couponDiscount;
   const availablePoints = Math.max(0, Math.floor(user?.points || 0));
@@ -112,15 +102,12 @@ export const Checkout = () => {
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
   const deliveryCharge = getRegionDeliveryCharge(region, area);
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
-  // The gateway rejects totals below its configured minimum, so keep small
-  // orders on cash-on-delivery instead of failing at the payment page.
   const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
 
-  // If the total drops below the gateway minimum (item removed, coupon applied),
-  // don't leave the customer stuck on an online method they can't use.
   useEffect(() => {
     if (!canPayOnline && paymentMethod === 'sslcommerz') setPaymentMethod('cod');
   }, [canPayOnline, paymentMethod]);
+
   const pointsToEarn = Math.floor(cartTotal / 100) * 5;
   const canPlaceOrder = isAuthenticated && !!regionId;
 
@@ -134,8 +121,13 @@ export const Checkout = () => {
         if (!loginEmail || !loginPassword) throw new Error('Please enter your email and password.');
         await login({ email: loginEmail, password: loginPassword });
       } else {
-        if (!signupName || !signupEmail || !signupPassword) throw new Error('All registration fields are required.');
-        await register({ name: signupName, email: signupEmail, password: signupPassword, role: 'user' });
+        if (!signupName || !signupPassword) throw new Error('Name and password are required.');
+        // Email removed from registration payload
+        await register({
+          name: signupName,
+          password: signupPassword,
+          role: 'user',
+        });
       }
     } catch (err) {
       setAuthError(err.message || 'Authentication failed.');
@@ -191,14 +183,7 @@ export const Checkout = () => {
       if (pointsDiscount > 0 && refreshUser) {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }
-      // Online payment: hand the browser to SSLCommerz's hosted page. The server
-      // settles the order from the gateway's verified callback, so we never see
-      // card details.
-      //
-      // The order is held at "Awaiting Payment" server-side until the gateway
-      // confirms — it is not in the admin queue and nothing is cooked. The cart
-      // is therefore kept until payment succeeds, so a customer whose payment
-      // fails still has their basket instead of losing both.
+
       if (paymentMethod === 'sslcommerz') {
         try {
           const { gatewayUrl } = await initPayment(newOrder.id);
@@ -208,15 +193,13 @@ export const Checkout = () => {
           }
           throw new Error('The payment gateway did not return a checkout link.');
         } catch (payErr) {
-          // Order is placed; only the gateway hand-off failed. Send them to
-          // tracking so they can retry payment instead of losing the order.
           console.error('Payment init failed:', payErr);
           navigate(`/order-tracking/${newOrder.id}?payment=unstarted`);
           return;
         }
       }
 
-      clearCart(); // cash order — it is a real order the moment it is placed
+      clearCart();
       navigate(`/order-tracking/${newOrder.id}`);
     } catch (err) {
       setOrderError(err.message || 'Failed to place order. Please try again.');
@@ -255,14 +238,14 @@ export const Checkout = () => {
 
       <div className="grid lg:grid-cols-[380px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
 
-        {/* ── ORDER SUMMARY (left on desktop, bottom on mobile) ──────────── */}
+        {/* ── ORDER SUMMARY (left) ───────────────────────────────────────── */}
         <aside className="order-2 lg:order-1 lg:sticky lg:top-24 space-y-4">
           <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
             <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-4">
               <ShoppingBag className="w-4 h-4 text-primary-500" /> Order Summary
             </h2>
 
-            {/* Delivery region — ordering is region-based (drives delivery areas + charge) */}
+            {/* Delivery region */}
             <div className="mb-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
               <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">📍 Delivery Region</label>
               {deliverableRegions.length === 0 ? (
@@ -363,7 +346,7 @@ export const Checkout = () => {
           </div>
         </aside>
 
-        {/* ── FORM (right on desktop, top on mobile) ─────────────────────── */}
+        {/* ── FORM (right) ───────────────────────────────────────────────── */}
         <div className="order-1 lg:order-2 space-y-4">
 
           {/* Step 1 — Account */}
@@ -373,7 +356,10 @@ export const Checkout = () => {
               <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-800 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold text-sm">{(user?.name || '?').charAt(0).toUpperCase()}</div>
-                  <div><span className="block text-sm font-semibold text-neutral-800 dark:text-white leading-tight">{user?.name}</span><span className="block text-[11px] text-neutral-400">{user?.email}</span></div>
+                  <div>
+                    <span className="block text-sm font-semibold text-neutral-800 dark:text-white leading-tight">{user?.name}</span>
+                    {user?.email && <span className="block text-[11px] text-neutral-400">{user?.email}</span>}
+                  </div>
                 </div>
                 <button type="button" onClick={logout} className="flex items-center gap-1 text-[11px] text-red-500 font-bold hover:underline"><LogOut className="w-3.5 h-3.5" /> Logout</button>
               </div>
@@ -385,10 +371,11 @@ export const Checkout = () => {
                 </div>
                 {authError && <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">{authError}</div>}
                 <form onSubmit={handleAuth} className="space-y-3">
-                  {authTab === 'signup' && (
+                  {authTab === 'signup' ? (
                     <div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="text" required value={signupName} onChange={(e) => setSignupName(e.target.value)} placeholder="Full name" className={fieldCls} /></div>
+                  ) : (
+                    <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="Email address" className={fieldCls} /></div>
                   )}
-                  <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="email" required value={authTab === 'login' ? loginEmail : signupEmail} onChange={(e) => authTab === 'login' ? setLoginEmail(e.target.value) : setSignupEmail(e.target.value)} placeholder="Email address" className={fieldCls} /></div>
                   <div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="password" required value={authTab === 'login' ? loginPassword : signupPassword} onChange={(e) => authTab === 'login' ? setLoginPassword(e.target.value) : setSignupPassword(e.target.value)} placeholder="Password" className={fieldCls} /></div>
                   <button type="submit" disabled={isLoading} className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all">{isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{authTab === 'login' ? 'Log In & Continue' : 'Create Account & Continue'}<ArrowRight className="w-4 h-4" /></>}</button>
                 </form>
