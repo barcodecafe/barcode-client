@@ -134,7 +134,7 @@ export const BrandHome = () => {
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
             >
               {branches.map((br) => (
                 <motion.div key={br.id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
