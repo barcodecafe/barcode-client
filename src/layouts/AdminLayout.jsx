@@ -25,14 +25,10 @@ import {
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { socket } from '../services/socket'; // 👈 ⚡ Socket Import
+import { socket } from '../services/socket';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
-
-// ---------------------------------------------------------------------------
-// AdminLayout.jsx
-// ---------------------------------------------------------------------------
 
 const navItems = [
   { name: 'Overview', path: '/admin', icon: LayoutDashboard, end: true },
@@ -55,54 +51,82 @@ export const AdminLayout = () => {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
+  // 🎯 1. পেন্ডিং অর্ডারের কাউন্ট স্টেট
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // 🔔 ⚡ REAL-TIME DESKTOP NOTIFICATION & SOUND LOGIC
+  // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
   useEffect(() => {
-    // ১. প্রথমবার পেজে এলে ব্রাউজার ডেসktop নোটিফিকেশন পারমিশন চাওয়া
+    // প্রাথমিক পেন্ডিং অর্ডার ফেচ করার ফাংশন
+    const fetchPendingOrders = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data?.success && Array.isArray(data.data)) {
+          // 'PENDING' বা 'pending' স্ট্যাটাসের অর্ডার ফিল্টার
+          const pending = data.data.filter(o => o.status?.toUpperCase() === 'PENDING');
+          setPendingCount(pending.length);
+        }
+      } catch (err) {
+        console.error('Failed to fetch pending count:', err);
+      }
+    };
+
+    fetchPendingOrders();
+
+    // 🔔 পারমিশন চাওয়া
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // ২. নতুন অর্ডার এলে ব্যাকগ্রাউন্ডে এলার্ট দেওয়া
+    // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড ও ডেসktop নোটিফিকেশন দেওয়া
     const handleNewOrder = (newOrder) => {
-      // 🔊 সাউন্ড প্লে করা
+      setPendingCount(prev => prev + 1);
+
       try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // বি পপ সাউন্ড
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         audio.play().catch(() => {});
-      } catch (e) {
-        console.error('Audio play error:', e);
-      }
+      } catch (e) {}
 
-      // 💻 ডেসktop পপ-আপ নোটিফিকেশন (অন্য ট্যাবে থাকলেও দেখাবে)
       if ('Notification' in window && Notification.permission === 'granted') {
-        const orderId = newOrder?.id || newOrder?._id || 'New';
-        const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
-
         const desktopNotif = new Notification('🚨 নতুন অর্ডার এসেছে!', {
-          body: `Order ID: #${orderId}\nTotal: ৳${totalAmount}`,
+          body: `Order ID: #${newOrder?.id || newOrder?._id || ''}\nTotal: ৳${newOrder?.totalAmount || newOrder?.total || 0}`,
           icon: settings?.logoLight || resB,
-          requireInteraction: true, // এডমিন বন্ধ না করা পর্যন্ত স্ক্রিনে থাকবে
+          requireInteraction: true,
         });
 
-        // নোটিফিকেশনে ক্লিক করলে সরাসরি অ্যাডমিনকে Orders পেজে নিয়ে আসবে
         desktopNotif.onclick = () => {
           window.focus();
           navigate('/admin/orders');
         };
       }
+    };
 
-      // 🏷️ ব্রাউজার ট্যাবের টাইটেল চেঞ্জ করা
-      document.title = '🚨 (1) new order received!';
+    // 🔄 স্ট্যাটাস আপডেট হলে (Accept/Reject করলে) কাউন্ট কমানো
+    const handleStatusUpdate = () => {
+      fetchPendingOrders();
     };
 
     socket.on('admin_new_order', handleNewOrder);
+    socket.on('order_status_updated', handleStatusUpdate);
 
     return () => {
       socket.off('admin_new_order', handleNewOrder);
+      socket.off('order_status_updated', handleStatusUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
-  // Auto-open on desktop, auto-close on mobile initially
+  // 🎯 3. ট্যাবের টাইটেলে পেন্ডিং সংখ্যা দেখানো
+  useEffect(() => {
+    if (pendingCount > 0) {
+      document.title = `(${pendingCount}) New Orders - Barcode Admin`;
+    } else {
+      document.title = 'Barcode Restaurant - Admin';
+    }
+  }, [pendingCount]);
+
   useState(() => {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     setIsDrawerOpen(isDesktop);
@@ -133,15 +157,24 @@ export const AdminLayout = () => {
             end={item.end}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-primary-500/10 text-primary-500 font-semibold'
                   : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500'
               }`
             }
           >
-            <item.icon className="w-4 h-4 shrink-0" />
-            {item.name}
+            <div className="flex items-center gap-3">
+              <item.icon className="w-4 h-4 shrink-0" />
+              <span>{item.name}</span>
+            </div>
+
+            {/* 🔴 🎯 FIX: সাইডবারে Orders এর পাশে লাল রঙে ব্যাজ শো করবে */}
+            {item.name === 'Orders' && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                {pendingCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -168,7 +201,6 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
-      {/* Mobile Sidebar Backdrop Overlay */}
       <AnimatePresence>
         {isDrawerOpen && (
           <motion.div
@@ -181,7 +213,6 @@ export const AdminLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Panel - Inline on desktop, absolute overlay drawer on mobile */}
       <motion.aside
         animate={{ 
           width: isDrawerOpen ? 256 : 0,
@@ -205,9 +236,7 @@ export const AdminLayout = () => {
         </div>
       </motion.aside>
 
-      {/* Main content body */}
       <div className="flex-grow flex flex-col min-w-0">
-        {/* Topbar */}
         <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
