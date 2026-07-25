@@ -71,13 +71,12 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // 💡 Admin Schema অনুযায়ী নিখুঁত Price হিসাবের ফাংশন (FIXED)
+  // 💡 Admin Schema অনুযায়ী নিখুঁত Price হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
     let basePrice = Number(food.price) || 0;
 
-    // ১. এডমিন স্কিমা অনুযায়ী food.variations চেক করা
     const variationsList = Array.isArray(food.variations)
       ? food.variations
       : Array.isArray(food.variants)
@@ -97,7 +96,6 @@ export const Home = () => {
       }
     }
 
-    // ২. ডিসকাউন্ট অ্যাপ্লাই করা
     return applyFoodDiscount(basePrice, food);
   };
 
@@ -108,15 +106,13 @@ export const Home = () => {
   const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
 
   // ---------------------------------------------------------------------
-  // Bestsellers (Popular Foods) Logic (FIXED)
+  // Bestsellers (Popular Foods) Logic
   // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     
-    // ১. জনপ্রিয় খাবার ফিল্টার
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    // ২. নতুন অ্যারে কপি বানিয়ে নিখুঁত সর্টিং
     return [...filteredList].sort((a, b) => {
       const priceA = getEffectivePrice(a);
       const priceB = getEffectivePrice(b);
@@ -125,7 +121,7 @@ export const Home = () => {
       if (activeSort === "price-high") return priceB - priceA;
       if (activeSort === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
 
-      return 0; // Default Order
+      return 0;
     });
   }, [allFoods, activeSort]);
 
@@ -745,13 +741,16 @@ const BranchCard = memo(({ branch, variants }) => {
     localStorage.setItem("selectedBranchId", String(branch.id));
   };
 
+  const branchPhone = branch.phone || branch.contactNumber || branch.contact || branch.phoneNo;
+
   return (
     <motion.div
       variants={variants}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 p-3 sm:p-4 flex items-center justify-center">
+      {/* 💡 p-3 sm:p-4 তুলে দেওয়া হয়েছে */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
         <Link to={`/branches/${branch.id}`} className="w-full h-full flex items-center justify-center">
           <img
             src={branch.image}
@@ -779,10 +778,14 @@ const BranchCard = memo(({ branch, variants }) => {
         </div>
 
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
-          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+          {/* 💡 Call আইকন ও টেক্সটকে tel: লিংকে রূপান্তর করা হয়েছে */}
+          <a
+            href={branchPhone ? `tel:${branchPhone}` : "#"}
+            className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+          >
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
-          </div>
+          </a>
           <Link
             to={`/branches/${branch.id}`}
             onClick={handleDetailsClick}

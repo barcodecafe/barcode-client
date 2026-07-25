@@ -484,6 +484,9 @@ const BranchCard = memo(({ branch, variants }) => {
     localStorage.setItem('selectedBranchId', String(branch.id));
   };
 
+  // 💡 ব্র্যাঞ্চ থেকে ডাইনামিকভাবে ফোন নম্বর বের করে আনা হচ্ছে
+  const branchPhone = branch.phone || branch.contactNumber || branch.contact || branch.phoneNo;
+
   return (
     <motion.div
       variants={variants}
@@ -508,7 +511,6 @@ const BranchCard = memo(({ branch, variants }) => {
       <div className="p-4 grow flex flex-col justify-between gap-3 sm:gap-4">
         <div>
           <Link to={`/branches/${branch.id}`}>
-            {/* 🛠️ line-clamp-1 তুলে নিয়ে leading-snug এবং break-words যুক্ত করা হয়েছে */}
             <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-2 leading-snug break-words">
               {branch.name}
             </h3>
@@ -519,12 +521,15 @@ const BranchCard = memo(({ branch, variants }) => {
           </div>
         </div>
 
-        {/* 🛠️ mt-auto যুক্ত করা হয়েছে যাতে টাইটেল বড়-ছোট যাই হোক, বাটনগুলো নিচে সমান থাকে */}
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium mt-auto">
-          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+          {/* 💡 Call অপশনটিতে `tel:` লিঙ্কিং যোগ করা হয়েছে */}
+          <a
+            href={branchPhone ? `tel:${branchPhone}` : '#'}
+            className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+          >
             <Phone className="w-3.5 h-3.5 text-primary-500" />
             <span>Call</span>
-          </div>
+          </a>
           <Link
             to={`/branches/${branch.id}`}
             onClick={handleDetailsClick}

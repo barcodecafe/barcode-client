@@ -133,25 +133,32 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
 };
 
 // ---------------------------------------------------------------------------
-// InfoCard — small grid element helper for quick info pieces
+// InfoCard — small grid element helper for quick info pieces (Clickable Support Added)
 // ---------------------------------------------------------------------------
-const InfoCard = ({ icon, label, value, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.4, delay }}
-    className="flex gap-4 items-start p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-  >
-    <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shrink-0">
-      {icon}
-    </div>
-    <div className="min-w-0">
-      <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-      <p className="text-neutral-800 dark:text-neutral-100 font-semibold mt-0.5 leading-snug">{value}</p>
-    </div>
-  </motion.div>
-);
+const InfoCard = ({ icon, label, value, delay = 0, href }) => {
+  const CardWrapper = href ? motion.a : motion.div;
+
+  return (
+    <CardWrapper
+      href={href}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay }}
+      className={`group flex gap-4 items-start p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
+        href ? 'cursor-pointer hover:border-primary-500/50' : ''
+      }`}
+    >
+      <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shrink-0 group-hover:scale-105 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
+        <p className="text-neutral-800 dark:text-neutral-100 font-semibold mt-0.5 leading-snug">{value}</p>
+      </div>
+    </CardWrapper>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -485,10 +492,19 @@ export const BranchDetail = () => {
       {/* 3. BRANCH INFORMATION — CARD GRID                                */}
       {/* ================================================================ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 relative z-10 pb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4  gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoCard icon={<Clock className="w-5 h-5" />} label="Opening Hours" value={branch.hours} delay={0} />
           <InfoCard icon={<MapPin className="w-5 h-5" />} label="Full Address" value={branch.location} delay={0.05} />
-          <InfoCard icon={<Phone className="w-5 h-5" />} label="Contact Number" value={branch.contact} delay={0.1} />
+          
+          {/* 🔥 Contact Number Clickable for Direct Calling */}
+          <InfoCard 
+            icon={<Phone className="w-5 h-5" />} 
+            label="Contact Number" 
+            value={branch.contact} 
+            delay={0.1} 
+            href={telHref} 
+          />
+          
           <InfoCard icon={<Users className="w-5 h-5" />} label="Seating Capacity" value={`${activeDetails.capacity} Guests`} delay={0.15} />
         </div>
       </section>
