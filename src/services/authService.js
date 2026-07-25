@@ -52,12 +52,14 @@ export async function register({ name, email, password, phone, pickArea, address
   return user;
 }
 
+
 /**
- * Logs in an existing user by email/password (stores the JWT).
+ * Logs in an existing user by phone/email and password (stores the JWT).
  * BACKEND: POST /api/auth/login
  */
-export async function login({ email, password }) {
-  const { user, token } = await apiClient.post('/auth/login', { email, password });
+export async function login(credentials) {
+  // credentials অবজেক্টে { phone, password } অথবা { email, password } যা-ই আসুক, হুবহু ব্যাকএন্ডে যাবে
+  const { user, token } = await apiClient.post('/auth/login', credentials);
   localStorage.setItem(TOKEN_KEY, token);
   return user;
 }
