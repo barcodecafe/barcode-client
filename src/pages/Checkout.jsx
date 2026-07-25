@@ -6,6 +6,7 @@ import {
   Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
   Eye, EyeOff, Check, X, AlertCircle
 } from 'lucide-react';
+import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { validateCoupon, couponDiscountAmount, couponDiscountLabel } from '../services/couponsService';
@@ -17,7 +18,7 @@ import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 import { getAuthErrorMessage } from '../services/authService';
 
 // ---------------------------------------------------------------------------
-// Validation Constants (SignUp.jsx এর মতো)
+// Validation Constants
 // ---------------------------------------------------------------------------
 const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
 const PASSWORD_RULES = [
@@ -66,7 +67,7 @@ export const Checkout = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Live Password & Phone Validations (SignUp.jsx এর অনুরূপ)
+  // Live Password & Phone Validations
   const signupPhoneValid = BD_PHONE.test(signupPhone.trim());
   const passwordChecks = PASSWORD_RULES.map((r) => ({ label: r.label, passed: r.test(signupPassword) }));
   const passwordScore = passwordChecks.filter((c) => c.passed).length;
@@ -145,47 +146,73 @@ export const Checkout = () => {
 
     if (authTab === 'login') {
       if (!loginPhone || !loginPassword) {
-        setAuthError('Please enter your mobile number and password.');
+        const msg = 'Please enter your mobile number and password.';
+        setAuthError(msg);
+        Swal.fire({ icon: 'warning', title: 'Missing Credentials', text: msg, confirmButtonColor: '#f97316' });
         return;
       }
       setIsLoading(true);
       try {
         await login({ phone: loginPhone, password: loginPassword });
+        Swal.fire({
+          icon: 'success',
+          title: 'Logged In Successfully!',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (err) {
-        setAuthError(getAuthErrorMessage(err));
+        const errMsg = getAuthErrorMessage(err);
+        setAuthError(errMsg);
+        Swal.fire({ icon: 'error', title: 'Login Failed', text: errMsg, confirmButtonColor: '#ef4444' });
       } finally {
         setIsLoading(false);
       }
     } else {
-      // SignUp Validation logic like SignUp.jsx
+      // SignUp Validation
       if (!signupName.trim()) {
-        setAuthError('Please enter your full name.');
+        const msg = 'Please enter your full name.';
+        setAuthError(msg);
+        Swal.fire({ icon: 'warning', title: 'Missing Name', text: msg, confirmButtonColor: '#f97316' });
         return;
       }
       if (!signupPhoneValid) {
-        setAuthError('Please enter a valid Bangladeshi mobile number.');
+        const msg = 'Please enter a valid Bangladeshi mobile number.';
+        setAuthError(msg);
+        Swal.fire({ icon: 'warning', title: 'Invalid Mobile Number', text: msg, confirmButtonColor: '#f97316' });
         return;
       }
       if (!isPasswordValid) {
-        setAuthError('Please meet all the password requirements below.');
+        const msg = 'Please meet all the password requirements below.';
+        setAuthError(msg);
+        Swal.fire({ icon: 'warning', title: 'Weak Password', text: msg, confirmButtonColor: '#f97316' });
         return;
       }
       if (signupPassword !== signupConfirmPassword) {
-        setAuthError("Passwords don't match.");
+        const msg = "Passwords don't match.";
+        setAuthError(msg);
+        Swal.fire({ icon: 'warning', title: 'Password Mismatch', text: msg, confirmButtonColor: '#f97316' });
         return;
       }
 
       setIsLoading(true);
       try {
-        // 🎯 USER SIGNUP PAYLOAD (No Email)
         await register({
           name: signupName.trim(),
           phone: signupPhone.trim(),
           password: signupPassword,
           role: 'user',
         });
+        Swal.fire({
+          icon: 'success',
+          title: 'Account Created!',
+          text: 'Welcome to Barcode!',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (err) {
-        setAuthError(getAuthErrorMessage(err));
+        const errMsg = getAuthErrorMessage(err);
+        setAuthError(errMsg);
+        Swal.fire({ icon: 'error', title: 'Registration Failed', text: errMsg, confirmButtonColor: '#ef4444' });
       } finally {
         setIsLoading(false);
       }
@@ -201,9 +228,22 @@ export const Checkout = () => {
       const coupon = await validateCoupon(couponInput, cartTotal);
       setAppliedCoupon(coupon);
       setCouponInput('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Coupon Applied!',
+        text: `Promo code "${coupon.code}" applied successfully.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (err) {
       setCouponError(err.message);
       setAppliedCoupon(null);
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Coupon',
+        text: err.message,
+        confirmButtonColor: '#ef4444',
+      });
     } finally {
       setCouponLoading(false);
     }
@@ -211,12 +251,35 @@ export const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     setOrderError('');
-    if (!regionId) return setOrderError('Please choose your delivery region.');
-    if (!phone.trim()) return setOrderError('Delivery phone number is required.');
-    if (!address.trim()) return setOrderError('Delivery address is required.');
-    if (!billingSame && !billingAddress.trim()) return setOrderError('Billing address is required.');
+    if (!regionId) {
+      const msg = 'Please choose your delivery region.';
+      setOrderError(msg);
+      Swal.fire({ icon: 'warning', title: 'Region Required', text: msg, confirmButtonColor: '#f97316' });
+      return;
+    }
+    if (!phone.trim()) {
+      const msg = 'Delivery phone number is required.';
+      setOrderError(msg);
+      Swal.fire({ icon: 'warning', title: 'Phone Required', text: msg, confirmButtonColor: '#f97316' });
+      return;
+    }
+    if (!address.trim()) {
+      const msg = 'Delivery address is required.';
+      setOrderError(msg);
+      Swal.fire({ icon: 'warning', title: 'Address Required', text: msg, confirmButtonColor: '#f97316' });
+      return;
+    }
+    if (!billingSame && !billingAddress.trim()) {
+      const msg = 'Billing address is required.';
+      setOrderError(msg);
+      Swal.fire({ icon: 'warning', title: 'Billing Address Required', text: msg, confirmButtonColor: '#f97316' });
+      return;
+    }
     if (paymentMethod === 'sslcommerz' && !canPayOnline) {
-      return setOrderError(`Online payment needs a total of at least ৳${MIN_ONLINE_AMOUNT}. Please switch to Cash on Delivery.`);
+      const msg = `Online payment needs a total of at least ৳${MIN_ONLINE_AMOUNT}. Please switch to Cash on Delivery.`;
+      setOrderError(msg);
+      Swal.fire({ icon: 'warning', title: 'Minimum Amount Limit', text: msg, confirmButtonColor: '#f97316' });
+      return;
     }
 
     setIsLoading(true);
@@ -250,15 +313,37 @@ export const Checkout = () => {
           throw new Error('The payment gateway did not return a checkout link.');
         } catch (payErr) {
           console.error('Payment init failed:', payErr);
+          Swal.fire({
+            icon: 'error',
+            title: 'Payment Initialization Failed',
+            text: payErr.message || 'Could not redirect to payment gateway.',
+            confirmButtonColor: '#ef4444',
+          });
           navigate(`/order-tracking/${newOrder.id}?payment=unstarted`);
           return;
         }
       }
 
+      // 🎯 Success Alert Popup for COD Order
+      await Swal.fire({
+        icon: 'success',
+        title: 'Order Placed Successfully!',
+        text: 'Thank you for your order. We are preparing your meal!',
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
       clearCart();
       navigate(`/order-tracking/${newOrder.id}`);
     } catch (err) {
-      setOrderError(err.message || 'Failed to place order. Please try again.');
+      const errMsg = err.message || 'Failed to place order. Please try again.';
+      setOrderError(errMsg);
+      Swal.fire({
+        icon: 'error',
+        title: 'Order Placement Failed',
+        text: errMsg,
+        confirmButtonColor: '#ef4444',
+      });
     } finally {
       setIsLoading(false);
     }

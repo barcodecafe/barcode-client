@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Lock, User, Phone, Eye, EyeOff, Loader2, AlertCircle, Check, X } from 'lucide-react';
+import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
-// Password rules (সবার জন্য প্রযোজ্য)
+// Password rules
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 },
   { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
@@ -42,7 +43,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
   const emailValid = STRICT_EMAIL.test(email.trim());
   const phoneValid = BD_PHONE.test(phone.trim());
 
-  // Submit button state: User এর জন্য emailValid চেক করার দরকার নেই
+  // Submit button state
   const canSubmit =
     name.trim() &&
     phoneValid &&
@@ -59,32 +60,57 @@ export const SignUp = ({ defaultRole = 'user' }) => {
     e.preventDefault();
     setError('');
 
-    // Admin/Rider এর জন্য Email চেক
+    // Client-side Validation Alerts
     if (!isUser && !emailValid) {
-      setError('Please enter a valid email address.');
+      const msg = 'Please enter a valid email address.';
+      setError(msg);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Email',
+        text: msg,
+        confirmButtonColor: '#f97316',
+      });
       return;
     }
 
     if (!phoneValid) {
-      setError('Please enter a valid Bangladeshi mobile number.');
+      const msg = 'Please enter a valid Bangladeshi mobile number.';
+      setError(msg);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Mobile Number',
+        text: msg,
+        confirmButtonColor: '#f97316',
+      });
       return;
     }
 
     if (!isPasswordValid) {
-      setError('Please meet all the password requirements below.');
+      const msg = 'Please meet all the password requirements.';
+      setError(msg);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Weak Password',
+        text: msg,
+        confirmButtonColor: '#f97316',
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords don't match.");
+      const msg = "Passwords don't match.";
+      setError(msg);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Password Mismatch',
+        text: msg,
+        confirmButtonColor: '#f97316',
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // 🎯 PAYLOAD LOGIC:
-      // User: { name, phone, password, role }
-      // Admin/Rider: { name, email, phone, password, role }
       const payload = isUser
         ? {
             name: name.trim(),
@@ -101,6 +127,16 @@ export const SignUp = ({ defaultRole = 'user' }) => {
           };
 
       const newUser = await register(payload);
+
+      // 🎯 Success Alert Popup
+      await Swal.fire({
+        icon: 'success',
+        title: 'Registration Successful!',
+        text: `Welcome, ${newUser?.name || 'User'}! Your account has been created.`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
       if (newUser?.role === 'admin') {
         navigate('/admin', { replace: true });
       } else if (newUser?.role === 'rider') {
@@ -109,7 +145,16 @@ export const SignUp = ({ defaultRole = 'user' }) => {
         navigate('/', { replace: true });
       }
     } catch (err) {
-      setError(getAuthErrorMessage(err));
+      const errMsg = getAuthErrorMessage(err);
+      setError(errMsg);
+
+      // 🎯 Failure / Error Alert Popup
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        text: errMsg,
+        confirmButtonColor: '#ef4444',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +186,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name Field (সবার জন্য) */}
+            {/* Full Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                 Full Name
@@ -160,7 +205,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               </div>
             </div>
 
-            {/* Email Field (শুধুমাত্র Admin & Rider এর জন্য) */}
+            {/* Email Field (Admin & Rider) */}
             {!isUser && (
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
@@ -186,7 +231,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               </div>
             )}
 
-            {/* Mobile Number Field (সবার জন্য) */}
+            {/* Mobile Number Field */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                 Mobile Number
@@ -212,7 +257,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               )}
             </div>
 
-            {/* Password Field (সবার জন্য) */}
+            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                 Password
@@ -276,7 +321,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               )}
             </div>
 
-            {/* Confirm Password Field (সবার জন্য) */}
+            {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                 Confirm Password

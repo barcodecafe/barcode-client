@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LogIn as LogInIcon, Phone, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
+import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
@@ -82,17 +83,45 @@ export const Login = ({ variant = 'user' }) => {
 
       const loggedInUser = await login(payload);
 
-      // Role gate
+      // Role gate (ভুল পোর্টাল চেক)
       if (loggedInUser.role !== cfg.role) {
         await logout();
-        setWrongDoor({ message: wrongDoorMessage(loggedInUser.role), to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
+        const doorMsg = wrongDoorMessage(loggedInUser.role);
+        setWrongDoor({ message: doorMsg, to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
+
+        // 🎯 Wrong Portal Warning Alert
+        Swal.fire({
+          icon: 'warning',
+          title: 'Incorrect Portal',
+          text: doorMsg,
+          confirmButtonText: 'Understood',
+          confirmButtonColor: '#f97316',
+        });
         return;
       }
+
+      // 🎯 Success Alert Popup
+      await Swal.fire({
+        icon: 'success',
+        title: 'Welcome Back!',
+        text: `Logged in successfully as ${loggedInUser?.name || cfg.badge}.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
       const redirectTo = location.state?.from || cfg.home;
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(getAuthErrorMessage(err));
+      const errMsg = getAuthErrorMessage(err);
+      setError(errMsg);
+
+      // 🎯 Login Error Alert Popup
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: errMsg,
+        confirmButtonColor: '#ef4444',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +171,7 @@ export const Login = ({ variant = 'user' }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 🎯 User এর জন্য Phone Field, Rider & Admin এর জন্য Email Field */}
+          {/* User এর জন্য Phone Field, Rider & Admin এর জন্য Email Field */}
           {cfg.role === 'user' ? (
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
