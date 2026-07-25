@@ -26,14 +26,16 @@ import {
   assignRiderToOrder,
   acceptRiderOrder,
   rejectRiderOrder,
-  confirmRiderCashSettlement, // New API function
+  confirmRiderCashSettlement,
 } from "../../services/ordersService";
 import { recheckPayment } from "../../services/paymentsService";
 import { buildDailySettlementLog, businessDateKey, formatDateKey } from "../../utils/settlement";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
-import { useVisiblePolling } from "../../hooks/useVisiblePolling";
+
+// Socket Client Connection Import
+import { socket } from "../../services/socket";
 
 // The server stores paymentMethod as 'cod' / 'sslcommerz' — never the label.
 const isOnlineOrder = (ord) =>
@@ -100,13 +102,13 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Live data fetch
+  // Manual refresh helper if needed
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
-        return ordersData || []; // callers may need the fresh list, not just the state update
+        return ordersData || [];
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
@@ -123,7 +125,53 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  useVisiblePolling(fetchOrdersAndFleet, { intervalMs: 20000 });
+  // Socket Real-time Event Listeners
+  useEffect(() => {
+    // ১. নতুন অর্ডার তৈরি হলে লিস্টে যোগ হবে
+    socket.on("order_created", (newOrder) => {
+      setOrders((prev) => [newOrder, ...prev]);
+    });
+
+    // ২. অর্ডারের স্ট্যাটাস বা পেমেন্ট আপডেট হলে আপডেট হবে
+    socket.on("order_updated", (updatedOrder) => {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
+      );
+      // খোলা থাকা মোডালেও আপডেট দেখাবে
+      setSelectedOrderDetails((prev) =>
+        prev?.id === updatedOrder.id ? updatedOrder : prev
+      );
+    });
+
+    // ৩. রাইডারের স্টেটাস বা ক্যাশ কালেকশন আপডেট হলে
+    socket.on("rider_updated", (updatedRider) => {
+      setRiders((prev) =>
+        prev.map((r) => (r.id === updatedRider.id ? updatedRider : r))
+      );
+    });
+
+    // ৪. কাস্টমার বা রাইডারের থেকে নতুন চ্যাট মেসেজ আসলে
+    socket.on("new_chat_message", ({ orderId, message }) => {
+      setOrders((prevOrders) =>
+        prevOrders.map((ord) => {
+          if (ord.id === orderId) {
+            return {
+              ...ord,
+              chatHistory: [...(ord.chatHistory || []), message],
+            };
+          }
+          return ord;
+        })
+      );
+    });
+
+    return () => {
+      socket.off("order_created");
+      socket.off("order_updated");
+      socket.off("rider_updated");
+      socket.off("new_chat_message");
+    };
+  }, []);
 
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
@@ -135,25 +183,13 @@ export const AdminOrders = () => {
   }, [activeChatOrderId, chatMessagesCount]);
 
   // Today's settlement position for one rider.
-  // Shares utils/settlement.js with the rider's own dashboard and the server, so
-  // all three agree — notably that an order paid online is ৳0 of cash in hand.
   const getRiderPerformanceStats = (riderId) => {
     const todayKey = businessDateKey(new Date());
-
-    // ⚠️ riderId ONLY. Matching on riderName as well showed the admin orders the
-    // server would never settle (it filters by riderId), so the figure on screen
-    // couldn't be actioned — and two riders sharing a name merged their cash.
     const riderOrders = orders.filter((o) => o.riderId === riderId);
 
     const log = buildDailySettlementLog(riderOrders);
     const today = log.find((r) => r.dateKey === todayKey);
 
-    // Earlier days that are still owed. Without this the admin could only ever
-    // confirm today, so a day missed yesterday had no surface to settle from
-    // even though the rider's own dashboard kept offering to submit it.
-    // Oldest first: these are shown truncated, and the oldest debt is the one
-    // that most needs a Confirm button — newest-first would hide exactly the
-    // days that have been stuck longest.
     const pastDue = log
       .filter((r) => r.dateKey !== todayKey && r.delivered > 0 && !r.isSettled)
       .sort((a, b) => (a.dateKey < b.dateKey ? -1 : 1));
@@ -178,14 +214,11 @@ export const AdminOrders = () => {
     };
   };
 
-  // Ask the gateway what really happened to an online payment we never heard
-  // about, and settle the order if it confirms one.
   const handleRecheckPayment = async (orderId) => {
     try {
       setRecheckingOrderId(orderId);
       const result = await recheckPayment(orderId);
       const updated = await fetchOrdersAndFleet();
-      // keep the open modal in sync with what the re-check just changed
       if (Array.isArray(updated)) {
         const fresh = updated.find((o) => o.id === orderId);
         if (fresh) setSelectedOrderDetails(fresh);
@@ -198,8 +231,6 @@ export const AdminOrders = () => {
     }
   };
 
-  // Handle Admin Settlement Confirmation.
-  // dateKey is the stable YYYY-MM-DD business day the server settles by.
   const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
     const confirmSettle = window.confirm(
       `Confirm you have received ${riderName}'s cash for ${formatDateKey(dateKey)}?\n\n` +
@@ -263,13 +294,22 @@ export const AdminOrders = () => {
     if (!adminChatMessage.trim() || !activeChatOrderId) return;
 
     try {
-      const updated = await addChatMessage(activeChatOrderId, {
+      const messagePayload = {
         sender: "admin",
         senderName: "Barcode Admin",
         text: adminChatMessage.trim(),
+      };
+
+      const updated = await addChatMessage(activeChatOrderId, messagePayload);
+
+      // Emit Socket event (যদি ব্যাকএন্ড ফ্রন্টএন্ড থেকে সরাসরি ব্রডকাস্ট আশা করে)
+      socket.emit("send_message", {
+        orderId: activeChatOrderId,
+        message: messagePayload,
       });
+
       setOrders((prev) =>
-        prev.map((o) => (o.id === activeChatOrderId ? updated : o)),
+        prev.map((o) => (o.id === activeChatOrderId ? updated : o))
       );
       setAdminChatMessage("");
     } catch (err) {
@@ -408,8 +448,7 @@ export const AdminOrders = () => {
                         </div>
                       )}
 
-                      {/* Earlier days still owed — otherwise a day missed
-                          yesterday could never be confirmed from anywhere. */}
+                      {/* Earlier days still owed */}
                       {stats.pastDue.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-1.5">
                           <span className="block text-[9px] uppercase tracking-wider font-bold text-red-400">
@@ -667,7 +706,7 @@ export const AdminOrders = () => {
         )}
       </div>
 
-      {/* ------------------ Order Details Modal ------------------ */}
+      {/* Order Details Modal */}
       <AnimatePresence>
         {selectedOrderDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -774,9 +813,6 @@ export const AdminOrders = () => {
                   </span>
                 </div>
 
-                {/* Recovery path for an online order the gateway never told us
-                    about. The server asks SSLCommerz what really happened — it
-                    can only settle a payment the gateway itself confirms. */}
                 {isOnlineOrder(selectedOrderDetails) &&
                   selectedOrderDetails.paymentStatus !== "Paid" && (
                     <div className="pt-1">

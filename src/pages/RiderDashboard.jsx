@@ -18,7 +18,7 @@ import {
   ClipboardList,
   Utensils,
   CheckCircle2,
-  Clock3
+  Clock3,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { buildDailySettlementLog, formatDateKey } from "../utils/settlement";
@@ -54,13 +54,14 @@ export const RiderDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // --- Primary States ---
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingCashDate, setSubmittingCashDate] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [riderChatMessage, setRiderChatMessage] = useState("");
 
-  // Earning & Delivery Filter States
+  // --- Earning & Delivery Filter States ---
   const [timeFilter, setTimeFilter] = useState("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -69,6 +70,7 @@ export const RiderDashboard = () => {
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
+  // --- Fetch Orders Callback ---
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
     getAllOrders()
@@ -87,12 +89,14 @@ export const RiderDashboard = () => {
       });
   }, [user]);
 
+  // Direct Auto-Polling Effect (every 4 seconds)
   useEffect(() => {
     fetchRiderOrders();
     const interval = setInterval(fetchRiderOrders, 4000);
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
+  // Chat Scroll to Bottom Effect
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
       chatEndRef.current.scrollIntoView({
@@ -102,6 +106,7 @@ export const RiderDashboard = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
+  // --- Event Handlers ---
   const handleLogout = async () => {
     await logout();
     navigate("/", { replace: true });
@@ -134,9 +139,6 @@ export const RiderDashboard = () => {
     }
   };
 
-  // Submit cash collection to admin via Live API.
-  // dateKey is the stable YYYY-MM-DD business day, not the display string — the
-  // server settles by that key, so a locale-formatted date must never be sent.
   const handleSubmitCash = async (dateKey) => {
     const label = formatDateKey(dateKey);
     const confirmSubmit = window.confirm(
@@ -225,9 +227,6 @@ export const RiderDashboard = () => {
   };
 
   // --- Performance Log Grouped by Date ---
-  // The maths lives in utils/settlement.js so this screen, the admin fleet view
-  // and the server all agree — in particular that an order paid online is ৳0 of
-  // cash in the rider's hands, not its full total.
   const getDailyPerformanceLog = () => buildDailySettlementLog(orders);
 
   const filteredStats = getFilteredStats();

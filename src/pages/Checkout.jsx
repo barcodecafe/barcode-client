@@ -16,6 +16,7 @@ import { getDiscountedPrice } from '../services/foodsService';
 import { getRegionDeliveryCharge } from '../services/deliveryService';
 import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 import { getAuthErrorMessage } from '../services/authService';
+import { socket } from '../services/socket'; // 👈 ⚡️ Socket Import করা হলো
 
 // ---------------------------------------------------------------------------
 // Validation Constants
@@ -219,14 +220,12 @@ export const Checkout = () => {
     }
   };
 
-  // 💡 আপডেট: কুপন ভ্যালিডেশন চেক করার সময় কাস্টমারের ফোন নম্বর পাস করা হচ্ছে
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
     setCouponError('');
     if (!couponInput.trim()) return;
     setCouponLoading(true);
 
-    // ফোন নম্বর স্টেপ ২ এর ইনপুট অথবা ইউজারের প্রোফাইল থেকে নেওয়া
     const customerPhone = phone.trim() || user?.phone || '';
 
     try {
@@ -303,7 +302,17 @@ export const Checkout = () => {
         deliveryPhone: phone,
         paymentMethod,
       };
+
+      // ১. ব্যাকএন্ডে অর্ডার তৈরি করা
       const newOrder = await createOrder(orderData);
+
+      // ⚡️ ২. REAL-TIME SOCKET EMIT (নতুন অর্ডার এডমিন ও রাইডারকে তৎক্ষণাৎ জানাতে)
+      try {
+        socket.emit('create_order', newOrder);
+      } catch (sErr) {
+        console.error('Socket notification failed:', sErr);
+      }
+
       if (pointsDiscount > 0 && refreshUser) {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }

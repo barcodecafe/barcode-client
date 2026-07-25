@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -25,15 +25,13 @@ import {
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { socket } from '../services/socket'; // 👈 ⚡ Socket Import
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
 
 // ---------------------------------------------------------------------------
 // AdminLayout.jsx
-//
-// Admin layout shell: sidebar behaves as an inline panel on desktop screens
-// and overlay on mobile sizes.
 // ---------------------------------------------------------------------------
 
 const navItems = [
@@ -58,9 +56,54 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // 🔔 ⚡ REAL-TIME DESKTOP NOTIFICATION & SOUND LOGIC
+  useEffect(() => {
+    // ১. প্রথমবার পেজে এলে ব্রাউজার ডেসktop নোটিফিকেশন পারমিশন চাওয়া
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // ২. নতুন অর্ডার এলে ব্যাকগ্রাউন্ডে এলার্ট দেওয়া
+    const handleNewOrder = (newOrder) => {
+      // 🔊 সাউন্ড প্লে করা
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // বি পপ সাউন্ড
+        audio.play().catch(() => {});
+      } catch (e) {
+        console.error('Audio play error:', e);
+      }
+
+      // 💻 ডেসktop পপ-আপ নোটিফিকেশন (অন্য ট্যাবে থাকলেও দেখাবে)
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const orderId = newOrder?.id || newOrder?._id || 'New';
+        const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
+
+        const desktopNotif = new Notification('🚨 নতুন অর্ডার এসেছে!', {
+          body: `Order ID: #${orderId}\nTotal: ৳${totalAmount}`,
+          icon: settings?.logoLight || resB,
+          requireInteraction: true, // এডমিন বন্ধ না করা পর্যন্ত স্ক্রিনে থাকবে
+        });
+
+        // নোটিফিকেশনে ক্লিক করলে সরাসরি অ্যাডমিনকে Orders পেজে নিয়ে আসবে
+        desktopNotif.onclick = () => {
+          window.focus();
+          navigate('/admin/orders');
+        };
+      }
+
+      // 🏷️ ব্রাউজার ট্যাবের টাইটেল চেঞ্জ করা
+      document.title = '🚨 (1) new order received!';
+    };
+
+    socket.on('admin_new_order', handleNewOrder);
+
+    return () => {
+      socket.off('admin_new_order', handleNewOrder);
+    };
+  }, [navigate, settings?.logoLight]);
+
   // Auto-open on desktop, auto-close on mobile initially
   useState(() => {
-    // Run on initial load
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     setIsDrawerOpen(isDesktop);
   });
@@ -80,9 +123,6 @@ export const AdminLayout = () => {
             className="h-6 w-auto object-contain"
           />
         </div>
-        {/* <span className="font-display text-sm font-bold text-neutral-400 dark:text-neutral-600 tracking-wide uppercase">
-          Admin
-        </span> */}
       </Link>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
@@ -158,7 +198,6 @@ export const AdminLayout = () => {
             <X className="w-5 h-5" />
           </button>
           <SidebarContent onNavigate={() => {
-            // Auto close drawer on navigation click ONLY on mobile screens
             if (typeof window !== 'undefined' && window.innerWidth < 768) {
               setIsDrawerOpen(false);
             }
@@ -171,7 +210,6 @@ export const AdminLayout = () => {
         {/* Topbar */}
         <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            {/* Persistent Hamburger Button toggles sidebar on all screens */}
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all"
