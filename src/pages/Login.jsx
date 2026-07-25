@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn as LogInIcon, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
+import { LogIn as LogInIcon, Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
@@ -10,10 +10,6 @@ import { getAuthErrorMessage } from '../services/authService';
 //   /login        → variant="user"   (customers only)
 //   /admin/login  → variant="admin"  (administrators only)
 //   /rider/login  → variant="rider"  (delivery riders only)
-//
-// Credentials are verified by the server; the role gate is enforced here: if
-// someone signs in at the wrong door (e.g. an admin at /login), we sign them
-// straight back out and point them to the correct portal.
 // ---------------------------------------------------------------------------
 const VARIANTS = {
   user: {
@@ -36,7 +32,7 @@ const VARIANTS = {
     subtitle: 'Sign in to manage the Barcode dashboard.',
     home: '/admin',
     standalone: true,
-    signupPrompt: null, // admins are provisioned internally — no public signup
+    signupPrompt: null,
   },
   rider: {
     role: 'rider',
@@ -64,11 +60,12 @@ export const Login = ({ variant = 'user' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('');
+  // 🎯 Email এর বদলে Phone State
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [wrongDoor, setWrongDoor] = useState(null); // { message, to }
+  const [wrongDoor, setWrongDoor] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -76,17 +73,18 @@ export const Login = ({ variant = 'user' }) => {
     setError('');
     setWrongDoor(null);
     setIsSubmitting(true);
-    try {
-      const loggedInUser = await login({ email, password });
 
-      // Role gate: right credentials, wrong door → sign back out and redirect.
+    try {
+      // 🎯 Phone & Password দিয়ে Login Request
+      const loggedInUser = await login({ phone: phone.trim(), password });
+
+      // Role gate
       if (loggedInUser.role !== cfg.role) {
         await logout();
         setWrongDoor({ message: wrongDoorMessage(loggedInUser.role), to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
         return;
       }
 
-      // ProtectedRoute may have sent them here with a return target.
       const redirectTo = location.state?.from || cfg.home;
       navigate(redirectTo, { replace: true });
     } catch (err) {
@@ -140,24 +138,27 @@ export const Login = ({ variant = 'user' }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Mobile Number Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Email Address
+            <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              Mobile Number
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
-                id="email"
-                type="email"
+                id="phone"
+                type="tel"
+                inputMode="numeric"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="01813616130"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
               />
             </div>
           </div>
 
+          {/* Password Field */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -214,8 +215,6 @@ export const Login = ({ variant = 'user' }) => {
     </motion.div>
   );
 
-  // Standalone portals (admin/rider) render full-screen with a back-to-site
-  // link; the customer login lives inside the public layout (navbar present).
   if (cfg.standalone) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-neutral-50 dark:bg-neutral-950">
