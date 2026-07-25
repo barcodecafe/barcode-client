@@ -20,9 +20,9 @@ export async function deleteCoupon(id) {
   return apiClient.delete(`/coupons/${id}`);
 }
 
-/** POST /api/coupons/validate { code, subtotal } → coupon (throws with message if invalid) */
-export async function validateCoupon(code, subtotal) {
-  return apiClient.post('/coupons/validate', { code, subtotal });
+/** POST /api/coupons/validate { code, subtotal, phone } → coupon (throws with message if invalid) */
+export async function validateCoupon(code, subtotal, phone = '') {
+  return apiClient.post('/coupons/validate', { code, subtotal, phone });
 }
 
 // ── Coupon discount helpers — percentage OR flat ৳ amount ──

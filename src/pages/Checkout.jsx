@@ -219,13 +219,18 @@ export const Checkout = () => {
     }
   };
 
+  // 💡 আপডেট: কুপন ভ্যালিডেশন চেক করার সময় কাস্টমারের ফোন নম্বর পাস করা হচ্ছে
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
     setCouponError('');
     if (!couponInput.trim()) return;
     setCouponLoading(true);
+
+    // ফোন নম্বর স্টেপ ২ এর ইনপুট অথবা ইউজারের প্রোফাইল থেকে নেওয়া
+    const customerPhone = phone.trim() || user?.phone || '';
+
     try {
-      const coupon = await validateCoupon(couponInput, cartTotal);
+      const coupon = await validateCoupon(couponInput, cartTotal, customerPhone);
       setAppliedCoupon(coupon);
       setCouponInput('');
       Swal.fire({
