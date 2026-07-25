@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ShoppingBag, Tag, Phone, MapPin, Mail, Lock, User, LogOut, ArrowRight,
+  ShoppingBag, Tag, Phone, MapPin, Lock, User, LogOut, ArrowRight,
   Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -45,9 +45,10 @@ export const Checkout = () => {
   // Auth (inline, only when logged out)
   const [authTab, setAuthTab] = useState('login');
   const [authError, setAuthError] = useState('');
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
   // Delivery details
@@ -118,13 +119,13 @@ export const Checkout = () => {
     setIsLoading(true);
     try {
       if (authTab === 'login') {
-        if (!loginEmail || !loginPassword) throw new Error('Please enter your email and password.');
-        await login({ email: loginEmail, password: loginPassword });
+        if (!loginPhone || !loginPassword) throw new Error('Please enter your mobile number and password.');
+        await login({ phone: loginPhone, password: loginPassword });
       } else {
-        if (!signupName || !signupPassword) throw new Error('Name and password are required.');
-        // Email removed from registration payload
+        if (!signupName || !signupPhone || !signupPassword) throw new Error('Name, mobile number, and password are required.');
         await register({
           name: signupName,
+          phone: signupPhone,
           password: signupPassword,
           role: 'user',
         });
@@ -358,7 +359,7 @@ export const Checkout = () => {
                   <div className="w-9 h-9 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold text-sm">{(user?.name || '?').charAt(0).toUpperCase()}</div>
                   <div>
                     <span className="block text-sm font-semibold text-neutral-800 dark:text-white leading-tight">{user?.name}</span>
-                    {user?.email && <span className="block text-[11px] text-neutral-400">{user?.email}</span>}
+                    {user?.phone && <span className="block text-[11px] text-neutral-400">{user?.phone}</span>}
                   </div>
                 </div>
                 <button type="button" onClick={logout} className="flex items-center gap-1 text-[11px] text-red-500 font-bold hover:underline"><LogOut className="w-3.5 h-3.5" /> Logout</button>
@@ -372,12 +373,29 @@ export const Checkout = () => {
                 {authError && <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">{authError}</div>}
                 <form onSubmit={handleAuth} className="space-y-3">
                   {authTab === 'signup' ? (
-                    <div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="text" required value={signupName} onChange={(e) => setSignupName(e.target.value)} placeholder="Full name" className={fieldCls} /></div>
+                    <>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input type="text" required value={signupName} onChange={(e) => setSignupName(e.target.value)} placeholder="Full name" className={fieldCls} />
+                      </div>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input type="tel" required value={signupPhone} onChange={(e) => setSignupPhone(e.target.value)} placeholder="Mobile number" className={fieldCls} />
+                      </div>
+                    </>
                   ) : (
-                    <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="Email address" className={fieldCls} /></div>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                      <input type="tel" required value={loginPhone} onChange={(e) => setLoginPhone(e.target.value)} placeholder="Mobile number" className={fieldCls} />
+                    </div>
                   )}
-                  <div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" /><input type="password" required value={authTab === 'login' ? loginPassword : signupPassword} onChange={(e) => authTab === 'login' ? setLoginPassword(e.target.value) : setSignupPassword(e.target.value)} placeholder="Password" className={fieldCls} /></div>
-                  <button type="submit" disabled={isLoading} className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all">{isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{authTab === 'login' ? 'Log In & Continue' : 'Create Account & Continue'}<ArrowRight className="w-4 h-4" /></>}</button>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input type="password" required value={authTab === 'login' ? loginPassword : signupPassword} onChange={(e) => authTab === 'login' ? setLoginPassword(e.target.value) : setSignupPassword(e.target.value)} placeholder="Password" className={fieldCls} />
+                  </div>
+                  <button type="submit" disabled={isLoading} className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{authTab === 'login' ? 'Log In & Continue' : 'Create Account & Continue'}<ArrowRight className="w-4 h-4" /></>}
+                  </button>
                 </form>
               </div>
             )}
