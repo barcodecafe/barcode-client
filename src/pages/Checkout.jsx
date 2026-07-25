@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {
   ShoppingBag, Tag, Phone, MapPin, Lock, User, LogOut, ArrowRight,
   Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
+  Eye, EyeOff, Check, X, AlertCircle
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,18 @@ import { getAllRegions } from '../services/regionsService';
 import { getDiscountedPrice } from '../services/foodsService';
 import { getRegionDeliveryCharge } from '../services/deliveryService';
 import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
+import { getAuthErrorMessage } from '../services/authService';
+
+// ---------------------------------------------------------------------------
+// Validation Constants (SignUp.jsx এর মতো)
+// ---------------------------------------------------------------------------
+const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
+const PASSWORD_RULES = [
+  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
+  { label: 'One number', test: (p) => /[0-9]/.test(p) },
+];
 
 // ---------------------------------------------------------------------------
 // Checkout.jsx — dedicated /checkout page
@@ -50,6 +63,19 @@ export const Checkout = () => {
   const [signupName, setSignupName] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Live Password & Phone Validations (SignUp.jsx এর অনুরূপ)
+  const signupPhoneValid = BD_PHONE.test(signupPhone.trim());
+  const passwordChecks = PASSWORD_RULES.map((r) => ({ label: r.label, passed: r.test(signupPassword) }));
+  const passwordScore = passwordChecks.filter((c) => c.passed).length;
+  const isPasswordValid = passwordScore === PASSWORD_RULES.length;
+  const passwordsMatch = signupConfirmPassword.length > 0 && signupPassword === signupConfirmPassword;
+
+  const strengthLabel = passwordScore <= 2 ? 'Weak' : passwordScore === 3 ? 'Medium' : 'Strong';
+  const strengthColor =
+    passwordScore <= 2 ? 'text-red-500' : passwordScore === 3 ? 'text-amber-500' : 'text-green-600 dark:text-green-400';
 
   // Delivery details
   const [phone, setPhone] = useState('');
@@ -116,24 +142,53 @@ export const Checkout = () => {
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError('');
-    setIsLoading(true);
-    try {
-      if (authTab === 'login') {
-        if (!loginPhone || !loginPassword) throw new Error('Please enter your mobile number and password.');
+
+    if (authTab === 'login') {
+      if (!loginPhone || !loginPassword) {
+        setAuthError('Please enter your mobile number and password.');
+        return;
+      }
+      setIsLoading(true);
+      try {
         await login({ phone: loginPhone, password: loginPassword });
-      } else {
-        if (!signupName || !signupPhone || !signupPassword) throw new Error('Name, mobile number, and password are required.');
+      } catch (err) {
+        setAuthError(getAuthErrorMessage(err));
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // SignUp Validation logic like SignUp.jsx
+      if (!signupName.trim()) {
+        setAuthError('Please enter your full name.');
+        return;
+      }
+      if (!signupPhoneValid) {
+        setAuthError('Please enter a valid Bangladeshi mobile number.');
+        return;
+      }
+      if (!isPasswordValid) {
+        setAuthError('Please meet all the password requirements below.');
+        return;
+      }
+      if (signupPassword !== signupConfirmPassword) {
+        setAuthError("Passwords don't match.");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        // 🎯 USER SIGNUP PAYLOAD (No Email)
         await register({
-          name: signupName,
-          phone: signupPhone,
+          name: signupName.trim(),
+          phone: signupPhone.trim(),
           password: signupPassword,
           role: 'user',
         });
+      } catch (err) {
+        setAuthError(getAuthErrorMessage(err));
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setAuthError(err.message || 'Authentication failed.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -370,31 +425,190 @@ export const Checkout = () => {
                   <button type="button" onClick={() => { setAuthTab('login'); setAuthError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'login' ? 'bg-white dark:bg-neutral-900 text-neutral-800 dark:text-white shadow-sm' : 'text-neutral-500'}`}>Log In</button>
                   <button type="button" onClick={() => { setAuthTab('signup'); setAuthError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'signup' ? 'bg-white dark:bg-neutral-900 text-neutral-800 dark:text-white shadow-sm' : 'text-neutral-500'}`}>Register</button>
                 </div>
-                {authError && <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">{authError}</div>}
+
+                {authError && (
+                  <div className="p-3 text-xs text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{authError}</span>
+                  </div>
+                )}
+
                 <form onSubmit={handleAuth} className="space-y-3">
                   {authTab === 'signup' ? (
                     <>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        <input type="text" required value={signupName} onChange={(e) => setSignupName(e.target.value)} placeholder="Full name" className={fieldCls} />
+                      {/* Full Name */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Full Name</label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="text"
+                            required
+                            value={signupName}
+                            onChange={(e) => setSignupName(e.target.value)}
+                            placeholder="Your full name"
+                            className={fieldCls}
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        <input type="tel" required value={signupPhone} onChange={(e) => setSignupPhone(e.target.value)} placeholder="Mobile number" className={fieldCls} />
+
+                      {/* Mobile Number */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Mobile Number</label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="tel"
+                            required
+                            inputMode="numeric"
+                            value={signupPhone}
+                            onChange={(e) => setSignupPhone(e.target.value)}
+                            placeholder="01813616130"
+                            className={fieldCls}
+                          />
+                        </div>
+                        {signupPhone.length > 0 && (
+                          <p className={`mt-1 text-[11px] flex items-center gap-1 ${signupPhoneValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                            {signupPhoneValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                            {signupPhoneValid ? 'Looks good' : 'Enter a valid Bangladeshi mobile number'}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Password */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            minLength={8}
+                            value={signupPassword}
+                            onChange={(e) => setSignupPassword(e.target.value)}
+                            placeholder="Create a password"
+                            className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white placeholder-neutral-400 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+
+                        {/* Password Strength Bar & Checklist */}
+                        {signupPassword.length > 0 && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <div className="flex gap-1 flex-1">
+                                {[0, 1, 2, 3].map((i) => (
+                                  <div
+                                    key={i}
+                                    className={`h-1 flex-1 rounded-full transition-colors ${
+                                      i < passwordScore
+                                        ? passwordScore <= 2
+                                          ? 'bg-red-400'
+                                          : passwordScore === 3
+                                            ? 'bg-amber-400'
+                                            : 'bg-green-500'
+                                        : 'bg-neutral-200 dark:bg-neutral-800'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className={`text-[10px] font-semibold ${strengthColor}`}>{strengthLabel}</span>
+                            </div>
+                            <ul className="grid grid-cols-2 gap-x-2 gap-y-1">
+                              {passwordChecks.map((c) => (
+                                <li
+                                  key={c.label}
+                                  className={`flex items-center gap-1 text-[10px] ${
+                                    c.passed ? 'text-green-600 dark:text-green-400' : 'text-neutral-400 dark:text-neutral-500'
+                                  }`}
+                                >
+                                  {c.passed ? <Check className="w-3 h-3 shrink-0" /> : <X className="w-3 h-3 shrink-0" />}
+                                  {c.label}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Confirm Password */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Confirm Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            value={signupConfirmPassword}
+                            onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                            placeholder="Re-enter password"
+                            className={fieldCls}
+                          />
+                        </div>
+                        {signupConfirmPassword.length > 0 && (
+                          <p className={`mt-1 text-[11px] flex items-center gap-1 ${passwordsMatch ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                            {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                            {passwordsMatch ? 'Passwords match' : "Passwords don't match"}
+                          </p>
+                        )}
                       </div>
                     </>
                   ) : (
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                      <input type="tel" required value={loginPhone} onChange={(e) => setLoginPhone(e.target.value)} placeholder="Mobile number" className={fieldCls} />
-                    </div>
+                    <>
+                      {/* Login Phone */}
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input
+                          type="tel"
+                          required
+                          value={loginPhone}
+                          onChange={(e) => setLoginPhone(e.target.value)}
+                          placeholder="Mobile number"
+                          className={fieldCls}
+                        />
+                      </div>
+
+                      {/* Login Password */}
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="Password"
+                          className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white placeholder-neutral-400 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </>
                   )}
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input type="password" required value={authTab === 'login' ? loginPassword : signupPassword} onChange={(e) => authTab === 'login' ? setLoginPassword(e.target.value) : setSignupPassword(e.target.value)} placeholder="Password" className={fieldCls} />
-                  </div>
-                  <button type="submit" disabled={isLoading} className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all">
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{authTab === 'login' ? 'Log In & Continue' : 'Create Account & Continue'}<ArrowRight className="w-4 h-4" /></>}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading || (authTab === 'signup' && (!signupName.trim() || !signupPhoneValid || !isPasswordValid || !passwordsMatch))}
+                    className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        {authTab === 'login' ? 'Log In & Continue' : 'Create Account & Continue'}
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </form>
               </div>
