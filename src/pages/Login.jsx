@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn as LogInIcon, Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
+import { LogIn as LogInIcon, Phone, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
 // ---------------------------------------------------------------------------
-// Login.jsx — one component, three role-segregated doors:
-//   /login        → variant="user"   (customers only)
-//   /admin/login  → variant="admin"  (administrators only)
-//   /rider/login  → variant="rider"  (delivery riders only)
+// Login.jsx — Dynamic role-segregated login:
+//   /login        → variant="user"   (Phone + Password)
+//   /admin/login  → variant="admin"  (Email + Password)
+//   /rider/login  → variant="rider"  (Email + Password)
 // ---------------------------------------------------------------------------
 const VARIANTS = {
   user: {
@@ -17,7 +17,7 @@ const VARIANTS = {
     icon: LogInIcon,
     badge: 'Customer',
     title: 'Welcome back',
-    subtitle: 'Log in to pick up your favorites and order history.',
+    subtitle: 'Log in with your mobile number to pick up your favorites.',
     home: '/',
     standalone: false,
     signupPrompt: "Don't have an account?",
@@ -29,7 +29,7 @@ const VARIANTS = {
     icon: ShieldCheck,
     badge: 'Administrator',
     title: 'Admin Portal',
-    subtitle: 'Sign in to manage the Barcode dashboard.',
+    subtitle: 'Sign in with your email to manage the Barcode dashboard.',
     home: '/admin',
     standalone: true,
     signupPrompt: null,
@@ -39,7 +39,7 @@ const VARIANTS = {
     icon: Bike,
     badge: 'Delivery Rider',
     title: 'Rider Portal',
-    subtitle: 'Sign in to view and manage your deliveries.',
+    subtitle: 'Sign in with your email to view and manage your deliveries.',
     home: '/rider',
     standalone: true,
     signupPrompt: 'Want to ride with us?',
@@ -60,8 +60,8 @@ export const Login = ({ variant = 'user' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🎯 Email এর বদলে Phone State
-  const [phone, setPhone] = useState('');
+  // Dynamic input field state (Phone for user, Email for rider/admin)
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -75,8 +75,12 @@ export const Login = ({ variant = 'user' }) => {
     setIsSubmitting(true);
 
     try {
-      // 🎯 Phone & Password দিয়ে Login Request
-      const loggedInUser = await login({ phone: phone.trim(), password });
+      // 🎯 User হলে { phone, password }, Admin/Rider হলে { email, password }
+      const payload = cfg.role === 'user'
+        ? { phone: identifier.trim(), password }
+        : { email: identifier.trim(), password };
+
+      const loggedInUser = await login(payload);
 
       // Role gate
       if (loggedInUser.role !== cfg.role) {
@@ -138,25 +142,45 @@ export const Login = ({ variant = 'user' }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Mobile Number Field */}
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Mobile Number
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                id="phone"
-                type="tel"
-                inputMode="numeric"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="01813616130"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-              />
+          {/* 🎯 User এর জন্য Phone Field, Rider & Admin এর জন্য Email Field */}
+          {cfg.role === 'user' ? (
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Mobile Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="01813616130"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Password Field */}
           <div>
