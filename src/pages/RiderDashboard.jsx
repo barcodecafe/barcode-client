@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,46 +28,416 @@ import {
   addChatMessage,
   acceptRiderOrder,
   rejectRiderOrder,
-  submitRiderDailyCash, // Live API Service Function
+  submitRiderDailyCash,
 } from "../services/ordersService";
 
-const getStatusColor = (status) => {
-  switch (status) {
-    case "Placed":
-      return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
-    case "Accepted":
-      return "bg-green-500/10 text-green-500 border border-green-500/20";
-    case "Preparing":
-      return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
-    case "Out for Delivery":
-      return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
-    case "Delivered":
-      return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
-    case "Rejected":
-      return "bg-red-500/10 text-red-500 border border-red-500/20";
-    default:
-      return "bg-neutral-500/10 text-neutral-500 border border-neutral-500/20";
-  }
+// --- Constants & Style Helpers ---
+const STATUS_STYLES = {
+  Placed: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  Accepted: "bg-green-500/10 text-green-500 border-green-500/20",
+  Preparing: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  "Out for Delivery": "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  Delivered: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  Rejected: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
+const getStatusBadgeStyle = (status) =>
+  STATUS_STYLES[status] || "bg-neutral-500/10 text-neutral-500 border-neutral-500/20";
+
+// --- Sub-Component 1: Dashboard Stat Card ---
+const StatCard = ({ icon: Icon, title, value, iconBg, borderHighlight }) => (
+  <div
+    className={`bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 ${borderHighlight || ""}`}
+  >
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+      <Icon className="w-5 h-5" />
+    </div>
+    <div>
+      <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
+        {value}
+      </span>
+      <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
+        {title}
+      </span>
+    </div>
+  </div>
+);
+
+// --- Sub-Component 2: Performance Track Log Table ---
+const PerformanceLogTable = ({ dailyLog, onSubmitCash, submittingCashDate }) => (
+  <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
+    <div className="flex items-center gap-2 mb-4">
+      <ClipboardList className="w-4 h-4 text-primary-500" />
+      <h3 className="font-display font-extrabold text-sm text-neutral-850 dark:text-white uppercase tracking-wider">
+        Daily Performance Track Log
+      </h3>
+    </div>
+
+    {dailyLog.length === 0 ? (
+      <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">
+        No history logs recorded yet.
+      </p>
+    ) : (
+      <div className="max-h-[280px] overflow-y-auto overflow-x-auto pr-1">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead className="sticky top-0 bg-white dark:bg-neutral-900 z-10 shadow-xs">
+            <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-450 dark:text-neutral-500 uppercase tracking-wider font-bold">
+              <th className="py-2.5 px-3">Date</th>
+              <th className="py-2.5 px-3">Delivered</th>
+              <th className="py-2.5 px-3">Rejected</th>
+              <th className="py-2.5 px-3">Food Price</th>
+              <th className="py-2.5 px-3">Delivery Charge</th>
+              <th className="py-2.5 px-3">Rider Commission</th>
+              <th className="py-2.5 px-3">Cash Collected</th>
+              <th className="py-2.5 px-3">Payable to Admin</th>
+              <th className="py-2.5 px-3 text-right">Admin Cash Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {dailyLog.map((log) => (
+              <tr
+                key={log.dateKey || log.date}
+                className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
+              >
+                <td className="py-3 px-3 font-bold text-neutral-700 dark:text-neutral-300">
+                  {log.date}
+                </td>
+                <td className="py-3 px-3">
+                  <span className="inline-flex items-center gap-1 font-extrabold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                    <CheckCircle className="w-3 h-3" /> {log.delivered}
+                  </span>
+                </td>
+                <td className="py-3 px-3">
+                  <span className="inline-flex items-center gap-1 font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
+                    <XCircle className="w-3 h-3" /> {log.rejected}
+                  </span>
+                </td>
+                <td className="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">
+                  ৳{log.foodPrice.toFixed(2)}
+                </td>
+                <td className="py-3 px-3 font-bold text-amber-600 dark:text-amber-400">
+                  ৳{log.deliveryCharge.toFixed(2)}
+                </td>
+                <td className="py-3 px-3 font-black text-emerald-500">
+                  ৳{log.riderCommission.toFixed(2)}
+                </td>
+                <td className="py-3 px-3 font-black text-primary-500">
+                  ৳{log.cashCollected.toFixed(2)}
+                  {log.onlinePaid > 0 && (
+                    <span
+                      className="block text-[9px] font-semibold text-neutral-400 normal-case"
+                      title="Paid online — the rider collected no cash for these"
+                    >
+                      +৳{log.onlinePaid.toFixed(2)} paid online
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400">
+                  ৳{log.outstandingNetPayable.toFixed(2)}
+                  {log.outstandingNetPayable < 0 && (
+                    <span className="block text-[9px] font-semibold text-emerald-500 normal-case">
+                      admin owes you
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-3 text-right">
+                  {log.delivered === 0 ? (
+                    <span className="text-neutral-400 font-medium text-[10px]">N/A</span>
+                  ) : log.isSettled ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                      <CheckCircle2 className="w-3 h-3" /> Settled
+                    </span>
+                  ) : log.isSubmitted ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">
+                      <Clock3 className="w-3 h-3" /> Awaiting admin
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onSubmitCash(log.dateKey)}
+                      disabled={submittingCashDate === log.dateKey}
+                      className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50"
+                      title="Click to submit collected cash to admin"
+                    >
+                      <Clock3 className="w-3 h-3 animate-pulse" />
+                      {submittingCashDate === log.dateKey ? "Submitting..." : "Pay to Admin"}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
+
+// --- Sub-Component 3: Order Item Card ---
+const OrderItemCard = ({
+  order,
+  onAccept,
+  onReject,
+  onStatusChange,
+  activeChatOrderId,
+  onToggleChat,
+}) => {
+  const isAccepted = order.riderAcceptStatus === "accepted";
+  const isPending = order.riderAcceptStatus === "pending";
+
+  return (
+    <div className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div>
+          <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
+            Order #{order.id}
+          </span>
+          <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
+            Placed: {new Date(order.createdAt).toLocaleTimeString()}
+          </span>
+        </div>
+        <div className="flex gap-2 items-center">
+          <span
+            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase border ${getStatusBadgeStyle(
+              order.status
+            )}`}
+          >
+            {order.status}
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase border ${
+              isAccepted
+                ? "bg-green-500/10 text-green-500 border-green-500/20"
+                : "bg-orange-500/10 text-orange-500 border-orange-500/20"
+            }`}
+          >
+            {isAccepted ? "Accepted" : "Pending Accept"}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
+        <div className="space-y-1.5">
+          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+            Customer
+          </span>
+          <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
+            <span>{order.deliveryPhone ? order.deliveryPhone : order.user?.name}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+            <Phone className="w-3 h-3 text-primary-500" />
+            <span>{order.deliveryPhone || order.user?.phone}</span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+            Delivery Address
+          </span>
+          <div className="flex items-start gap-1 text-[10px] text-neutral-500">
+            <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
+            <span className="leading-tight">
+              {order.deliveryAddress || order.user?.address} (
+              {order.deliveryArea || order.user?.pickArea})
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="font-bold text-xs">
+          Total Invoice:{" "}
+          <span className="text-primary-500">৳{order.total?.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isPending ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => onAccept(order.id)}
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                Accept Job
+              </button>
+              <button
+                onClick={() => onReject(order.id)}
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                Reject Job
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <select
+                value={order.status}
+                onChange={(e) => onStatusChange(order.id, e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="Out for Delivery">On Way</option>
+                <option value="Delivered">Delivered</option>
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={() => onToggleChat(order.id)}
+            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+              activeChatOrderId === order.id
+                ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                : ""
+            }`}
+            title="Chat Console"
+          >
+            <MessageSquare className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Sub-Component 4: Chat Console Drawer ---
+const ChatConsole = ({
+  chatOrder,
+  currentUser,
+  chatEndRef,
+  messageText,
+  setMessageText,
+  onSendMessage,
+  onClose,
+}) => (
+  <motion.div
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: 20 }}
+    className="lg:col-span-5 flex flex-col h-[500px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
+  >
+    <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
+      <div>
+        <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+          Chat for #{chatOrder.id}
+        </h3>
+        <span className="block text-[9px] text-neutral-400">
+          Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
+        </span>
+      </div>
+      <button
+        onClick={onClose}
+        className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+
+    <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
+      {(chatOrder.chatHistory || []).map((msg, i) => {
+        const isSelf = msg.sender === "rider" && msg.senderName === currentUser?.name;
+        const isSystem = msg.senderName === "System";
+        const isAdmin = msg.sender === "admin" && msg.senderName !== "System";
+        const isCustomer = msg.sender === "customer";
+
+        if (isSystem) {
+          return (
+            <div key={i} className="flex justify-center my-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">
+                {msg.text}
+              </span>
+            </div>
+          );
+        }
+
+        let alignClass = "justify-start";
+        let bubbleClass =
+          "bg-white dark:bg-neutral-800 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
+        let labelColor = "text-neutral-400";
+
+        if (isSelf) {
+          alignClass = "justify-end";
+          bubbleClass =
+            "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
+          labelColor = "text-primary-500";
+        } else if (isAdmin) {
+          bubbleClass =
+            "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+          labelColor = "text-indigo-500";
+        } else if (isCustomer) {
+          bubbleClass =
+            "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
+          labelColor = "text-emerald-500";
+        }
+
+        return (
+          <div key={i} className={`flex ${alignClass}`}>
+            <div className="max-w-[85%] flex flex-col gap-1">
+              {!isSelf && (
+                <span className={`text-[10px] font-bold ${labelColor} px-1.5`}>
+                  {msg.senderName} ({msg.sender?.toUpperCase()})
+                </span>
+              )}
+              <div className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}>
+                <p>{msg.text}</p>
+                <span
+                  className={`block text-[9px] text-right mt-1 font-light ${
+                    isSelf ? "text-white/60" : "text-neutral-400"
+                  }`}
+                >
+                  {new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div ref={chatEndRef} />
+    </div>
+
+    <form
+      onSubmit={onSendMessage}
+      className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
+    >
+      <input
+        type="text"
+        value={messageText}
+        onChange={(e) => setMessageText(e.target.value)}
+        placeholder="Type message to Customer/Admin..."
+        className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+      />
+      <button
+        type="submit"
+        disabled={!messageText.trim()}
+        className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10 cursor-pointer"
+      >
+        <Send className="w-4 h-4" />
+      </button>
+    </form>
+  </motion.div>
+);
+
+// --- Main Container Component ---
 export const RiderDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // --- Primary States ---
+  // Primary States
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingCashDate, setSubmittingCashDate] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [riderChatMessage, setRiderChatMessage] = useState("");
 
-  // --- Earning & Delivery Filter States ---
+  // Earnings & Delivery Filter States
   const [timeFilter, setTimeFilter] = useState("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
   const chatEndRef = useRef(null);
-  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+
+  // Derive Chat Order & Messages Count
+  const chatOrder = useMemo(
+    () => orders.find((o) => o.id === activeChatOrderId),
+    [orders, activeChatOrderId]
+  );
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
   // --- Fetch Orders Callback ---
@@ -89,24 +459,21 @@ export const RiderDashboard = () => {
       });
   }, [user]);
 
-  // Direct Auto-Polling Effect (every 4 seconds)
+  // Polling Effect (every 4 seconds)
   useEffect(() => {
     fetchRiderOrders();
     const interval = setInterval(fetchRiderOrders, 4000);
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
-  // Chat Scroll to Bottom Effect
+  // Chat Auto-Scroll Effect
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
-      chatEndRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+      chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // --- Event Handlers ---
+  // --- Handlers ---
   const handleLogout = async () => {
     await logout();
     navigate("/", { replace: true });
@@ -175,8 +542,8 @@ export const RiderDashboard = () => {
     }
   };
 
-  // --- Filtered Stats Calculation ---
-  const getFilteredStats = () => {
+  // --- Memoized Statistics Calculations ---
+  const filteredStats = useMemo(() => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const deliveredOrders = orders.filter((o) => o.status === "Delivered");
@@ -215,7 +582,7 @@ export const RiderDashboard = () => {
 
     const totalEarnings = filtered.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
     const totalFoodPrice = filtered.reduce(
-      (sum, o) => sum + ((o.total - (o.deliveryCharge || 0)) || 0),
+      (sum, o) => sum + (o.total - (o.deliveryCharge || 0) || 0),
       0
     );
 
@@ -224,20 +591,19 @@ export const RiderDashboard = () => {
       earnings: totalEarnings,
       foodPrice: totalFoodPrice,
     };
-  };
+  }, [orders, timeFilter, fromDate, toDate]);
 
-  // --- Performance Log Grouped by Date ---
-  const getDailyPerformanceLog = () => buildDailySettlementLog(orders);
+  const dailyLog = useMemo(() => buildDailySettlementLog(orders), [orders]);
 
-  const filteredStats = getFilteredStats();
-  const dailyLog = getDailyPerformanceLog();
+  const activeOrdersCount = useMemo(
+    () => orders.filter((o) => o.status !== "Delivered" && o.status !== "Rejected").length,
+    [orders]
+  );
 
-  const activeOrdersCount = orders.filter(
-    (o) => o.status !== "Delivered" && o.status !== "Rejected"
-  ).length;
-  const pendingAcceptCount = orders.filter(
-    (o) => o.riderAcceptStatus === "pending"
-  ).length;
+  const pendingAcceptCount = useMemo(
+    () => orders.filter((o) => o.riderAcceptStatus === "pending").length,
+    [orders]
+  );
 
   if (loading) {
     return (
@@ -251,7 +617,7 @@ export const RiderDashboard = () => {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Dashboard Banner */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <header className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center">
               <Bike className="w-6 h-6" />
@@ -274,10 +640,10 @@ export const RiderDashboard = () => {
             <LogOut className="w-3.5 h-3.5" />
             Log Out
           </button>
-        </div>
+        </header>
 
-        {/* Filter and Stats Cards */}
-        <div className="space-y-4">
+        {/* Filter and Stats Cards Section */}
+        <section className="space-y-4">
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary-500" />
@@ -320,191 +686,52 @@ export const RiderDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
-                  {activeOrdersCount}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-                  Active Orders
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
-                  {pendingAcceptCount}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-                  Pending Accept
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-neutral-500/10 text-neutral-500 flex items-center justify-center shrink-0">
-                <CheckCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
-                  {filteredStats.deliveryCount}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-                  Delivered ({timeFilter})
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-indigo-500">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
-                <Utensils className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xl font-black text-neutral-850 dark:text-white leading-none">
-                  ৳{filteredStats.foodPrice.toFixed(2)}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase mt-1 block">
-                  Food Delivered
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-primary-500">
-              <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xl font-black text-primary-500 dark:text-primary-400 leading-none">
-                  ৳{filteredStats.earnings.toFixed(2)}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase mt-1 block">
-                  Rider Income
-                </span>
-              </div>
-            </div>
+            <StatCard
+              icon={Clock}
+              title="Active Orders"
+              value={activeOrdersCount}
+              iconBg="bg-blue-500/10 text-blue-500"
+            />
+            <StatCard
+              icon={ShieldAlert}
+              title="Pending Accept"
+              value={pendingAcceptCount}
+              iconBg="bg-amber-500/10 text-amber-500"
+            />
+            <StatCard
+              icon={CheckCircle}
+              title={`Delivered (${timeFilter})`}
+              value={filteredStats.deliveryCount}
+              iconBg="bg-neutral-500/10 text-neutral-500"
+            />
+            <StatCard
+              icon={Utensils}
+              title="Food Delivered"
+              value={`৳${filteredStats.foodPrice.toFixed(2)}`}
+              iconBg="bg-indigo-500/10 text-indigo-500"
+              borderHighlight="border-l-4 border-l-indigo-500"
+            />
+            <StatCard
+              icon={TrendingUp}
+              title="Rider Income"
+              value={`৳${filteredStats.earnings.toFixed(2)}`}
+              iconBg="bg-primary-500/10 text-primary-500"
+              borderHighlight="border-l-4 border-l-primary-500"
+            />
           </div>
-        </div>
+        </section>
 
-        {/* Daily Performance Track Log Table */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <ClipboardList className="w-4 h-4 text-primary-500" />
-            <h3 className="font-display font-extrabold text-sm text-neutral-850 dark:text-white uppercase tracking-wider">
-              Daily Performance Track Log
-            </h3>
-          </div>
-
-          {dailyLog.length === 0 ? (
-            <p className="text-xs text-neutral-450 dark:text-neutral-500 font-medium py-2">
-              No history logs recorded yet.
-            </p>
-          ) : (
-            <div className="max-h-[280px] overflow-y-auto overflow-x-auto pr-1">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="sticky top-0 bg-white dark:bg-neutral-900 z-10 shadow-xs">
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-450 dark:text-neutral-500 uppercase tracking-wider font-bold">
-                    <th className="py-2.5 px-3">Date</th>
-                    <th className="py-2.5 px-3">Delivered</th>
-                    <th className="py-2.5 px-3">Rejected</th>
-                    <th className="py-2.5 px-3">Food Price</th>
-                    <th className="py-2.5 px-3">Delivery Charge</th>
-                    <th className="py-2.5 px-3">Rider Commission</th>
-                    <th className="py-2.5 px-3">Cash Collected</th>
-                    <th className="py-2.5 px-3">Payable to Admin</th>
-                    <th className="py-2.5 px-3 text-right">Admin Cash Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {dailyLog.map((log, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
-                    >
-                      <td className="py-3 px-3 font-bold text-neutral-700 dark:text-neutral-300">
-                        {log.date}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center gap-1 font-extrabold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                          <CheckCircle className="w-3 h-3" /> {log.delivered}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center gap-1 font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
-                          <XCircle className="w-3 h-3" /> {log.rejected}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">
-                        ৳{log.foodPrice.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-3 font-bold text-amber-600 dark:text-amber-400">
-                        ৳{log.deliveryCharge.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-3 font-black text-emerald-500">
-                        ৳{log.riderCommission.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-3 font-black text-primary-500">
-                        ৳{log.cashCollected.toFixed(2)}
-                        {log.onlinePaid > 0 && (
-                          <span
-                            className="block text-[9px] font-semibold text-neutral-400 normal-case"
-                            title="Paid online — the rider collected no cash for these"
-                          >
-                            +৳{log.onlinePaid.toFixed(2)} paid online
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400">
-                        ৳{log.outstandingNetPayable.toFixed(2)}
-                        {log.outstandingNetPayable < 0 && (
-                          <span className="block text-[9px] font-semibold text-emerald-500 normal-case">
-                            admin owes you
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        {log.delivered === 0 ? (
-                          <span className="text-neutral-400 font-medium text-[10px]">
-                            N/A
-                          </span>
-                        ) : log.isSettled ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                            <CheckCircle2 className="w-3 h-3" /> Settled
-                          </span>
-                        ) : log.isSubmitted ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">
-                            <Clock3 className="w-3 h-3" /> Awaiting admin
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleSubmitCash(log.dateKey)}
-                            disabled={submittingCashDate === log.dateKey}
-                            className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50"
-                            title="Click to submit collected cash to admin"
-                          >
-                            <Clock3 className="w-3 h-3 animate-pulse" />
-                            {submittingCashDate === log.dateKey
-                              ? "Submitting..."
-                              : "Pay to Admin"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {/* Performance Track Log Table */}
+        <section>
+          <PerformanceLogTable
+            dailyLog={dailyLog}
+            onSubmitCash={handleSubmitCash}
+            submittingCashDate={submittingCashDate}
+          />
+        </section>
 
         {/* Main Work Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <main className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Active Orders List */}
           <div
             className={`${
@@ -529,244 +756,38 @@ export const RiderDashboard = () => {
               ) : (
                 <div className="space-y-4">
                   {orders.map((ord) => (
-                    <div
+                    <OrderItemCard
                       key={ord.id}
-                      className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2.5">
-                        <div>
-                          <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
-                            Order #{ord.id}
-                          </span>
-                          <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
-                            Placed: {new Date(ord.createdAt).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(
-                              ord.status
-                            )}`}
-                          >
-                            {ord.status}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                              ord.riderAcceptStatus === "accepted"
-                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                                : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
-                            }`}
-                          >
-                            {ord.riderAcceptStatus === "accepted"
-                              ? "Accepted"
-                              : "Pending Accept"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
-                        <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                            Customer
-                          </span>
-                          <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                            <span>{ord.deliveryPhone ? ord.deliveryPhone : ord.user?.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                            <Phone className="w-3 h-3 text-primary-500" />
-                            <span>{ord.deliveryPhone || ord.user?.phone}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                            Delivery Address
-                          </span>
-                          <div className="flex items-start gap-1 text-[10px] text-neutral-500">
-                            <MapPin className="w-3 h-3 text-primary-500 mt-0.5 shrink-0" />
-                            <span className="leading-tight">
-                              {ord.deliveryAddress || ord.user?.address} ({ord.deliveryArea || ord.user?.pickArea})
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="font-bold text-xs">
-                          Total Invoice:{" "}
-                          <span className="text-primary-500">
-                            ৳{ord.total?.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {ord.riderAcceptStatus === "pending" ? (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleAccept(ord.id)}
-                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
-                              >
-                                Accept Job
-                              </button>
-                              <button
-                                onClick={() => handleReject(ord.id)}
-                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
-                              >
-                                Reject Job
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={ord.status}
-                                onChange={(e) =>
-                                  handleStatusChange(ord.id, e.target.value)
-                                }
-                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
-                              >
-                                <option value="Out for Delivery">On Way</option>
-                                <option value="Delivered">Delivered</option>
-                              </select>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() =>
-                              setActiveChatOrderId(
-                                ord.id === activeChatOrderId ? null : ord.id
-                              )
-                            }
-                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
-                              activeChatOrderId === ord.id
-                                ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                                : ""
-                            }`}
-                            title="Chat Console"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                      order={ord}
+                      onAccept={handleAccept}
+                      onReject={handleReject}
+                      onStatusChange={handleStatusChange}
+                      activeChatOrderId={activeChatOrderId}
+                      onToggleChat={(id) =>
+                        setActiveChatOrderId(id === activeChatOrderId ? null : id)
+                      }
+                    />
                   ))}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Chat Console Panel */}
+          {/* Chat Console Drawer */}
           <AnimatePresence>
             {activeChatOrderId && chatOrder && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="lg:col-span-5 flex flex-col h-[500px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
-              >
-                <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
-                  <div>
-                    <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                      Chat for #{chatOrder.id}
-                    </h3>
-                    <span className="block text-[9px] text-neutral-400">
-                      Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setActiveChatOrderId(null)}
-                    className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-                  {(chatOrder.chatHistory || []).map((msg, i) => {
-                    const isSelf =
-                      msg.sender === "rider" && msg.senderName === user.name;
-                    const isSystem = msg.senderName === "System";
-                    const isAdmin =
-                      msg.sender === "admin" && msg.senderName !== "System";
-                    const isCustomer = msg.sender === "customer";
-
-                    let alignClass = "justify-start";
-                    let bubbleClass =
-                      "bg-white dark:bg-neutral-800 border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-800 dark:text-neutral-100 rounded-2xl rounded-tl-none";
-                    let labelColor = "text-neutral-400";
-
-                    if (isSelf) {
-                      alignClass = "justify-end";
-                      bubbleClass =
-                        "bg-primary-500 text-white rounded-2xl rounded-tr-none shadow-md shadow-primary-500/10";
-                      labelColor = "text-primary-500";
-                    } else if (isSystem) {
-                      return (
-                        <div key={i} className="flex justify-center my-1">
-                          <span className="px-2.5 py-0.5 rounded-full bg-neutral-150 dark:bg-neutral-800 text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">
-                            {msg.text}
-                          </span>
-                        </div>
-                      );
-                    } else if (isAdmin) {
-                      bubbleClass =
-                        "bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
-                      labelColor = "text-indigo-500";
-                    } else if (isCustomer) {
-                      bubbleClass =
-                        "bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-neutral-800 dark:text-neutral-150 rounded-2xl rounded-tl-none";
-                      labelColor = "text-emerald-500";
-                    }
-
-                    return (
-                      <div key={i} className={`flex ${alignClass}`}>
-                        <div className="max-w-[85%] flex flex-col gap-1">
-                          {!isSelf && (
-                            <span className={`text-[10px] font-bold ${labelColor} px-1.5`}>
-                              {msg.senderName} ({msg.sender?.toUpperCase()})
-                            </span>
-                          )}
-                          <div className={`px-3 py-2.5 text-xs leading-normal ${bubbleClass}`}>
-                            <p>{msg.text}</p>
-                            <span
-                              className={`block text-[9px] text-right mt-1 font-light ${
-                                isSelf ? "text-white/60" : "text-neutral-400"
-                              }`}
-                            >
-                              {new Date(msg.timestamp).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={chatEndRef} />
-                </div>
-
-                <form
-                  onSubmit={handleSendRiderMessage}
-                  className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
-                >
-                  <input
-                    type="text"
-                    value={riderChatMessage}
-                    onChange={(e) => setRiderChatMessage(e.target.value)}
-                    placeholder="Type message to Customer/Admin..."
-                    className="grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-850 dark:text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!riderChatMessage.trim()}
-                    className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-primary-500/10 cursor-pointer"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-              </motion.div>
+              <ChatConsole
+                chatOrder={chatOrder}
+                currentUser={user}
+                chatEndRef={chatEndRef}
+                messageText={riderChatMessage}
+                setMessageText={setRiderChatMessage}
+                onSendMessage={handleSendRiderMessage}
+                onClose={() => setActiveChatOrderId(null)}
+              />
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
     </div>
   );
