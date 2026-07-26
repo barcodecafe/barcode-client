@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate } from 'react-router-down';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -59,12 +59,12 @@ export const AdminLayout = () => {
     return typeof window !== 'undefined' && window.innerWidth >= 768;
   });
 
-  // 🎯 ১. যেসকল অর্ডার এখনো Accept বা Reject করা হয়নি সেগুলোর কাউন্ট
+  // 🎯 ১. এক্সেপ্ট/রিজেক্ট না হওয়া মোট অর্ডারের কাউন্ট
   const [pendingCount, setPendingCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioCtxRef = useRef(null);
 
-  // 🔊 ডাবল-বিপ সাউন্ড জেনারেটর (Web Audio API - কোনো MP3 ফাইল লাগবে না, ১০০% বাজবেই)
+  // 🔊 সাউন্ড অ্যালার্ম জেনারেটর
   const playAlarmSound = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -79,11 +79,10 @@ export const AdminLayout = () => {
         ctx.resume();
       }
 
-      // ১ম বিওপ টোন
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(880, ctx.currentTime); // High pitch A5
+      osc1.frequency.setValueAtTime(880, ctx.currentTime);
       gain1.gain.setValueAtTime(0.3, ctx.currentTime);
       gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
       osc1.connect(gain1);
@@ -91,13 +90,12 @@ export const AdminLayout = () => {
       osc1.start();
       osc1.stop(ctx.currentTime + 0.3);
 
-      // ২য় বিওপ টোন (Ding-Dong Effect)
       setTimeout(() => {
         if (ctx.state === 'closed') return;
         const osc2 = ctx.createOscillator();
         const gain2 = ctx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1046.5, ctx.currentTime); // Higher C6
+        osc2.frequency.setValueAtTime(1046.5, ctx.currentTime);
         gain2.gain.setValueAtTime(0.4, ctx.currentTime);
         gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
         osc2.connect(gain2);
@@ -107,11 +105,10 @@ export const AdminLayout = () => {
       }, 150);
 
     } catch (e) {
-      console.warn('Audio playback error:', e);
+      console.warn('Audio play error:', e);
     }
   };
 
-  // 🔓 ব্রাউজারে ইউজার ১ম ক্লিক করলে অডিও সিস্টেম আনলক করা
   const unlockAudioSystem = () => {
     if (!audioUnlocked) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -125,39 +122,59 @@ export const AdminLayout = () => {
     }
   };
 
-  // 🎯 ২. ব্যাকএন্ড থেকে পেন্ডিং অর্ডার ফেচ এবং কাউন্ট নির্ণয়
+  // 🎯 ২. এক্সেপ্ট/রিজেক্ট বাকি থাকা অর্ডার ফেচ ও কাউন্ট করা
   const fetchPendingOrders = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || 
+                    localStorage.getItem('adminToken') || 
+                    localStorage.getItem('accessToken') ||
+                    localStorage.getItem('auth_token');
+
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+
+      if (!res.ok) return;
+
       const resData = await res.json();
 
-      const ordersList = Array.isArray(resData)
-        ? resData
-        : Array.isArray(resData?.orders)
-          ? resData.orders
-          : Array.isArray(resData?.data)
-            ? resData.data
-            : Array.isArray(resData?.data?.orders)
-              ? resData.data.orders
-              : [];
+      // ডাটার সবরকম নেস্টেড ফরম্যাট কভার করা
+      let ordersList = [];
+      if (Array.isArray(resData)) {
+        ordersList = resData;
+      } else if (Array.isArray(resData?.orders)) {
+        ordersList = resData.orders;
+      } else if (Array.isArray(resData?.data)) {
+        ordersList = resData.data;
+      } else if (Array.isArray(resData?.data?.orders)) {
+        ordersList = resData.data.orders;
+      } else if (Array.isArray(resData?.result)) {
+        ordersList = resData.result;
+      } else if (Array.isArray(resData?.data?.data)) {
+        ordersList = resData.data.data;
+      }
 
-      // 🔍 যেসব অর্ডার এখনো ACCEPT বা REJECT করা হয়নি (Pending/Placed/Unaccepted)
+      // 🛑 যেসব স্ট্যাটাস থাকলে বুঝতে হবে অর্ডার অলরেডি Accept/Reject বা Process হয়ে গেছে
+      const processedStatuses = [
+        'ACCEPTED', 'CONFIRMED', 'COOKING', 'PREPARING', 
+        'ON_THE_WAY', 'DELIVERING', 'OUT_FOR_DELIVERY', 
+        'DELIVERED', 'CANCELLED', 'REJECTED', 'COMPLETED'
+      ];
+
+      // 🔍 আসল ফিল্টারিং logic: যেগুলোর ওপর একশন (ACCEPT/REJECT) নেওয়া হয়নি
       const unhandledOrders = ordersList.filter(o => {
-        const st = (o.status || o.orderStatus || '').toUpperCase();
-        
-        // যেসব স্ট্যাটাস মানে অর্ডার এক্সেপ্ট/প্রসেসড হয়ে গেছে
-        const processedStatuses = [
-          'ACCEPTED', 'CONFIRMED', 'COOKING', 'PREPARING', 
-          'ON_THE_WAY', 'DELIVERING', 'OUT_FOR_DELIVERY', 
-          'DELIVERED', 'CANCELLED', 'REJECTED'
-        ];
+        if (!o) return false;
 
-        if (processedStatuses.includes(st)) return false;
-        if (o.isAccepted === true || o.isRejected === true) return false;
+        // বুলিয়ান ফ্ল্যাগ চেক
+        if (o.isAccepted === true || o.accepted === true) return false;
+        if (o.isRejected === true || o.rejected === true) return false;
 
+        // স্ট্যাটাস স্ট্রিং চেক
+        const statusStr = String(o.status || o.orderStatus || o.state || '').toUpperCase().trim();
+
+        if (processedStatuses.includes(statusStr)) return false;
+
+        // উপরের কোনো শর্তেই না পড়লে এটি পেন্ডিং অর্ডার (যার ACCEPT/REJECT বাটন দৃশ্যমান)
         return true;
       });
 
@@ -170,15 +187,19 @@ export const AdminLayout = () => {
   useEffect(() => {
     fetchPendingOrders();
 
-    // 🔔 ডেস্কটপ পারমিশন চাওয়া
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // 🔄 প্রতি ৮ সেকেন্ড পর পর স্বয়ংক্রিয়ভাবে ব্যাকএন্ড চেক করবে (যাতে সকেট মিস হলেও আপডেট হয়)
-    const interval = setInterval(fetchPendingOrders, 8000);
+    // 🔄 প্রতি ৪ সেকেন্ড পর পর ব্যাকএন্ড চেক করবে (যাতে যেকোনো পেজে থাকলেও কাউন্ট নিখুঁত থাকে)
+    const interval = setInterval(fetchPendingOrders, 4000);
 
-    // 🔊 নতুন অর্ডার আসার সকেট ইভেন্ট
+    // 👂 কাস্টম ইভেন্ট লিসেনার (অর্ডার পেজে Accept/Reject বাটন চাপলেই সাথে সাথে আপডেট হবে)
+    const handleCustomOrderUpdate = () => fetchPendingOrders();
+    window.addEventListener('order_updated', handleCustomOrderUpdate);
+    window.addEventListener('storage', handleCustomOrderUpdate);
+
+    // 🔊 সকেট ইভেন্ট
     const handleNewOrder = (newOrder) => {
       fetchPendingOrders();
       playAlarmSound();
@@ -210,15 +231,17 @@ export const AdminLayout = () => {
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('order_updated', handleCustomOrderUpdate);
+      window.removeEventListener('storage', handleCustomOrderUpdate);
       socket.off('admin_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেলে পেন্ডিং অর্ডার কাউন্ট আপডেট
+  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেল আপডেট
   useEffect(() => {
     if (pendingCount > 0) {
-      document.title = `🚨 (${pendingCount}) New Orders - Barcode Admin`;
+      document.title = `🚨 (${pendingCount}) Pending Orders - Barcode Admin`;
     } else {
       document.title = 'Barcode Restaurant - Admin';
     }
@@ -261,7 +284,7 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে পেন্ডিং অর্ডারের লাল ব্লিঙ্কিং ব্যাজ */}
+            {/* 🔴 সাইডবারে পেন্ডিং অর্ডারের লাল কাউন্টার ব্যাজ */}
             {item.name === 'Orders' && pendingCount > 0 && (
               <span className="bg-red-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full animate-pulse shadow-md">
                 {pendingCount}
@@ -352,14 +375,13 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* 🔊 সাউন্ড টেস্ট/অ্যাক্টিভ বাটন */}
             <button
               onClick={() => {
                 unlockAudioSystem();
                 playAlarmSound();
               }}
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100/80 dark:bg-neutral-900/80 text-neutral-700 dark:text-neutral-300 hover:border-primary-500 transition-all"
-              title="Click to test notification sound"
+              title="Click to test sound notification"
             >
               {audioUnlocked ? <Volume2 className="w-3.5 h-3.5 text-green-500" /> : <VolumeX className="w-3.5 h-3.5 text-amber-500" />}
               <span className="hidden md:inline font-medium">{audioUnlocked ? 'Sound Ready' : 'Enable Sound'}</span>
@@ -387,7 +409,7 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 🚨🚨 গ্লোবাল লাল নোটিফিকেশন বার (যতগুলো এক্সেপ্ট/রিজেক্ট করা বাকি থাকবে তা ওপরে দেখাবে) 🚨🚨 */}
+        {/* 🚨🚨 গ্লোবাল লাল স্টিকি বার (ACCEPT / REJECT না করা পর্যন্ত ওপরে মোট কাউন্ট দেখাবে) 🚨🚨 */}
         <AnimatePresence>
           {pendingCount > 0 && (
             <motion.div
@@ -401,7 +423,7 @@ export const AdminLayout = () => {
                   <AlertTriangle className="w-4 h-4 text-white shrink-0" />
                 </div>
                 <span>
-                  🚨 মোট <strong>{pendingCount} টি নতুন অর্ডার</strong> এক্সেপ্ট বা রিজেক্ট করার জন্য অপেক্ষা করছে!
+                  🚨 মোট <strong>{pendingCount} টি অর্ডার</strong> এক্সেপ্ট বা রিজেক্ট করার জন্য অপেক্ষা করছে!
                 </span>
               </div>
               <Link

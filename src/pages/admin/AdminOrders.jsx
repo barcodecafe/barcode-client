@@ -102,12 +102,14 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => o.id === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Manual refresh helper if needed
+  // Manual refresh helper
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
+        // Layout-এর পেন্ডিং কাউন্টার আপডেট করার জন্য ইভেন্ট ডিসপ্যাচ
+        window.dispatchEvent(new Event('order_updated'));
         return ordersData || [];
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
@@ -120,6 +122,7 @@ export const AdminOrders = () => {
         setRiders(ridersData || []);
         setBranches(branchesData || []);
         setRegions(Array.isArray(regionsData) ? regionsData : []);
+        window.dispatchEvent(new Event('order_updated'));
       })
       .catch((err) => console.error("Error loading admin orders data:", err))
       .finally(() => setLoading(false));
@@ -127,9 +130,10 @@ export const AdminOrders = () => {
 
   // Socket Real-time Event Listeners
   useEffect(() => {
-    // ১. নতুন অর্ডার তৈরি হলে লিস্টে যোগ হবে
+    // ১. নতুন অর্ডার তৈরি হলে লিস্টে যোগ হবে এবং ব্যানার আপডেট হবে
     socket.on("order_created", (newOrder) => {
       setOrders((prev) => [newOrder, ...prev]);
+      window.dispatchEvent(new Event('order_updated'));
     });
 
     // ২. অর্ডারের স্ট্যাটাস বা পেমেন্ট আপডেট হলে আপডেট হবে
@@ -141,6 +145,7 @@ export const AdminOrders = () => {
       setSelectedOrderDetails((prev) =>
         prev?.id === updatedOrder.id ? updatedOrder : prev
       );
+      window.dispatchEvent(new Event('order_updated'));
     });
 
     // ৩. রাইডারের স্টেটাস বা ক্যাশ কালেকশন আপডেট হলে
@@ -226,7 +231,7 @@ export const AdminOrders = () => {
       alert(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
       alert("Re-check failed: " + (err.response?.data?.message || err.message));
-    } finally {
+    } fontally {
       setRecheckingOrderId(null);
     }
   };
@@ -260,10 +265,14 @@ export const AdminOrders = () => {
 
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
+  // 🎯 ACCEPT / REJECT বা স্ট্যাটাস চেঞ্জের মূল হ্যান্ডলার
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      fetchOrdersAndFleet();
+      // অর্ডারের লোকাল স্টেট ও ফিল্টার সাড়া দিতে fetchOrdersAndFleet কল
+      await fetchOrdersAndFleet();
+      // 🚨 গ্লোবাল লেআউটে সংকেত পাঠানো যাতে ওপরে লাল কাউন্টারটি তৎক্ষণাৎ কম যায়
+      window.dispatchEvent(new Event('order_updated'));
     } catch (err) {
       alert("Failed to update status: " + err.message);
     }
@@ -302,7 +311,7 @@ export const AdminOrders = () => {
 
       const updated = await addChatMessage(activeChatOrderId, messagePayload);
 
-      // Emit Socket event (যদি ব্যাকএন্ড ফ্রন্টএন্ড থেকে সরাসরি ব্রডকাস্ট আশা করে)
+      // Emit Socket event
       socket.emit("send_message", {
         orderId: activeChatOrderId,
         message: messagePayload,
@@ -526,127 +535,132 @@ export const AdminOrders = () => {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((ord) => (
-                  <tr
-                    key={ord.id}
-                    className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
-                  >
-                    <td
-                      onClick={() => setSelectedOrderDetails(ord)}
-                      className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
-                      title="Click to view details"
+                {orders.map((ord) => {
+                  const currentStatus = String(ord.status || "").toUpperCase();
+                  const isPendingUnhandled = currentStatus === "PLACED" || currentStatus === "PENDING" || !ord.status;
+
+                  return (
+                    <tr
+                      key={ord.id}
+                      className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
                     >
-                      {ord.id}
-                      {getPaymentAlert(ord) && (
-                        <span
-                          className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide normal-case ${getPaymentAlert(ord).tone}`}
-                        >
-                          {getPaymentAlert(ord).label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
-                        {ord.user?.name}
-                      </span>
-                      <span className="block text-[10px] text-neutral-400 mt-0.5">
-                        {ord.user?.phone}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[150px]">
-                        {ord.user?.address}
-                      </span>
-                      <span className="block text-[10px] text-neutral-400 mt-0.5">
-                        {ord.user?.pickArea}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 font-bold text-primary-500">
-                      ৳{ord.total?.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {ord.status === "Placed" ? (
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleStatusChange(ord.id, "Accepted")}
-                            className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
-                            title="Accept Order"
-                          >
-                            <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange(ord.id, "Rejected")}
-                            className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
-                            title="Reject Order"
-                          >
-                            <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
-                          </button>
-                        </div>
-                      ) : ord.status === "Rejected" ? (
-                        <span className="px-2 py-1 rounded border border-red-500/25 bg-red-500/10 text-red-500 font-bold text-[9px] uppercase tracking-wide">
-                          Rejected
-                        </span>
-                      ) : (
-                        <select
-                          value={ord.status}
-                          disabled={
-                            ord.riderId && ord.riderAcceptStatus !== "accepted"
-                          }
-                          onChange={(e) =>
-                            handleStatusChange(ord.id, e.target.value)
-                          }
-                          className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                            ord.riderId && ord.riderAcceptStatus !== "accepted"
-                              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
-                              : getStatusColor(ord.status)
-                          }`}
-                        >
-                          <option value="Accepted">Accepted</option>
-                          <option value="Preparing">Preparing</option>
-                          <option value="Out for Delivery">Out for Delivery</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={ord.riderId || ""}
-                          disabled={ord.status === "Placed" || ord.status === "Rejected" || ord.status === "Delivered"}
-                          onChange={(e) =>
-                            handleAssignRider(ord.id, e.target.value)
-                          }
-                          className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                            ord.status === "Placed" || ord.status === "Rejected" || ord.status === "Delivered"
-                              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
-                              : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
-                          }`}
-                        >
-                          <option value="">-- Assign Rider --</option>
-                          {riders.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name} ({r.vehicle})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <button
-                        onClick={() => setActiveChatOrderId(ord.id)}
-                        className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
-                          activeChatOrderId === ord.id
-                            ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                            : ""
-                        }`}
-                        title="Chat Console"
+                      <td
+                        onClick={() => setSelectedOrderDetails(ord)}
+                        className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
+                        title="Click to view details"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {ord.id}
+                        {getPaymentAlert(ord) && (
+                          <span
+                            className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide normal-case ${getPaymentAlert(ord).tone}`}
+                          >
+                            {getPaymentAlert(ord).label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
+                          {ord.user?.name}
+                        </span>
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          {ord.user?.phone}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[150px]">
+                          {ord.user?.address}
+                        </span>
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          {ord.user?.pickArea}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 font-bold text-primary-500">
+                        ৳{ord.total?.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {isPendingUnhandled ? (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleStatusChange(ord.id, "Accepted")}
+                              className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                              title="Accept Order"
+                            >
+                              <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(ord.id, "Rejected")}
+                              className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                              title="Reject Order"
+                            >
+                              <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
+                            </button>
+                          </div>
+                        ) : ord.status === "Rejected" ? (
+                          <span className="px-2 py-1 rounded border border-red-500/25 bg-red-500/10 text-red-500 font-bold text-[9px] uppercase tracking-wide">
+                            Rejected
+                          </span>
+                        ) : (
+                          <select
+                            value={ord.status}
+                            disabled={
+                              ord.riderId && ord.riderAcceptStatus !== "accepted"
+                            }
+                            onChange={(e) =>
+                              handleStatusChange(ord.id, e.target.value)
+                            }
+                            className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                              ord.riderId && ord.riderAcceptStatus !== "accepted"
+                                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                                : getStatusColor(ord.status)
+                            }`}
+                          >
+                            <option value="Accepted">Accepted</option>
+                            <option value="Preparing">Preparing</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={ord.riderId || ""}
+                            disabled={isPendingUnhandled || ord.status === "Rejected" || ord.status === "Delivered"}
+                            onChange={(e) =>
+                              handleAssignRider(ord.id, e.target.value)
+                            }
+                            className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                              isPendingUnhandled || ord.status === "Rejected" || ord.status === "Delivered"
+                                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                                : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
+                            }`}
+                          >
+                            <option value="">-- Assign Rider --</option>
+                            {riders.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name} ({r.vehicle})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <button
+                          onClick={() => setActiveChatOrderId(ord.id)}
+                          className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
+                            activeChatOrderId === ord.id
+                              ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                              : ""
+                          }`}
+                          title="Chat Console"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
