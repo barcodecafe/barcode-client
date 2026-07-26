@@ -54,7 +54,7 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🎯 1. পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
+  // 🎯 ১. পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -63,7 +63,7 @@ export const AdminLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
+  // 🎯 ২. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করা ও লাইভ সিঙ্ক রাখা
   useEffect(() => {
     const fetchPendingOrders = async () => {
       try {
@@ -73,16 +73,15 @@ export const AdminLayout = () => {
           `${import.meta.env.VITE_API_URL || ""}/api/orders`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          },
+          }
         );
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
-          // 'PENDING' বা 'PLACED' স্ট্যাটাসের অর্ডার ফিল্টার
-          const pending = data.data.filter(
-            (o) =>
-              o.status?.toUpperCase() === "PENDING" ||
-              o.status?.toUpperCase() === "PLACED",
-          );
+          // 'PENDING', 'PLACED' অথবা কোনো স্ট্যাটাস না থাকা অর্ডার ফিল্টার
+          const pending = data.data.filter((o) => {
+            const st = String(o.status || "").toUpperCase();
+            return st === "PENDING" || st === "PLACED" || !o.status;
+          });
           setPendingCount(pending.length);
         }
       } catch (err) {
@@ -92,19 +91,19 @@ export const AdminLayout = () => {
 
     fetchPendingOrders();
 
-    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন চাওয়া
+    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড ও ডেসktop নোটিফিকেশন দেওয়া
+    // 🔊 নতুন অর্ডার এলে সাউন্ড Alert & Desktop Notification
     const handleNewOrder = (newOrder) => {
-      setPendingCount((prev) => prev + 1);
+      fetchPendingOrders();
 
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
-            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
           );
           audio.play().catch(() => {});
         } catch (e) {}
@@ -112,7 +111,9 @@ export const AdminLayout = () => {
 
       if ("Notification" in window && Notification.permission === "granted") {
         const desktopNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
-          body: `Order ID: #${newOrder?.id || newOrder?._id || ""}\nTotal: ৳${newOrder?.totalAmount || newOrder?.total || 0}`,
+          body: `Order ID: #${newOrder?.id || newOrder?._id || ""}\nTotal: ৳${
+            newOrder?.totalAmount || newOrder?.total || 0
+          }`,
           icon: settings?.logoLight || resB,
           requireInteraction: true,
         });
@@ -124,21 +125,30 @@ export const AdminLayout = () => {
       }
     };
 
-    // 🔄 স্ট্যাটাস আপডেট হলে (Accept/Reject করলে) কাউন্ট পুনরায় রিলোড করা
     const handleStatusUpdate = () => {
       fetchPendingOrders();
     };
 
+    // Socket Event Listeners
     socket.on("admin_new_order", handleNewOrder);
+    socket.on("order_created", handleNewOrder);
+    socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
+
+    // Custom Event Listener (AdminOrders থেকে আপডেট হলে সাথে সাথে সিঙ্ক হবে)
+    const handleCustomOrderUpdate = () => fetchPendingOrders();
+    window.addEventListener("order_updated", handleCustomOrderUpdate);
 
     return () => {
       socket.off("admin_new_order", handleNewOrder);
+      socket.off("order_created", handleNewOrder);
+      socket.off("order_updated", handleStatusUpdate);
       socket.off("order_status_updated", handleStatusUpdate);
+      window.removeEventListener("order_updated", handleCustomOrderUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 3. ট্যাবের টাইটেলে পেন্ডিং সংখ্যা দেখানো
+  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেলে পেন্ডিং অর্ডারের কাউন্ট আপডেট
   useEffect(() => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount}) New Orders - Barcode Admin`;
@@ -147,10 +157,10 @@ export const AdminLayout = () => {
     }
   }, [pendingCount]);
 
-  useState(() => {
+  useEffect(() => {
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
     setIsDrawerOpen(isDesktop);
-  });
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -164,7 +174,7 @@ export const AdminLayout = () => {
         onClick={onNavigate}
         className="flex items-center gap-2 px-2 mb-8"
       >
-        <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+        <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs">
           <img
             src={
               theme === "dark"
@@ -197,9 +207,9 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙে ব্যাজ */}
+            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙের লাইভ ব্যাজ */}
             {item.name === "Orders" && pendingCount > 0 && (
-              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
                 {pendingCount}
               </span>
             )}
@@ -218,7 +228,7 @@ export const AdminLayout = () => {
         </Link>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           Log Out
@@ -246,12 +256,12 @@ export const AdminLayout = () => {
           width: isDrawerOpen ? 256 : 0,
         }}
         transition={{ type: "tween", duration: 0.25 }}
-        className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
+        className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-xs z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
       >
         <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
+            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white md:hidden"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -271,7 +281,7 @@ export const AdminLayout = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all"
+              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all cursor-pointer"
               aria-label="Toggle Navigation Menu"
             >
               <MenuIcon className="w-4 h-4" />
@@ -315,7 +325,7 @@ export const AdminLayout = () => {
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {theme === "dark" ? (
