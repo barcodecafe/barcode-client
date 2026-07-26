@@ -23,6 +23,7 @@ import {
   Settings,
   AlertTriangle,
   ArrowRight,
+  Bell,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
@@ -57,12 +58,12 @@ export const AdminLayout = () => {
     return typeof window !== 'undefined' && window.innerWidth >= 768;
   });
 
-  // 🎯 ১. পেন্ডিং (Pending) এবং মোট আন-ডেলিভার্ড অর্ডারের কাউন্ট
   const [pendingCount, setPendingCount] = useState(0);
   const [undeliveredCount, setUndeliveredCount] = useState(0);
+  const [notifPermission, setNotifPermission] = useState('default');
   const initialAlertTriggered = useRef(false);
 
-  // 🔊 সাউন্ড প্লে করার ফাংশন
+  // 🔊 সাউন্ড বাজানোর নিরাপদ ফাংশন
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/notification.mp3');
@@ -87,62 +88,88 @@ export const AdminLayout = () => {
     }
   };
 
-  // 🎯 ২. ব্যাকএন্ড থেকে অর্ডার কাউন্ট ফেচ করা
-  useEffect(() => {
-    const fetchOrdersData = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        const resData = await res.json();
+  // 🔔 পারমিশন রিকুয়েস্ট ফাংশন
+  const requestNotifPermission = async () => {
+    if ('Notification' in window) {
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+    }
+  };
 
-        const ordersList = Array.isArray(resData) 
-          ? resData 
-          : Array.isArray(resData?.data) 
-            ? resData.data 
-            : Array.isArray(resData?.data?.orders) 
-              ? resData.data.orders 
-              : [];
+  // 🎯 ১. ব্যাকএন্ড থেকে যেকোনো ফরম্যাটের অর্ডার ডাটা ফেচ ও ফিল্টার করা
+  const fetchOrdersData = async () => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || localStorage.getItem('accessToken');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const resData = await res.json();
 
-        // ১. পেন্ডিং অর্ডার গণনা (যেগুলো Accept/Reject করতে হবে)
-        const pendingOrders = ordersList.filter(o => {
-          const status = (o.status || '').toUpperCase();
-          return status === 'PENDING' || status === 'PLACED';
-        });
+      // 🔍 সব ধরণের JSON স্ট্রাকচার সাপোর্ট (resData, resData.orders, resData.data, resData.data.orders)
+      const ordersList = Array.isArray(resData)
+        ? resData
+        : Array.isArray(resData?.orders)
+          ? resData.orders
+          : Array.isArray(resData?.data)
+            ? resData.data
+            : Array.isArray(resData?.data?.orders)
+              ? resData.data.orders
+              : Array.isArray(resData?.result)
+                ? resData.result
+                : [];
 
-        // ২. মোট সক্রিয় অর্ডার (ডেলিভারি না হওয়া পর্যন্ত)
-        const terminalStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
-        const activeOrders = ordersList.filter(o => {
-          const status = (o.status || '').toUpperCase();
-          return !terminalStatuses.includes(status);
-        });
+      // 🚨 পেন্ডিং অর্ডার ফিল্টারিং (ACCEPT না হওয়া সব অর্ডার)
+      const terminalStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
+      const acceptedStatuses = ['ACCEPTED', 'CONFIRMED', 'COOKING', 'PREPARING', 'ON_THE_WAY', 'DELIVERING', 'OUT_FOR_DELIVERY'];
 
-        setPendingCount(pendingOrders.length);
-        setUndeliveredCount(activeOrders.length);
+      const pendingOrders = ordersList.filter(o => {
+        const status = (o.status || o.orderStatus || '').toUpperCase();
+        if (terminalStatuses.includes(status)) return false;
+        if (acceptedStatuses.includes(status)) return false;
+        // যদি isAccepted ফ্ল্যাগ থাকে
+        if (o.isAccepted === true) return false;
+        return true;
+      });
 
-        // 🚨 শিফটের শুরুতে বা পেজ লোড হওয়ার সাথে সাথে যদি পেন্ডিং অর্ডার থাকে, ডেস্কটপ নোটিফিকেশন দেবে
-        if (pendingOrders.length > 0 && !initialAlertTriggered.current) {
-          initialAlertTriggered.current = true;
-          playNotificationSound();
+      // সক্রিয় অর্ডার (ডেলিভারি না হওয়া পর্যন্ত)
+      const activeOrders = ordersList.filter(o => {
+        const status = (o.status || o.orderStatus || '').toUpperCase();
+        return !terminalStatuses.includes(status);
+      });
 
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('⚠️ পেন্ডিং অর্ডার সতর্কবার্তা!', {
-              body: `🚨 বর্তমানে ${pendingOrders.length} টি অর্ডার এক্সেপ্ট করার জন্য অপেক্ষা করছে!`,
-              icon: settings?.logoLight || resB,
-              requireInteraction: true,
-            });
-          }
+      setPendingCount(pendingOrders.length);
+      setUndeliveredCount(activeOrders.length);
+
+      // 🚨 পেন্ডিং অর্ডার থাকলে শিফটের শুরুতেই ডেস্কটপ নোটিফিকেশন ও সাউন্ড বাজবে
+      if (pendingOrders.length > 0 && !initialAlertTriggered.current) {
+        initialAlertTriggered.current = true;
+        playNotificationSound();
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('⚠️ পেন্ডিং অর্ডার সতর্কবার্তা!', {
+            body: `🚨 বর্তমানে ${pendingOrders.length} টি অর্ডার এক্সেপ্ট করার জন্য অপেক্ষা করছে!`,
+            icon: settings?.logoLight || resB,
+            requireInteraction: true,
+          });
         }
-      } catch (err) {
-        console.error('Failed to fetch orders count:', err);
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch orders count:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchOrdersData();
 
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    if ('Notification' in window) {
+      setNotifPermission(Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(setNotifPermission);
+      }
     }
+
+    // 🔄 প্রতি ১৫ সেকেন্ড পর পর অটো-পোলিং (যাতে সকেট মিস হলেও ডাটা রিফ্রেশ হয়)
+    const intervalId = setInterval(fetchOrdersData, 15000);
 
     const handleNewOrder = (newOrder) => {
       fetchOrdersData();
@@ -174,12 +201,13 @@ export const AdminLayout = () => {
     socket.on('order_status_updated', handleStatusUpdate);
 
     return () => {
+      clearInterval(intervalId);
       socket.off('admin_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ট্যাবের টাইটেলে পেন্ডিং অর্ডারের সংখ্যা ব্র্যাকেটে দেখানো
+  // 🎯 ২. ড্যাশবোর্ড টাইটেলে পেন্ডিং অর্ডার কাউন্ট
   useEffect(() => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount} Pending) Barcode Admin`;
@@ -227,7 +255,7 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে পেন্ডিং অর্ডারের লাল ব্লিঙ্কিং ব্যাজ */}
+            {/* 🔴 লাল ব্যাজ কাউন্টার */}
             {item.name === 'Orders' && (pendingCount > 0 || undeliveredCount > 0) && (
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm text-white ${
                 pendingCount > 0 ? 'bg-red-600 animate-bounce' : 'bg-amber-500'
@@ -316,6 +344,18 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* 🔔 নোটিফিকেশন এলাউ বাটন (যদি ব্রাউজারে এলাউ করা না থাকে) */}
+            {notifPermission !== 'granted' && (
+              <button
+                onClick={requestNotifPermission}
+                className="flex items-center gap-1.5 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1.5 rounded-lg border border-amber-500/20 hover:bg-amber-500/20 transition-all font-medium"
+                title="Enable Desktop Notifications"
+              >
+                <Bell className="w-3.5 h-3.5 animate-pulse" />
+                <span>নোটিফিকেশন অন করুন</span>
+              </button>
+            )}
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
@@ -338,7 +378,7 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 🚨🚨 ৪. গ্লোবাল ফ্লোটিং ওয়ার্নিং ব্যানার (সব পেজে দেখাবে যদি ১টিও পেন্ডিং অর্ডার থাকে) 🚨🚨 */}
+        {/* 🚨 গ্লোবাল ফ্লোটিং ওয়ার্নিং ব্যানার */}
         <AnimatePresence>
           {pendingCount > 0 && (
             <motion.div
