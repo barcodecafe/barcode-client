@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { getAllOrders } from "../services";
+import { getAllOrders } from "../services/ordersService";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
