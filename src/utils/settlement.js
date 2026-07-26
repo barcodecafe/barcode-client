@@ -132,11 +132,30 @@ export const buildDailySettlementLog = (orders) => {
     if (cash === 0) row.onlinePaid = round2(row.onlinePaid + (order.total || 0));
     if (cash > 0) row.hasCash = true;
 
-    if (!order.isCashSettledByAdmin) {
+    // 💡 FLEXIBLE BACKEND PROPERTY CHECKS
+    const isSettledByAdmin = Boolean(
+      order.isCashSettledByAdmin ||
+      order.isCashSettled ||
+      order.cashSettled ||
+      order.isSettled ||
+      order.cashStatus === "SETTLED" ||
+      order.settlementStatus === "SETTLED" ||
+      order.cashStatus === "CONFIRMED"
+    );
+
+    const isSubmittedToAdmin = Boolean(
+      order.isSubmittedToAdmin ||
+      order.isSubmitted ||
+      order.submitted ||
+      order.cashSubmitted ||
+      order.isCashSubmitted
+    );
+
+    if (!isSettledByAdmin) {
       row.outstandingCash = round2(row.outstandingCash + cash);
       row.outstandingCommission = round2(row.outstandingCommission + commission);
       row.isSettled = false;
-      if (!order.isSubmittedToAdmin) row.isSubmitted = false;
+      if (!isSubmittedToAdmin) row.isSubmitted = false;
     }
   }
 
