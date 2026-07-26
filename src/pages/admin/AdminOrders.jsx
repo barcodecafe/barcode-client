@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   Clock3,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -29,7 +29,11 @@ import {
   confirmRiderCashSettlement,
 } from "../../services/ordersService";
 import { recheckPayment } from "../../services/paymentsService";
-import { buildDailySettlementLog, businessDateKey, formatDateKey } from "../../utils/settlement";
+import {
+  buildDailySettlementLog,
+  businessDateKey,
+  formatDateKey,
+} from "../../utils/settlement";
 import { getAllRiders, updateRiderStatus } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
@@ -37,26 +41,54 @@ import { getAllRegions } from "../../services/regionsService";
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
-// The server stores paymentMethod as 'cod' / 'sslcommerz' — never the label.
-const isOnlineOrder = (ord) =>
-  String(ord?.paymentMethod || "cod").toLowerCase() !== "cod";
+// 🎯 ১. পেমেন্ট মেথড ও স্ট্যাটাস অনুযায়ী ডায়নামিক ব্যাজ লজিক
+const getPaymentBadge = (ord) => {
+  const pm = String(ord?.paymentMethod || "cod").toLowerCase();
+  const ps = String(ord?.paymentStatus || "").toLowerCase();
+  const isPaid = ord?.isPaid || ps === "paid";
 
-const getPaymentAlert = (ord) => {
-  if (!isOnlineOrder(ord)) return null;
-  const status = ord?.paymentStatus || "Pending";
-  if (status === "Paid") return null;
-  if (status === "Failed" || status === "Cancelled")
-    return { label: `Payment ${status}`, tone: "bg-red-500/10 text-red-500 border-red-500/20" };
-  return { label: "Awaiting payment", tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" };
+  // SSLCommerz বা অন্য অনলাইন পেমেন্ট
+  if (pm !== "cod") {
+    if (isPaid) {
+      return {
+        label: "PAID",
+        tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+      };
+    }
+    if (ps === "failed" || ps === "cancelled") {
+      return {
+        label: "PAYMENT FAILED",
+        tone: "bg-red-500/10 text-red-500 border-red-500/20 font-bold",
+      };
+    }
+    return {
+      label: "AWAITING PAYMENT",
+      tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold",
+    };
+  }
+
+  // Cash on Delivery (COD)
+  if (isPaid || String(ord?.status).toUpperCase() === "DELIVERED") {
+    return {
+      label: "PAID (COD)",
+      tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+    };
+  }
+
+  return {
+    label: "AWAITING PAYMENT",
+    tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold",
+  };
 };
 
 const getPaymentStatusColor = (status) => {
-  if (status === "Paid") return "bg-emerald-500/10 text-emerald-500";
-  if (status === "Failed" || status === "Cancelled") return "bg-red-500/10 text-red-500";
+  const st = String(status || "").toLowerCase();
+  if (st === "paid") return "bg-emerald-500/10 text-emerald-500";
+  if (st === "failed" || st === "cancelled") return "bg-red-500/10 text-red-500";
   return "bg-amber-500/10 text-amber-500";
 };
 
-// 🟡 Pending সাপোর্টসহ স্ট্যাটাস কালার হ্যান্ডলার
+// 🟡 Delivery Status Color Handler
 const getStatusColor = (status) => {
   switch (status?.toString().toUpperCase()) {
     case "PENDING":
@@ -104,20 +136,25 @@ export const AdminOrders = () => {
       .then(([ordersData, ridersData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
-        window.dispatchEvent(new Event('order_updated'));
+        window.dispatchEvent(new Event("order_updated"));
         return ordersData || [];
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
   // Initial load
   useEffect(() => {
-    Promise.all([getAllOrders(), getAllRiders(), getAllBranches(), getAllRegions()])
+    Promise.all([
+      getAllOrders(),
+      getAllRiders(),
+      getAllBranches(),
+      getAllRegions(),
+    ])
       .then(([ordersData, ridersData, branchesData, regionsData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
         setBranches(branchesData || []);
         setRegions(Array.isArray(regionsData) ? regionsData : []);
-        window.dispatchEvent(new Event('order_updated'));
+        window.dispatchEvent(new Event("order_updated"));
       })
       .catch((err) => console.error("Error loading admin orders data:", err))
       .finally(() => setLoading(false));
@@ -127,7 +164,7 @@ export const AdminOrders = () => {
   useEffect(() => {
     socket.on("order_created", (newOrder) => {
       setOrders((prev) => [newOrder, ...prev]);
-      window.dispatchEvent(new Event('order_updated'));
+      window.dispatchEvent(new Event("order_updated"));
     });
 
     socket.on("order_updated", (updatedOrder) => {
@@ -137,7 +174,7 @@ export const AdminOrders = () => {
       setSelectedOrderDetails((prev) =>
         prev?.id === updatedOrder.id ? updatedOrder : prev
       );
-      window.dispatchEvent(new Event('order_updated'));
+      window.dispatchEvent(new Event("order_updated"));
     });
 
     socket.on("rider_updated", (updatedRider) => {
@@ -220,15 +257,16 @@ export const AdminOrders = () => {
       alert(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
       alert("Re-check failed: " + (err.response?.data?.message || err.message));
-    } finally {
+    } flexinally {
       setRecheckingOrderId(null);
     }
   };
 
   const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
     const confirmSettle = window.confirm(
-      `Confirm you have received ${riderName}'s cash for ${formatDateKey(dateKey)}?\n\n` +
-        `This marks their collection settled and cannot be undone.`
+      `Confirm you have received ${riderName}'s cash for ${formatDateKey(
+        dateKey
+      )}?\n\nThis marks their collection settled and cannot be undone.`
     );
     if (!confirmSettle) return;
 
@@ -238,7 +276,10 @@ export const AdminOrders = () => {
       alert(`Cash settlement confirmed successfully for ${riderName}!`);
       fetchOrdersAndFleet();
     } catch (err) {
-      alert("Failed to confirm cash settlement: " + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to confirm cash settlement: " +
+          (err.response?.data?.message || err.message)
+      );
     } finally {
       setConfirmingRiderId(null);
     }
@@ -355,17 +396,22 @@ export const AdminOrders = () => {
 
                   <span className="block text-[10px] font-semibold mt-1 text-neutral-500 dark:text-neutral-300">
                     {r.activeOrders > 0
-                      ? `🚴 ${r.activeOrders} active ${r.activeOrders === 1 ? "delivery" : "deliveries"}`
+                      ? `🚴 ${r.activeOrders} active ${
+                          r.activeOrders === 1 ? "delivery" : "deliveries"
+                        }`
                       : "No active delivery"}
                   </span>
 
                   <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
                     <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400">
-                      Today's Collection ({stats.daily.deliveredCount} Delivered)
+                      Today's Collection ({stats.daily.deliveredCount}{" "}
+                      Delivered)
                     </span>
                     <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/60 dark:bg-neutral-950/40 p-2 rounded-lg">
                       <div>
-                        <span className="text-neutral-400 text-[9px] block">Cash Collected</span>
+                        <span className="text-neutral-400 text-[9px] block">
+                          Cash Collected
+                        </span>
                         <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                           ৳{stats.daily.cashCollected.toFixed(0)}
                         </span>
@@ -379,18 +425,24 @@ export const AdminOrders = () => {
                         )}
                       </div>
                       <div className="text-right">
-                        <span className="text-neutral-400 text-[9px] block">Rider Share</span>
+                        <span className="text-neutral-400 text-[9px] block">
+                          Rider Share
+                        </span>
                         <span className="font-bold text-primary-500">
                           ৳{stats.daily.income.toFixed(0)}
                         </span>
                       </div>
                       <div className="col-span-2 pt-1.5 mt-0.5 border-t border-dashed border-neutral-200 dark:border-neutral-800 flex items-baseline justify-between">
                         <span className="text-neutral-400 text-[9px]">
-                          {stats.daily.payable < 0 ? "You owe rider" : "Payable to admin"}
+                          {stats.daily.payable < 0
+                            ? "You owe rider"
+                            : "Payable to admin"}
                         </span>
                         <span
                           className={`font-black text-[11px] ${
-                            stats.daily.payable < 0 ? "text-blue-500" : "text-amber-600 dark:text-amber-400"
+                            stats.daily.payable < 0
+                              ? "text-blue-500"
+                              : "text-amber-600 dark:text-amber-400"
                           }`}
                         >
                           ৳{Math.abs(stats.daily.payable).toFixed(0)}
@@ -405,29 +457,38 @@ export const AdminOrders = () => {
                         </div>
                       ) : cashStatus.isConfirmedByAdmin ? (
                         <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 py-1 rounded-lg">
-                          <CheckCircle2 className="w-3 h-3" /> Cash Settled & Confirmed
+                          <CheckCircle2 className="w-3 h-3" /> Cash Settled &
+                          Confirmed
                         </div>
                       ) : cashStatus.isSubmittedByRider ? (
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-[10px] font-semibold text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
                             <span className="flex items-center gap-1">
-                              <Clock3 className="w-3 h-3 animate-pulse" /> Submitted by Rider
+                              <Clock3 className="w-3 h-3 animate-pulse" />{" "}
+                              Submitted by Rider
                             </span>
                           </div>
                           <button
                             onClick={() =>
-                              handleConfirmCashSettlement(r.id, r.name, stats.dateKey)
+                              handleConfirmCashSettlement(
+                                r.id,
+                                r.name,
+                                stats.dateKey
+                              )
                             }
                             disabled={confirmingRiderId === r.id}
                             className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
                           >
                             <Check className="w-3 h-3 stroke-[3]" />
-                            {confirmingRiderId === r.id ? "Confirming..." : "Approve & Mark Succeeded"}
+                            {confirmingRiderId === r.id
+                              ? "Confirming..."
+                              : "Approve & Mark Succeeded"}
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-red-500 bg-red-500/10 border border-red-500/20 py-1 rounded-lg">
-                          <AlertCircle className="w-3 h-3" /> Cash Not Submitted Yet
+                          <AlertCircle className="w-3 h-3" /> Cash Not Submitted
+                          Yet
                         </div>
                       )}
 
@@ -438,13 +499,21 @@ export const AdminOrders = () => {
                             {stats.pastDue.length > 5 && " · oldest 5 shown"}
                           </span>
                           {stats.pastDue.slice(0, 5).map((day) => (
-                            <div key={day.dateKey} className="flex items-center justify-between gap-2">
+                            <div
+                              key={day.dateKey}
+                              className="flex items-center justify-between gap-2"
+                            >
                               <span className="text-[10px] text-neutral-500 dark:text-neutral-400 font-semibold">
-                                {day.date} · ৳{day.outstandingNetPayable.toFixed(0)}
+                                {day.date} · ৳
+                                {day.outstandingNetPayable.toFixed(0)}
                               </span>
                               <button
                                 onClick={() =>
-                                  handleConfirmCashSettlement(r.id, r.name, day.dateKey)
+                                  handleConfirmCashSettlement(
+                                    r.id,
+                                    r.name,
+                                    day.dateKey
+                                  )
                                 }
                                 disabled={confirmingRiderId === r.id}
                                 className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase transition-all active:scale-95 disabled:opacity-50 ${
@@ -469,7 +538,9 @@ export const AdminOrders = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-neutral-150 dark:border-neutral-850">
-                  <span className="text-[9px] font-bold text-neutral-400">Rider Status:</span>
+                  <span className="text-[9px] font-bold text-neutral-400">
+                    Rider Status:
+                  </span>
                   <select
                     value={r.status}
                     onChange={async (e) => {
@@ -492,7 +563,9 @@ export const AdminOrders = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Table List */}
         <div
-          className={`${activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"} bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs overflow-hidden`}
+          className={`${
+            activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"
+          } bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs overflow-hidden`}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
@@ -510,7 +583,11 @@ export const AdminOrders = () => {
               <tbody>
                 {orders.map((ord) => {
                   const currentStatus = String(ord.status || "").toUpperCase();
-                  const isPendingUnhandled = currentStatus === "PLACED" || currentStatus === "PENDING" || !ord.status;
+                  const isPendingUnhandled =
+                    currentStatus === "PLACED" ||
+                    currentStatus === "PENDING" ||
+                    !ord.status;
+                  const badge = getPaymentBadge(ord);
 
                   return (
                     <tr
@@ -523,11 +600,11 @@ export const AdminOrders = () => {
                         title="Click to view details"
                       >
                         {ord.id}
-                        {getPaymentAlert(ord) && (
+                        {badge && (
                           <span
-                            className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide normal-case ${getPaymentAlert(ord).tone}`}
+                            className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
                           >
-                            {getPaymentAlert(ord).label}
+                            {badge.label}
                           </span>
                         )}
                       </td>
@@ -554,14 +631,18 @@ export const AdminOrders = () => {
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
-                              onClick={() => handleStatusChange(ord.id, "Accepted")}
+                              onClick={() =>
+                                handleStatusChange(ord.id, "Accepted")
+                              }
                               className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
                             </button>
                             <button
-                              onClick={() => handleStatusChange(ord.id, "Rejected")}
+                              onClick={() =>
+                                handleStatusChange(ord.id, "Rejected")
+                              }
                               className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Reject Order"
                             >
@@ -590,7 +671,9 @@ export const AdminOrders = () => {
                             <option value="Pending">Pending</option>
                             <option value="Accepted">Accepted</option>
                             <option value="Preparing">Preparing</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Out for Delivery">
+                              Out for Delivery
+                            </option>
                             <option value="Delivered">Delivered</option>
                             <option value="Rejected">Rejected</option>
                           </select>
@@ -600,12 +683,18 @@ export const AdminOrders = () => {
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
-                            disabled={isPendingUnhandled || ord.status === "Rejected" || ord.status === "Delivered"}
+                            disabled={
+                              isPendingUnhandled ||
+                              ord.status === "Rejected" ||
+                              ord.status === "Delivered"
+                            }
                             onChange={(e) =>
                               handleAssignRider(ord.id, e.target.value)
                             }
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              isPendingUnhandled || ord.status === "Rejected" || ord.status === "Delivered"
+                              isPendingUnhandled ||
+                              ord.status === "Rejected" ||
+                              ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
                             }`}
@@ -712,7 +801,11 @@ export const AdminOrders = () => {
                   </h2>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     Status:{" "}
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(selectedOrderDetails.status)}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(
+                        selectedOrderDetails.status
+                      )}`}
+                    >
                       {selectedOrderDetails.status}
                     </span>
                   </p>
@@ -733,7 +826,9 @@ export const AdminOrders = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-600 dark:text-neutral-300">
                   <div className="flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span className="font-semibold">{selectedOrderDetails.user?.name || "N/A"}</span>
+                    <span className="font-semibold">
+                      {selectedOrderDetails.user?.name || "N/A"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
@@ -743,7 +838,8 @@ export const AdminOrders = () => {
                     <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
                     <span>
                       {selectedOrderDetails.user?.address}{" "}
-                      {selectedOrderDetails.user?.pickArea && `(${selectedOrderDetails.user?.pickArea})`}
+                      {selectedOrderDetails.user?.pickArea &&
+                        `(${selectedOrderDetails.user?.pickArea})`}
                     </span>
                   </div>
                 </div>
@@ -753,10 +849,18 @@ export const AdminOrders = () => {
               <div>
                 <h4 className="font-bold text-neutral-700 dark:text-neutral-300 text-xs mb-2 flex items-center gap-1.5">
                   <Utensils className="w-3.5 h-3.5 text-primary-500" />
-                  Ordered Items ({selectedOrderDetails.items?.length || selectedOrderDetails.cart?.length || 0})
+                  Ordered Items (
+                  {selectedOrderDetails.items?.length ||
+                    selectedOrderDetails.cart?.length ||
+                    0}
+                  )
                 </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {(selectedOrderDetails.items || selectedOrderDetails.cart || []).map((item, idx) => (
+                  {(
+                    selectedOrderDetails.items ||
+                    selectedOrderDetails.cart ||
+                    []
+                  ).map((item, idx) => (
                     <div
                       key={idx}
                       className="flex justify-between items-center p-2.5 bg-neutral-50/60 dark:bg-neutral-950/30 rounded-xl text-xs border border-neutral-100 dark:border-neutral-800/60"
@@ -787,7 +891,7 @@ export const AdminOrders = () => {
                 <div className="flex justify-between text-neutral-500">
                   <span>Payment Method:</span>
                   <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
-                    {selectedOrderDetails.paymentMethod || "Cash on Delivery"}
+                    {selectedOrderDetails.paymentMethod || "COD"}
                   </span>
                 </div>
                 <div className="flex justify-between text-neutral-500">
@@ -797,21 +901,29 @@ export const AdminOrders = () => {
                       selectedOrderDetails.paymentStatus
                     )}`}
                   >
-                    {selectedOrderDetails.paymentStatus || "Pending"}
+                    {selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"}
                   </span>
                 </div>
 
-                {isOnlineOrder(selectedOrderDetails) &&
+                {String(
+                  selectedOrderDetails.paymentMethod || "cod"
+                ).toLowerCase() !== "cod" &&
                   selectedOrderDetails.paymentStatus !== "Paid" && (
                     <div className="pt-1">
                       <button
-                        onClick={() => handleRecheckPayment(selectedOrderDetails.id)}
-                        disabled={recheckingOrderId === selectedOrderDetails.id}
+                        onClick={() =>
+                          handleRecheckPayment(selectedOrderDetails.id)
+                        }
+                        disabled={
+                          recheckingOrderId === selectedOrderDetails.id
+                        }
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wide hover:bg-primary-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
                       >
                         <RefreshCw
                           className={`w-3 h-3 ${
-                            recheckingOrderId === selectedOrderDetails.id ? "animate-spin" : ""
+                            recheckingOrderId === selectedOrderDetails.id
+                              ? "animate-spin"
+                              : ""
                           }`}
                         />
                         {recheckingOrderId === selectedOrderDetails.id
@@ -819,14 +931,17 @@ export const AdminOrders = () => {
                           : "Re-check payment with gateway"}
                       </button>
                       <p className="text-[9px] text-neutral-400 mt-1 text-center normal-case">
-                        Use this if the customer says they paid but the order still shows unpaid.
+                        Use this if the customer says they paid but the order
+                        still shows unpaid.
                       </p>
                     </div>
                   )}
                 {selectedOrderDetails.deliveryCharge !== undefined && (
                   <div className="flex justify-between text-neutral-500">
                     <span>Delivery Charge:</span>
-                    <span>৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}</span>
+                    <span>
+                      ৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-neutral-100 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800">
