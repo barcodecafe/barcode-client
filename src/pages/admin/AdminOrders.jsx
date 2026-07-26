@@ -257,7 +257,7 @@ export const AdminOrders = () => {
       alert(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
       alert("Re-check failed: " + (err.response?.data?.message || err.message));
-    } flexinally {
+    } finally {
       setRecheckingOrderId(null);
     }
   };
