@@ -58,6 +58,7 @@ export const RiderLayout = () => {
       const assigned = ordersList.filter((o) => {
         const isMyOrder =
           o.riderId === user?.id ||
+          o.riderId === user?._id ||
           o.riderName?.toLowerCase() === user?.name?.toLowerCase();
         const isActive =
           o.status !== "Delivered" && o.status !== "Rejected";
@@ -81,46 +82,74 @@ export const RiderLayout = () => {
 
     // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড ও নোটিফিকেশন অ্যালার্ট
     const handleRiderOrderUpdate = (data) => {
+      // ব্যাকএন্ডের ফুল ডাটা সিঙ্ক
       fetchRiderPendingOrders();
 
-      // সাউন্ড বাজানো
-      if (soundEnabledRef.current) {
-        try {
-          const audio = new Audio(
-            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      // রাইডার আইডি / নাম চেক (এই রাইডারের জন্য কিনা যাচাইকরণ)
+      const assignedRiderId = data?.riderId || data?.order?.riderId;
+      const assignedRiderName = data?.riderName || data?.order?.riderName;
+
+      const isForThisRider =
+        !data ||
+        (assignedRiderId &&
+          (String(assignedRiderId) === String(user?.id) ||
+            String(assignedRiderId) === String(user?._id))) ||
+        (assignedRiderName &&
+          assignedRiderName?.toLowerCase() === user?.name?.toLowerCase());
+
+      if (isForThisRider) {
+        // 🎵 ১. সাউন্ড / রিংটোন বাজানো
+        if (soundEnabledRef.current) {
+          try {
+            const audio = new Audio(
+              "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+            );
+            audio.play().catch((err) =>
+              console.log("Audio play prevented by browser:", err)
+            );
+          } catch (e) {
+            console.error("Audio error:", e);
+          }
+        }
+
+        // 🔔 ২. ডেস্কটপ নোটিফিকেশন পপআপ
+        if ("Notification" in window && Notification.permission === "granted") {
+          const orderId =
+            data?.id || data?._id || data?.order?.id || data?.order?._id || "";
+          const desktopNotif = new Notification(
+            "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
+            {
+              body: orderId
+                ? `Order ID: #${orderId}\nনতুন অর্ডার চেক করে ডেলিভারি শুরু করুন।`
+                : "আপনার জন্য নতুন একটি ডেলিভারি অর্ডার অ্যাসাইন করা হয়েছে!",
+              icon: settings?.logoLight || resB,
+              requireInteraction: true,
+            }
           );
-          audio.play().catch(() => {});
-        } catch (e) {}
-      }
 
-      // ডেস্কটপ নোটিফিকেশন
-      if ("Notification" in window && Notification.permission === "granted") {
-        const desktopNotif = new Notification("🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!", {
-          body: `Order ID: #${data?.id || data?._id || ""}\nনতুন অর্ডার চেক করুন।`,
-          icon: settings?.logoLight || resB,
-          requireInteraction: true,
-        });
-
-        desktopNotif.onclick = () => {
-          window.focus();
-          navigate("/rider/orders");
-        };
+          desktopNotif.onclick = () => {
+            window.focus();
+            navigate("/rider/orders");
+          };
+        }
       }
     };
 
-    // Socket Events Listening
+    // Socket Events Listening (সবগুলো সম্ভাব্য ইভেন্টে রিংটোন ট্রিগার হবে)
     socket.on("rider_order_assigned", handleRiderOrderUpdate);
-    socket.on("order_updated", fetchRiderPendingOrders);
-    socket.on("order_status_updated", fetchRiderPendingOrders);
+    socket.on("order_assigned", handleRiderOrderUpdate);
+    socket.on("order_updated", handleRiderOrderUpdate);
+    socket.on("order_status_updated", handleRiderOrderUpdate);
 
     // Custom Local Event Listener
-    window.addEventListener("order_updated", fetchRiderPendingOrders);
+    window.addEventListener("order_updated", handleRiderOrderUpdate);
 
     return () => {
       socket.off("rider_order_assigned", handleRiderOrderUpdate);
-      socket.off("order_updated", fetchRiderPendingOrders);
-      socket.off("order_status_updated", fetchRiderPendingOrders);
-      window.removeEventListener("order_updated", fetchRiderPendingOrders);
+      socket.off("order_assigned", handleRiderOrderUpdate);
+      socket.off("order_updated", handleRiderOrderUpdate);
+      socket.off("order_status_updated", handleRiderOrderUpdate);
+      window.removeEventListener("order_updated", handleRiderOrderUpdate);
     };
   }, [user, navigate, settings?.logoLight]);
 
@@ -196,7 +225,7 @@ export const RiderLayout = () => {
         ))}
       </nav>
 
-      {/* বটম সেকশন (Back to Site মুছে দিয়ে কেবল Log Out রাখা হয়েছে) */}
+      {/* বটম সেকশন */}
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
         <button
           onClick={handleLogout}
