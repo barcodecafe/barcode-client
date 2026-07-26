@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,6 +21,8 @@ import {
   Image,
   Bike,
   Settings,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
@@ -55,10 +57,39 @@ export const AdminLayout = () => {
     return typeof window !== 'undefined' && window.innerWidth >= 768;
   });
 
+  // 🎯 ১. পেন্ডিং (Pending) এবং মোট আন-ডেলিভার্ড অর্ডারের কাউন্ট
+  const [pendingCount, setPendingCount] = useState(0);
   const [undeliveredCount, setUndeliveredCount] = useState(0);
+  const initialAlertTriggered = useRef(false);
 
+  // 🔊 সাউন্ড প্লে করার ফাংশন
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(() => {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
+      });
+    } catch (e) {
+      console.warn('Audio play error:', e);
+    }
+  };
+
+  // 🎯 ২. ব্যাকএন্ড থেকে অর্ডার কাউন্ট ফেচ করা
   useEffect(() => {
-    const fetchUndeliveredOrders = async () => {
+    const fetchOrdersData = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -73,55 +104,48 @@ export const AdminLayout = () => {
               ? resData.data.orders 
               : [];
 
+        // ১. পেন্ডিং অর্ডার গণনা (যেগুলো Accept/Reject করতে হবে)
+        const pendingOrders = ordersList.filter(o => {
+          const status = (o.status || '').toUpperCase();
+          return status === 'PENDING' || status === 'PLACED';
+        });
+
+        // ২. মোট সক্রিয় অর্ডার (ডেলিভারি না হওয়া পর্যন্ত)
         const terminalStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
         const activeOrders = ordersList.filter(o => {
           const status = (o.status || '').toUpperCase();
           return !terminalStatuses.includes(status);
         });
 
+        setPendingCount(pendingOrders.length);
         setUndeliveredCount(activeOrders.length);
+
+        // 🚨 শিফটের শুরুতে বা পেজ লোড হওয়ার সাথে সাথে যদি পেন্ডিং অর্ডার থাকে, ডেস্কটপ নোটিফিকেশন দেবে
+        if (pendingOrders.length > 0 && !initialAlertTriggered.current) {
+          initialAlertTriggered.current = true;
+          playNotificationSound();
+
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('⚠️ পেন্ডিং অর্ডার সতর্কবার্তা!', {
+              body: `🚨 বর্তমানে ${pendingOrders.length} টি অর্ডার এক্সেপ্ট করার জন্য অপেক্ষা করছে!`,
+              icon: settings?.logoLight || resB,
+              requireInteraction: true,
+            });
+          }
+        }
       } catch (err) {
-        console.error('Failed to fetch active orders count:', err);
+        console.error('Failed to fetch orders count:', err);
       }
     };
 
-    fetchUndeliveredOrders();
+    fetchOrdersData();
 
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // 🔊 সাউন্ড বাজানোর নিরাপদ ফাংশন (Local MP3 + Fallback Web Audio)
-    const playNotificationSound = () => {
-      try {
-        // ১. Local public/notification.mp3 প্লে করা
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {
-          // ২. MP3 ফাইল না থাকলে বা ব্লকড হলে জেনারেটেড বিপ সাউন্ড বাজবে
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) {
-            const ctx = new AudioCtx();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-          }
-        });
-      } catch (e) {
-        console.warn('Audio play failed:', e);
-      }
-    };
-
     const handleNewOrder = (newOrder) => {
-      fetchUndeliveredOrders();
-
-      // 🔊 বিওপ সাউন্ড প্লে
+      fetchOrdersData();
       playNotificationSound();
 
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -143,7 +167,7 @@ export const AdminLayout = () => {
     };
 
     const handleStatusUpdate = () => {
-      fetchUndeliveredOrders();
+      fetchOrdersData();
     };
 
     socket.on('admin_new_order', handleNewOrder);
@@ -155,13 +179,16 @@ export const AdminLayout = () => {
     };
   }, [navigate, settings?.logoLight]);
 
+  // 🎯 ৩. ট্যাবের টাইটেলে পেন্ডিং অর্ডারের সংখ্যা ব্র্যাকেটে দেখানো
   useEffect(() => {
-    if (undeliveredCount > 0) {
-      document.title = `(${undeliveredCount}) Active Orders - Barcode Admin`;
+    if (pendingCount > 0) {
+      document.title = `(${pendingCount} Pending) Barcode Admin`;
+    } else if (undeliveredCount > 0) {
+      document.title = `(${undeliveredCount} Active) Barcode Admin`;
     } else {
       document.title = 'Barcode Restaurant - Admin';
     }
-  }, [undeliveredCount]);
+  }, [pendingCount, undeliveredCount]);
 
   const handleLogout = async () => {
     await logout();
@@ -200,9 +227,12 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {item.name === 'Orders' && undeliveredCount > 0 && (
-              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-                {undeliveredCount}
+            {/* 🔴 সাইডবারে পেন্ডিং অর্ডারের লাল ব্লিঙ্কিং ব্যাজ */}
+            {item.name === 'Orders' && (pendingCount > 0 || undeliveredCount > 0) && (
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm text-white ${
+                pendingCount > 0 ? 'bg-red-600 animate-bounce' : 'bg-amber-500'
+              }`}>
+                {pendingCount > 0 ? `${pendingCount} Pending` : undeliveredCount}
               </span>
             )}
           </NavLink>
@@ -307,6 +337,31 @@ export const AdminLayout = () => {
             </div>
           </div>
         </header>
+
+        {/* 🚨🚨 ৪. গ্লোবাল ফ্লোটিং ওয়ার্নিং ব্যানার (সব পেজে দেখাবে যদি ১টিও পেন্ডিং অর্ডার থাকে) 🚨🚨 */}
+        <AnimatePresence>
+          {pendingCount > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-red-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between z-20 text-xs sm:text-sm font-medium"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 animate-bounce shrink-0" />
+                <span>
+                  <strong>🚨 সতর্কবার্তা:</strong> বর্তমানে <strong>{pendingCount} টি অর্ডার</strong> এক্সেপ্ট করার জন্য অপেক্ষা করছে!
+                </span>
+              </div>
+              <Link
+                to="/admin/orders"
+                className="flex items-center gap-1 bg-white text-red-600 font-bold px-3 py-1 rounded-lg shadow hover:bg-neutral-100 transition-all shrink-0 text-xs"
+              >
+                অর্ডারগুলো দেখুন <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
           <Outlet />
