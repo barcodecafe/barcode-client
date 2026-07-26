@@ -45,42 +45,19 @@ const navItems = [
   { name: 'Site Settings', path: '/admin/settings', icon: Settings },
 ];
 
-// 🔊 অডিও অবজেক্টটি বাইরে ইনিশিয়ালাইজ করে রাখা হলো
-const notificationAudio = typeof window !== 'undefined' 
-  ? new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') 
-  : null;
-
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
-  // ✅ ড্রয়ার ওপেন/ক্লোজ স্টেট
   const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth >= 768;
   });
 
-  // 🎯 ১. যেসব অর্ডার এখনো ডেলিভারি হয়নি (Active/Undelivered Orders) সেগুলোর মোট কাউন্ট
   const [undeliveredCount, setUndeliveredCount] = useState(0);
 
-  // 🎯 ২. ব্যাকএন্ড থেকে আন-ডেলিভার্ড অর্ডার ফেচ করা এবং সকেট লিসেন করা
   useEffect(() => {
-    // 🔓 ডেসটপ ব্রাউজারে ইউজার ১ম ক্লিক বা ইন্টারেকশন করলেই অডিও সিস্টেম আনলক করা
-    const unlockAudio = () => {
-      if (notificationAudio) {
-        notificationAudio.play().then(() => {
-          notificationAudio.pause();
-          notificationAudio.currentTime = 0;
-        }).catch(() => {});
-      }
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
-    };
-
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('keydown', unlockAudio);
-
     const fetchUndeliveredOrders = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
@@ -96,7 +73,6 @@ export const AdminLayout = () => {
               ? resData.data.orders 
               : [];
 
-        // DELIVERED, CANCELLED এবং REJECTED ছাড়া বাকি সব অ্যাক্টিভ অর্ডার গণনা হবে
         const terminalStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
         const activeOrders = ordersList.filter(o => {
           const status = (o.status || '').toUpperCase();
@@ -111,22 +87,42 @@ export const AdminLayout = () => {
 
     fetchUndeliveredOrders();
 
-    // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে পপ-আপ নোটিফিকেশন, সাউন্ড এবং কাউন্ট রিফ্রেশ
+    // 🔊 সাউন্ড বাজানোর নিরাপদ ফাংশন (Local MP3 + Fallback Web Audio)
+    const playNotificationSound = () => {
+      try {
+        // ১. Local public/notification.mp3 প্লে করা
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => {
+          // ২. MP3 ফাইল না থাকলে বা ব্লকড হলে জেনারেটেড বিপ সাউন্ড বাজবে
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+          }
+        });
+      } catch (e) {
+        console.warn('Audio play failed:', e);
+      }
+    };
+
     const handleNewOrder = (newOrder) => {
       fetchUndeliveredOrders();
 
-      // 🔊 ডেসটপ/ল্যাপটপে নির্ভরযোগ্যভাবে বিওপ সাউন্ড প্লে করা
-      if (notificationAudio) {
-        notificationAudio.currentTime = 0;
-        notificationAudio.play().catch((err) => {
-          console.warn("Desktop audio play blocked by browser:", err);
-        });
-      }
+      // 🔊 বিওপ সাউন্ড প্লে
+      playNotificationSound();
 
       if ('Notification' in window && Notification.permission === 'granted') {
         const orderId = newOrder?.id || newOrder?._id || 'New';
@@ -146,7 +142,6 @@ export const AdminLayout = () => {
       }
     };
 
-    // 🔄 কোনো অর্ডারের স্ট্যাটাস পরিবর্তন হলে কাউন্ট আপডেট করা
     const handleStatusUpdate = () => {
       fetchUndeliveredOrders();
     };
@@ -155,14 +150,11 @@ export const AdminLayout = () => {
     socket.on('order_status_updated', handleStatusUpdate);
 
     return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
       socket.off('admin_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ট্যাবের টাইটেলে মোট আন-ডেলিভার্ড অর্ডারের সংখ্যা দেখানো
   useEffect(() => {
     if (undeliveredCount > 0) {
       document.title = `(${undeliveredCount}) Active Orders - Barcode Admin`;
@@ -208,7 +200,6 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে Orders এর পাশে আন-ডেলিভার্ড অর্ডারের লাল ব্যাজ */}
             {item.name === 'Orders' && undeliveredCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
                 {undeliveredCount}
