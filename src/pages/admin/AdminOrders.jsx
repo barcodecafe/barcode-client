@@ -231,7 +231,7 @@ export const AdminOrders = () => {
       alert(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
       alert("Re-check failed: " + (err.response?.data?.message || err.message));
-    } fontally {
+    } finally {
       setRecheckingOrderId(null);
     }
   };
@@ -265,13 +265,13 @@ export const AdminOrders = () => {
 
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
-  // 🎯 ACCEPT / REJECT বা স্ট্যাটাস চেঞ্জের মূল হ্যান্ডলার
+  // ACCEPT / REJECT বা স্ট্যাটাস চেঞ্জের মূল হ্যান্ডলার
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       // অর্ডারের লোকাল স্টেট ও ফিল্টার সাড়া দিতে fetchOrdersAndFleet কল
       await fetchOrdersAndFleet();
-      // 🚨 গ্লোবাল লেআউটে সংকেত পাঠানো যাতে ওপরে লাল কাউন্টারটি তৎক্ষণাৎ কম যায়
+      // গ্লোবাল লেআউটে সংকেত পাঠানো যাতে ওপরে লাল কাউন্টারটি তৎক্ষণাৎ কম যায়
       window.dispatchEvent(new Event('order_updated'));
     } catch (err) {
       alert("Failed to update status: " + err.message);
