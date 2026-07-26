@@ -45,13 +45,18 @@ const navItems = [
   { name: 'Site Settings', path: '/admin/settings', icon: Settings },
 ];
 
+// 🔊 অডিও অবজেক্টটি বাইরে ইনিশিয়ালাইজ করে রাখা হলো
+const notificationAudio = typeof window !== 'undefined' 
+  ? new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') 
+  : null;
+
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
-  // ✅ ড্রয়ার ওপেন/ক্লোজ স্টেট (ডেক্সটপ ভিউয়ের জন্য বাই ডিফল্ট ট্রু)
+  // ✅ ড্রয়ার ওপেন/ক্লোজ স্টেট
   const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth >= 768;
   });
@@ -61,6 +66,21 @@ export const AdminLayout = () => {
 
   // 🎯 ২. ব্যাকএন্ড থেকে আন-ডেলিভার্ড অর্ডার ফেচ করা এবং সকেট লিসেন করা
   useEffect(() => {
+    // 🔓 ডেসটপ ব্রাউজারে ইউজার ১ম ক্লিক বা ইন্টারেকশন করলেই অডিও সিস্টেম আনলক করা
+    const unlockAudio = () => {
+      if (notificationAudio) {
+        notificationAudio.play().then(() => {
+          notificationAudio.pause();
+          notificationAudio.currentTime = 0;
+        }).catch(() => {});
+      }
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+
     const fetchUndeliveredOrders = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
@@ -100,10 +120,13 @@ export const AdminLayout = () => {
     const handleNewOrder = (newOrder) => {
       fetchUndeliveredOrders();
 
-      try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audio.play().catch(() => {});
-      } catch (e) {}
+      // 🔊 ডেসটপ/ল্যাপটপে নির্ভরযোগ্যভাবে বিওপ সাউন্ড প্লে করা
+      if (notificationAudio) {
+        notificationAudio.currentTime = 0;
+        notificationAudio.play().catch((err) => {
+          console.warn("Desktop audio play blocked by browser:", err);
+        });
+      }
 
       if ('Notification' in window && Notification.permission === 'granted') {
         const orderId = newOrder?.id || newOrder?._id || 'New';
@@ -132,6 +155,8 @@ export const AdminLayout = () => {
     socket.on('order_status_updated', handleStatusUpdate);
 
     return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
       socket.off('admin_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
     };
