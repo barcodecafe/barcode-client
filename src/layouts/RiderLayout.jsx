@@ -46,6 +46,79 @@ export const RiderLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
+  // 🔊 অডিও অবজেক্ট প্রি-লোড
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // অডিও ফাইল লোড করা
+    audioRef.current = new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+    );
+
+    // 🔓 ব্রাউজারের Autoplay restriction আনলক লজিক (প্রথম ক্লিকে আনলক হবে)
+    const unlockAudio = () => {
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .then(() => {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          })
+          .catch(() => {});
+      }
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+
+    window.addEventListener("click", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+  }, []);
+
+  // 🔔 সাউন্ড প্লে করার হেলপার ফাংশন (ফেল-সেফ সহ)
+  const playRiderRingtone = () => {
+    if (!soundEnabledRef.current) return;
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {
+          // যদি MP3 ফাইল প্লে না হয়, তবে ব্রাউজারের Native Beep সাউন্ড বাজাবে
+          playWebAudioBeep();
+        });
+      } else {
+        playWebAudioBeep();
+      }
+    } catch (e) {
+      playWebAudioBeep();
+    }
+  };
+
+  // 🎵 Native Web Audio Beep (অনলাইন লিংকের দরকার নেই)
+  const playWebAudioBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 Note
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.8); // 0.8 সেকেন্ড সাউন্ড
+    } catch (e) {
+      console.error("Web Audio fail:", e);
+    }
+  };
+
   // 🎯 ২. ব্যাকএন্ড থেকে রাইডারের রানিং/পেন্ডিং অর্ডারের সংখ্যা লোড করা
   const fetchRiderPendingOrders = async () => {
     try {
@@ -59,6 +132,7 @@ export const RiderLayout = () => {
         const isMyOrder =
           o.riderId === user?.id ||
           o.riderId === user?._id ||
+          o.rider?._id === user?.id ||
           o.riderName?.toLowerCase() === user?.name?.toLowerCase();
         const isActive =
           o.status !== "Delivered" && o.status !== "Rejected";
@@ -82,46 +156,43 @@ export const RiderLayout = () => {
 
     // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড ও নোটিফিকেশন অ্যালার্ট
     const handleRiderOrderUpdate = (data) => {
-      // ব্যাকএন্ডের ফুল ডাটা সিঙ্ক
       fetchRiderPendingOrders();
 
-      // রাইডার আইডি / নাম চেক (এই রাইডারের জন্য কিনা যাচাইকরণ)
-      const assignedRiderId = data?.riderId || data?.order?.riderId;
-      const assignedRiderName = data?.riderName || data?.order?.riderName;
+      // রাইডার আইডি ও নাম চেক করা
+      const rId =
+        data?.riderId ||
+        data?.order?.riderId ||
+        data?.rider?._id ||
+        data?.rider;
+      const rName =
+        data?.riderName || data?.order?.riderName || data?.rider?.name;
 
-      const isForThisRider =
+      const currentUserId = String(user?.id || user?._id || "");
+      const currentUserName = String(user?.name || "").toLowerCase();
+
+      const isForMe =
         !data ||
-        (assignedRiderId &&
-          (String(assignedRiderId) === String(user?.id) ||
-            String(assignedRiderId) === String(user?._id))) ||
-        (assignedRiderName &&
-          assignedRiderName?.toLowerCase() === user?.name?.toLowerCase());
+        !rId ||
+        String(rId) === currentUserId ||
+        (rName && String(rName).toLowerCase() === currentUserName);
 
-      if (isForThisRider) {
-        // 🎵 ১. সাউন্ড / রিংটোন বাজানো
-        if (soundEnabledRef.current) {
-          try {
-            const audio = new Audio(
-              "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
-            );
-            audio.play().catch((err) =>
-              console.log("Audio play prevented by browser:", err)
-            );
-          } catch (e) {
-            console.error("Audio error:", e);
-          }
-        }
+      if (isForMe) {
+        // 🎵 ১. সাউন্ড প্লে করা
+        playRiderRingtone();
 
-        // 🔔 ২. ডেস্কটপ নোটিফিকেশন পপআপ
-        if ("Notification" in window && Notification.permission === "granted") {
+        // 🔔 ২. ডেস্কটপ নোটিফিকেশন
+        if (
+          "Notification" in window &&
+          Notification.permission === "granted"
+        ) {
           const orderId =
             data?.id || data?._id || data?.order?.id || data?.order?._id || "";
           const desktopNotif = new Notification(
             "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
             {
               body: orderId
-                ? `Order ID: #${orderId}\nনতুন অর্ডার চেক করে ডেলিভারি শুরু করুন।`
-                : "আপনার জন্য নতুন একটি ডেলিভারি অর্ডার অ্যাসাইন করা হয়েছে!",
+                ? `Order ID: #${orderId}\nনতুন অর্ডার চেক করুন।`
+                : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
               icon: settings?.logoLight || resB,
               requireInteraction: true,
             }
@@ -135,7 +206,7 @@ export const RiderLayout = () => {
       }
     };
 
-    // Socket Events Listening (সবগুলো সম্ভাব্য ইভেন্টে রিংটোন ট্রিগার হবে)
+    // Socket Events Listening
     socket.on("rider_order_assigned", handleRiderOrderUpdate);
     socket.on("order_assigned", handleRiderOrderUpdate);
     socket.on("order_updated", handleRiderOrderUpdate);
@@ -225,7 +296,6 @@ export const RiderLayout = () => {
         ))}
       </nav>
 
-      {/* বটম সেকশন */}
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
         <button
           onClick={handleLogout}
@@ -293,7 +363,6 @@ export const RiderLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 হেডার নোটিফিকেশন বেল ও একটিভ অর্ডারের ব্যাজ */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
