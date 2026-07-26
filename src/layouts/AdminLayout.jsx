@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { getAllOrders } from "../services/ordersService";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -63,32 +64,27 @@ export const AdminLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 🎯 ২. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করা ও লাইভ সিঙ্ক রাখা
-  useEffect(() => {
-    const fetchPendingOrders = async () => {
-      try {
-        const token =
-          localStorage.getItem("token") || localStorage.getItem("adminToken");
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL || ""}/api/orders`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await res.json();
-        if (data?.success && Array.isArray(data.data)) {
-          // 'PENDING', 'PLACED' অথবা কোনো স্ট্যাটাস না থাকা অর্ডার ফিল্টার
-          const pending = data.data.filter((o) => {
-            const st = String(o.status || "").toUpperCase();
-            return st === "PENDING" || st === "PLACED" || !o.status;
-          });
-          setPendingCount(pending.length);
-        }
-      } catch (err) {
-        console.error("Failed to fetch pending count:", err);
-      }
-    };
+  // 🎯 ২. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করার ফাংশন
+  const fetchPendingOrders = async () => {
+    try {
+      const ordersData = await getAllOrders();
+      const ordersList = Array.isArray(ordersData)
+        ? ordersData
+        : ordersData?.data || [];
 
+      // 'PENDING', 'PLACED' অথবা কোনো স্ট্যাটাস না থাকা অর্ডার ফিল্টার
+      const pending = ordersList.filter((o) => {
+        const st = String(o.status || "").toUpperCase();
+        return st === "PENDING" || st === "PLACED" || !o.status;
+      });
+
+      setPendingCount(pending.length);
+    } catch (err) {
+      console.error("Failed to fetch pending count:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchPendingOrders();
 
     // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন
@@ -96,10 +92,12 @@ export const AdminLayout = () => {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে সাউন্ড Alert & Desktop Notification
+    // 🔊 নতুন অর্ডার এলে ইনস্ট্যান্ট কাউন্ট +১, সাউন্ড অ্যালার্ট এবং নোটিফিকেশন
     const handleNewOrder = (newOrder) => {
-      fetchPendingOrders();
+      // ক) সাথে সাথে স্ক্রিনে সংখ্যা ১ বাড়িয়ে দেওয়া
+      setPendingCount((prev) => prev + 1);
 
+      // খ) সাউন্ড বাজানো
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -109,6 +107,7 @@ export const AdminLayout = () => {
         } catch (e) {}
       }
 
+      // গ) ডেস্কটপ পপআপ নোটিফিকেশন
       if ("Notification" in window && Notification.permission === "granted") {
         const desktopNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
           body: `Order ID: #${newOrder?.id || newOrder?._id || ""}\nTotal: ৳${
@@ -123,19 +122,24 @@ export const AdminLayout = () => {
           navigate("/admin/orders");
         };
       }
+
+      // ঘ) ব্যাকএন্ডের সাথে ১ সেকেন্ড পর ফুল সিঙ্ক
+      setTimeout(() => {
+        fetchPendingOrders();
+      }, 1000);
     };
 
     const handleStatusUpdate = () => {
       fetchPendingOrders();
     };
 
-    // Socket Event Listeners
+    // Socket Events
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_created", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
 
-    // Custom Event Listener (AdminOrders থেকে আপডেট হলে সাথে সাথে সিঙ্ক হবে)
+    // Custom Event Listener (AdminOrders থেকে Accept/Reject করলে সাড়াদান)
     const handleCustomOrderUpdate = () => fetchPendingOrders();
     window.addEventListener("order_updated", handleCustomOrderUpdate);
 
@@ -207,7 +211,7 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙের লাইভ ব্যাজ */}
+            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙের ব্যাজ */}
             {item.name === "Orders" && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
                 {pendingCount}
@@ -296,7 +300,7 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 হেডার নোটিফিকেশন বেল ও কাউন্টার ব্যাজ */}
+            {/* 🔔 হেডার নোটিফিকেশন বেল ও লাল কাউন্টার ব্যাজ */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
@@ -316,7 +320,11 @@ export const AdminLayout = () => {
 
               <Link
                 to="/admin/orders"
-                className="w-5 h-5 rounded-full bg-primary-500 dark:bg-primary-600 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
+                  pendingCount > 0
+                    ? "bg-red-500 animate-pulse scale-105"
+                    : "bg-neutral-400 dark:bg-neutral-600"
+                }`}
                 title="Click to view orders"
               >
                 {pendingCount}
