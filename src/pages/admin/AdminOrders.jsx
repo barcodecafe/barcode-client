@@ -305,17 +305,29 @@ export const AdminOrders = () => {
     }
   };
 
-  const handleAssignRider = async (orderId, riderId) => {
+const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => r.id === riderId);
     if (!selectedRider) return;
     try {
       await assignRiderToOrder(orderId, riderId, selectedRider.name);
+
+      // 🎯 সকেটে রাইডার অ্যাসাইন ইভেন্ট ও ডাটা পাঠানো (যাতে রাইডারের সাউন্ড বাজতে পারে)
+      const payload = {
+        id: orderId,
+        orderId: orderId,
+        riderId: riderId,
+        riderName: selectedRider.name,
+      };
+
+      socket.emit("rider_order_assigned", payload);
+      socket.emit("order_assigned", payload);
+      socket.emit("order_updated", payload);
+
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to assign rider: " + err.message);
     }
   };
-
   const handleSendAdminMessage = async (e) => {
     e.preventDefault();
     if (!adminChatMessage.trim() || !activeChatOrderId) return;
