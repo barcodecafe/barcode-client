@@ -54,33 +54,14 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
-  // 🎯 1. পেন্ডিং কাউন্ট, সাউন্ড ও টাইম স্টেট
+  // 🎯 1. পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [currentTime, setCurrentTime] = useState('');
 
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
-
-  // ⏰ লাইভ ঘড়ি
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        })
-      );
-    };
-
-    updateClock();
-    const timer = setInterval(updateClock, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
   useEffect(() => {
@@ -92,7 +73,7 @@ export const AdminLayout = () => {
         });
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
-          // 🔴 FIX: 'PENDING' বা 'PLACED' স্ট্যাটাসের অর্ডার ফিল্টার
+          // 'PENDING' বা 'PLACED' স্ট্যাটাসের অর্ডার ফিল্টার
           const pending = data.data.filter(
             (o) => o.status?.toUpperCase() === 'PENDING' || o.status?.toUpperCase() === 'PLACED'
           );
@@ -105,7 +86,7 @@ export const AdminLayout = () => {
 
     fetchPendingOrders();
 
-    // 🔔 ডেসktop নোটিফিকেশন পারমিশন চাওয়া
+    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন চাওয়া
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -287,31 +268,27 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 হেডার নোটিফিকেশন উইজেট (লাইভ সময়, বেল ও সবুজ ব্যাজ) */}
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
-                {currentTime || '10:14 AM'}
-              </span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer"
-                  title={soundEnabled ? 'Sound Enabled (Click to Mute)' : 'Sound Muted (Click to Unmute)'}
-                >
-                  {soundEnabled ? (
-                    <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  ) : (
-                    <BellOff className="w-4 h-4 text-neutral-400" />
-                  )}
-                </button>
-                <Link
-                  to="/admin/orders"
-                  className="w-5 h-5 rounded-full bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                  title="Click to view orders"
-                >
-                  {pendingCount}
-                </Link>
-              </div>
+            {/* 🔔 হেডার নোটিফিকেশন বেল ও কাউন্টার ব্যাজ */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer p-1"
+                title={soundEnabled ? 'Sound Enabled (Click to Mute)' : 'Sound Muted (Click to Unmute)'}
+              >
+                {soundEnabled ? (
+                  <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <BellOff className="w-4 h-4 text-neutral-400" />
+                )}
+              </button>
+              
+              <Link
+                to="/admin/orders"
+                className="w-5 h-5 rounded-full bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                title="Click to view orders"
+              >
+                {pendingCount}
+              </Link>
             </div>
 
             <button
