@@ -298,7 +298,7 @@ export const AdminLayout = () => {
                 }
               >
                 {soundEnabled ? (
-                  <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <Bell className="w-4 h-4 text-primary-500 dark:text-primary-400" />
                 ) : (
                   <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                 )}
@@ -306,7 +306,7 @@ export const AdminLayout = () => {
 
               <Link
                 to="/admin/orders"
-                className="w-5 h-5 rounded-full bg-emerald-500 dark:bg-emerald-600 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                className="w-5 h-5 rounded-full bg-primary-500 dark:bg-primary-600 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
                 title="Click to view orders"
               >
                 {pendingCount}
