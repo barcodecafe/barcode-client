@@ -50,40 +50,55 @@ export const AdminLayout = () => {
   const { user, logout } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
-  // 🎯 1. পেন্ডিং অর্ডারের কাউন্ট স্টেট
-  const [pendingCount, setPendingCount] = useState(0);
 
-  // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
+  // ✅ ড্রয়ার ওপেন/ক্লোজ স্টেট (ডেক্সটপ ভিউয়ের জন্য বাই ডিফল্ট ট্রু)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth >= 768;
+  });
+
+  // 🎯 ১. যেসব অর্ডার এখনো ডেলিভারি হয়নি (Active/Undelivered Orders) সেগুলোর মোট কাউন্ট
+  const [undeliveredCount, setUndeliveredCount] = useState(0);
+
+  // 🎯 ২. ব্যাকএন্ড থেকে আন-ডেলিভার্ড অর্ডার ফেচ করা এবং সকেট লিসেন করা
   useEffect(() => {
-    // প্রাথমিক পেন্ডিং অর্ডার ফেচ করার ফাংশন
-    const fetchPendingOrders = async () => {
+    const fetchUndeliveredOrders = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        const data = await res.json();
-        if (data?.success && Array.isArray(data.data)) {
-          // 'PENDING' বা 'pending' স্ট্যাটাসের অর্ডার ফিল্টার
-          const pending = data.data.filter(o => o.status?.toUpperCase() === 'PENDING');
-          setPendingCount(pending.length);
-        }
+        const resData = await res.json();
+
+        const ordersList = Array.isArray(resData) 
+          ? resData 
+          : Array.isArray(resData?.data) 
+            ? resData.data 
+            : Array.isArray(resData?.data?.orders) 
+              ? resData.data.orders 
+              : [];
+
+        // DELIVERED, CANCELLED এবং REJECTED ছাড়া বাকি সব অ্যাক্টিভ অর্ডার গণনা হবে
+        const terminalStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
+        const activeOrders = ordersList.filter(o => {
+          const status = (o.status || '').toUpperCase();
+          return !terminalStatuses.includes(status);
+        });
+
+        setUndeliveredCount(activeOrders.length);
       } catch (err) {
-        console.error('Failed to fetch pending count:', err);
+        console.error('Failed to fetch active orders count:', err);
       }
     };
 
-    fetchPendingOrders();
+    fetchUndeliveredOrders();
 
-    // 🔔 পারমিশন চাওয়া
+    // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড ও ডেসktop নোটিফিকেশন দেওয়া
+    // 🔊 নতুন অর্ডার এলে পপ-আপ নোটিফিকেশন, সাউন্ড এবং কাউন্ট রিফ্রেশ
     const handleNewOrder = (newOrder) => {
-      setPendingCount(prev => prev + 1);
+      fetchUndeliveredOrders();
 
       try {
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -91,8 +106,12 @@ export const AdminLayout = () => {
       } catch (e) {}
 
       if ('Notification' in window && Notification.permission === 'granted') {
+        const orderId = newOrder?.id || newOrder?._id || 'New';
+        const customerName = newOrder?.deliveryAddress?.name || newOrder?.customerName || newOrder?.user?.name || newOrder?.name || 'Customer';
+        const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
+
         const desktopNotif = new Notification('🚨 নতুন অর্ডার এসেছে!', {
-          body: `Order ID: #${newOrder?.id || newOrder?._id || ''}\nTotal: ৳${newOrder?.totalAmount || newOrder?.total || 0}`,
+          body: `🛒 Order #${String(orderId).slice(-6)}\n👤 ${customerName}\n💰 ৳${totalAmount}`,
           icon: settings?.logoLight || resB,
           requireInteraction: true,
         });
@@ -104,9 +123,9 @@ export const AdminLayout = () => {
       }
     };
 
-    // 🔄 স্ট্যাটাস আপডেট হলে (Accept/Reject করলে) কাউন্ট কমানো
+    // 🔄 কোনো অর্ডারের স্ট্যাটাস পরিবর্তন হলে কাউন্ট আপডেট করা
     const handleStatusUpdate = () => {
-      fetchPendingOrders();
+      fetchUndeliveredOrders();
     };
 
     socket.on('admin_new_order', handleNewOrder);
@@ -118,19 +137,14 @@ export const AdminLayout = () => {
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 3. ট্যাবের টাইটেলে পেন্ডিং সংখ্যা দেখানো
+  // 🎯 ৩. ট্যাবের টাইটেলে মোট আন-ডেলিভার্ড অর্ডারের সংখ্যা দেখানো
   useEffect(() => {
-    if (pendingCount > 0) {
-      document.title = `(${pendingCount}) New Orders - Barcode Admin`;
+    if (undeliveredCount > 0) {
+      document.title = `(${undeliveredCount}) Active Orders - Barcode Admin`;
     } else {
       document.title = 'Barcode Restaurant - Admin';
     }
-  }, [pendingCount]);
-
-  useState(() => {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    setIsDrawerOpen(isDesktop);
-  });
+  }, [undeliveredCount]);
 
   const handleLogout = async () => {
     await logout();
@@ -169,10 +183,10 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 🎯 FIX: সাইডবারে Orders এর পাশে লাল রঙে ব্যাজ শো করবে */}
-            {item.name === 'Orders' && pendingCount > 0 && (
+            {/* 🔴 সাইডবারে Orders এর পাশে আন-ডেলিভার্ড অর্ডারের লাল ব্যাজ */}
+            {item.name === 'Orders' && undeliveredCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-                {pendingCount}
+                {undeliveredCount}
               </span>
             )}
           </NavLink>
@@ -218,7 +232,7 @@ export const AdminLayout = () => {
           width: isDrawerOpen ? 256 : 0,
         }}
         transition={{ type: 'tween', duration: 0.25 }}
-        className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
+        className="shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0"
       >
         <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
           <button
