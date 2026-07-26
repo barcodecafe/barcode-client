@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from "react";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -23,28 +23,28 @@ import {
   Settings,
   Bell,
   BellOff,
-} from 'lucide-react';
-import { useTheme } from '../hooks/useTheme';
-import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
-import { socket } from '../services/socket';
+} from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
+import { socket } from "../services/socket";
 
-import resB from '../assets/Barcode_restaurant_group-B.png';
-import resW from '../assets/Barcode_restaurant_groupW.png';
+import resB from "../assets/Barcode_restaurant_group-B.png";
+import resW from "../assets/Barcode_restaurant_groupW.png";
 
 const navItems = [
-  { name: 'Overview', path: '/admin', icon: LayoutDashboard, end: true },
-  { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
-  { name: 'Brands', path: '/admin/brands', icon: Store },
-  { name: 'Regions', path: '/admin/regions', icon: Map },
-  { name: 'Branches', path: '/admin/branches', icon: Building2 },
-  { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
-  { name: 'Customers', path: '/admin/customers', icon: Users },
-  { name: 'Coupons', path: '/admin/coupons', icon: Tag },
-  { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
-  { name: 'About Info', path: '/admin/about', icon: Info },
-  { name: 'Rider Applications', path: '/admin/rider-applications', icon: Bike },
-  { name: 'Site Settings', path: '/admin/settings', icon: Settings },
+  { name: "Overview", path: "/admin", icon: LayoutDashboard, end: true },
+  { name: "Dishes", path: "/admin/dishes", icon: UtensilsCrossed },
+  { name: "Brands", path: "/admin/brands", icon: Store },
+  { name: "Regions", path: "/admin/regions", icon: Map },
+  { name: "Branches", path: "/admin/branches", icon: Building2 },
+  { name: "Orders", path: "/admin/orders", icon: ShoppingBag },
+  { name: "Customers", path: "/admin/customers", icon: Users },
+  { name: "Coupons", path: "/admin/coupons", icon: Tag },
+  { name: "Hero Carousel", path: "/admin/hero", icon: Image },
+  { name: "About Info", path: "/admin/about", icon: Info },
+  { name: "Rider Applications", path: "/admin/rider-applications", icon: Bike },
+  { name: "Site Settings", path: "/admin/settings", icon: Settings },
 ];
 
 export const AdminLayout = () => {
@@ -53,7 +53,7 @@ export const AdminLayout = () => {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
+
   // 🎯 1. পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -67,51 +67,59 @@ export const AdminLayout = () => {
   useEffect(() => {
     const fetchPendingOrders = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("adminToken");
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || ""}/api/orders`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
           // 'PENDING' বা 'PLACED' স্ট্যাটাসের অর্ডার ফিল্টার
           const pending = data.data.filter(
-            (o) => o.status?.toUpperCase() === 'PENDING' || o.status?.toUpperCase() === 'PLACED'
+            (o) =>
+              o.status?.toUpperCase() === "PENDING" ||
+              o.status?.toUpperCase() === "PLACED",
           );
           setPendingCount(pending.length);
         }
       } catch (err) {
-        console.error('Failed to fetch pending count:', err);
+        console.error("Failed to fetch pending count:", err);
       }
     };
 
     fetchPendingOrders();
 
     // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন চাওয়া
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
     // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড ও ডেসktop নোটিফিকেশন দেওয়া
     const handleNewOrder = (newOrder) => {
-      setPendingCount(prev => prev + 1);
+      setPendingCount((prev) => prev + 1);
 
       if (soundEnabledRef.current) {
         try {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          const audio = new Audio(
+            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+          );
           audio.play().catch(() => {});
         } catch (e) {}
       }
 
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const desktopNotif = new Notification('🚨 নতুন অর্ডার এসেছে!', {
-          body: `Order ID: #${newOrder?.id || newOrder?._id || ''}\nTotal: ৳${newOrder?.totalAmount || newOrder?.total || 0}`,
+      if ("Notification" in window && Notification.permission === "granted") {
+        const desktopNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
+          body: `Order ID: #${newOrder?.id || newOrder?._id || ""}\nTotal: ৳${newOrder?.totalAmount || newOrder?.total || 0}`,
           icon: settings?.logoLight || resB,
           requireInteraction: true,
         });
 
         desktopNotif.onclick = () => {
           window.focus();
-          navigate('/admin/orders');
+          navigate("/admin/orders");
         };
       }
     };
@@ -121,12 +129,12 @@ export const AdminLayout = () => {
       fetchPendingOrders();
     };
 
-    socket.on('admin_new_order', handleNewOrder);
-    socket.on('order_status_updated', handleStatusUpdate);
+    socket.on("admin_new_order", handleNewOrder);
+    socket.on("order_status_updated", handleStatusUpdate);
 
     return () => {
-      socket.off('admin_new_order', handleNewOrder);
-      socket.off('order_status_updated', handleStatusUpdate);
+      socket.off("admin_new_order", handleNewOrder);
+      socket.off("order_status_updated", handleStatusUpdate);
     };
   }, [navigate, settings?.logoLight]);
 
@@ -135,26 +143,34 @@ export const AdminLayout = () => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount}) New Orders - Barcode Admin`;
     } else {
-      document.title = 'Barcode Restaurant - Admin';
+      document.title = "Barcode Restaurant - Admin";
     }
   }, [pendingCount]);
 
   useState(() => {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
     setIsDrawerOpen(isDesktop);
   });
 
   const handleLogout = async () => {
     await logout();
-    navigate('/', { replace: true });
+    navigate("/", { replace: true });
   };
 
   const SidebarContent = ({ onNavigate }) => (
     <>
-      <Link to="/admin" onClick={onNavigate} className="flex items-center gap-2 px-2 mb-8">
+      <Link
+        to="/admin"
+        onClick={onNavigate}
+        className="flex items-center gap-2 px-2 mb-8"
+      >
         <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
           <img
-            src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
+            src={
+              theme === "dark"
+                ? settings.logoDark || resW
+                : settings.logoLight || resB
+            }
             alt="Barcode Cafe"
             className="h-6 w-auto object-contain"
           />
@@ -171,8 +187,8 @@ export const AdminLayout = () => {
             className={({ isActive }) =>
               `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary-500/10 text-primary-500 font-semibold'
-                  : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500'
+                  ? "bg-primary-500/10 text-primary-500 font-semibold"
+                  : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500"
               }`
             }
           >
@@ -182,7 +198,7 @@ export const AdminLayout = () => {
             </div>
 
             {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙে ব্যাজ */}
-            {item.name === 'Orders' && pendingCount > 0 && (
+            {item.name === "Orders" && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
                 {pendingCount}
               </span>
@@ -226,10 +242,10 @@ export const AdminLayout = () => {
       </AnimatePresence>
 
       <motion.aside
-        animate={{ 
+        animate={{
           width: isDrawerOpen ? 256 : 0,
         }}
-        transition={{ type: 'tween', duration: 0.25 }}
+        transition={{ type: "tween", duration: 0.25 }}
         className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
       >
         <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
@@ -240,11 +256,13 @@ export const AdminLayout = () => {
           >
             <X className="w-5 h-5" />
           </button>
-          <SidebarContent onNavigate={() => {
-            if (typeof window !== 'undefined' && window.innerWidth < 768) {
-              setIsDrawerOpen(false);
-            }
-          }} />
+          <SidebarContent
+            onNavigate={() => {
+              if (typeof window !== "undefined" && window.innerWidth < 768) {
+                setIsDrawerOpen(false);
+              }
+            }}
+          />
         </div>
       </motion.aside>
 
@@ -272,19 +290,23 @@ export const AdminLayout = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer p-1"
-                title={soundEnabled ? 'Sound Enabled (Click to Mute)' : 'Sound Muted (Click to Unmute)'}
+                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
+                title={
+                  soundEnabled
+                    ? "Sound Enabled (Click to Mute)"
+                    : "Sound Muted (Click to Unmute)"
+                }
               >
                 {soundEnabled ? (
                   <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                  <BellOff className="w-4 h-4 text-neutral-400" />
+                  <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                 )}
               </button>
-              
+
               <Link
                 to="/admin/orders"
-                className="w-5 h-5 rounded-full bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                className="w-5 h-5 rounded-full bg-emerald-500 dark:bg-emerald-600 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
                 title="Click to view orders"
               >
                 {pendingCount}
@@ -296,18 +318,24 @@ export const AdminLayout = () => {
               className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
               aria-label="Toggle Theme"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
             </button>
 
             <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-800">
               <div className="w-8 h-8 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-bold text-sm">
-                {user?.name?.charAt(0).toUpperCase() || 'A'}
+                {user?.name?.charAt(0).toUpperCase() || "A"}
               </div>
               <div className="leading-tight hidden sm:block">
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-                  {user?.name || 'Admin'}
+                  {user?.name || "Admin"}
                 </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Administrator</p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                  Administrator
+                </p>
               </div>
             </div>
           </div>
