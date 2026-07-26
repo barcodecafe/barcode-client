@@ -1,0 +1,334 @@
+import { useState, useEffect, useRef } from "react";
+import { getAllOrders } from "../services/ordersService";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Bike,
+  Menu as MenuIcon,
+  X,
+  Sun,
+  Moon,
+  LogOut,
+  Bell,
+  BellOff,
+  ClipboardList,
+} from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
+import { socket } from "../services/socket";
+
+import resB from "../assets/Barcode_restaurant_group-B.png";
+import resW from "../assets/Barcode_restaurant_groupW.png";
+
+// Rider Navigation Items
+const navItems = [
+  { name: "Overview", path: "/rider", icon: LayoutDashboard, end: true },
+  { name: "Assigned Orders", path: "/rider/orders", icon: ShoppingBag },
+  { name: "Daily Track Log", path: "/rider/settlement", icon: ClipboardList },
+];
+
+export const RiderLayout = () => {
+  const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const { settings } = useSettings();
+  const navigate = useNavigate();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // 🎯 ১. অ্যাসাইনড/পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
+  const [pendingCount, setPendingCount] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  // 🎯 ২. ব্যাকএন্ড থেকে রাইডারের রানিং/পেন্ডিং অর্ডারের সংখ্যা লোড করা
+  const fetchRiderPendingOrders = async () => {
+    try {
+      const ordersData = await getAllOrders();
+      const ordersList = Array.isArray(ordersData)
+        ? ordersData
+        : ordersData?.data || [];
+
+      // রাইডারের নিজস্ব এবং অ্যাক্টিভ (Delivered/Rejected বাদে) অর্ডার ফিল্টার
+      const assigned = ordersList.filter((o) => {
+        const isMyOrder =
+          o.riderId === user?.id ||
+          o.riderName?.toLowerCase() === user?.name?.toLowerCase();
+        const isActive =
+          o.status !== "Delivered" && o.status !== "Rejected";
+        return isMyOrder && isActive;
+      });
+
+      setPendingCount(assigned.length);
+    } catch (err) {
+      console.error("Failed to fetch rider pending orders:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchRiderPendingOrders();
+
+    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড ও নোটিফিকেশন অ্যালার্ট
+    const handleRiderOrderUpdate = (data) => {
+      fetchRiderPendingOrders();
+
+      // সাউন্ড বাজানো
+      if (soundEnabledRef.current) {
+        try {
+          const audio = new Audio(
+            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+          );
+          audio.play().catch(() => {});
+        } catch (e) {}
+      }
+
+      // ডেস্কটপ নোটিফিকেশন
+      if ("Notification" in window && Notification.permission === "granted") {
+        const desktopNotif = new Notification("🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!", {
+          body: `Order ID: #${data?.id || data?._id || ""}\nনতুন অর্ডার চেক করুন।`,
+          icon: settings?.logoLight || resB,
+          requireInteraction: true,
+        });
+
+        desktopNotif.onclick = () => {
+          window.focus();
+          navigate("/rider/orders");
+        };
+      }
+    };
+
+    // Socket Events Listening
+    socket.on("rider_order_assigned", handleRiderOrderUpdate);
+    socket.on("order_updated", fetchRiderPendingOrders);
+    socket.on("order_status_updated", fetchRiderPendingOrders);
+
+    // Custom Local Event Listener
+    window.addEventListener("order_updated", fetchRiderPendingOrders);
+
+    return () => {
+      socket.off("rider_order_assigned", handleRiderOrderUpdate);
+      socket.off("order_updated", fetchRiderPendingOrders);
+      socket.off("order_status_updated", fetchRiderPendingOrders);
+      window.removeEventListener("order_updated", fetchRiderPendingOrders);
+    };
+  }, [user, navigate, settings?.logoLight]);
+
+  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেলে কাউন্ট আপডেট
+  useEffect(() => {
+    if (pendingCount > 0) {
+      document.title = `(${pendingCount}) Active Deliveries - Rider Portal`;
+    } else {
+      document.title = "Rider Portal - Barcode Restaurant";
+    }
+  }, [pendingCount]);
+
+  useEffect(() => {
+    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+    setIsDrawerOpen(isDesktop);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
+
+  const SidebarContent = ({ onNavigate }) => (
+    <>
+      <Link
+        to="/rider"
+        onClick={onNavigate}
+        className="flex items-center gap-2 px-2 mb-8"
+      >
+        <div className="h-10 flex items-center gap-3 rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs">
+          <img
+            src={
+              theme === "dark"
+                ? settings?.logoDark || resW
+                : settings?.logoLight || resB
+            }
+            alt="Barcode Cafe"
+            className="h-6 w-auto object-contain"
+          />
+          <span className="text-xs font-black text-rose-500 tracking-wider uppercase border-l border-neutral-200 dark:border-neutral-800 pl-2">
+            Rider
+          </span>
+        </div>
+      </Link>
+
+      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-rose-500/10 text-rose-500 font-semibold"
+                  : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-rose-500"
+              }`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className="w-4 h-4 shrink-0" />
+              <span>{item.name}</span>
+            </div>
+
+            {/* 🔴 সাইডবারে Active Orders এর পাশে ব্যাজ */}
+            {item.name === "Assigned Orders" && pendingCount > 0 && (
+              <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
+                {pendingCount}
+              </span>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* বটম সেকশন (Back to Site মুছে দিয়ে কেবল Log Out রাখা হয়েছে) */}
+      <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          Log Out
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsDrawerOpen(false)}
+            className="fixed inset-0 z-40 bg-neutral-950/40 backdrop-blur-xs md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        animate={{
+          width: isDrawerOpen ? 256 : 0,
+        }}
+        transition={{ type: "tween", duration: 0.25 }}
+        className="shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-xs z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0"
+      >
+        <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
+          <button
+            onClick={() => setIsDrawerOpen(false)}
+            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white md:hidden"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <SidebarContent
+            onNavigate={() => {
+              if (typeof window !== "undefined" && window.innerWidth < 768) {
+                setIsDrawerOpen(false);
+              }
+            }}
+          />
+        </div>
+      </motion.aside>
+
+      <div className="flex-grow flex flex-col min-w-0">
+        <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all cursor-pointer"
+              aria-label="Toggle Navigation Menu"
+            >
+              <MenuIcon className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 hidden sm:inline-block">
+              Rider Delivery Panel
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* 🔔 হেডার নোটিফিকেশন বেল ও একটিভ অর্ডারের ব্যাজ */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
+                title={
+                  soundEnabled
+                    ? "Sound Enabled (Click to Mute)"
+                    : "Sound Muted (Click to Unmute)"
+                }
+              >
+                {soundEnabled ? (
+                  <Bell className="w-4 h-4 text-rose-500" />
+                ) : (
+                  <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                )}
+              </button>
+
+              <Link
+                to="/rider/orders"
+                className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
+                  pendingCount > 0
+                    ? "bg-rose-500 animate-pulse scale-105"
+                    : "bg-neutral-400 dark:bg-neutral-600"
+                }`}
+                title="Click to view assigned orders"
+              >
+                {pendingCount}
+              </Link>
+            </div>
+
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-rose-500 hover:scale-105 transition-all duration-300 cursor-pointer"
+              aria-label="Toggle Theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
+
+            <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-800">
+              <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-sm">
+                <Bike className="w-4 h-4" />
+              </div>
+              <div className="leading-tight hidden sm:block">
+                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
+                  {user?.name || "Rider"}
+                </p>
+                <p className="text-[10px] text-emerald-500 font-bold uppercase">
+                  Delivery Hero
+                </p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default RiderLayout;
