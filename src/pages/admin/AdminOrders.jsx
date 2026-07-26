@@ -41,12 +41,6 @@ import { socket } from "../../services/socket";
 const isOnlineOrder = (ord) =>
   String(ord?.paymentMethod || "cod").toLowerCase() !== "cod";
 
-/**
- * An online order that hasn't been paid for must not look like a normal one:
- * before this, a customer whose payment failed left behind an order that was
- * indistinguishable from a fresh cash order, and the kitchen would cook it.
- * Returns null for anything that needs no warning (COD, or already paid).
- */
 const getPaymentAlert = (ord) => {
   if (!isOnlineOrder(ord)) return null;
   const status = ord?.paymentStatus || "Pending";
@@ -62,25 +56,27 @@ const getPaymentStatusColor = (status) => {
   return "bg-amber-500/10 text-amber-500";
 };
 
+// 🟡 Pending সাপোর্টসহ স্ট্যাটাস কালার হ্যান্ডলার
 const getStatusColor = (status) => {
-  switch (status) {
-    case "Placed":
-    case "pick order":
-      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-    case "Accepted":
+  switch (status?.toString().toUpperCase()) {
+    case "PENDING":
+    case "PLACED":
+    case "PICK ORDER":
+      return "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse";
+    case "ACCEPTED":
       return "bg-green-500/10 text-green-500 border-green-500/20";
-    case "Rejected":
+    case "REJECTED":
       return "bg-red-500/10 text-red-500 border-red-500/20";
-    case "Preparing":
-    case "ready to cook":
+    case "PREPARING":
+    case "READY TO COOK":
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse";
-    case "ready to pick":
+    case "READY TO PICK":
       return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
-    case "Out for Delivery":
-    case "on the way":
+    case "OUT FOR DELIVERY":
+    case "ON THE WAY":
       return "bg-purple-500/10 text-purple-500 border-purple-500/20";
-    case "Delivered":
-    case "order handover":
+    case "DELIVERED":
+    case "ORDER HANDOVER":
       return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
     default:
       return "bg-neutral-500/10 text-neutral-500 border-neutral-500/20";
@@ -108,7 +104,6 @@ export const AdminOrders = () => {
       .then(([ordersData, ridersData]) => {
         setOrders(ordersData || []);
         setRiders(ridersData || []);
-        // Layout-এর পেন্ডিং কাউন্টার আপডেট করার জন্য ইভেন্ট ডিসপ্যাচ
         window.dispatchEvent(new Event('order_updated'));
         return ordersData || [];
       })
@@ -130,32 +125,27 @@ export const AdminOrders = () => {
 
   // Socket Real-time Event Listeners
   useEffect(() => {
-    // ১. নতুন অর্ডার তৈরি হলে লিস্টে যোগ হবে এবং ব্যানার আপডেট হবে
     socket.on("order_created", (newOrder) => {
       setOrders((prev) => [newOrder, ...prev]);
       window.dispatchEvent(new Event('order_updated'));
     });
 
-    // ২. অর্ডারের স্ট্যাটাস বা পেমেন্ট আপডেট হলে আপডেট হবে
     socket.on("order_updated", (updatedOrder) => {
       setOrders((prev) =>
         prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
       );
-      // খোলা থাকা মোডালেও আপডেট দেখাবে
       setSelectedOrderDetails((prev) =>
         prev?.id === updatedOrder.id ? updatedOrder : prev
       );
       window.dispatchEvent(new Event('order_updated'));
     });
 
-    // ৩. রাইডারের স্টেটাস বা ক্যাশ কালেকশন আপডেট হলে
     socket.on("rider_updated", (updatedRider) => {
       setRiders((prev) =>
         prev.map((r) => (r.id === updatedRider.id ? updatedRider : r))
       );
     });
 
-    // ৪. কাস্টমার বা রাইডারের থেকে নতুন চ্যাট মেসেজ আসলে
     socket.on("new_chat_message", ({ orderId, message }) => {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
@@ -187,7 +177,6 @@ export const AdminOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // Today's settlement position for one rider.
   const getRiderPerformanceStats = (riderId) => {
     const todayKey = businessDateKey(new Date());
     const riderOrders = orders.filter((o) => o.riderId === riderId);
@@ -265,14 +254,10 @@ export const AdminOrders = () => {
 
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
-  // ACCEPT / REJECT বা স্ট্যাটাস চেঞ্জের মূল হ্যান্ডলার
-const handleStatusChange = async (orderId, newStatus) => {
+  const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      
-      // 🚀 সকেটে ইভেন্ট পাঠানো হচ্ছে যেন AdminLayout এর কাউন্ট সাথে সাথে কমে যায়
       socket.emit("order_status_updated", { orderId, status: newStatus });
-      
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to update status: " + err.message);
@@ -290,15 +275,6 @@ const handleStatusChange = async (orderId, newStatus) => {
     }
   };
 
-  const handleAcceptRider = async (orderId) => {
-    try {
-      await acceptRiderOrder(orderId);
-      fetchOrdersAndFleet();
-    } catch (err) {
-      alert("Failed to simulate rider acceptance: " + err.message);
-    }
-  };
-
   const handleSendAdminMessage = async (e) => {
     e.preventDefault();
     if (!adminChatMessage.trim() || !activeChatOrderId) return;
@@ -312,7 +288,6 @@ const handleStatusChange = async (orderId, newStatus) => {
 
       const updated = await addChatMessage(activeChatOrderId, messagePayload);
 
-      // Emit Socket event
       socket.emit("send_message", {
         orderId: activeChatOrderId,
         message: messagePayload,
@@ -384,7 +359,6 @@ const handleStatusChange = async (orderId, newStatus) => {
                       : "No active delivery"}
                   </span>
 
-                  {/* Today Cash & Collection Stats */}
                   <div className="mt-2.5 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-2">
                     <span className="block text-[9px] uppercase tracking-wider font-bold text-neutral-400">
                       Today's Collection ({stats.daily.deliveredCount} Delivered)
@@ -424,7 +398,6 @@ const handleStatusChange = async (orderId, newStatus) => {
                       </div>
                     </div>
 
-                    {/* Admin Cash Status & Action Trigger */}
                     <div className="pt-1">
                       {!cashStatus.hasOrders ? (
                         <div className="text-[10px] text-neutral-400 font-medium text-center py-1 bg-neutral-100/30 dark:bg-neutral-900/30 rounded-md">
@@ -458,7 +431,6 @@ const handleStatusChange = async (orderId, newStatus) => {
                         </div>
                       )}
 
-                      {/* Earlier days still owed */}
                       {stats.pastDue.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800 space-y-1.5">
                           <span className="block text-[9px] uppercase tracking-wider font-bold text-red-400">
@@ -583,14 +555,14 @@ const handleStatusChange = async (orderId, newStatus) => {
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleStatusChange(ord.id, "Accepted")}
-                              className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                              className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
                             </button>
                             <button
                               onClick={() => handleStatusChange(ord.id, "Rejected")}
-                              className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5"
+                              className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Reject Order"
                             >
                               <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
@@ -615,6 +587,7 @@ const handleStatusChange = async (orderId, newStatus) => {
                                 : getStatusColor(ord.status)
                             }`}
                           >
+                            <option value="Pending">Pending</option>
                             <option value="Accepted">Accepted</option>
                             <option value="Preparing">Preparing</option>
                             <option value="Out for Delivery">Out for Delivery</option>
