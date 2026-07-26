@@ -309,9 +309,10 @@ const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => r.id === riderId);
     if (!selectedRider) return;
     try {
+      // ১. ব্যাকএন্ডে রাইডার অ্যাসাইন করার API কল
       await assignRiderToOrder(orderId, riderId, selectedRider.name);
 
-      // 🎯 সকেটে রাইডার অ্যাসাইন ইভেন্ট ও ডাটা পাঠানো (যাতে রাইডারের সাউন্ড বাজতে পারে)
+      // 🎯 ২. এখানে সকেট ইভেন্টগুলো পাঠাবেন (যাতে রাইডার প্যানেলে সাথে সাথে সাউন্ড বাজে)
       const payload = {
         id: orderId,
         orderId: orderId,
@@ -323,11 +324,14 @@ const handleAssignRider = async (orderId, riderId) => {
       socket.emit("order_assigned", payload);
       socket.emit("order_updated", payload);
 
+      // ৩. ডাটা রিফ্রেশ
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to assign rider: " + err.message);
     }
   };
+
+
   const handleSendAdminMessage = async (e) => {
     e.preventDefault();
     if (!adminChatMessage.trim() || !activeChatOrderId) return;
