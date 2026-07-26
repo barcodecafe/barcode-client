@@ -13,6 +13,7 @@ import {
   LogOut,
   Bell,
   BellOff,
+  Volume2,
   ClipboardList,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
@@ -46,76 +47,80 @@ export const RiderLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 🔊 অডিও অবজেক্ট প্রি-লোড
-  const audioRef = useRef(null);
+  // 🔊 ব্রাউজারের গ্লোবাল Audio Context রেফারেন্স
+  const audioCtxRef = useRef(null);
 
+  // 🔓 ব্রাউজারের Autoplay Restriction আনলক করা (প্রথম স্পর্শে/ক্লিকে)
   useEffect(() => {
-    // অডিও ফাইল লোড করা
-    audioRef.current = new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
-    );
-
-    // 🔓 ব্রাউজারের Autoplay restriction আনলক লজিক (প্রথম ক্লিকে আনলক হবে)
-    const unlockAudio = () => {
-      if (audioRef.current) {
-        audioRef.current
-          .play()
-          .then(() => {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-          })
-          .catch(() => {});
+    const unlockAudioContext = () => {
+      try {
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext ||
+            window.webkitAudioContext)();
+        }
+        if (audioCtxRef.current.state === "suspended") {
+          audioCtxRef.current.resume();
+        }
+        console.log("🔊 Web Audio Engine initialized & active!");
+      } catch (err) {
+        console.error("Audio Context Unlock Error:", err);
       }
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("click", unlockAudioContext);
+      window.removeEventListener("touchstart", unlockAudioContext);
     };
 
-    window.addEventListener("click", unlockAudio);
-    window.addEventListener("touchstart", unlockAudio);
+    window.addEventListener("click", unlockAudioContext);
+    window.addEventListener("touchstart", unlockAudioContext);
 
     return () => {
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("click", unlockAudioContext);
+      window.removeEventListener("touchstart", unlockAudioContext);
     };
   }, []);
 
-  // 🔔 সাউন্ড প্লে করার হেলপার ফাংশন (ফেল-সেফ সহ)
-  const playRiderRingtone = () => {
+  // 🎵 ১০০% নির্ভরযোগ্য ২-টোন নোটিফিকেশন রিংটোন (কোনো ফাইল লাগবে না)
+  const playLoudNotificationChime = () => {
     if (!soundEnabledRef.current) return;
 
     try {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {
-          // যদি MP3 ফাইল প্লে না হয়, তবে ব্রাউজারের Native Beep সাউন্ড বাজাবে
-          playWebAudioBeep();
-        });
-      } else {
-        playWebAudioBeep();
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext ||
+          window.webkitAudioContext)();
       }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+
+      // প্রথম টিউন (High Ring: 880Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.6, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // দ্বিতীয় টিউন (Super High Chime: 1320Hz)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(1320, now + 0.15);
+      gain2.gain.setValueAtTime(0.8, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.7);
+
+      console.log("🔔 Sound played successfully!");
     } catch (e) {
-      playWebAudioBeep();
-    }
-  };
-
-  // 🎵 Native Web Audio Beep (অনলাইন লিংকের দরকার নেই)
-  const playWebAudioBeep = () => {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 Note
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.8); // 0.8 সেকেন্ড সাউন্ড
-    } catch (e) {
-      console.error("Web Audio fail:", e);
+      console.error("Failed to play synth sound:", e);
     }
   };
 
@@ -127,7 +132,6 @@ export const RiderLayout = () => {
         ? ordersData
         : ordersData?.data || [];
 
-      // রাইডারের নিজস্ব এবং অ্যাক্টিভ (Delivered/Rejected বাদে) অর্ডার ফিল্টার
       const assigned = ordersList.filter((o) => {
         const isMyOrder =
           o.riderId === user?.id ||
@@ -149,16 +153,16 @@ export const RiderLayout = () => {
     if (!user) return;
     fetchRiderPendingOrders();
 
-    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন
+    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন চাওয়া
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
     // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড ও নোটিফিকেশন অ্যালার্ট
     const handleRiderOrderUpdate = (data) => {
+      console.log("🚴 Rider Socket Event Received:", data);
       fetchRiderPendingOrders();
 
-      // রাইডার আইডি ও নাম চেক করা
       const rId =
         data?.riderId ||
         data?.order?.riderId ||
@@ -177,8 +181,8 @@ export const RiderLayout = () => {
         (rName && String(rName).toLowerCase() === currentUserName);
 
       if (isForMe) {
-        // 🎵 ১. সাউন্ড প্লে করা
-        playRiderRingtone();
+        // 🎵 ১. সাউন্ড বাজানো
+        playLoudNotificationChime();
 
         // 🔔 ২. ডেস্কটপ নোটিফিকেশন
         if (
@@ -203,16 +207,17 @@ export const RiderLayout = () => {
             navigate("/rider/orders");
           };
         }
+      } else {
+        console.log(" Order event was for another rider:", rId);
       }
     };
 
-    // Socket Events Listening
+    // Socket Listening
     socket.on("rider_order_assigned", handleRiderOrderUpdate);
     socket.on("order_assigned", handleRiderOrderUpdate);
     socket.on("order_updated", handleRiderOrderUpdate);
     socket.on("order_status_updated", handleRiderOrderUpdate);
 
-    // Custom Local Event Listener
     window.addEventListener("order_updated", handleRiderOrderUpdate);
 
     return () => {
@@ -224,7 +229,7 @@ export const RiderLayout = () => {
     };
   }, [user, navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেলে কাউন্ট আপডেট
+  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেল আপডেট
   useEffect(() => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount}) Active Deliveries - Rider Portal`;
@@ -286,7 +291,6 @@ export const RiderLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে Active Orders এর পাশে ব্যাজ */}
             {item.name === "Assigned Orders" && pendingCount > 0 && (
               <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
                 {pendingCount}
@@ -362,36 +366,45 @@ export const RiderLayout = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
-                title={
-                  soundEnabled
-                    ? "Sound Enabled (Click to Mute)"
-                    : "Sound Muted (Click to Unmute)"
-                }
-              >
-                {soundEnabled ? (
-                  <Bell className="w-4 h-4 text-rose-500" />
-                ) : (
-                  <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                )}
-              </button>
+          <div className="flex items-center gap-3">
+            {/* 🧪 সাউন্ড টেস্ট বোতাম */}
+            <button
+              onClick={playLoudNotificationChime}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+              title="Test Sound Engine"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Test Sound</span>
+            </button>
 
-              <Link
-                to="/rider/orders"
-                className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
-                  pendingCount > 0
-                    ? "bg-rose-500 animate-pulse scale-105"
-                    : "bg-neutral-400 dark:bg-neutral-600"
-                }`}
-                title="Click to view assigned orders"
-              >
-                {pendingCount}
-              </Link>
-            </div>
+            {/* 🔔 নোটিফিকেশন অন/অফ */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
+              title={
+                soundEnabled
+                  ? "Sound Enabled (Click to Mute)"
+                  : "Sound Muted (Click to Unmute)"
+              }
+            >
+              {soundEnabled ? (
+                <Bell className="w-4 h-4 text-rose-500" />
+              ) : (
+                <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+              )}
+            </button>
+
+            <Link
+              to="/rider/orders"
+              className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
+                pendingCount > 0
+                  ? "bg-rose-500 animate-pulse scale-105"
+                  : "bg-neutral-400 dark:bg-neutral-600"
+              }`}
+              title="Click to view assigned orders"
+            >
+              {pendingCount}
+            </Link>
 
             <button
               onClick={toggleTheme}
