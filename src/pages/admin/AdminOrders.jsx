@@ -266,13 +266,14 @@ export const AdminOrders = () => {
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
   // ACCEPT / REJECT বা স্ট্যাটাস চেঞ্জের মূল হ্যান্ডলার
-  const handleStatusChange = async (orderId, newStatus) => {
+const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      // অর্ডারের লোকাল স্টেট ও ফিল্টার সাড়া দিতে fetchOrdersAndFleet কল
-      await fetchOrdersAndFleet();
-      // গ্লোবাল লেআউটে সংকেত পাঠানো যাতে ওপরে লাল কাউন্টারটি তৎক্ষণাৎ কম যায়
-      window.dispatchEvent(new Event('order_updated'));
+      
+      // 🚀 সকেটে ইভেন্ট পাঠানো হচ্ছে যেন AdminLayout এর কাউন্ট সাথে সাথে কমে যায়
+      socket.emit("order_status_updated", { orderId, status: newStatus });
+      
+      fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to update status: " + err.message);
     }

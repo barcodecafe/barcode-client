@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -54,12 +54,17 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
-  // 🎯 1. পেন্ডিং অর্ডারের কাউন্ট, সাউন্ড স্টেট ও লাইভ টাইম স্টেট
+  // 🎯 1. পেন্ডিং কাউন্ট, সাউন্ড ও টাইম স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
 
-  // ⏰ লাইভ ঘড়ি আপডেট (10:14 AM ফরম্যাটে)
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  // ⏰ লাইভ ঘড়ি
   useEffect(() => {
     const updateClock = () => {
       const now = new Date();
@@ -77,16 +82,20 @@ export const AdminLayout = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
+  // 🎯 2. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করা ও সকেটে আপডেট রাখা
   useEffect(() => {
     const fetchPendingOrders = async () => {
       try {
+        const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
-          const pending = data.data.filter(o => o.status?.toUpperCase() === 'PENDING');
+          // 🔴 FIX: 'PENDING' বা 'PLACED' স্ট্যাটাসের অর্ডার ফিল্টার
+          const pending = data.data.filter(
+            (o) => o.status?.toUpperCase() === 'PENDING' || o.status?.toUpperCase() === 'PLACED'
+          );
           setPendingCount(pending.length);
         }
       } catch (err) {
@@ -96,16 +105,16 @@ export const AdminLayout = () => {
 
     fetchPendingOrders();
 
-    // 🔔 পারমিশন চাওয়া
+    // 🔔 ডেসktop নোটিফিকেশন পারমিশন চাওয়া
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড (যদি অন থাকে) ও নোটিফিকেশন দেওয়া
+    // 🔊 নতুন অর্ডার এলে কাউন্ট ১ বাড়ানো এবং সাউন্ড ও ডেসktop নোটিফিকেশন দেওয়া
     const handleNewOrder = (newOrder) => {
       setPendingCount(prev => prev + 1);
 
-      if (soundEnabled) {
+      if (soundEnabledRef.current) {
         try {
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
           audio.play().catch(() => {});
@@ -126,6 +135,7 @@ export const AdminLayout = () => {
       }
     };
 
+    // 🔄 স্ট্যাটাস আপডেট হলে (Accept/Reject করলে) কাউন্ট পুনরায় রিলোড করা
     const handleStatusUpdate = () => {
       fetchPendingOrders();
     };
@@ -137,7 +147,7 @@ export const AdminLayout = () => {
       socket.off('admin_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
     };
-  }, [navigate, settings?.logoLight, soundEnabled]);
+  }, [navigate, settings?.logoLight]);
 
   // 🎯 3. ট্যাবের টাইটেলে পেন্ডিং সংখ্যা দেখানো
   useEffect(() => {
@@ -190,6 +200,7 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
+            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙে ব্যাজ */}
             {item.name === 'Orders' && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
                 {pendingCount}
@@ -276,7 +287,7 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 🎯 NEW: হেডার নোটিফিকেশন উইজেট (লাইভ সময়, বেল/মিউট বাটন ও সবুজ অর্ডারের কাউন্ট ব্যাজ) */}
+            {/* 🔔 হেডার নোটিফিকেশন উইজেট (লাইভ সময়, বেল ও সবুজ ব্যাজ) */}
             <div className="flex flex-col items-center justify-center">
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
                 {currentTime || '10:14 AM'}
@@ -285,17 +296,21 @@ export const AdminLayout = () => {
                 <button
                   onClick={() => setSoundEnabled(!soundEnabled)}
                   className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer"
-                  title={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
+                  title={soundEnabled ? 'Sound Enabled (Click to Mute)' : 'Sound Muted (Click to Unmute)'}
                 >
                   {soundEnabled ? (
-                    <Bell className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
-                    <BellOff className="w-3.5 h-3.5 text-neutral-400" />
+                    <BellOff className="w-4 h-4 text-neutral-400" />
                   )}
                 </button>
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white font-extrabold text-[10px] flex items-center justify-center shadow-xs">
+                <Link
+                  to="/admin/orders"
+                  className="w-5 h-5 rounded-full bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                  title="Click to view orders"
+                >
                   {pendingCount}
-                </span>
+                </Link>
               </div>
             </div>
 
