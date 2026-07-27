@@ -152,9 +152,14 @@ export const AdminLayout = () => {
       fetchPendingOrders();
     };
 
-    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট (Accept/Reject করলে সাইলেন্টলি কাউন্ট মাইনাস হবে, নো সাউন্ড)
-    const handleStatusUpdate = () => {
+    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট (Accept/Reject করলে সাইলেন্টলি কাউন্ট মাইনাস হবে এবং টোস্টার ক্লোজ হবে)
+    const handleStatusUpdate = (data) => {
       fetchPendingOrders();
+      // যদি আপডেট হওয়া অর্ডারের সাথে টোস্টারের অর্ডার আইডি মিলে যায়, তবে টোস্টার বন্ধ করে দিন
+      if (data?.orderId || data?.id) {
+        const updatedId = data?.orderId || data?.id;
+        setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
+      }
     };
 
     // Socket Events Listening
@@ -164,7 +169,13 @@ export const AdminLayout = () => {
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
 
-    const handleCustomOrderUpdate = () => fetchPendingOrders();
+    const handleCustomOrderUpdate = (e) => {
+      fetchPendingOrders();
+      if (e?.detail?.orderId || e?.detail?.id) {
+        const updatedId = e.detail.orderId || e.detail.id;
+        setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
+      }
+    };
     window.addEventListener("order_updated", handleCustomOrderUpdate);
 
     return () => {

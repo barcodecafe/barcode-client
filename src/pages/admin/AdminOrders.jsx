@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import toast, { Toaster } from "react-hot-toast"; // 👈 Toast ইমপোর্ট করা হয়েছে
+import toast, { Toaster } from "react-hot-toast";
 import {
   MessageSquare,
   Send,
@@ -144,7 +144,7 @@ export const AdminOrders = () => {
       .then(([ordersData, ridersData]) => {
         setOrders(deduplicateOrders(ordersData || []));
         setRiders(ridersData || []);
-        window.dispatchEvent(new Event("order_updated"));
+        window.dispatchEvent(new CustomEvent("order_updated"));
         return ordersData || [];
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
@@ -162,7 +162,7 @@ export const AdminOrders = () => {
         setRiders(ridersData || []);
         setBranches(branchesData || []);
         setRegions(Array.isArray(regionsData) ? regionsData : []);
-        window.dispatchEvent(new Event("order_updated"));
+        window.dispatchEvent(new CustomEvent("order_updated"));
       })
       .catch((err) => console.error("Error loading admin orders data:", err))
       .finally(() => setLoading(false));
@@ -170,8 +170,7 @@ export const AdminOrders = () => {
 
   // Socket Real-time Event Listeners
   useEffect(() => {
-    // ⚡ ডুপ্লিকেট পুশ রোধ করে 'order_created' ইভেন্ট হ্যান্ডলার
-    socket.on("order_created", (newOrder) => {
+    const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
         if (!newId) return prev;
@@ -181,8 +180,15 @@ export const AdminOrders = () => {
         }
         return [newOrder, ...prev];
       });
-      window.dispatchEvent(new Event("order_updated"));
-    });
+      window.dispatchEvent(
+        new CustomEvent("order_updated", {
+          detail: { orderId: newOrder?.id || newOrder?._id },
+        })
+      );
+    };
+
+    socket.on("order_created", handleNewOrderIncoming);
+    socket.on("admin_new_order", handleNewOrderIncoming);
 
     socket.on("order_updated", (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
@@ -192,11 +198,15 @@ export const AdminOrders = () => {
       setSelectedOrderDetails((prev) =>
         (prev?.id || prev?._id) === updatedId ? updatedOrder : prev
       );
-      window.dispatchEvent(new Event("order_updated"));
+      window.dispatchEvent(
+        new CustomEvent("order_updated", {
+          detail: { orderId: updatedId, id: updatedId },
+        })
+      );
     });
 
     socket.on("pending_count_updated", () => {
-      window.dispatchEvent(new Event("order_updated"));
+      window.dispatchEvent(new CustomEvent("order_updated"));
     });
 
     socket.on("rider_updated", (updatedRider) => {
@@ -220,7 +230,8 @@ export const AdminOrders = () => {
     });
 
     return () => {
-      socket.off("order_created");
+      socket.off("order_created", handleNewOrderIncoming);
+      socket.off("admin_new_order", handleNewOrderIncoming);
       socket.off("order_updated");
       socket.off("pending_count_updated");
       socket.off("rider_updated");
@@ -316,12 +327,19 @@ export const AdminOrders = () => {
     );
   }
 
-  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের আপডেটেড ফাংশন (Soundless Toast Notification)
+  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের আপডেটেড ফাংশন (AdminLayout-এর Toast Auto-Close Sync সহ)
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      socket.emit("order_status_updated", { orderId, status: newStatus });
-      window.dispatchEvent(new Event("order_updated"));
+      
+      // Socket & Event dispatch with exact payload for AdminLayout syncing
+      socket.emit("order_status_updated", { orderId, id: orderId, status: newStatus });
+      window.dispatchEvent(
+        new CustomEvent("order_updated", {
+          detail: { orderId, id: orderId, status: newStatus },
+        })
+      );
+      
       fetchOrdersAndFleet();
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
