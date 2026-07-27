@@ -104,13 +104,13 @@ export const AdminLayout = () => {
       setPendingCount(Number(rawCount) || 0);
     };
 
-    // ⚡ 2. নতুন অর্ডার ইভেন্ট
+    // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট (শুধু কাস্টমার অর্ডার করলেই ১ বার সাউন্ড ও টোস্টার আসবে)
     const handleNewOrder = (newOrder) => {
       const orderId = newOrder?.id || newOrder?._id || "NEW";
       const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
       const customerName = newOrder?.user?.name || newOrder?.customerName || "Guest";
 
-      // অডিও প্লে
+      // 🔊 অডিও প্লে (কেবল নতুন কাস্টমার অর্ডারে)
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -120,14 +120,14 @@ export const AdminLayout = () => {
         } catch (e) {}
       }
 
-      // ইন-অ্যাপ টোস্টার
+      // 🚨 ইন-অ্যাপ টোস্টার নোটিফিকেশন
       setToastNotification({
         id: orderId,
         total: totalAmount,
         customer: customerName,
       });
 
-      // সিস্টেম নোটিফিকেশন
+      // 💻 সিস্টেম নোটিফিকেশন
       if ("Notification" in window && Notification.permission === "granted") {
         try {
           const systemNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
@@ -152,6 +152,7 @@ export const AdminLayout = () => {
       fetchPendingOrders();
     };
 
+    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট (Accept/Reject করলে সাইলেন্টলি কাউন্ট মাইনাস হবে, নো সাউন্ড)
     const handleStatusUpdate = () => {
       fetchPendingOrders();
     };
@@ -159,8 +160,7 @@ export const AdminLayout = () => {
     // Socket Events Listening
     socket.emit("get_pending_count"); // কানেক্ট হওয়ার সাথে সাথে ইন্সট্যান্ট রিকোয়েস্ট
     socket.on("pending_count_updated", handlePendingCountUpdated);
-    socket.on("admin_new_order", handleNewOrder);
-    socket.on("order_created", handleNewOrder);
+    socket.on("admin_new_order", handleNewOrder); // ✅ ডুপ্লিকেট 'order_created' বাদ দেওয়া হয়েছে
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
 
@@ -170,7 +170,6 @@ export const AdminLayout = () => {
     return () => {
       socket.off("pending_count_updated", handlePendingCountUpdated);
       socket.off("admin_new_order", handleNewOrder);
-      socket.off("order_created", handleNewOrder);
       socket.off("order_updated", handleStatusUpdate);
       socket.off("order_status_updated", handleStatusUpdate);
       window.removeEventListener("order_updated", handleCustomOrderUpdate);
