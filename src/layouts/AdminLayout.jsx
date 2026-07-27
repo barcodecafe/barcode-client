@@ -41,6 +41,11 @@ const navItems = [
   { name: "Regions", path: "/admin/regions", icon: Map },
   { name: "Branches", path: "/admin/branches", icon: Building2 },
   { name: "Orders", path: "/admin/orders", icon: ShoppingBag },
+  {
+    name: "Riders Fleet",
+    path: "/admin/fleet-overview",
+    icon: Bike,
+  },
   { name: "Customers", path: "/admin/customers", icon: Users },
   { name: "Coupons", path: "/admin/coupons", icon: Tag },
   { name: "Hero Carousel", path: "/admin/hero", icon: Image },
@@ -73,11 +78,11 @@ export const AdminLayout = () => {
       const rawCount =
         typeof res === "number"
           ? res
-          : res?.pendingCount ??
+          : (res?.pendingCount ??
             res?.count ??
             res?.data?.pendingCount ??
             res?.data?.count ??
-            (typeof res?.data === "number" ? res.data : 0);
+            (typeof res?.data === "number" ? res.data : 0));
 
       setPendingCount(Number(rawCount) || 0);
     } catch (err) {
@@ -100,7 +105,7 @@ export const AdminLayout = () => {
       const rawCount =
         typeof data === "number"
           ? data
-          : data?.pendingCount ?? data?.count ?? data?.data ?? 0;
+          : (data?.pendingCount ?? data?.count ?? data?.data ?? 0);
       setPendingCount(Number(rawCount) || 0);
     };
 
@@ -108,13 +113,14 @@ export const AdminLayout = () => {
     const handleNewOrder = (newOrder) => {
       const orderId = newOrder?.id || newOrder?._id || "NEW";
       const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
-      const customerName = newOrder?.user?.name || newOrder?.customerName || "Guest";
+      const customerName =
+        newOrder?.user?.name || newOrder?.customerName || "Guest";
 
       // 🔊 অডিও প্লে (কেবল নতুন কাস্টমার অর্ডারে)
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
-            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
           );
           audio.play().catch(() => {});
         } catch (e) {}
@@ -312,7 +318,8 @@ export const AdminLayout = () => {
                 Order ID: #{toastNotification.id}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Customer: {toastNotification.customer} • Total: ৳{toastNotification.total}
+                Customer: {toastNotification.customer} • Total: ৳
+                {toastNotification.total}
               </p>
             </div>
           </motion.div>

@@ -26,7 +26,7 @@ import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
 
 // ⚡ আলাদা করা কম্পোনেন্ট ইম্পোর্ট
-import RidersFleetOverview from "./RidersFleetOverview";
+// import RidersFleetOverview from "./RidersFleetOverview";
 
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
@@ -415,15 +415,15 @@ export const AdminOrders = () => {
           </p>
         </div>
       </div>
-
-      {/* 🚴 Riders Fleet Overview & Cash Settlement (আলাদা কম্পোনেন্ট হিসেবে কল করা হয়েছে) */}
-      <RidersFleetOverview
+{/* 🚴 Riders Fleet Overview & Cash Settlement (আলাদা কম্পোনেন্ট হিসেবে কল করা হয়েছে) */}
+      
+      {/* <RidersFleetOverview
         riders={riders}
         orders={orders}
         confirmingRiderId={confirmingRiderId}
         onConfirmCashSettlement={handleConfirmCashSettlement}
         onRefresh={fetchOrdersAndFleet}
-      />
+      /> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Table List */}

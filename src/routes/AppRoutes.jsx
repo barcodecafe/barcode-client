@@ -48,6 +48,7 @@ import { FavoritesProvider } from '../context/FavoritesContext';
 import { ScrollToTop } from '../components/ScrollToTop';
 import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import AdminRidersFleet from '../pages/admin/AdminRidersFleet';
 
 export const AppRoutes = () => {
   return (
@@ -121,6 +122,7 @@ export const AppRoutes = () => {
                   <Route path="regions" element={<AdminRegions />} />
                   <Route path="branches" element={<AdminBranches />} />
                   <Route path="orders" element={<AdminOrders />} />
+                  <Route path="fleet-overview" element={<AdminRidersFleet />} />
                   <Route path="customers" element={<AdminCustomers />} />
                   <Route path="coupons" element={<AdminCoupons />} />
                   <Route path="hero" element={<AdminHero />} />
