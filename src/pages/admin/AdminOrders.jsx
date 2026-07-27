@@ -35,13 +35,25 @@ import { getAllRegions } from "../../services/regionsService";
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
+// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার সেফ হেলপার ফাংশন
+const deduplicateOrders = (orderList) => {
+  if (!Array.isArray(orderList)) return [];
+  const seen = new Set();
+  return orderList.filter((item) => {
+    const id = item?.id || item?._id;
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
+
 // 🎯 ১. পেমেন্ট মেথড ও স্ট্যাটাস অনুযায়ী ডায়নামিক ব্যাজ লজিক
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
   const isPaid = ord?.isPaid || ps === "paid";
 
-  // SSLCommerz বা অন্য অনলাইন পেমেন্ট
   if (pm !== "cod") {
     if (isPaid) {
       return {
@@ -61,7 +73,6 @@ const getPaymentBadge = (ord) => {
     };
   }
 
-  // Cash on Delivery (COD)
   if (isPaid || String(ord?.status).toUpperCase() === "DELIVERED") {
     return {
       label: "PAID (COD)",
@@ -123,14 +134,14 @@ export const AdminOrders = () => {
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const chatEndRef = useRef(null);
-  const currentChat = orders.find((o) => o.id === activeChatOrderId);
+  const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
   // Manual refresh helper
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
-        setOrders(ordersData || []);
+        setOrders(deduplicateOrders(ordersData || []));
         setRiders(ridersData || []);
         window.dispatchEvent(new Event("order_updated"));
         return ordersData || [];
@@ -146,7 +157,7 @@ export const AdminOrders = () => {
       getAllRegions(),
     ])
       .then(([ordersData, ridersData, branchesData, regionsData]) => {
-        setOrders(ordersData || []);
+        setOrders(deduplicateOrders(ordersData || []));
         setRiders(ridersData || []);
         setBranches(branchesData || []);
         setRegions(Array.isArray(regionsData) ? regionsData : []);
@@ -158,22 +169,31 @@ export const AdminOrders = () => {
 
   // Socket Real-time Event Listeners
   useEffect(() => {
+    // ⚡ ডুপ্লিকেট পুশ রোধ করে 'order_created' ইভেন্ট হ্যান্ডলার
     socket.on("order_created", (newOrder) => {
-      setOrders((prev) => [newOrder, ...prev]);
+      setOrders((prev) => {
+        const newId = newOrder?.id || newOrder?._id;
+        if (!newId) return prev;
+        const exists = prev.some((o) => (o.id || o._id) === newId);
+        if (exists) {
+          return prev.map((o) => ((o.id || o._id) === newId ? newOrder : o));
+        }
+        return [newOrder, ...prev];
+      });
       window.dispatchEvent(new Event("order_updated"));
     });
 
     socket.on("order_updated", (updatedOrder) => {
+      const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
-        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
+        prev.map((o) => ((o.id || o._id) === updatedId ? updatedOrder : o))
       );
       setSelectedOrderDetails((prev) =>
-        prev?.id === updatedOrder.id ? updatedOrder : prev
+        (prev?.id || prev?._id) === updatedId ? updatedOrder : prev
       );
       window.dispatchEvent(new Event("order_updated"));
     });
 
-    // ⚡ ব্যাকএন্ড থেকে পেন্ডিং কাউন্ট কমলে বা বাড়লে ব্যাজ রিফ্রেশ ইভেন্ট ফায়ার হবে
     socket.on("pending_count_updated", () => {
       window.dispatchEvent(new Event("order_updated"));
     });
@@ -187,7 +207,7 @@ export const AdminOrders = () => {
     socket.on("new_chat_message", ({ orderId, message }) => {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
-          if (ord.id === orderId) {
+          if ((ord.id || ord._id) === orderId) {
             return {
               ...ord,
               chatHistory: [...(ord.chatHistory || []), message],
@@ -253,7 +273,7 @@ export const AdminOrders = () => {
       const result = await recheckPayment(orderId);
       const updated = await fetchOrdersAndFleet();
       if (Array.isArray(updated)) {
-        const fresh = updated.find((o) => o.id === orderId);
+        const fresh = updated.find((o) => (o.id || o._id) === orderId);
         if (fresh) setSelectedOrderDetails(fresh);
       }
       alert(result?.reason || result?.message || "Re-check complete.");
@@ -295,14 +315,13 @@ export const AdminOrders = () => {
     );
   }
 
-  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+  const chatOrder = orders.find((o) => (o.id || o._id) === activeChatOrderId);
 
   // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের ফাংশন
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { orderId, status: newStatus });
-      // 📢 হেডার ও ইন্টারফেসে সাথে সাথে লাল ব্যাজ সংখ্যা ১ কমিয়ে দেওয়া
       window.dispatchEvent(new Event("order_updated"));
       fetchOrdersAndFleet();
     } catch (err) {
@@ -352,7 +371,7 @@ export const AdminOrders = () => {
       });
 
       setOrders((prev) =>
-        prev.map((o) => (o.id === activeChatOrderId ? updated : o))
+        prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o))
       );
       setAdminChatMessage("");
     } catch (err) {
@@ -599,9 +618,9 @@ export const AdminOrders = () => {
               </thead>
               <tbody>
                 {orders.map((ord) => {
+                  const ordId = ord.id || ord._id;
                   const currentStatus = String(ord.status || "").toUpperCase();
                   
-                  // 🎯 AWAITING PAYMENT এবং PLACED/PENDING সহ যেসব অর্ডার একসেপ্ট বা রিজেক্ট করা হয়নি
                   const isPendingUnhandled =
                     currentStatus === "PLACED" ||
                     currentStatus === "PENDING" ||
@@ -613,7 +632,7 @@ export const AdminOrders = () => {
 
                   return (
                     <tr
-                      key={ord.id}
+                      key={ordId}
                       className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
                     >
                       <td
@@ -621,7 +640,7 @@ export const AdminOrders = () => {
                         className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
                         title="Click to view details"
                       >
-                        {ord.id}
+                        {ordId}
                         {badge && (
                           <span
                             className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
@@ -654,7 +673,7 @@ export const AdminOrders = () => {
                           <div className="flex gap-1">
                             <button
                               onClick={() =>
-                                handleStatusChange(ord.id, "Accepted")
+                                handleStatusChange(ordId, "Accepted")
                               }
                               className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Accept Order"
@@ -663,7 +682,7 @@ export const AdminOrders = () => {
                             </button>
                             <button
                               onClick={() =>
-                                handleStatusChange(ord.id, "Rejected")
+                                handleStatusChange(ordId, "Rejected")
                               }
                               className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Reject Order"
@@ -682,7 +701,7 @@ export const AdminOrders = () => {
                               ord.riderId && ord.riderAcceptStatus !== "accepted"
                             }
                             onChange={(e) =>
-                              handleStatusChange(ord.id, e.target.value)
+                              handleStatusChange(ordId, e.target.value)
                             }
                             className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                               ord.riderId && ord.riderAcceptStatus !== "accepted"
@@ -711,7 +730,7 @@ export const AdminOrders = () => {
                               ord.status === "Delivered"
                             }
                             onChange={(e) =>
-                              handleAssignRider(ord.id, e.target.value)
+                              handleAssignRider(ordId, e.target.value)
                             }
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                               isPendingUnhandled ||
@@ -732,9 +751,9 @@ export const AdminOrders = () => {
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <button
-                          onClick={() => setActiveChatOrderId(ord.id)}
+                          onClick={() => setActiveChatOrderId(ordId)}
                           className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
-                            activeChatOrderId === ord.id
+                            activeChatOrderId === ordId
                               ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
                               : ""
                           }`}
@@ -762,7 +781,7 @@ export const AdminOrders = () => {
             <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                  Chat for #{chatOrder.id.toUpperCase()}
+                  Chat for #{(chatOrder.id || chatOrder._id)?.toUpperCase()}
                 </h3>
               </div>
               <button
@@ -819,7 +838,8 @@ export const AdminOrders = () => {
               <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
                 <div>
                   <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
-                    Order Details #{selectedOrderDetails.id?.toUpperCase()}
+                    Order Details #
+                    {(selectedOrderDetails.id || selectedOrderDetails._id)?.toUpperCase()}
                   </h2>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     Status:{" "}
@@ -934,21 +954,26 @@ export const AdminOrders = () => {
                     <div className="pt-1">
                       <button
                         onClick={() =>
-                          handleRecheckPayment(selectedOrderDetails.id)
+                          handleRecheckPayment(
+                            selectedOrderDetails.id || selectedOrderDetails._id
+                          )
                         }
                         disabled={
-                          recheckingOrderId === selectedOrderDetails.id
+                          recheckingOrderId ===
+                          (selectedOrderDetails.id || selectedOrderDetails._id)
                         }
                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wide hover:bg-primary-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
                       >
                         <RefreshCw
                           className={`w-3 h-3 ${
-                            recheckingOrderId === selectedOrderDetails.id
+                            recheckingOrderId ===
+                            (selectedOrderDetails.id || selectedOrderDetails._id)
                               ? "animate-spin"
                               : ""
                           }`}
                         />
-                        {recheckingOrderId === selectedOrderDetails.id
+                        {recheckingOrderId ===
+                        (selectedOrderDetails.id || selectedOrderDetails._id)
                           ? "Checking with gateway…"
                           : "Re-check payment with gateway"}
                       </button>
