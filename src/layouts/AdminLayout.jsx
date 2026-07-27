@@ -24,6 +24,7 @@ import {
   Settings,
   Bell,
   BellOff,
+  ShoppingBag as ToastIcon,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../context/AuthContext";
@@ -55,16 +56,17 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🎯 ১. পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
+  // 🎯 ১. পেন্ডিং কাউন্ট, সাউন্ড এবং ইন-অ্যাপ টোস্টার স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [toastNotification, setToastNotification] = useState(null); // Toaster notification state
 
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 🎯 ২. ব্যাকএন্ড থেকে পেন্ডিং ও প্লেসড অর্ডার সংখ্যা লোড করার ফাংশন
+  // initial load only
   const fetchPendingOrders = async () => {
     try {
       const ordersData = await getAllOrders();
@@ -72,7 +74,6 @@ export const AdminLayout = () => {
         ? ordersData
         : ordersData?.data || [];
 
-      // 'PENDING', 'PLACED' অথবা কোনো স্ট্যাটাস না থাকা অর্ডার ফিল্টার
       const pending = ordersList.filter((o) => {
         const st = String(o.status || "").toUpperCase();
         return st === "PENDING" || st === "PLACED" || !o.status;
@@ -87,17 +88,20 @@ export const AdminLayout = () => {
   useEffect(() => {
     fetchPendingOrders();
 
-    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন
+    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন রিকোয়েস্ট
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অর্ডার এলে ইনস্ট্যান্ট কাউন্ট +১, সাউন্ড অ্যালার্ট এবং নোটিফিকেশন
+    // ⚡ ইনস্ট্যান্ট অর্ডার হ্যাণ্ডলার (No Delay, No setTimeout)
     const handleNewOrder = (newOrder) => {
-      // ক) সাথে সাথে স্ক্রিনে সংখ্যা ১ বাড়িয়ে দেওয়া
+      const orderId = newOrder?.id || newOrder?._id || "NEW";
+      const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
+
+      // ১. ইনস্ট্যান্ট কাউন্টার বৃদ্ধি (+১)
       setPendingCount((prev) => prev + 1);
 
-      // খ) সাউন্ড বাজানো
+      // ২. ইনস্ট্যান্ট সাউন্ড প্লে
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -107,39 +111,41 @@ export const AdminLayout = () => {
         } catch (e) {}
       }
 
-      // গ) ডেস্কটপ পপআপ নোটিফিকেশন
+      // ৩. ইনস্ট্যান্ট ইন-অ্যাপ টোস্টার পপআপ
+      setToastNotification({
+        id: orderId,
+        total: totalAmount,
+        customer: newOrder?.user?.name || newOrder?.customerName || "Guest",
+      });
+
+      // ৪. ইনস্ট্যান্ট হোয়াটসঅ্যাপ-স্টাইল ডেসক্টোফ উইন্ডো নোটিফিকেশন
       if ("Notification" in window && Notification.permission === "granted") {
         const desktopNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
-          body: `Order ID: #${newOrder?.id || newOrder?._id || ""}\nTotal: ৳${
-            newOrder?.totalAmount || newOrder?.total || 0
-          }`,
+          body: `Order ID: #${orderId}\nTotal: ৳${totalAmount}`,
           icon: settings?.logoLight || resB,
+          tag: "new-order",
+          renotify: true,
           requireInteraction: true,
         });
 
         desktopNotif.onclick = () => {
           window.focus();
           navigate("/admin/orders");
+          desktopNotif.close();
         };
       }
-
-      // ঘ) ব্যাকএন্ডের সাথে ১ সেকেন্ড পর ফুল সিঙ্ক
-      setTimeout(() => {
-        fetchPendingOrders();
-      }, 1000);
     };
 
     const handleStatusUpdate = () => {
       fetchPendingOrders();
     };
 
-    // Socket Events
+    // Socket listeners
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_created", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
 
-    // Custom Event Listener (AdminOrders থেকে Accept/Reject করলে সাড়াদান)
     const handleCustomOrderUpdate = () => fetchPendingOrders();
     window.addEventListener("order_updated", handleCustomOrderUpdate);
 
@@ -152,7 +158,7 @@ export const AdminLayout = () => {
     };
   }, [navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেলে পেন্ডিং অর্ডারের কাউন্ট আপডেট
+  // ৩. ব্রাউজার ট্যাবের টাইটেলে পেন্ডিং কাউন্ট
   useEffect(() => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount}) New Orders - Barcode Admin`;
@@ -211,7 +217,6 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🔴 সাইডবারে Orders এর পাশে লাল রঙের ব্যাজ */}
             {item.name === "Orders" && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
                 {pendingCount}
@@ -242,7 +247,49 @@ export const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
+    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
+      {/* 🚨 🎯 WhatsApp Style Instant In-App Toaster Alert */}
+      <AnimatePresence>
+        {toastNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white dark:bg-neutral-900 border-2 border-primary-500 shadow-2xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer"
+            onClick={() => {
+              navigate("/admin/orders");
+              setToastNotification(null);
+            }}
+          >
+            <div className="p-2.5 bg-primary-500/10 text-primary-500 rounded-xl shrink-0 animate-bounce">
+              <ToastIcon className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
+                  🚨 নতুন অর্ডার এসেছে!
+                </h4>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setToastNotification(null);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mt-0.5">
+                Order ID: #{toastNotification.id}
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Customer: {toastNotification.customer} • Total: ৳{toastNotification.total}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isDrawerOpen && (
           <motion.div
@@ -300,7 +347,6 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 হেডার নোটিফিকেশন বেল ও লাল কাউন্টার ব্যাজ */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
