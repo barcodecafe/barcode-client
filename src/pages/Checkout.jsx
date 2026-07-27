@@ -112,7 +112,7 @@ export const Checkout = () => {
     } else {
       setArea('');
     }
-  }, [regionId, region]); // 👈 Fixed dependency array here too
+  }, [regionId, region]);
 
   // ── Prices ─────────────────────────────────────────────────────────────
   const unitPrice = (item) =>
@@ -249,7 +249,6 @@ export const Checkout = () => {
     }
   };
 
-  // 🎯 FIXED PLACE ORDER HANDLER
   const handlePlaceOrder = async () => {
     setOrderError('');
     if (!regionId) {
@@ -300,15 +299,16 @@ export const Checkout = () => {
         paymentMethod,
       };
 
-      // ১. ব্যাকএন্ডে অর্ডার তৈরি করা (Simplified object extraction)
       const orderObj = await createOrder(orderData);
-      const orderId = orderObj?._id || orderObj?.id;
+      
+      // 🎯 FIX: এখানে ডাটা যে লেভেলেই থাকুক না কেন, আইডিটি সঠিকভাবে বের করে আনবে
+      const orderId = orderObj?._id || orderObj?.id || orderObj?.data?._id || orderObj?.data?.id;
 
       if (!orderId) {
+        console.error("Failed to extract ID. Order API Response:", orderObj);
         throw new Error('Order placed, but failed to retrieve valid Order ID.');
       }
 
-      // ⚡️ ২. REAL-TIME SOCKET EMIT
       try {
         socket.emit('create_order', orderObj);
       } catch (sErr) {
@@ -319,12 +319,11 @@ export const Checkout = () => {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }
 
-      // 🎯 SSLCOMMERZ FIX
       if (paymentMethod === 'sslcommerz') {
         try {
           const { gatewayUrl } = await initPayment(orderId);
           if (gatewayUrl) {
-            clearCart(); // 👈 কার্ট ক্লিয়ার করে তারপর পেমেন্ট গেটওয়েতে রিডাইরেক্ট
+            clearCart(); 
             window.location.href = gatewayUrl;
             return;
           }
@@ -342,7 +341,6 @@ export const Checkout = () => {
         }
       }
 
-      // 🎯 COD SUCCESS & REDIRECT FIX
       await Swal.fire({
         icon: 'success',
         title: 'Order Placed Successfully!',
@@ -351,10 +349,9 @@ export const Checkout = () => {
         showConfirmButton: false,
       });
 
-      // 👈 আগে ট্র্যাকিং পেজে রিডাইরেক্ট করুন (replace: true দিলে ব্যাক বাটন চেকআউটে আনবে না)
+      // Navigate with proper ID
       navigate(`/order-tracking/${orderId}`, { replace: true });
       
-      // 👈 তারপর কার্ট ক্লিয়ার করুন, যাতে "Empty Basket" স্ক্রিন ফ্ল্যাশ না করে
       setTimeout(() => {
         clearCart();
       }, 150);
