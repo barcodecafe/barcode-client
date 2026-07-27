@@ -12,6 +12,14 @@ export async function getAllOrders() {
   return apiClient.get('/orders');
 }
 
+/** 
+ * ⚡ GET /api/orders/pending-count (admin) 
+ * ফাস্ট ও লাইটওয়েট পেন্ডিং অর্ডারের সংখ্যা (Count) নিয়ে আসার জন্য
+ */
+export async function getPendingOrderCount() {
+  return apiClient.get('/orders/pending-count');
+}
+
 /** GET /api/orders/:id (ownership-checked server-side) */
 export async function getOrderById(id) {
   return apiClient.get(`/orders/${id}`);

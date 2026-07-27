@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { getAllOrders } from "../services/ordersService";
+import { getPendingOrderCount } from "../services/ordersService";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -66,20 +66,12 @@ export const AdminLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // শুধু পেজ প্রথমবার লোড হওয়ার সময় ব্যাকএন্ড ডাটা ফেচ
+  // ⚡ নতুন লাইটওয়েট API দিয়ে সরাসরি পেন্ডিং অর্ডারের কাউন্ট আনা
   const fetchPendingOrders = async () => {
     try {
-      const ordersData = await getAllOrders();
-      const ordersList = Array.isArray(ordersData)
-        ? ordersData
-        : ordersData?.data || [];
-
-      const pending = ordersList.filter((o) => {
-        const st = String(o.status || "").toUpperCase();
-        return st === "PENDING" || st === "PLACED" || !o.status;
-      });
-
-      setPendingCount(pending.length);
+      const res = await getPendingOrderCount();
+      const count = res?.count ?? res?.data?.count ?? 0;
+      setPendingCount(count);
     } catch (err) {
       console.error("Failed to fetch pending count:", err);
     }
@@ -121,15 +113,15 @@ export const AdminLayout = () => {
         customer: customerName,
       });
 
-      // 💻 8. WINDOWS OS SYSTEM NOTIFICATION (ব্রাউজার মিনিমাইজ থাকলেও উইন্ডোজ নোটিফিকেশন প্যানেলে আসবে)
+      // 💻 WINDOWS OS SYSTEM NOTIFICATION
       if ("Notification" in window && Notification.permission === "granted") {
         try {
           const systemNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
             body: `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`,
             icon: settings?.logoLight || resB,
-            tag: `order-${orderId}`, // ইউনিক ট্যাগ যাতে প্যানেলে আলাদা নোটিফিকেশন হিসেবে জমা থাকে
+            tag: `order-${orderId}`,
             renotify: true,
-            requireInteraction: true, // মিনিমাইজ থাকলেও নোটিফিকেশন উইন্ডোজে জমা থাকবে
+            requireInteraction: true,
           });
 
           systemNotif.onclick = () => {
