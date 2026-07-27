@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast, { Toaster } from "react-hot-toast"; // 👈 Toast ইমপোর্ট করা হয়েছে
 import {
   MessageSquare,
   Send,
@@ -276,9 +277,9 @@ export const AdminOrders = () => {
         const fresh = updated.find((o) => (o.id || o._id) === orderId);
         if (fresh) setSelectedOrderDetails(fresh);
       }
-      alert(result?.reason || result?.message || "Re-check complete.");
+      toast.success(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
-      alert("Re-check failed: " + (err.response?.data?.message || err.message));
+      toast.error("Re-check failed: " + (err.response?.data?.message || err.message));
     } finally {
       setRecheckingOrderId(null);
     }
@@ -295,10 +296,10 @@ export const AdminOrders = () => {
     try {
       setConfirmingRiderId(riderId);
       await confirmRiderCashSettlement(riderId, dateKey);
-      alert(`Cash settlement confirmed successfully for ${riderName}!`);
+      toast.success(`Cash settlement confirmed successfully for ${riderName}!`);
       fetchOrdersAndFleet();
     } catch (err) {
-      alert(
+      toast.error(
         "Failed to confirm cash settlement: " +
           (err.response?.data?.message || err.message)
       );
@@ -315,17 +316,54 @@ export const AdminOrders = () => {
     );
   }
 
-  const chatOrder = orders.find((o) => (o.id || o._id) === activeChatOrderId);
-
-  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের ফাংশন
+  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের আপডেটেড ফাংশন (Soundless Toast Notification)
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { orderId, status: newStatus });
       window.dispatchEvent(new Event("order_updated"));
       fetchOrdersAndFleet();
+
+      const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
+
+      if (newStatus === "Accepted" || newStatus === "ACCEPTED") {
+        toast.success(`Order #${shortId} has been Accepted!`, {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+            fontWeight: "bold",
+            borderRadius: "10px",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
+      } else if (newStatus === "Rejected" || newStatus === "REJECTED") {
+        toast.error(`Order #${shortId} has been Rejected!`, {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#EF4444",
+            color: "#FFFFFF",
+            fontWeight: "bold",
+            borderRadius: "10px",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#EF4444",
+          },
+        });
+      } else {
+        toast(`Order status updated to ${newStatus}`, {
+          icon: "🔄",
+          position: "top-right",
+        });
+      }
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      toast.error("Failed to update status: " + err.message);
     }
   };
 
@@ -346,9 +384,10 @@ export const AdminOrders = () => {
       socket.emit("order_assigned", payload);
       socket.emit("order_updated", payload);
 
+      toast.success(`Assigned to ${selectedRider.name}`);
       fetchOrdersAndFleet();
     } catch (err) {
-      alert("Failed to assign rider: " + err.message);
+      toast.error("Failed to assign rider: " + err.message);
     }
   };
 
@@ -375,12 +414,15 @@ export const AdminOrders = () => {
       );
       setAdminChatMessage("");
     } catch (err) {
-      alert("Failed to send message: " + err.message);
+      toast.error("Failed to send message: " + err.message);
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* 🔔 Toast Notification Container */}
+      <Toaster />
+
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
@@ -771,7 +813,7 @@ export const AdminOrders = () => {
         </div>
 
         {/* Chat Console Panel */}
-        {activeChatOrderId && chatOrder && (
+        {activeChatOrderId && currentChat && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -781,7 +823,7 @@ export const AdminOrders = () => {
             <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                  Chat for #{(chatOrder.id || chatOrder._id)?.toUpperCase()}
+                  Chat for #{(currentChat.id || currentChat._id)?.toUpperCase()}
                 </h3>
               </div>
               <button
@@ -793,7 +835,7 @@ export const AdminOrders = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-              {(chatOrder.chatHistory || []).map((msg, i) => (
+              {(currentChat.chatHistory || []).map((msg, i) => (
                 <div key={i} className="text-xs">
                   <span className="font-bold">{msg.senderName}: </span>
                   <span>{msg.text}</span>
