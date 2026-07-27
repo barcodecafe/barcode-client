@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getAllOrders } from "../services/ordersService";
-import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-down";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -56,17 +56,17 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🎯 ১. পেন্ডিং কাউন্ট, সাউন্ড এবং ইন-অ্যাপ টোস্টার স্টেট
+  // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [toastNotification, setToastNotification] = useState(null); // Toaster notification state
+  const [toastNotification, setToastNotification] = useState(null);
 
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // initial load only
+  // শুধু পেজ প্রথমবার লোড হওয়ার সময় ব্যাকএন্ড ডাটা ফেচ
   const fetchPendingOrders = async () => {
     try {
       const ordersData = await getAllOrders();
@@ -88,20 +88,23 @@ export const AdminLayout = () => {
   useEffect(() => {
     fetchPendingOrders();
 
-    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন রিকোয়েস্ট
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+    // 🔔 ব্রাউজার ও উইন্ডোজ সিস্টেম নোটিফিকেশন পারমিশন চাওয়া
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     }
 
-    // ⚡ ইনস্ট্যান্ট অর্ডার হ্যাণ্ডলার (No Delay, No setTimeout)
+    // ⚡ 0ms INSTANT SOCKET EVENT HANDLER (কোনো সিঙ্ক টাইমার বা ডিলে নেই)
     const handleNewOrder = (newOrder) => {
       const orderId = newOrder?.id || newOrder?._id || "NEW";
       const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
+      const customerName = newOrder?.user?.name || newOrder?.customerName || "Guest";
 
-      // ১. ইনস্ট্যান্ট কাউন্টার বৃদ্ধি (+১)
+      // ১. রিয়েল-টাইম পেন্ডিং কাউন্ট সাথে সাথে +১
       setPendingCount((prev) => prev + 1);
 
-      // ২. ইনস্ট্যান্ট সাউন্ড প্লে
+      // ২. ইনস্ট্যান্ট অডিও প্লে
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -111,28 +114,32 @@ export const AdminLayout = () => {
         } catch (e) {}
       }
 
-      // ৩. ইনস্ট্যান্ট ইন-অ্যাপ টোস্টার পপআপ
+      // ৩. ইন-অ্যাপ টোস্টার অ্যালার্ট
       setToastNotification({
         id: orderId,
         total: totalAmount,
-        customer: newOrder?.user?.name || newOrder?.customerName || "Guest",
+        customer: customerName,
       });
 
-      // ৪. ইনস্ট্যান্ট হোয়াটসঅ্যাপ-স্টাইল ডেসক্টোফ উইন্ডো নোটিফিকেশন
+      // 💻 8. WINDOWS OS SYSTEM NOTIFICATION (ব্রাউজার মিনিমাইজ থাকলেও উইন্ডোজ নোটিফিকেশন প্যানেলে আসবে)
       if ("Notification" in window && Notification.permission === "granted") {
-        const desktopNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
-          body: `Order ID: #${orderId}\nTotal: ৳${totalAmount}`,
-          icon: settings?.logoLight || resB,
-          tag: "new-order",
-          renotify: true,
-          requireInteraction: true,
-        });
+        try {
+          const systemNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
+            body: `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`,
+            icon: settings?.logoLight || resB,
+            tag: `order-${orderId}`, // ইউনিক ট্যাগ যাতে প্যানেলে আলাদা নোটিফিকেশন হিসেবে জমা থাকে
+            renotify: true,
+            requireInteraction: true, // মিনিমাইজ থাকলেও নোটিফিকেশন উইন্ডোজে জমা থাকবে
+          });
 
-        desktopNotif.onclick = () => {
-          window.focus();
-          navigate("/admin/orders");
-          desktopNotif.close();
-        };
+          systemNotif.onclick = () => {
+            window.focus();
+            navigate("/admin/orders");
+            systemNotif.close();
+          };
+        } catch (e) {
+          console.error("System notification error:", e);
+        }
       }
     };
 
@@ -140,7 +147,7 @@ export const AdminLayout = () => {
       fetchPendingOrders();
     };
 
-    // Socket listeners
+    // Socket Events Listening
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_created", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
@@ -158,7 +165,7 @@ export const AdminLayout = () => {
     };
   }, [navigate, settings?.logoLight]);
 
-  // ৩. ব্রাউজার ট্যাবের টাইটেলে পেন্ডিং কাউন্ট
+  // ব্রাউজার ট্যাবের টাইটেল আপডেট
   useEffect(() => {
     if (pendingCount > 0) {
       document.title = `(${pendingCount}) New Orders - Barcode Admin`;
@@ -248,7 +255,7 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
-      {/* 🚨 🎯 WhatsApp Style Instant In-App Toaster Alert */}
+      {/* 🚨 In-App Toast Popup */}
       <AnimatePresence>
         {toastNotification && (
           <motion.div
