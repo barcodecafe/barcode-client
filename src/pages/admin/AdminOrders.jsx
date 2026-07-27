@@ -1,19 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingBag,
   MessageSquare,
   Send,
   X,
   Check,
-  Calendar,
   MapPin,
   User,
   Phone,
-  DollarSign,
   Bike,
   Utensils,
-  TrendingUp,
   CheckCircle2,
   Clock3,
   AlertCircle,
@@ -24,8 +20,6 @@ import {
   updateOrderStatus,
   addChatMessage,
   assignRiderToOrder,
-  acceptRiderOrder,
-  rejectRiderOrder,
   confirmRiderCashSettlement,
 } from "../../services/ordersService";
 import { recheckPayment } from "../../services/paymentsService";
@@ -93,6 +87,8 @@ const getStatusColor = (status) => {
   switch (status?.toString().toUpperCase()) {
     case "PENDING":
     case "PLACED":
+    case "AWAITING PAYMENT":
+    case "AWAITING_PAYMENT":
     case "PICK ORDER":
       return "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse";
     case "ACCEPTED":
@@ -118,8 +114,8 @@ const getStatusColor = (status) => {
 export const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [riders, setRiders] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [regions, setRegions] = useState([]);
+  const [, setBranches] = useState([]);
+  const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmingRiderId, setConfirmingRiderId] = useState(null);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
@@ -177,6 +173,11 @@ export const AdminOrders = () => {
       window.dispatchEvent(new Event("order_updated"));
     });
 
+    // ⚡ ব্যাকএন্ড থেকে পেন্ডিং কাউন্ট কমলে বা বাড়লে ব্যাজ রিফ্রেশ ইভেন্ট ফায়ার হবে
+    socket.on("pending_count_updated", () => {
+      window.dispatchEvent(new Event("order_updated"));
+    });
+
     socket.on("rider_updated", (updatedRider) => {
       setRiders((prev) =>
         prev.map((r) => (r.id === updatedRider.id ? updatedRider : r))
@@ -200,6 +201,7 @@ export const AdminOrders = () => {
     return () => {
       socket.off("order_created");
       socket.off("order_updated");
+      socket.off("pending_count_updated");
       socket.off("rider_updated");
       socket.off("new_chat_message");
     };
@@ -295,24 +297,25 @@ export const AdminOrders = () => {
 
   const chatOrder = orders.find((o) => o.id === activeChatOrderId);
 
+  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের ফাংশন
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { orderId, status: newStatus });
+      // 📢 হেডার ও ইন্টারফেসে সাথে সাথে লাল ব্যাজ সংখ্যা ১ কমিয়ে দেওয়া
+      window.dispatchEvent(new Event("order_updated"));
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to update status: " + err.message);
     }
   };
 
-const handleAssignRider = async (orderId, riderId) => {
+  const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => r.id === riderId);
     if (!selectedRider) return;
     try {
-      // ১. ব্যাকএন্ডে রাইডার অ্যাসাইন করার API কল
       await assignRiderToOrder(orderId, riderId, selectedRider.name);
 
-      // 🎯 ২. এখানে সকেট ইভেন্টগুলো পাঠাবেন (যাতে রাইডার প্যানেলে সাথে সাথে সাউন্ড বাজে)
       const payload = {
         id: orderId,
         orderId: orderId,
@@ -324,13 +327,11 @@ const handleAssignRider = async (orderId, riderId) => {
       socket.emit("order_assigned", payload);
       socket.emit("order_updated", payload);
 
-      // ৩. ডাটা রিফ্রেশ
       fetchOrdersAndFleet();
     } catch (err) {
       alert("Failed to assign rider: " + err.message);
     }
   };
-
 
   const handleSendAdminMessage = async (e) => {
     e.preventDefault();
@@ -599,10 +600,15 @@ const handleAssignRider = async (orderId, riderId) => {
               <tbody>
                 {orders.map((ord) => {
                   const currentStatus = String(ord.status || "").toUpperCase();
+                  
+                  // 🎯 AWAITING PAYMENT এবং PLACED/PENDING সহ যেসব অর্ডার একসেপ্ট বা রিজেক্ট করা হয়নি
                   const isPendingUnhandled =
                     currentStatus === "PLACED" ||
                     currentStatus === "PENDING" ||
+                    currentStatus === "AWAITING PAYMENT" ||
+                    currentStatus === "AWAITING_PAYMENT" ||
                     !ord.status;
+                  
                   const badge = getPaymentBadge(ord);
 
                   return (
