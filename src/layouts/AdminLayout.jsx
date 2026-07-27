@@ -216,8 +216,9 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
+            {/* ✅ animate-pulse রিমুভ করা হয়েছে যাতে ব্লিঙ্ক না করে */}
             {item.name === "Orders" && pendingCount > 0 && (
-              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
+              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                 {pendingCount}
               </span>
             )}
@@ -363,11 +364,12 @@ export const AdminLayout = () => {
                 )}
               </button>
 
+              {/* ✅ animate-pulse রিমুভ করা হয়েছে যাতে হেডার ব্যাজ ব্লিঙ্ক না করে */}
               <Link
                 to="/admin/orders"
                 className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
                   pendingCount > 0
-                    ? "bg-red-500 animate-pulse scale-105"
+                    ? "bg-red-500 scale-105"
                     : "bg-neutral-400 dark:bg-neutral-600"
                 }`}
                 title="Click to view orders"
