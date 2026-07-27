@@ -29,6 +29,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { getOrderById, addChatMessage } from "../services/ordersService";
+import { initPayment } from "../services/paymentsService"; // 👈 API_BASE_URL এর বদলে সার্ভিস ইমপোর্ট করা হলো
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
@@ -38,20 +39,18 @@ export const OrderTracking = () => {
   const { user } = useAuth();
   const { clearCart } = useCart();
 
-  // URL Parameter পড়ার জন্য searchParams যুক্ত করা হলো
   const [searchParams] = useSearchParams();
-  const paymentParam = searchParams.get("payment"); // 'fail', 'cancel' ইত্যাদি রিড করবে
+  const paymentParam = searchParams.get("payment");
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [retryLoading, setRetryLoading] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("map"); // 'map' or 'details'
+  const [activeTab, setActiveTab] = useState("map");
 
-  // Ref for auto-scrolling chat
   const chatEndRef = useRef(null);
 
-  // Poll order every 3 seconds to get instant updates if status is changed in admin dashboard
+  // Poll order every 3 seconds to get instant updates
   useEffect(() => {
     let active = true;
 
@@ -87,13 +86,6 @@ export const OrderTracking = () => {
     }
   }, [order?.chatHistory?.length]);
 
-  // Checkout deliberately keeps the basket until an online payment lands, so the
-  // customer doesn't lose it on a failed attempt. Clear it once we know it worked.
-  //
-  // ⚠️ Must sit up here with the other hooks. This component returns early while
-  // loading, and a hook placed after that return runs on some renders but not
-  // others — React then throws and the page renders completely blank, for cash
-  // orders as well as online ones.
   const cartClearedRef = useRef(false);
   useEffect(() => {
     const paid = paymentParam === "success" && order?.paymentStatus === "Paid";
@@ -103,31 +95,21 @@ export const OrderTracking = () => {
     }
   }, [paymentParam, order?.paymentStatus, clearCart]);
 
-  // পেমেন্ট পুনরায় চেষ্টা করার হ্যান্ডলার
-  // handleRetryPayment ফাংশনটি রিপ্লেস করুন:
+  // 🎯 FIX: API_BASE_URL undefined ইস্যু ঠিক করতে initPayment সার্ভিস ব্যবহার করা হলো
   const handleRetryPayment = async () => {
     try {
       setRetryLoading(true);
-
-      const response = await fetch(`${API_BASE_URL}/payments/init`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ orderId: order.id }),
-      });
-
-      const result = await response.json();
-
-      if (result.success && result.data?.gatewayUrl) {
-        window.location.href = result.data.gatewayUrl; // SSLCommerz Gateway-তে রিডাইরেক্ট করবে
+      const safeOrderId = order?._id || order?.id || id;
+      
+      const { gatewayUrl } = await initPayment(safeOrderId);
+      if (gatewayUrl) {
+        window.location.href = gatewayUrl;
       } else {
-        alert(result.message || "Failed to initialize payment gateway.");
+        alert("Failed to initialize payment gateway.");
       }
     } catch (err) {
       console.error("Retry payment error:", err);
-      alert("Something went wrong. Please try again.");
+      alert(err.message || "Something went wrong. Please try again.");
     } finally {
       setRetryLoading(false);
     }
@@ -144,20 +126,11 @@ export const OrderTracking = () => {
     );
   }
 
-  // Stepper configurations
   const steps = [
     { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
     { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
-    {
-      key: "Preparing",
-      label: "Preparing",
-      desc: "Chefs are cooking your meal",
-    },
-    {
-      key: "Out for Delivery",
-      label: "On The Way",
-      desc: "Rider is out for delivery",
-    },
+    { key: "Preparing", label: "Preparing", desc: "Chefs are cooking your meal" },
+    { key: "Out for Delivery", label: "On The Way", desc: "Rider is out for delivery" },
     { key: "Delivered", label: "Delivered", desc: "Handed over successfully" },
   ];
 
@@ -165,14 +138,9 @@ export const OrderTracking = () => {
     return steps.findIndex((s) => s.key === status);
   };
 
-  // An online order sits at "Awaiting Payment" until the gateway confirms — it is
-  // not a real order yet, so it has no place on the stepper. Showing it at step 1
-  // read as "Order Placed", which is exactly what made an unpaid order look
-  // confirmed. -1 leaves every step inactive.
   const isAwaitingPayment = order.status === "Awaiting Payment";
   const currentStepIdx = isAwaitingPayment ? -1 : getStepIndex(order.status);
 
-  // Calculate rider position (t along Bezier path)
   let riderT = 0.05;
   if (order.status === "Accepted") riderT = 0.08;
   else if (order.status === "Preparing") riderT = 0.15;
@@ -193,7 +161,9 @@ export const OrderTracking = () => {
     if (!chatMessage.trim()) return;
 
     try {
-      const updatedOrder = await addChatMessage(order.id, {
+      // 🎯 FIX: safely extract order ID
+      const safeOrderId = order?._id || order?.id || id;
+      const updatedOrder = await addChatMessage(safeOrderId, {
         sender: "customer",
         senderName: user?.name || "Customer",
         text: chatMessage.trim(),
@@ -205,21 +175,11 @@ export const OrderTracking = () => {
     }
   };
 
-  // চেক করা হচ্ছে পেমেন্ট ফেইল বা ক্যানসেল হয়েছে কিনা
-  // NOTE: the server stores paymentMethod as 'cod' / 'sslcommerz'. The old check
-  // compared against the display label "Cash on Delivery", so it was true even
-  // for COD orders.
   const isOnlinePayment = String(order.paymentMethod || "cod").toLowerCase() !== "cod";
 
-  // The server now records Failed/Cancelled on the order itself, so the banner
-  // still shows when the customer comes back later without a ?payment= param.
   const paymentFailed =
     order.paymentStatus === "Failed" || order.paymentStatus === "Cancelled";
 
-  // Either the gateway hand-off never started (Checkout sends ?payment=unstarted)
-  // or the customer bounced off the gateway without paying.
-  // An order still held for payment always needs the banner — with or without a
-  // ?payment= param, and however the customer got back to this page.
   const paymentIncomplete =
     isOnlinePayment &&
     order.paymentStatus === "Pending" &&
@@ -228,10 +188,11 @@ export const OrderTracking = () => {
 
   const isPaymentFailedOrCancelled = paymentFailed || paymentIncomplete;
 
-  // A successful payment now lands the customer straight here, so confirm it on
-  // arrival. The persistent value lives in the Payment Status row further down.
   const showPaymentSuccess =
     paymentParam === "success" && order.paymentStatus === "Paid";
+
+  // 🎯 FIX: Safely define displayId to prevent toUpperCase() crash on undefined
+  const displayId = (order?._id || order?.id || id || "").toUpperCase();
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -249,7 +210,7 @@ export const OrderTracking = () => {
               Live Tracking Panel
             </span>
             <h1 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-800 dark:text-white mt-0.5">
-              Track Order #{order.id.toUpperCase()}
+              Track Order #{displayId}
             </h1>
           </div>
         </div>
@@ -273,7 +234,7 @@ export const OrderTracking = () => {
         </div>
       </div>
 
-      {/* Payment Confirmed Banner — shown on arrival from the gateway */}
+      {/* Payment Confirmed Banner */}
       {showPaymentSuccess && (
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-5 mb-8 flex items-start sm:items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -673,7 +634,7 @@ export const OrderTracking = () => {
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-850 max-h-60 overflow-y-auto pr-1">
                   {(order.items || order.cart || []).map((item) => (
                     <div
-                      key={item.id}
+                      key={item.id || item._id}
                       className="flex items-center justify-between py-3 gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -688,12 +649,12 @@ export const OrderTracking = () => {
                             {item.selectedSize && `(${item.selectedSize})`}
                           </span>
                           <span className="block text-[10px] text-neutral-400">
-                            Qty: {item.quantity} × ৳{item.price.toFixed(2)}
+                            Qty: {item.quantity} × ৳{(item.price || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
                       <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                        ৳{(item.price * item.quantity).toFixed(2)}
+                        ৳{((item.price || 0) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   ))}
