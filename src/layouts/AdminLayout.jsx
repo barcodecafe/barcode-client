@@ -66,12 +66,20 @@ export const AdminLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // ⚡ নতুন লাইটওয়েট API দিয়ে সরাসরি পেন্ডিং অর্ডারের কাউন্ট আনা
+  // ⚡ যেকোনো রেসপন্স ফরম্যাট থেকে নিখুঁতভাবে কাউন্ট ডাটা এক্সট্র্যাক্ট করার সেফ ফাংশন
   const fetchPendingOrders = async () => {
     try {
       const res = await getPendingOrderCount();
-      const count = res?.count ?? res?.data?.count ?? 0;
-      setPendingCount(count);
+      const rawCount =
+        typeof res === "number"
+          ? res
+          : res?.pendingCount ??
+            res?.count ??
+            res?.data?.pendingCount ??
+            res?.data?.count ??
+            (typeof res?.data === "number" ? res.data : 0);
+
+      setPendingCount(Number(rawCount) || 0);
     } catch (err) {
       console.error("Failed to fetch pending count:", err);
     }
@@ -80,23 +88,29 @@ export const AdminLayout = () => {
   useEffect(() => {
     fetchPendingOrders();
 
-    // 🔔 ব্রাউজার ও উইন্ডোজ সিস্টেম নোটিফিকেশন পারমিশন চাওয়া
+    // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
     if ("Notification" in window) {
       if (Notification.permission === "default") {
         Notification.requestPermission();
       }
     }
 
-    // ⚡ 0ms INSTANT SOCKET EVENT HANDLER (কোনো সিঙ্ক টাইমার বা ডিলে নেই)
+    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক
+    const handlePendingCountUpdated = (data) => {
+      const rawCount =
+        typeof data === "number"
+          ? data
+          : data?.pendingCount ?? data?.count ?? data?.data ?? 0;
+      setPendingCount(Number(rawCount) || 0);
+    };
+
+    // ⚡ 2. নতুন অর্ডার ইভেন্ট
     const handleNewOrder = (newOrder) => {
       const orderId = newOrder?.id || newOrder?._id || "NEW";
       const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
       const customerName = newOrder?.user?.name || newOrder?.customerName || "Guest";
 
-      // ১. রিয়েল-টাইম পেন্ডিং কাউন্ট সাথে সাথে +১
-      setPendingCount((prev) => prev + 1);
-
-      // ২. ইনস্ট্যান্ট অডিও প্লে
+      // অডিও প্লে
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -106,14 +120,14 @@ export const AdminLayout = () => {
         } catch (e) {}
       }
 
-      // ৩. ইন-অ্যাপ টোস্টার অ্যালার্ট
+      // ইন-অ্যাপ টোস্টার
       setToastNotification({
         id: orderId,
         total: totalAmount,
         customer: customerName,
       });
 
-      // 💻 WINDOWS OS SYSTEM NOTIFICATION
+      // সিস্টেম নোটিফিকেশন
       if ("Notification" in window && Notification.permission === "granted") {
         try {
           const systemNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
@@ -133,6 +147,9 @@ export const AdminLayout = () => {
           console.error("System notification error:", e);
         }
       }
+
+      // সরাসরি ব্যাকএন্ড থেকে তাজা কাউন্ট রিফ্রেশ
+      fetchPendingOrders();
     };
 
     const handleStatusUpdate = () => {
@@ -140,6 +157,8 @@ export const AdminLayout = () => {
     };
 
     // Socket Events Listening
+    socket.emit("get_pending_count"); // কানেক্ট হওয়ার সাথে সাথে ইন্সট্যান্ট রিকোয়েস্ট
+    socket.on("pending_count_updated", handlePendingCountUpdated);
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_created", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
@@ -149,6 +168,7 @@ export const AdminLayout = () => {
     window.addEventListener("order_updated", handleCustomOrderUpdate);
 
     return () => {
+      socket.off("pending_count_updated", handlePendingCountUpdated);
       socket.off("admin_new_order", handleNewOrder);
       socket.off("order_created", handleNewOrder);
       socket.off("order_updated", handleStatusUpdate);
@@ -216,7 +236,6 @@ export const AdminLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* ✅ animate-pulse রিমুভ করা হয়েছে যাতে ব্লিঙ্ক না করে */}
             {item.name === "Orders" && pendingCount > 0 && (
               <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                 {pendingCount}
@@ -364,7 +383,6 @@ export const AdminLayout = () => {
                 )}
               </button>
 
-              {/* ✅ animate-pulse রিমুভ করা হয়েছে যাতে হেডার ব্যাজ ব্লিঙ্ক না করে */}
               <Link
                 to="/admin/orders"
                 className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
