@@ -16,7 +16,7 @@ import { getDiscountedPrice } from '../services/foodsService';
 import { getRegionDeliveryCharge } from '../services/deliveryService';
 import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 import { getAuthErrorMessage } from '../services/authService';
-import { socket } from '../services/socket'; // 👈 ⚡️ Socket Import করা হলো
+import { socket } from '../services/socket';
 
 // ---------------------------------------------------------------------------
 // Validation Constants
@@ -29,9 +29,6 @@ const PASSWORD_RULES = [
   { label: 'One number', test: (p) => /[0-9]/.test(p) },
 ];
 
-// ---------------------------------------------------------------------------
-// Checkout.jsx — dedicated /checkout page
-// ---------------------------------------------------------------------------
 export const Checkout = () => {
   const { cart, updateCartQuantity, clearCart } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
@@ -169,7 +166,6 @@ export const Checkout = () => {
         setIsLoading(false);
       }
     } else {
-      // SignUp Validation
       if (!signupName.trim()) {
         const msg = 'Please enter your full name.';
         setAuthError(msg);
@@ -253,6 +249,7 @@ export const Checkout = () => {
     }
   };
 
+  // 🎯 FIXED PLACE ORDER HANDLER
   const handlePlaceOrder = async () => {
     setOrderError('');
     if (!regionId) {
@@ -304,11 +301,19 @@ export const Checkout = () => {
       };
 
       // ১. ব্যাকএন্ডে অর্ডার তৈরি করা
-      const newOrder = await createOrder(orderData);
+      const res = await createOrder(orderData);
 
-      // ⚡️ ২. REAL-TIME SOCKET EMIT (নতুন অর্ডার এডমিন ও রাইডারকে তৎক্ষণাৎ জানাতে)
+      // 🎯 সেফলি অর্ডারের আসল _id বা id বের করা
+      const orderObj = res?.data?.data || res?.data || res;
+      const orderId = orderObj?._id || orderObj?.id;
+
+      if (!orderId) {
+        throw new Error('Order placed, but failed to retrieve valid Order ID.');
+      }
+
+      // ⚡️ ২. REAL-TIME SOCKET EMIT
       try {
-        socket.emit('create_order', newOrder);
+        socket.emit('create_order', orderObj);
       } catch (sErr) {
         console.error('Socket notification failed:', sErr);
       }
@@ -319,7 +324,7 @@ export const Checkout = () => {
 
       if (paymentMethod === 'sslcommerz') {
         try {
-          const { gatewayUrl } = await initPayment(newOrder.id);
+          const { gatewayUrl } = await initPayment(orderId);
           if (gatewayUrl) {
             window.location.href = gatewayUrl;
             return;
@@ -333,7 +338,7 @@ export const Checkout = () => {
             text: payErr.message || 'Could not redirect to payment gateway.',
             confirmButtonColor: '#ef4444',
           });
-          navigate(`/order-tracking/${newOrder.id}?payment=unstarted`);
+          navigate(`/order-tracking/${orderId}?payment=unstarted`);
           return;
         }
       }
@@ -348,7 +353,9 @@ export const Checkout = () => {
       });
 
       clearCart();
-      navigate(`/order-tracking/${newOrder.id}`);
+
+      // ✅ সঠিক আইডি দিয়ে রিডাইরেক্ট
+      navigate(`/order-tracking/${orderId}`);
     } catch (err) {
       const errMsg = err.message || 'Failed to place order. Please try again.';
       setOrderError(errMsg);
@@ -535,7 +542,6 @@ export const Checkout = () => {
                 <form onSubmit={handleAuth} className="space-y-3">
                   {authTab === 'signup' ? (
                     <>
-                      {/* Full Name */}
                       <div>
                         <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Full Name</label>
                         <div className="relative">
@@ -551,7 +557,6 @@ export const Checkout = () => {
                         </div>
                       </div>
 
-                      {/* Mobile Number */}
                       <div>
                         <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Mobile Number</label>
                         <div className="relative">
@@ -574,7 +579,6 @@ export const Checkout = () => {
                         )}
                       </div>
 
-                      {/* Password */}
                       <div>
                         <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Password</label>
                         <div className="relative">
@@ -597,7 +601,6 @@ export const Checkout = () => {
                           </button>
                         </div>
 
-                        {/* Password Strength Bar & Checklist */}
                         {signupPassword.length > 0 && (
                           <div className="mt-2">
                             <div className="flex items-center gap-2 mb-1.5">
@@ -636,7 +639,6 @@ export const Checkout = () => {
                         )}
                       </div>
 
-                      {/* Confirm Password */}
                       <div>
                         <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Confirm Password</label>
                         <div className="relative">
@@ -660,7 +662,6 @@ export const Checkout = () => {
                     </>
                   ) : (
                     <>
-                      {/* Login Phone */}
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <input
@@ -673,7 +674,6 @@ export const Checkout = () => {
                         />
                       </div>
 
-                      {/* Login Password */}
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <input
@@ -714,7 +714,7 @@ export const Checkout = () => {
             )}
           </section>
 
-          {/* Step 2 — Delivery details (only once logged in) */}
+          {/* Step 2 — Delivery details */}
           {isAuthenticated && (
             <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-1"><StepBadge n={2} /> Delivery Details</h2>
@@ -747,7 +747,7 @@ export const Checkout = () => {
             </section>
           )}
 
-          {/* Step 3 — Payment (only once logged in) */}
+          {/* Step 3 — Payment */}
           {isAuthenticated && (
             <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
               <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-4"><StepBadge n={3} /> Payment Method</h2>

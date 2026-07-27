@@ -40,12 +40,8 @@ const navItems = [
   { name: "Brands", path: "/admin/brands", icon: Store },
   { name: "Regions", path: "/admin/regions", icon: Map },
   { name: "Branches", path: "/admin/branches", icon: Building2 },
+  { name: "Riders Fleet", path: "/admin/fleet-overview", icon: Bike },
   { name: "Orders", path: "/admin/orders", icon: ShoppingBag },
-  {
-    name: "Riders Fleet",
-    path: "/admin/fleet-overview",
-    icon: Bike,
-  },
   { name: "Customers", path: "/admin/customers", icon: Users },
   { name: "Coupons", path: "/admin/coupons", icon: Tag },
   { name: "Hero Carousel", path: "/admin/hero", icon: Image },

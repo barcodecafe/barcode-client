@@ -54,7 +54,10 @@ export async function createOrder(orderData) {
     deliveryPhone: orderData.deliveryPhone || '',
     paymentMethod: orderData.paymentMethod || 'cod',
   };
-  return apiClient.post('/orders', payload);
+  
+  const response = await apiClient.post('/orders', payload);
+  // 🎯 সেফ রিটার্ন: ব্যাকএন্ড রেসপন্স আনরেপ করে অর্ডারের ডাটা অবজেক্ট রিটার্ন করবে
+  return response?.data?.data || response?.data || response;
 }
 
 /** PATCH /api/orders/:id/status (admin/rider) */
