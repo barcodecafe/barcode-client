@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import toast, { Toaster } from "react-hot-toast"; // 👈 Toast ইমপোর্ট করা হয়েছে
+import toast, { Toaster } from "react-hot-toast";
 import {
   MessageSquare,
   Send,
@@ -170,8 +170,25 @@ export const AdminOrders = () => {
 
   // Socket Real-time Event Listeners
   useEffect(() => {
-    // ⚡ ডুপ্লিকেট পুশ রোধ করে 'order_created' ইভেন্ট হ্যান্ডলার
+    // 🔊 ১. কাস্টমার নতুন অর্ডার প্লেস করলে সাউন্ড এবং টোস্টার নোটিফিকেশন আসবে
     socket.on("order_created", (newOrder) => {
+      // 🔔 নোটিফিকেশন সাউন্ড
+      const audio = new Audio("/notification.mp3");
+      audio.play().catch((err) => console.log("Audio autoplay blocked by browser:", err));
+
+      // 🍞 নতুন অর্ডারের টোস্টার
+      const shortId = (newOrder?.id || newOrder?._id || "").slice(-6).toUpperCase();
+      toast(`New Order Received! #${shortId}`, {
+        icon: "🔔",
+        duration: 4000,
+        position: "top-right",
+        style: {
+          background: "#3B82F6",
+          color: "#FFFFFF",
+          fontWeight: "bold",
+        },
+      });
+
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
         if (!newId) return prev;
@@ -316,7 +333,7 @@ export const AdminOrders = () => {
     );
   }
 
-  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের আপডেটেড ফাংশন (Soundless Toast Notification)
+  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের ফাংশন (Soundless Toast Notification)
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
