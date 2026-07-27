@@ -25,9 +25,6 @@ import { getAllRiders } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
 
-// ⚡ আলাদা করা কম্পোনেন্ট ইম্পোর্ট
-// import RidersFleetOverview from "./RidersFleetOverview";
-
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
@@ -44,23 +41,26 @@ const deduplicateOrders = (orderList) => {
   });
 };
 
-// 🎯 ১. পেমেন্ট মেথড ও স্ট্যাটাস অনুযায়ী ডায়নামিক ব্যাজ লজিক
+// 🎯 ১. পেমেন্ট মেথড ও স্ট্যাটাস অনুযায়ী ডায়নামিক ব্যাজ লজিক (আপডেটেড)
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
+  const st = String(ord?.status || ord?.deliveryStatus || "").toUpperCase();
   const isPaid = ord?.isPaid || ps === "paid";
+  const isRejected = st === "REJECTED";
 
-  if (pm !== "cod") {
-    if (isPaid) {
+  // 🔴 ১. COD অর্ডারের ক্ষেত্রে লজিক
+  if (pm === "cod") {
+    if (isRejected) {
       return {
-        label: "PAID",
-        tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+        label: "CANCELLED",
+        tone: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20 font-bold",
       };
     }
-    if (ps === "failed" || ps === "cancelled") {
+    if (isPaid || st === "DELIVERED") {
       return {
-        label: "PAYMENT FAILED",
-        tone: "bg-red-500/10 text-red-500 border-red-500/20 font-bold",
+        label: "PAID (COD)",
+        tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
       };
     }
     return {
@@ -69,10 +69,31 @@ const getPaymentBadge = (ord) => {
     };
   }
 
-  if (isPaid || String(ord?.status).toUpperCase() === "DELIVERED") {
+  // 💳 ২. অনলাইন পেমেন্টের (bKash / Visa / SSLCommerz) ক্ষেত্রে লজিক
+  if (isRejected) {
+    if (ps === "refunded") {
+      return {
+        label: "REFUNDED",
+        tone: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 font-bold",
+      };
+    }
     return {
-      label: "PAID (COD)",
+      label: "REFUND REQUIRED",
+      tone: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-extrabold animate-pulse",
+    };
+  }
+
+  if (isPaid) {
+    return {
+      label: "PAID",
       tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+    };
+  }
+
+  if (ps === "failed" || ps === "cancelled") {
+    return {
+      label: "PAYMENT FAILED",
+      tone: "bg-red-500/10 text-red-500 border-red-500/20 font-bold",
     };
   }
 
@@ -82,8 +103,17 @@ const getPaymentBadge = (ord) => {
   };
 };
 
-const getPaymentStatusColor = (status) => {
+const getPaymentStatusColor = (status, method, orderStatus) => {
   const st = String(status || "").toLowerCase();
+  const ordSt = String(orderStatus || "").toUpperCase();
+
+  if (ordSt === "REJECTED") {
+    if (String(method || "cod").toLowerCase() === "cod") {
+      return "bg-neutral-500/10 text-neutral-400";
+    }
+    return "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+  }
+
   if (st === "paid") return "bg-emerald-500/10 text-emerald-500";
   if (st === "failed" || st === "cancelled") return "bg-red-500/10 text-red-500";
   return "bg-amber-500/10 text-amber-500";
@@ -124,7 +154,7 @@ export const AdminOrders = () => {
   const [, setBranches] = useState([]);
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [confirmingRiderId, setConfirmingRiderId] = useState(null);
+  const [, setConfirmingRiderId] = useState(null);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
@@ -260,29 +290,6 @@ export const AdminOrders = () => {
     }
   };
 
-  const handleConfirmCashSettlement = async (riderId, riderName, dateKey) => {
-    const confirmSettle = window.confirm(
-      `Confirm you have received ${riderName}'s cash for ${formatDateKey(
-        dateKey
-      )}?\n\nThis marks their collection settled and cannot be undone.`
-    );
-    if (!confirmSettle) return;
-
-    try {
-      setConfirmingRiderId(riderId);
-      await confirmRiderCashSettlement(riderId, dateKey);
-      toast.success(`Cash settlement confirmed successfully for ${riderName}!`);
-      fetchOrdersAndFleet();
-    } catch (err) {
-      toast.error(
-        "Failed to confirm cash settlement: " +
-          (err.response?.data?.message || err.message)
-      );
-    } finally {
-      setConfirmingRiderId(null);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -295,14 +302,14 @@ export const AdminOrders = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      
+
       socket.emit("order_status_updated", { orderId, id: orderId, status: newStatus });
       window.dispatchEvent(
         new CustomEvent("order_updated", {
           detail: { orderId, id: orderId, status: newStatus },
         })
       );
-      
+
       fetchOrdersAndFleet();
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
@@ -415,15 +422,6 @@ export const AdminOrders = () => {
           </p>
         </div>
       </div>
-{/* 🚴 Riders Fleet Overview & Cash Settlement (আলাদা কম্পোনেন্ট হিসেবে কল করা হয়েছে) */}
-      
-      {/* <RidersFleetOverview
-        riders={riders}
-        orders={orders}
-        confirmingRiderId={confirmingRiderId}
-        onConfirmCashSettlement={handleConfirmCashSettlement}
-        onRefresh={fetchOrdersAndFleet}
-      /> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Table List */}
@@ -449,14 +447,14 @@ export const AdminOrders = () => {
                 {orders.map((ord) => {
                   const ordId = ord.id || ord._id;
                   const currentStatus = String(ord.status || "").toUpperCase();
-                  
+
                   const isPendingUnhandled =
                     currentStatus === "PLACED" ||
                     currentStatus === "PENDING" ||
                     currentStatus === "AWAITING PAYMENT" ||
                     currentStatus === "AWAITING_PAYMENT" ||
                     !ord.status;
-                  
+
                   const badge = getPaymentBadge(ord);
 
                   return (
@@ -769,17 +767,27 @@ export const AdminOrders = () => {
                   <span>Payment Status:</span>
                   <span
                     className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
-                      selectedOrderDetails.paymentStatus
+                      selectedOrderDetails.paymentStatus,
+                      selectedOrderDetails.paymentMethod,
+                      selectedOrderDetails.status
                     )}`}
                   >
-                    {selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"}
+                    {(() => {
+                      const pm = String(selectedOrderDetails.paymentMethod || "cod").toLowerCase();
+                      const st = String(selectedOrderDetails.status || "").toUpperCase();
+                      if (st === "REJECTED") {
+                        return pm === "cod" ? "CANCELLED" : "REFUND REQUIRED";
+                      }
+                      return selectedOrderDetails.paymentStatus || "AWAITING PAYMENT";
+                    })()}
                   </span>
                 </div>
 
                 {String(
                   selectedOrderDetails.paymentMethod || "cod"
                 ).toLowerCase() !== "cod" &&
-                  selectedOrderDetails.paymentStatus !== "Paid" && (
+                  selectedOrderDetails.paymentStatus !== "Paid" &&
+                  selectedOrderDetails.status !== "Rejected" && (
                     <div className="pt-1">
                       <button
                         onClick={() =>
