@@ -6,7 +6,7 @@ import {
   Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
   Eye, EyeOff, Check, X, AlertCircle
 } from 'lucide-react';
-import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
+import Swal from 'sweetalert2'; 
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { validateCoupon, couponDiscountAmount, couponDiscountLabel } from '../services/couponsService';
@@ -54,7 +54,7 @@ export const Checkout = () => {
       .catch(() => setRegions([]));
   }, []);
 
-  // Auth (inline, only when logged out)
+  // Auth 
   const [authTab, setAuthTab] = useState('login');
   const [authError, setAuthError] = useState('');
   const [loginPhone, setLoginPhone] = useState('');
@@ -112,7 +112,7 @@ export const Checkout = () => {
     } else {
       setArea('');
     }
-  }, [regionId, regions.length]);
+  }, [regionId, region]); // 👈 Fixed dependency array here too
 
   // ── Prices ─────────────────────────────────────────────────────────────
   const unitPrice = (item) =>
@@ -300,11 +300,8 @@ export const Checkout = () => {
         paymentMethod,
       };
 
-      // ১. ব্যাকএন্ডে অর্ডার তৈরি করা
-      const res = await createOrder(orderData);
-
-      // 🎯 সেফলি অর্ডারের আসল _id বা id বের করা
-      const orderObj = res?.data?.data || res?.data || res;
+      // ১. ব্যাকএন্ডে অর্ডার তৈরি করা (Simplified object extraction)
+      const orderObj = await createOrder(orderData);
       const orderId = orderObj?._id || orderObj?.id;
 
       if (!orderId) {
@@ -322,10 +319,12 @@ export const Checkout = () => {
         try { await refreshUser(); } catch { /* non-fatal */ }
       }
 
+      // 🎯 SSLCOMMERZ FIX
       if (paymentMethod === 'sslcommerz') {
         try {
           const { gatewayUrl } = await initPayment(orderId);
           if (gatewayUrl) {
+            clearCart(); // 👈 কার্ট ক্লিয়ার করে তারপর পেমেন্ট গেটওয়েতে রিডাইরেক্ট
             window.location.href = gatewayUrl;
             return;
           }
@@ -338,12 +337,12 @@ export const Checkout = () => {
             text: payErr.message || 'Could not redirect to payment gateway.',
             confirmButtonColor: '#ef4444',
           });
-          navigate(`/order-tracking/${orderId}?payment=unstarted`);
+          navigate(`/order-tracking/${orderId}?payment=unstarted`, { replace: true });
           return;
         }
       }
 
-      // 🎯 Success Alert Popup for COD Order
+      // 🎯 COD SUCCESS & REDIRECT FIX
       await Swal.fire({
         icon: 'success',
         title: 'Order Placed Successfully!',
@@ -352,10 +351,14 @@ export const Checkout = () => {
         showConfirmButton: false,
       });
 
-      clearCart();
+      // 👈 আগে ট্র্যাকিং পেজে রিডাইরেক্ট করুন (replace: true দিলে ব্যাক বাটন চেকআউটে আনবে না)
+      navigate(`/order-tracking/${orderId}`, { replace: true });
+      
+      // 👈 তারপর কার্ট ক্লিয়ার করুন, যাতে "Empty Basket" স্ক্রিন ফ্ল্যাশ না করে
+      setTimeout(() => {
+        clearCart();
+      }, 150);
 
-      // ✅ সঠিক আইডি দিয়ে রিডাইরেক্ট
-      navigate(`/order-tracking/${orderId}`);
     } catch (err) {
       const errMsg = err.message || 'Failed to place order. Please try again.';
       setOrderError(errMsg);
