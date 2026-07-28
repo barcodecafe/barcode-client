@@ -417,7 +417,6 @@ export const AdminOrders = () => {
                   <th className="px-4 py-3">Customer</th>
                   <th className="px-4 py-3">Address</th>
                   <th className="px-4 py-3">Total Amount</th>
-                  {/* ✨ নতুন অডর্ার একশন কলাম */}
                   <th className="px-4 py-3">Order Action</th>
                   <th className="px-4 py-3">Delivery Status</th>
                   <th className="px-4 py-3">Assigned Rider</th>
@@ -436,7 +435,6 @@ export const AdminOrders = () => {
                     currentStatus === "AWAITING_PAYMENT" ||
                     !ord.status;
 
-                  const isAccepted = currentStatus === "ACCEPTED";
                   const isRejected = currentStatus === "REJECTED";
 
                   const badge = getPaymentBadge(ord);
@@ -480,7 +478,7 @@ export const AdminOrders = () => {
                         ৳{ord.total?.toFixed(2)}
                       </td>
 
-                      {/* 🎯 ১. ORDER ACTION কলাম (Accept / Reject Buttons & Status) */}
+                      {/* 🎯 ১. ORDER ACTION কলাম */}
                       <td className="px-4 py-3.5">
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
@@ -514,7 +512,7 @@ export const AdminOrders = () => {
                         )}
                       </td>
 
-                      {/* 🎯 ২. DELIVERY STATUS কলাম (Preparing, Out for Delivery, Delivered) */}
+                      {/* 🎯 ২. DELIVERY STATUS কলাম (রাইডার একসেপ্ট করলে স্বয়ংক্রিয়ভাবে Preparing দেখাবে) */}
                       <td className="px-4 py-3.5">
                         {isPendingUnhandled ? (
                           <span className="px-2.5 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
@@ -527,9 +525,11 @@ export const AdminOrders = () => {
                         ) : (
                           <div>
                             <select
+                              // ⚡ UPDATE: রাইডার একসেপ্ট করলে এবং স্ট্যাটাস Accepted থাকলে ড্রপডাউনে স্বয়ংক্রিয়ভাবে 'Preparing' দেখাবে
                               value={
-                                isAccepted
-                                  ? "Accepted"
+                                ord.riderAcceptStatus === "accepted" &&
+                                (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                  ? "Preparing"
                                   : ord.status
                               }
                               disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
@@ -539,7 +539,12 @@ export const AdminOrders = () => {
                               className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                 !ord.riderId || ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
-                                  : `${getStatusColor(ord.status)} cursor-pointer`
+                                  : `${getStatusColor(
+                                      ord.riderAcceptStatus === "accepted" &&
+                                      (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                        ? "Preparing"
+                                        : ord.status
+                                    )} cursor-pointer`
                               }`}
                             >
                               <option value="Accepted">Accepted</option>
