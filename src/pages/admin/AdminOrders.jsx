@@ -522,29 +522,37 @@ export const AdminOrders = () => {
                             Rejected
                           </span>
                         ) : (
-                          <select
-                            value={ord.status}
-                            disabled={
-                              ord.riderId && ord.riderAcceptStatus !== "accepted"
-                            }
-                            onChange={(e) =>
-                              handleStatusChange(ordId, e.target.value)
-                            }
-                            className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              ord.riderId && ord.riderAcceptStatus !== "accepted"
-                                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
-                                : getStatusColor(ord.status)
-                            }`}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Accepted">Accepted</option>
-                            <option value="Preparing">Preparing</option>
-                            <option value="Out for Delivery">
-                              Out for Delivery
-                            </option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
+                          <div>
+                            <select
+                              value={ord.status}
+                              disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
+                              onChange={(e) =>
+                                handleStatusChange(ordId, e.target.value)
+                              }
+                              className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                                !ord.riderId || ord.riderAcceptStatus !== "accepted"
+                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-70"
+                                  : `${getStatusColor(ord.status)} cursor-pointer`
+                              }`}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Accepted">Accepted</option>
+                              <option value="Preparing">Preparing</option>
+                              <option value="Out for Delivery">
+                                Out for Delivery
+                              </option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                            
+                            {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
+                              <span className="block text-[9px] text-orange-500 font-bold mt-1.5 tracking-tight">
+                                {!ord.riderId 
+                                  ? "Assign Rider First" 
+                                  : "Awaiting Rider Accept"}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3.5">
