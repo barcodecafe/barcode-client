@@ -500,7 +500,7 @@ export const AdminOrders = () => {
                         )}
                       </td>
 
-                      {/* 🎯 ২. DELIVERY STATUS কলাম */}
+                      {/* 🎯 ২. DELIVERY STATUS কলাম (এডমিন চাইলে এখান থেকে Ready to Pick এবং সরাসরি Delivered সিলেক্ট করতে পারবেন) */}
                       <td className="px-4 py-3.5">
                         {isPendingUnhandled ? (
                           <span className="px-2.5 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
@@ -774,7 +774,7 @@ export const AdminOrders = () => {
                     {selectedOrderDetails.paymentMethod || "COD"}
                   </span>
                 </div>
-                <div className="flex justify-between text-neutral-500">
+                <div className="flex justify-speech text-neutral-500">
                   <span>Payment Status:</span>
                   <span
                     className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
