@@ -44,7 +44,9 @@ export const RiderOrders = () => {
   const [riderChatMessage, setRiderChatMessage] = useState("");
 
   const chatEndRef = useRef(null);
-  const chatOrder = orders.find((o) => o.id === activeChatOrderId);
+  
+  // 🎯 FIX: Safe ID check
+  const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
   const fetchRiderOrders = useCallback(() => {
@@ -54,6 +56,7 @@ export const RiderOrders = () => {
         const assigned = (data || []).filter(
           (o) =>
             o.riderId === user.id ||
+            o.riderId === user._id || // 🎯 FIX: Check both _id and id
             o.riderName?.toLowerCase() === user.name?.toLowerCase()
         );
         setOrders(assigned);
@@ -116,7 +119,7 @@ export const RiderOrders = () => {
         text: riderChatMessage.trim(),
       });
       setOrders((prev) =>
-        prev.map((o) => (o.id === activeChatOrderId ? updated : o))
+        prev.map((o) => ((o._id || o.id) === activeChatOrderId ? updated : o))
       );
       setRiderChatMessage("");
     } catch (err) {
@@ -167,126 +170,130 @@ export const RiderOrders = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {orders.map((ord) => (
-                  <div
-                    key={ord.id}
-                    className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2.5">
-                      <div>
-                        <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
-                          Order #{ord.id}
-                        </span>
-                        <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
-                          Placed: {new Date(ord.createdAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(
-                            ord.status
-                          )}`}
-                        >
-                          {ord.status}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                            ord.riderAcceptStatus === "accepted"
-                              ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                              : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
-                          }`}
-                        >
-                          {ord.riderAcceptStatus === "accepted"
-                            ? "Accepted"
-                            : "Pending Accept"}
-                        </span>
-                      </div>
-                    </div>
+                {orders.map((ord) => {
+                  const safeOrderId = ord._id || ord.id; // 🎯 FIX: Safe ID Extraction
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
-                      <div className="space-y-1.5">
-                        <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                          Customer
-                        </span>
-                        <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                          <span>{ord.deliveryPhone ? ord.deliveryPhone : ord.user?.name}</span>
+                  return (
+                    <div
+                      key={safeOrderId}
+                      className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2.5">
+                        <div>
+                          <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
+                            Order #{safeOrderId}
+                          </span>
+                          <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
+                            Placed: {new Date(ord.createdAt).toLocaleTimeString()}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                          <Phone className="w-3 h-3 text-rose-500" />
-                          <span>{ord.deliveryPhone || ord.user?.phone}</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                          Delivery Address
-                        </span>
-                        <div className="flex items-start gap-1 text-[10px] text-neutral-500">
-                          <MapPin className="w-3 h-3 text-rose-500 mt-0.5 shrink-0" />
-                          <span className="leading-tight">
-                            {ord.deliveryAddress || ord.user?.address} ({ord.deliveryArea || ord.user?.pickArea})
+                        <div className="flex gap-2 items-center">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${getStatusColor(
+                              ord.status
+                            )}`}
+                          >
+                            {ord.status}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                              ord.riderAcceptStatus === "accepted"
+                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                : "bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                            }`}
+                          >
+                            {ord.riderAcceptStatus === "accepted"
+                              ? "Accepted"
+                              : "Pending Accept"}
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <div className="font-bold text-xs">
-                        Total Invoice:{" "}
-                        <span className="text-rose-500">
-                          ৳{ord.total?.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {ord.riderAcceptStatus === "pending" ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleAccept(ord.id)}
-                              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
-                            >
-                              Accept Job
-                            </button>
-                            <button
-                              onClick={() => handleReject(ord.id)}
-                              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
-                            >
-                              Reject Job
-                            </button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
+                        <div className="space-y-1.5">
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+                            Customer
+                          </span>
+                          <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
+                            <span>{ord.deliveryPhone ? ord.deliveryPhone : ord.user?.name}</span>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={ord.status}
-                              onChange={(e) =>
-                                handleStatusChange(ord.id, e.target.value)
-                              }
-                              className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
-                            >
-                              <option value="Out for Delivery">On Way</option>
-                              <option value="Delivered">Delivered</option>
-                            </select>
+                          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                            <Phone className="w-3 h-3 text-rose-500" />
+                            <span>{ord.deliveryPhone || ord.user?.phone}</span>
                           </div>
-                        )}
+                        </div>
 
-                        <button
-                          onClick={() =>
-                            setActiveChatOrderId(
-                              ord.id === activeChatOrderId ? null : ord.id
-                            )
-                          }
-                          className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-rose-500 hover:border-rose-500/40 active:scale-95 transition-all cursor-pointer ${
-                            activeChatOrderId === ord.id
-                              ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
-                              : ""
-                          }`}
-                          title="Chat Console"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </button>
+                        <div className="space-y-1.5">
+                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+                            Delivery Address
+                          </span>
+                          <div className="flex items-start gap-1 text-[10px] text-neutral-500">
+                            <MapPin className="w-3 h-3 text-rose-500 mt-0.5 shrink-0" />
+                            <span className="leading-tight">
+                              {ord.deliveryAddress || ord.user?.address} ({ord.deliveryArea || ord.user?.pickArea})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="font-bold text-xs">
+                          Total Invoice:{" "}
+                          <span className="text-rose-500">
+                            ৳{ord.total?.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {ord.riderAcceptStatus === "pending" || !ord.riderAcceptStatus ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAccept(safeOrderId)}
+                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                              >
+                                Accept Job
+                              </button>
+                              <button
+                                onClick={() => handleReject(safeOrderId)}
+                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                              >
+                                Reject Job
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={ord.status}
+                                onChange={(e) =>
+                                  handleStatusChange(safeOrderId, e.target.value)
+                                }
+                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
+                              >
+                                <option value="Out for Delivery">On Way</option>
+                                <option value="Delivered">Delivered</option>
+                              </select>
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() =>
+                              setActiveChatOrderId(
+                                safeOrderId === activeChatOrderId ? null : safeOrderId
+                              )
+                            }
+                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-rose-500 hover:border-rose-500/40 active:scale-95 transition-all cursor-pointer ${
+                              activeChatOrderId === safeOrderId
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                                : ""
+                            }`}
+                            title="Chat Console"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -304,7 +311,7 @@ export const RiderOrders = () => {
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-bold text-sm text-neutral-800 dark:text-white">
-                    Chat for #{chatOrder.id}
+                    Chat for #{chatOrder._id || chatOrder.id}
                   </h3>
                   <span className="block text-[9px] text-neutral-400">
                     Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}

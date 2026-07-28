@@ -203,6 +203,11 @@ export const RiderLayout = () => {
           customer: customerName,
         });
 
+        // ⏱️ ৭ সেকেন্ড পর অটো-ক্লোজ লজিক
+        setTimeout(() => {
+          setToastNotification((prev) => (prev?.id === orderId ? null : prev));
+        }, 7000);
+
         // 🔔 ৩. ডেস্কটপ সিস্টেম নোটিফিকেশন
         if (
           "Notification" in window &&
@@ -309,8 +314,9 @@ export const RiderLayout = () => {
               <span>{item.name}</span>
             </div>
 
+            {/* 🎯 ফিক্স: সাইডবারের অ্যানিমেশন (animate-pulse) রিমুভ করা হয়েছে */}
             {item.name === "Assigned Orders" && pendingCount > 0 && (
-              <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-xs">
+              <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                 {pendingCount}
               </span>
             )}
@@ -332,7 +338,7 @@ export const RiderLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
-      {/* 🚨 In-App Toast Popup (অ্যাডমিন লেআউটের মতোই) */}
+      {/* 🚨 In-App Toast Popup */}
       <AnimatePresence>
         {toastNotification && (
           <motion.div
@@ -428,7 +434,6 @@ export const RiderLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* 🧪 সাউন্ড টেস্ট বোতাম */}
             <button
               onClick={playLoudNotificationChime}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
@@ -438,7 +443,6 @@ export const RiderLayout = () => {
               <span className="hidden md:inline">Test Sound</span>
             </button>
 
-            {/* 🔔 নোটিফিকেশন অন/অফ */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
@@ -455,11 +459,12 @@ export const RiderLayout = () => {
               )}
             </button>
 
+            {/* 🎯 ফিক্স: হেডারের ব্যাজের অ্যানিমেশন (animate-pulse scale-105) রিমুভ করা হয়েছে */}
             <Link
               to="/rider/orders"
               className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
                 pendingCount > 0
-                  ? "bg-rose-500 animate-pulse scale-105"
+                  ? "bg-rose-500"
                   : "bg-neutral-400 dark:bg-neutral-600"
               }`}
               title="Click to view assigned orders"
