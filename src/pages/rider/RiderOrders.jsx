@@ -86,6 +86,8 @@ export const RiderOrders = () => {
   const handleAccept = async (orderId) => {
     try {
       await acceptRiderOrder(orderId);
+      // ⚡ রাইডার একসেপ্ট করার পর স্ট্যাটাস অটো Preparing এ আপডেট করা
+      await updateOrderStatus(orderId, "Preparing");
       fetchRiderOrders();
     } catch (err) {
       alert("Failed to accept order: " + (err.response?.data?.message || err.message));
@@ -268,7 +270,8 @@ export const RiderOrders = () => {
                                 }
                                 className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
                               >
-                                <option value="Out for Delivery">On Way</option>
+                                <option value="Preparing">Preparing</option>
+                                <option value="Out for Delivery">Out for Delivery</option>
                                 <option value="Delivered">Delivered</option>
                               </select>
                             </div>

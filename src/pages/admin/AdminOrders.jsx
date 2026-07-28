@@ -11,6 +11,7 @@ import {
   Phone,
   Utensils,
   RefreshCw,
+  BellRing,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -359,15 +360,16 @@ export const AdminOrders = () => {
     }
   };
 
-  const handleSendAdminMessage = async (e) => {
-    e.preventDefault();
-    if (!adminChatMessage.trim() || !activeChatOrderId) return;
+  const handleSendAdminMessage = async (e, customText = null) => {
+    if (e) e.preventDefault();
+    const textToSend = customText || adminChatMessage;
+    if (!textToSend.trim() || !activeChatOrderId) return;
 
     try {
       const messagePayload = {
         sender: "admin",
         senderName: "Barcode Admin",
-        text: adminChatMessage.trim(),
+        text: textToSend.trim(),
       };
 
       const updated = await addChatMessage(activeChatOrderId, messagePayload);
@@ -380,7 +382,8 @@ export const AdminOrders = () => {
       setOrders((prev) =>
         prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o))
       );
-      setAdminChatMessage("");
+      if (!customText) setAdminChatMessage("");
+      toast.success("Message sent to rider/customer!");
     } catch (err) {
       toast.error("Failed to send message: " + err.message);
     }
@@ -512,7 +515,7 @@ export const AdminOrders = () => {
                         )}
                       </td>
 
-                      {/* 🎯 ২. DELIVERY STATUS কলাম (রাইডার একসেপ্ট করলে স্বয়ংক্রিয়ভাবে Preparing দেখাবে) */}
+                      {/* 🎯 ২. DELIVERY STATUS কলাম */}
                       <td className="px-4 py-3.5">
                         {isPendingUnhandled ? (
                           <span className="px-2.5 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
@@ -525,7 +528,6 @@ export const AdminOrders = () => {
                         ) : (
                           <div>
                             <select
-                              // ⚡ UPDATE: রাইডার একসেপ্ট করলে এবং স্ট্যাটাস Accepted থাকলে ড্রপডাউনে স্বয়ংক্রিয়ভাবে 'Preparing' দেখাবে
                               value={
                                 ord.riderAcceptStatus === "accepted" &&
                                 (ord.status === "Accepted" || ord.status === "ACCEPTED")
@@ -618,7 +620,7 @@ export const AdminOrders = () => {
           </div>
         </div>
 
-        {/* Chat Console Panel */}
+        {/* 🎯 Chat Console Panel with Quick "Food Ready" Notification Button */}
         {activeChatOrderId && currentChat && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -640,6 +642,25 @@ export const AdminOrders = () => {
               </button>
             </div>
 
+            {/* ⚡ Quick Action: Send Food Ready / Ready to Pick message to Rider */}
+            <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <BellRing className="w-3 h-3" /> Quick Kitchen Alert:
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  handleSendAdminMessage(
+                    null,
+                    "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant."
+                  )
+                }
+                className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
+              >
+                Send "Food Ready" Alert
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
               {(currentChat.chatHistory || []).map((msg, i) => (
                 <div key={i} className="text-xs">
@@ -651,7 +672,7 @@ export const AdminOrders = () => {
             </div>
 
             <form
-              onSubmit={handleSendAdminMessage}
+              onSubmit={(e) => handleSendAdminMessage(e, null)}
               className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
             >
               <input
