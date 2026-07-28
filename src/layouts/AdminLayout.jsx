@@ -105,14 +105,14 @@ export const AdminLayout = () => {
       setPendingCount(Number(rawCount) || 0);
     };
 
-    // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট (শুধু কাস্টমার অর্ডার করলেই ১ বার সাউন্ড ও টোস্টার আসবে)
+    // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট
     const handleNewOrder = (newOrder) => {
       const orderId = newOrder?.id || newOrder?._id || "NEW";
       const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
       const customerName =
         newOrder?.user?.name || newOrder?.customerName || "Guest";
 
-      // 🔊 অডিও প্লে (কেবল নতুন কাস্টমার অর্ডারে)
+      // 🔊 অডিও প্লে
       if (soundEnabledRef.current) {
         try {
           const audio = new Audio(
@@ -128,6 +128,11 @@ export const AdminLayout = () => {
         total: totalAmount,
         customer: customerName,
       });
+
+      // ৭ সেকেন্ড পর টোস্টার অটো-ক্লোজ
+      setTimeout(() => {
+        setToastNotification((prev) => (prev?.id === orderId ? null : prev));
+      }, 7000);
 
       // 💻 সিস্টেম নোটিফিকেশন
       if ("Notification" in window && Notification.permission === "granted") {
@@ -154,22 +159,41 @@ export const AdminLayout = () => {
       fetchPendingOrders();
     };
 
-    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট (Accept/Reject করলে সাইলেন্টলি কাউন্ট মাইনাস হবে এবং টোস্টার ক্লোজ হবে)
+    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট
     const handleStatusUpdate = (data) => {
       fetchPendingOrders();
-      // যদি আপডেট হওয়া অর্ডারের সাথে টোস্টারের অর্ডার আইডি মিলে যায়, তবে টোস্টার বন্ধ করে দিন
       if (data?.orderId || data?.id) {
         const updatedId = data?.orderId || data?.id;
         setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
       }
     };
 
+    // ⚡ 4. Rider Cash Submit Notification (NEW FIX)
+    const handleRiderCashSubmitted = (data) => {
+      if (soundEnabledRef.current) {
+        try {
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+          audio.play().catch(() => {});
+        } catch (e) {}
+      }
+
+      setToastNotification({
+        id: "CASH_REQ",
+        customer: `${data.riderName || "Rider"} has submitted cash for ${data.date}`,
+        total: "Check Fleet Overview"
+      });
+
+      setTimeout(() => setToastNotification(null), 7000);
+      window.dispatchEvent(new CustomEvent("order_updated"));
+    };
+
     // Socket Events Listening
-    socket.emit("get_pending_count"); // কানেক্ট হওয়ার সাথে সাথে ইন্সট্যান্ট রিকোয়েস্ট
+    socket.emit("get_pending_count");
     socket.on("pending_count_updated", handlePendingCountUpdated);
-    socket.on("admin_new_order", handleNewOrder); // ✅ ডুপ্লিকেট 'order_created' বাদ দেওয়া হয়েছে
+    socket.on("admin_new_order", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
+    socket.on("rider_cash_submitted", handleRiderCashSubmitted); // 👈 নতুন ইভেন্ট যুক্ত করা হয়েছে
 
     const handleCustomOrderUpdate = (e) => {
       fetchPendingOrders();
@@ -185,6 +209,7 @@ export const AdminLayout = () => {
       socket.off("admin_new_order", handleNewOrder);
       socket.off("order_updated", handleStatusUpdate);
       socket.off("order_status_updated", handleStatusUpdate);
+      socket.off("rider_cash_submitted", handleRiderCashSubmitted); // 👈 ক্লিনআপ
       window.removeEventListener("order_updated", handleCustomOrderUpdate);
     };
   }, [navigate, settings?.logoLight]);
@@ -288,7 +313,7 @@ export const AdminLayout = () => {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white dark:bg-neutral-900 border-2 border-primary-500 shadow-2xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer"
             onClick={() => {
-              navigate("/admin/orders");
+              navigate(toastNotification.id === "CASH_REQ" ? "/admin/fleet-overview" : "/admin/orders");
               setToastNotification(null);
             }}
           >
@@ -298,7 +323,8 @@ export const AdminLayout = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                  🚨 নতুন অর্ডার এসেছে!
+                  {/* 🎯 ডায়নামিক টাইটেল */}
+                  {toastNotification.id === "CASH_REQ" ? "💰 ক্যাশ সাবমিট রিকোয়েস্ট!" : "🚨 নতুন অর্ডার এসেছে!"}
                 </h4>
                 <button
                   onClick={(e) => {
@@ -311,11 +337,10 @@ export const AdminLayout = () => {
                 </button>
               </div>
               <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mt-0.5">
-                Order ID: #{toastNotification.id}
+                {toastNotification.id === "CASH_REQ" ? "Action Required" : `Order ID: #${toastNotification.id}`}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Customer: {toastNotification.customer} • Total: ৳
-                {toastNotification.total}
+                {toastNotification.id === "CASH_REQ" ? toastNotification.customer : `Customer: ${toastNotification.customer} • Total: ৳${toastNotification.total}`}
               </p>
             </div>
           </motion.div>

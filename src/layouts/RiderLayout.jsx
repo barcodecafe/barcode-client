@@ -49,10 +49,8 @@ export const RiderLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 🔊 ব্রাউজারের গ্লোবাল Audio Context রেফারেন্স
   const audioCtxRef = useRef(null);
 
-  // 🔓 ব্রাউজারের Autoplay Restriction আনলক করা (প্রথম স্পর্শে/ক্লিকে)
   useEffect(() => {
     const unlockAudioContext = () => {
       try {
@@ -63,7 +61,6 @@ export const RiderLayout = () => {
         if (audioCtxRef.current.state === "suspended") {
           audioCtxRef.current.resume();
         }
-        console.log("🔊 Web Audio Engine initialized & active!");
       } catch (err) {
         console.error("Audio Context Unlock Error:", err);
       }
@@ -80,7 +77,6 @@ export const RiderLayout = () => {
     };
   }, []);
 
-  // 🎵 ১০০% নির্ভরযোগ্য ২-টোন নোটিফিকেশন রিংটোন (কোনো ফাইল লাগবে না)
   const playLoudNotificationChime = () => {
     if (!soundEnabledRef.current) return;
 
@@ -96,7 +92,6 @@ export const RiderLayout = () => {
 
       const now = ctx.currentTime;
 
-      // প্রথম টিউন (High Ring: 880Hz)
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = "sine";
@@ -108,7 +103,6 @@ export const RiderLayout = () => {
       osc1.start(now);
       osc1.stop(now + 0.35);
 
-      // দ্বিতীয় টিউন (Super High Chime: 1320Hz)
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = "sine";
@@ -120,13 +114,11 @@ export const RiderLayout = () => {
       osc2.start(now + 0.15);
       osc2.stop(now + 0.7);
 
-      console.log("🔔 Sound played successfully!");
     } catch (e) {
       console.error("Failed to play synth sound:", e);
     }
   };
 
-  // 🎯 ২. ব্যাকএন্ড থেকে রাইডারের রানিং/পেন্ডিং অর্ডারের সংখ্যা লোড করা
   const fetchRiderPendingOrders = async () => {
     try {
       const ordersData = await getAllOrders();
@@ -134,18 +126,20 @@ export const RiderLayout = () => {
         ? ordersData
         : ordersData?.data || [];
 
-      const assigned = ordersList.filter((o) => {
+      const pendingAcceptance = ordersList.filter((o) => {
         const isMyOrder =
           o.riderId === user?.id ||
           o.riderId === user?._id ||
           o.rider?._id === user?.id ||
           o.riderName?.toLowerCase() === user?.name?.toLowerCase();
-        const isActive =
-          o.status !== "Delivered" && o.status !== "Rejected";
-        return isMyOrder && isActive;
+          
+        const isActive = o.status !== "Delivered" && o.status !== "Rejected";
+        const needsAction = o.riderAcceptStatus === "pending" || !o.riderAcceptStatus;
+        
+        return isMyOrder && isActive && needsAction;
       });
 
-      setPendingCount(assigned.length);
+      setPendingCount(pendingAcceptance.length);
     } catch (err) {
       console.error("Failed to fetch rider pending orders:", err);
     }
@@ -155,14 +149,11 @@ export const RiderLayout = () => {
     if (!user) return;
     fetchRiderPendingOrders();
 
-    // 🔔 ডেস্কটপ নোটিফিকেশন পারমিশন চাওয়া
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড, ইন-অ্যাপ টোস্ট এবং ব্রাউজার নোটিফিকেশন
     const handleRiderOrderUpdate = (data) => {
-      console.log("🚴 Rider Socket Event Received:", data);
       fetchRiderPendingOrders();
 
       const rId =
@@ -183,59 +174,57 @@ export const RiderLayout = () => {
         (rName && String(rName).toLowerCase() === currentUserName);
 
       if (isForMe) {
-        // 🎵 ১. সাউন্ড বাজানো
-        playLoudNotificationChime();
+        const acceptStatus = data?.riderAcceptStatus || data?.order?.riderAcceptStatus;
+        const orderStatus = data?.status || data?.order?.status;
+        
+        // 🎯 FIX: যদি অর্ডার অলরেডি প্রসেস হয়ে যায় (On Way বা Delivered), তাহলে নতুন অর্ডারের অ্যালার্ট বাজবে না!
+        const isAlreadyProcessed = orderStatus === "Delivered" || orderStatus === "Out for Delivery" || orderStatus === "Rejected";
 
-        const orderId =
-          data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
-        const totalAmount =
-          data?.total || data?.totalAmount || data?.order?.total || 0;
-        const customerName =
-          data?.user?.name ||
-          data?.customerName ||
-          data?.order?.user?.name ||
-          "Customer";
+        if ((acceptStatus === "pending" || !acceptStatus) && !isAlreadyProcessed) {
+          playLoudNotificationChime();
 
-        // 🚨 ২. ইন-অ্যাপ টোস্টার নোটিফিকেশন সেট করা
-        setToastNotification({
-          id: orderId,
-          total: totalAmount,
-          customer: customerName,
-        });
+          const orderId =
+            data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
+          const totalAmount =
+            data?.total || data?.totalAmount || data?.order?.total || 0;
+          const customerName =
+            data?.user?.name ||
+            data?.customerName ||
+            data?.order?.user?.name ||
+            "Customer";
 
-        // ⏱️ ৭ সেকেন্ড পর অটো-ক্লোজ লজিক
-        setTimeout(() => {
-          setToastNotification((prev) => (prev?.id === orderId ? null : prev));
-        }, 7000);
+          setToastNotification({
+            id: orderId,
+            total: totalAmount,
+            customer: customerName,
+          });
 
-        // 🔔 ৩. ডেস্কটপ সিস্টেম নোটিফিকেশন
-        if (
-          "Notification" in window &&
-          Notification.permission === "granted"
-        ) {
-          const desktopNotif = new Notification(
-            "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
-            {
-              body: orderId
-                ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
-                : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
-              icon: settings?.logoLight || resB,
-              requireInteraction: true,
-            }
-          );
+          setTimeout(() => {
+            setToastNotification((prev) => (prev?.id === orderId ? null : prev));
+          }, 7000);
 
-          desktopNotif.onclick = () => {
-            window.focus();
-            navigate("/rider/orders");
-            desktopNotif.close();
-          };
+          if ("Notification" in window && Notification.permission === "granted") {
+            const desktopNotif = new Notification(
+              "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
+              {
+                body: orderId
+                  ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
+                  : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
+                icon: settings?.logoLight || resB,
+                requireInteraction: true,
+              }
+            );
+
+            desktopNotif.onclick = () => {
+              window.focus();
+              navigate("/rider/orders");
+              desktopNotif.close();
+            };
+          }
         }
-      } else {
-        console.log("Order event was for another rider:", rId);
       }
     };
 
-    // Socket Listening
     socket.on("rider_order_assigned", handleRiderOrderUpdate);
     socket.on("order_assigned", handleRiderOrderUpdate);
     socket.on("order_updated", handleRiderOrderUpdate);
@@ -252,10 +241,9 @@ export const RiderLayout = () => {
     };
   }, [user, navigate, settings?.logoLight]);
 
-  // 🎯 ৩. ব্রাউজার ট্যাবের টাইটেল আপডেট
   useEffect(() => {
     if (pendingCount > 0) {
-      document.title = `(${pendingCount}) Active Deliveries - Rider Portal`;
+      document.title = `(${pendingCount}) Action Needed - Rider Portal`;
     } else {
       document.title = "Rider Portal - Barcode Restaurant";
     }
@@ -288,9 +276,6 @@ export const RiderLayout = () => {
             alt="Barcode Cafe"
             className="h-6 w-auto object-contain"
           />
-          <span className="text-xs font-black text-rose-500 tracking-wider uppercase border-l border-neutral-200 dark:border-neutral-800 pl-2">
-            Rider
-          </span>
         </div>
       </Link>
 
@@ -314,7 +299,6 @@ export const RiderLayout = () => {
               <span>{item.name}</span>
             </div>
 
-            {/* 🎯 ফিক্স: সাইডবারের অ্যানিমেশন (animate-pulse) রিমুভ করা হয়েছে */}
             {item.name === "Assigned Orders" && pendingCount > 0 && (
               <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                 {pendingCount}
@@ -338,7 +322,6 @@ export const RiderLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
-      {/* 🚨 In-App Toast Popup */}
       <AnimatePresence>
         {toastNotification && (
           <motion.div
@@ -459,7 +442,6 @@ export const RiderLayout = () => {
               )}
             </button>
 
-            {/* 🎯 ফিক্স: হেডারের ব্যাজের অ্যানিমেশন (animate-pulse scale-105) রিমুভ করা হয়েছে */}
             <Link
               to="/rider/orders"
               className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${

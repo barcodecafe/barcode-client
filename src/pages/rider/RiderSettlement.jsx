@@ -12,6 +12,7 @@ import {
   getAllOrders,
   submitRiderDailyCash,
 } from "../../services/ordersService";
+import { socket } from "../../services/socket"; // 🎯 FIX: সকেট ইমপোর্ট করা হলো
 
 export const RiderSettlement = () => {
   const { user } = useAuth();
@@ -53,6 +54,16 @@ export const RiderSettlement = () => {
     try {
       setSubmittingCashDate(dateKey);
       await submitRiderDailyCash(dateKey);
+      
+      // 🎯 FIX: অ্যাডমিনকে রিয়েল-টাইম নোটিফাই করার জন্য সকেট ইভেন্ট ফায়ার
+      socket.emit("rider_cash_submitted", {
+        riderId: user?.id,
+        riderName: user?.name || "Rider",
+        date: label
+      });
+      // গ্লোবাল রিফ্রেশের জন্য আরেকটি ইভেন্ট
+      socket.emit("order_updated", { action: "cash_submit" });
+
       alert(`Cash submission request sent to Admin for ${label}!`);
       fetchRiderOrders();
     } catch (err) {
