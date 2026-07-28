@@ -25,7 +25,6 @@ import { socket } from "../services/socket";
 import resB from "../assets/Barcode_restaurant_group-B.png";
 import resW from "../assets/Barcode_restaurant_groupW.png";
 
-// Rider Navigation Items
 const navItems = [
   { name: "Overview", path: "/rider", icon: LayoutDashboard, end: true },
   { name: "Assigned Orders", path: "/rider/orders", icon: ShoppingBag },
@@ -39,7 +38,6 @@ export const RiderLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🎯 ১. অ্যাসাইনড/পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
@@ -50,6 +48,9 @@ export const RiderLayout = () => {
   }, [soundEnabled]);
 
   const audioCtxRef = useRef(null);
+  
+  // 🎯 FIX: রাইডারের বর্তমান অর্ডারগুলোর ট্র্যাক রাখার জন্য Ref
+  const ordersRef = useRef([]);
 
   useEffect(() => {
     const unlockAudioContext = () => {
@@ -82,16 +83,12 @@ export const RiderLayout = () => {
 
     try {
       if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext ||
-          window.webkitAudioContext)();
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
+      if (ctx.state === "suspended") ctx.resume();
 
       const now = ctx.currentTime;
-
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = "sine";
@@ -113,7 +110,6 @@ export const RiderLayout = () => {
       gain2.connect(ctx.destination);
       osc2.start(now + 0.15);
       osc2.stop(now + 0.7);
-
     } catch (e) {
       console.error("Failed to play synth sound:", e);
     }
@@ -122,11 +118,9 @@ export const RiderLayout = () => {
   const fetchRiderPendingOrders = async () => {
     try {
       const ordersData = await getAllOrders();
-      const ordersList = Array.isArray(ordersData)
-        ? ordersData
-        : ordersData?.data || [];
+      const ordersList = Array.isArray(ordersData) ? ordersData : ordersData?.data || [];
 
-      const pendingAcceptance = ordersList.filter((o) => {
+      const assigned = ordersList.filter((o) => {
         const isMyOrder =
           o.riderId === user?.id ||
           o.riderId === user?._id ||
@@ -134,9 +128,14 @@ export const RiderLayout = () => {
           o.riderName?.toLowerCase() === user?.name?.toLowerCase();
           
         const isActive = o.status !== "Delivered" && o.status !== "Rejected";
-        const needsAction = o.riderAcceptStatus === "pending" || !o.riderAcceptStatus;
-        
-        return isMyOrder && isActive && needsAction;
+        return isMyOrder && isActive;
+      });
+
+      // 🎯 অর্ডারের লিস্ট Ref-এ সেভ করে রাখছি
+      ordersRef.current = assigned;
+
+      const pendingAcceptance = assigned.filter((o) => {
+        return o.riderAcceptStatus === "pending" || !o.riderAcceptStatus;
       });
 
       setPendingCount(pendingAcceptance.length);
@@ -156,42 +155,37 @@ export const RiderLayout = () => {
     const handleRiderOrderUpdate = (data) => {
       fetchRiderPendingOrders();
 
-      const rId =
-        data?.riderId ||
-        data?.order?.riderId ||
-        data?.rider?._id ||
-        data?.rider;
-      const rName =
-        data?.riderName || data?.order?.riderName || data?.rider?.name;
+      const orderId = data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
+      const existingOrder = ordersRef.current.find((o) => String(o._id || o.id) === String(orderId));
 
+      let isForMe = false;
       const currentUserId = String(user?.id || user?._id || "");
       const currentUserName = String(user?.name || "").toLowerCase();
 
-      const isForMe =
-        !data ||
-        !rId ||
-        String(rId) === currentUserId ||
-        (rName && String(rName).toLowerCase() === currentUserName);
+      // চেক করা হচ্ছে আপডেটটি এই রাইডারের কি না
+      if (existingOrder) {
+        isForMe = true;
+      } else {
+        const rId = data?.riderId || data?.order?.riderId || data?.rider?._id || data?.rider;
+        const rName = data?.riderName || data?.order?.riderName || data?.rider?.name;
+        if (rId && String(rId) === currentUserId) isForMe = true;
+        if (rName && String(rName).toLowerCase() === currentUserName) isForMe = true;
+      }
 
       if (isForMe) {
-        const acceptStatus = data?.riderAcceptStatus || data?.order?.riderAcceptStatus;
-        const orderStatus = data?.status || data?.order?.status;
+        // 🎯 FIX: ব্যাকএন্ড থেকে যদি ছোট ডাটা আসে, তবে লোকাল Ref থেকে পুরনো স্ট্যাটাস পড়ে নেবে
+        const acceptStatus = data?.riderAcceptStatus || data?.order?.riderAcceptStatus || existingOrder?.riderAcceptStatus;
+        const orderStatus = data?.status || data?.order?.status || existingOrder?.status;
         
-        // 🎯 FIX: যদি অর্ডার অলরেডি প্রসেস হয়ে যায় (On Way বা Delivered), তাহলে নতুন অর্ডারের অ্যালার্ট বাজবে না!
         const isAlreadyProcessed = orderStatus === "Delivered" || orderStatus === "Out for Delivery" || orderStatus === "Rejected";
+        const isAlreadyAccepted = acceptStatus === "accepted";
 
-        if ((acceptStatus === "pending" || !acceptStatus) && !isAlreadyProcessed) {
+        // শুধুমাত্র নতুন এবং এখনো Accept না করা অর্ডারের ক্ষেত্রেই পপআপ আসবে
+        if (!isAlreadyAccepted && !isAlreadyProcessed) {
           playLoudNotificationChime();
 
-          const orderId =
-            data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
-          const totalAmount =
-            data?.total || data?.totalAmount || data?.order?.total || 0;
-          const customerName =
-            data?.user?.name ||
-            data?.customerName ||
-            data?.order?.user?.name ||
-            "Customer";
+          const totalAmount = data?.total || data?.totalAmount || data?.order?.total || existingOrder?.total || 0;
+          const customerName = data?.user?.name || data?.customerName || data?.order?.user?.name || existingOrder?.user?.name || "Customer";
 
           setToastNotification({
             id: orderId,
@@ -207,7 +201,7 @@ export const RiderLayout = () => {
             const desktopNotif = new Notification(
               "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
               {
-                body: orderId
+                body: orderId !== "NEW"
                   ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
                   : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
                 icon: settings?.logoLight || resB,
