@@ -17,10 +17,8 @@ import {
   updateOrderStatus,
   addChatMessage,
   assignRiderToOrder,
-  confirmRiderCashSettlement,
 } from "../../services/ordersService";
 import { recheckPayment } from "../../services/paymentsService";
-import { formatDateKey } from "../../utils/settlement";
 import { getAllRiders } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
@@ -28,7 +26,7 @@ import { getAllRegions } from "../../services/regionsService";
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
-// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার সেফ হেলপার ফাংশন
+// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার হেলপার
 const deduplicateOrders = (orderList) => {
   if (!Array.isArray(orderList)) return [];
   const seen = new Set();
@@ -41,7 +39,7 @@ const deduplicateOrders = (orderList) => {
   });
 };
 
-// 🎯 ১. পেমেন্ট মেথড ও স্ট্যাটাস অনুযায়ী ডায়নামিক ব্যাজ লজিক (আপডেটেড)
+// 🎯 পেমেন্ট ব্যাজ লজিক
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
@@ -49,7 +47,6 @@ const getPaymentBadge = (ord) => {
   const isPaid = ord?.isPaid || ps === "paid";
   const isRejected = st === "REJECTED";
 
-  // 🔴 ১. COD অর্ডারের ক্ষেত্রে লজিক
   if (pm === "cod") {
     if (isRejected) {
       return {
@@ -69,7 +66,6 @@ const getPaymentBadge = (ord) => {
     };
   }
 
-  // 💳 ২. অনলাইন পেমেন্টের (bKash / Visa / SSLCommerz) ক্ষেত্রে লজিক
   if (isRejected) {
     if (ps === "refunded") {
       return {
@@ -126,8 +122,7 @@ const getStatusColor = (status) => {
     case "PLACED":
     case "AWAITING PAYMENT":
     case "AWAITING_PAYMENT":
-    case "PICK ORDER":
-      return "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse";
+      return "bg-amber-500/10 text-amber-500 border-amber-500/20";
     case "ACCEPTED":
       return "bg-green-500/10 text-green-500 border-green-500/20";
     case "REJECTED":
@@ -135,8 +130,6 @@ const getStatusColor = (status) => {
     case "PREPARING":
     case "READY TO COOK":
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse";
-    case "READY TO PICK":
-      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
     case "OUT FOR DELIVERY":
     case "ON THE WAY":
       return "bg-purple-500/10 text-purple-500 border-purple-500/20";
@@ -154,7 +147,6 @@ export const AdminOrders = () => {
   const [, setBranches] = useState([]);
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [, setConfirmingRiderId] = useState(null);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
@@ -163,7 +155,6 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // Manual refresh helper
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
@@ -174,7 +165,6 @@ export const AdminOrders = () => {
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
-  // Initial load
   useEffect(() => {
     Promise.all([
       getAllOrders(),
@@ -193,7 +183,6 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Socket Real-time Event Listeners
   useEffect(() => {
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
@@ -298,7 +287,6 @@ export const AdminOrders = () => {
     );
   }
 
-  // 🎯 ACCEPT/REJECT বা স্ট্যাটাস পরিবর্তনের আপডেটেড ফাংশন
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
@@ -324,10 +312,6 @@ export const AdminOrders = () => {
             fontWeight: "bold",
             borderRadius: "10px",
           },
-          iconTheme: {
-            primary: "#FFFFFF",
-            secondary: "#10B981",
-          },
         });
       } else if (newStatus === "Rejected" || newStatus === "REJECTED") {
         toast.error(`Order #${shortId} has been Rejected!`, {
@@ -338,10 +322,6 @@ export const AdminOrders = () => {
             color: "#FFFFFF",
             fontWeight: "bold",
             borderRadius: "10px",
-          },
-          iconTheme: {
-            primary: "#FFFFFF",
-            secondary: "#EF4444",
           },
         });
       } else {
@@ -408,7 +388,6 @@ export const AdminOrders = () => {
 
   return (
     <div className="space-y-6">
-      {/* 🔔 Toast Notification Container */}
       <Toaster />
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -438,6 +417,8 @@ export const AdminOrders = () => {
                   <th className="px-4 py-3">Customer</th>
                   <th className="px-4 py-3">Address</th>
                   <th className="px-4 py-3">Total Amount</th>
+                  {/* ✨ নতুন অডর্ার একশন কলাম */}
+                  <th className="px-4 py-3">Order Action</th>
                   <th className="px-4 py-3">Delivery Status</th>
                   <th className="px-4 py-3">Assigned Rider</th>
                   <th className="px-4 py-3 text-right">Actions</th>
@@ -454,6 +435,9 @@ export const AdminOrders = () => {
                     currentStatus === "AWAITING PAYMENT" ||
                     currentStatus === "AWAITING_PAYMENT" ||
                     !ord.status;
+
+                  const isAccepted = currentStatus === "ACCEPTED";
+                  const isRejected = currentStatus === "REJECTED";
 
                   const badge = getPaymentBadge(ord);
 
@@ -495,6 +479,8 @@ export const AdminOrders = () => {
                       <td className="px-4 py-3.5 font-bold text-primary-500">
                         ৳{ord.total?.toFixed(2)}
                       </td>
+
+                      {/* 🎯 ১. ORDER ACTION কলাম (Accept / Reject Buttons & Status) */}
                       <td className="px-4 py-3.5">
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
@@ -502,51 +488,70 @@ export const AdminOrders = () => {
                               onClick={() =>
                                 handleStatusChange(ordId, "Accepted")
                               }
-                              className="px-2 py-1 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                              className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
-                              <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
+                              <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
                               onClick={() =>
                                 handleStatusChange(ordId, "Rejected")
                               }
-                              className="px-2 py-1 rounded bg-red-500 hover:bg-red-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                              className="px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
-                              <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
+                              <X className="w-3 h-3 stroke-[3]" /> Reject
                             </button>
                           </div>
-                        ) : ord.status === "Rejected" ? (
-                          <span className="px-2 py-1 rounded border border-red-500/25 bg-red-500/10 text-red-500 font-bold text-[9px] uppercase tracking-wide">
+                        ) : isRejected ? (
+                          <span className="px-2.5 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
                             Rejected
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
+                            Accepted
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 🎯 ২. DELIVERY STATUS কলাম (Preparing, Out for Delivery, Delivered) */}
+                      <td className="px-4 py-3.5">
+                        {isPendingUnhandled ? (
+                          <span className="px-2.5 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            Pending
+                          </span>
+                        ) : isRejected ? (
+                          <span className="px-2.5 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            Cancelled
                           </span>
                         ) : (
                           <div>
                             <select
-                              value={ord.status}
+                              value={
+                                isAccepted
+                                  ? "Accepted"
+                                  : ord.status
+                              }
                               disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
                               onChange={(e) =>
                                 handleStatusChange(ordId, e.target.value)
                               }
                               className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                 !ord.riderId || ord.riderAcceptStatus !== "accepted"
-                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-70"
+                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                   : `${getStatusColor(ord.status)} cursor-pointer`
                               }`}
                             >
-                              <option value="Pending">Pending</option>
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
                               <option value="Out for Delivery">
                                 Out for Delivery
                               </option>
                               <option value="Delivered">Delivered</option>
-                              <option value="Rejected">Rejected</option>
                             </select>
                             
                             {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
-                              <span className="block text-[9px] text-orange-500 font-bold mt-1.5 tracking-tight">
+                              <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
                                 {!ord.riderId 
                                   ? "Assign Rider First" 
                                   : "Awaiting Rider Accept"}
@@ -555,13 +560,15 @@ export const AdminOrders = () => {
                           </div>
                         )}
                       </td>
+
+                      {/* 🎯 ৩. ASSIGNED RIDER কলাম */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
                             disabled={
                               isPendingUnhandled ||
-                              ord.status === "Rejected" ||
+                              isRejected ||
                               ord.status === "Delivered"
                             }
                             onChange={(e) =>
@@ -569,7 +576,7 @@ export const AdminOrders = () => {
                             }
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                               isPendingUnhandled ||
-                              ord.status === "Rejected" ||
+                              isRejected ||
                               ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
@@ -584,6 +591,7 @@ export const AdminOrders = () => {
                           </select>
                         </div>
                       </td>
+
                       <td className="px-4 py-3.5 text-right">
                         <button
                           onClick={() => setActiveChatOrderId(ordId)}
@@ -669,7 +677,6 @@ export const AdminOrders = () => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4"
             >
-              {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
                 <div>
                   <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
@@ -695,7 +702,6 @@ export const AdminOrders = () => {
                 </button>
               </div>
 
-              {/* Customer Info */}
               <div className="bg-neutral-50 dark:bg-neutral-950/50 p-3.5 rounded-xl space-y-2 text-xs">
                 <h4 className="font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider text-[10px]">
                   Customer Details
@@ -722,7 +728,6 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* Items Ordered List */}
               <div>
                 <h4 className="font-bold text-neutral-700 dark:text-neutral-300 text-xs mb-2 flex items-center gap-1.5">
                   <Utensils className="w-3.5 h-3.5 text-primary-500" />
@@ -763,7 +768,6 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* Payment & Summary */}
               <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs space-y-2">
                 <div className="flex justify-between text-neutral-500">
                   <span>Payment Method:</span>
