@@ -25,8 +25,10 @@ const getStatusColor = (status) => {
       return "bg-green-500/10 text-green-500 border border-green-500/20";
     case "Preparing":
       return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
+    case "Ready to Pick":
+      return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 animate-bounce";
     case "Out for Delivery":
-      return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
+      return "bg-purple-500/10 text-purple-500 border border-purple-500/20";
     case "Delivered":
       return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
     case "Rejected":
@@ -45,7 +47,6 @@ export const RiderOrders = () => {
 
   const chatEndRef = useRef(null);
   
-  // 🎯 FIX: Safe ID check
   const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
@@ -56,7 +57,7 @@ export const RiderOrders = () => {
         const assigned = (data || []).filter(
           (o) =>
             o.riderId === user.id ||
-            o.riderId === user._id || // 🎯 FIX: Check both _id and id
+            o.riderId === user._id ||
             o.riderName?.toLowerCase() === user.name?.toLowerCase()
         );
         setOrders(assigned);
@@ -86,7 +87,6 @@ export const RiderOrders = () => {
   const handleAccept = async (orderId) => {
     try {
       await acceptRiderOrder(orderId);
-      // ⚡ রাইডার একসেপ্ট করার পর স্ট্যাটাস অটো Preparing এ আপডেট করা
       await updateOrderStatus(orderId, "Preparing");
       fetchRiderOrders();
     } catch (err) {
@@ -173,7 +173,7 @@ export const RiderOrders = () => {
             ) : (
               <div className="space-y-4">
                 {orders.map((ord) => {
-                  const safeOrderId = ord._id || ord.id; // 🎯 FIX: Safe ID Extraction
+                  const safeOrderId = ord._id || ord.id;
 
                   return (
                     <div
@@ -271,6 +271,7 @@ export const RiderOrders = () => {
                                 className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
                               >
                                 <option value="Preparing">Preparing</option>
+                                <option value="Ready to Pick">Ready to Pick</option>
                                 <option value="Out for Delivery">Out for Delivery</option>
                                 <option value="Delivered">Delivered</option>
                               </select>

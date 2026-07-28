@@ -131,6 +131,9 @@ const getStatusColor = (status) => {
     case "PREPARING":
     case "READY TO COOK":
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse";
+    case "READY TO PICK":
+    case "FOOD READY":
+      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20 animate-bounce";
     case "OUT FOR DELIVERY":
     case "ON THE WAY":
       return "bg-purple-500/10 text-purple-500 border-purple-500/20";
@@ -307,29 +310,16 @@ export const AdminOrders = () => {
         toast.success(`Order #${shortId} has been Accepted!`, {
           duration: 3000,
           position: "top-right",
-          style: {
-            background: "#10B981",
-            color: "#FFFFFF",
-            fontWeight: "bold",
-            borderRadius: "10px",
-          },
+          style: { background: "#10B981", color: "#FFFFFF", fontWeight: "bold", borderRadius: "10px" },
         });
       } else if (newStatus === "Rejected" || newStatus === "REJECTED") {
         toast.error(`Order #${shortId} has been Rejected!`, {
           duration: 3000,
           position: "top-right",
-          style: {
-            background: "#EF4444",
-            color: "#FFFFFF",
-            fontWeight: "bold",
-            borderRadius: "10px",
-          },
+          style: { background: "#EF4444", color: "#FFFFFF", fontWeight: "bold", borderRadius: "10px" },
         });
       } else {
-        toast(`Order status updated to ${newStatus}`, {
-          icon: "🔄",
-          position: "top-right",
-        });
+        toast(`Order status updated to ${newStatus}`, { icon: "🔄", position: "top-right" });
       }
     } catch (err) {
       toast.error("Failed to update status: " + err.message);
@@ -439,7 +429,6 @@ export const AdminOrders = () => {
                     !ord.status;
 
                   const isRejected = currentStatus === "REJECTED";
-
                   const badge = getPaymentBadge(ord);
 
                   return (
@@ -486,18 +475,14 @@ export const AdminOrders = () => {
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Accepted")
-                              }
+                              onClick={() => handleStatusChange(ordId, "Accepted")}
                               className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Rejected")
-                              }
+                              onClick={() => handleStatusChange(ordId, "Rejected")}
                               className="px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
@@ -535,9 +520,7 @@ export const AdminOrders = () => {
                                   : ord.status
                               }
                               disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
-                              onChange={(e) =>
-                                handleStatusChange(ordId, e.target.value)
-                              }
+                              onChange={(e) => handleStatusChange(ordId, e.target.value)}
                               className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                 !ord.riderId || ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
@@ -551,17 +534,14 @@ export const AdminOrders = () => {
                             >
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
-                              <option value="Out for Delivery">
-                                Out for Delivery
-                              </option>
+                              <option value="Ready to Pick">Ready to Pick / Food Ready</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
                               <option value="Delivered">Delivered</option>
                             </select>
                             
                             {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
                               <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
-                                {!ord.riderId 
-                                  ? "Assign Rider First" 
-                                  : "Awaiting Rider Accept"}
+                                {!ord.riderId ? "Assign Rider First" : "Awaiting Rider Accept"}
                               </span>
                             )}
                           </div>
@@ -573,18 +553,10 @@ export const AdminOrders = () => {
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
-                            disabled={
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
-                            }
-                            onChange={(e) =>
-                              handleAssignRider(ordId, e.target.value)
-                            }
+                            disabled={isPendingUnhandled || isRejected || ord.status === "Delivered"}
+                            onChange={(e) => handleAssignRider(ordId, e.target.value)}
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
+                              isPendingUnhandled || isRejected || ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
                             }`}
@@ -649,15 +621,16 @@ export const AdminOrders = () => {
               </span>
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   handleSendAdminMessage(
                     null,
                     "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant."
-                  )
-                }
+                  );
+                  handleStatusChange(currentChat.id || currentChat._id, "Ready to Pick");
+                }}
                 className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
               >
-                Send "Food Ready" Alert
+                Set Ready & Notify Rider
               </button>
             </div>
 
