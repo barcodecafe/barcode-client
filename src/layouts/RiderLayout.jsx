@@ -15,6 +15,7 @@ import {
   BellOff,
   Volume2,
   ClipboardList,
+  ShoppingBag as ToastIcon,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../context/AuthContext";
@@ -38,9 +39,10 @@ export const RiderLayout = () => {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🎯 ১. অ্যাসাইনড/পেন্ডিং কাউন্ট ও সাউন্ড স্টেট
+  // 🎯 ১. অ্যাসাইনড/পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [toastNotification, setToastNotification] = useState(null);
 
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
@@ -158,7 +160,7 @@ export const RiderLayout = () => {
       Notification.requestPermission();
     }
 
-    // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড ও নোটিফিকেশন অ্যালার্ট
+    // 🔊 নতুন অ্যাসাইনড অর্ডার এলে সাউন্ড, ইন-অ্যাপ টোস্ট এবং ব্রাউজার নোটিফিকেশন
     const handleRiderOrderUpdate = (data) => {
       console.log("🚴 Rider Socket Event Received:", data);
       fetchRiderPendingOrders();
@@ -184,18 +186,33 @@ export const RiderLayout = () => {
         // 🎵 ১. সাউন্ড বাজানো
         playLoudNotificationChime();
 
-        // 🔔 ২. ডেস্কটপ নোটিফিকেশন
+        const orderId =
+          data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
+        const totalAmount =
+          data?.total || data?.totalAmount || data?.order?.total || 0;
+        const customerName =
+          data?.user?.name ||
+          data?.customerName ||
+          data?.order?.user?.name ||
+          "Customer";
+
+        // 🚨 ২. ইন-অ্যাপ টোস্টার নোটিফিকেশন সেট করা
+        setToastNotification({
+          id: orderId,
+          total: totalAmount,
+          customer: customerName,
+        });
+
+        // 🔔 ৩. ডেস্কটপ সিস্টেম নোটিফিকেশন
         if (
           "Notification" in window &&
           Notification.permission === "granted"
         ) {
-          const orderId =
-            data?.id || data?._id || data?.order?.id || data?.order?._id || "";
           const desktopNotif = new Notification(
             "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
             {
               body: orderId
-                ? `Order ID: #${orderId}\nনতুন অর্ডার চেক করুন।`
+                ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
                 : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
               icon: settings?.logoLight || resB,
               requireInteraction: true,
@@ -205,10 +222,11 @@ export const RiderLayout = () => {
           desktopNotif.onclick = () => {
             window.focus();
             navigate("/rider/orders");
+            desktopNotif.close();
           };
         }
       } else {
-        console.log(" Order event was for another rider:", rId);
+        console.log("Order event was for another rider:", rId);
       }
     };
 
@@ -313,7 +331,50 @@ export const RiderLayout = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
+    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
+      {/* 🚨 In-App Toast Popup (অ্যাডমিন লেআউটের মতোই) */}
+      <AnimatePresence>
+        {toastNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white dark:bg-neutral-900 border-2 border-rose-500 shadow-2xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer"
+            onClick={() => {
+              navigate("/rider/orders");
+              setToastNotification(null);
+            }}
+          >
+            <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl shrink-0 animate-bounce">
+              <ToastIcon className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
+                  🚴 নতুন ডেলিভারি এসেছে!
+                </h4>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setToastNotification(null);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white p-1 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+                Order ID: #{toastNotification.id}
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Customer: {toastNotification.customer}
+                {toastNotification.total ? ` • ৳${toastNotification.total}` : ""}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isDrawerOpen && (
           <motion.div
