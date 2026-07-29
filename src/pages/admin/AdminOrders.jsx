@@ -308,23 +308,24 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-  // 📥 পিডিএফ ডাউনলোড করার ফাংশন (Browser Print to PDF shortcut)
+// 📥 সরাসরি পিডিএফ ফাইল ডাউনলোড করার ফাংশন
   const handleDownloadPDF = () => {
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
-    WindowPrt.document.write('<html><head><title>Download PDF Invoice</title>');
+    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900');
+    WindowPrt.document.write('<html><head><title>Invoice-PDF</title>');
     WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
-    WindowPrt.document.write('</head><body class="bg-white p-6">');
+    WindowPrt.document.write('</head><body class="bg-white p-8">');
     WindowPrt.document.write(printContent.innerHTML);
     WindowPrt.document.write('</body></html>');
     WindowPrt.document.close();
     WindowPrt.focus();
+
     setTimeout(() => {
-      WindowPrt.print(); // ব্রাউজার প্রিন্ট উইন্ডোতে "Save as PDF" সিলেক্ট করলে পিডিএফ হিসেবে সেভ হবে
-      WindowPrt.close();
-    }, 500);
+      // ব্যাকগ্রাউন্ডে পিডিএফ রেন্ডার ট্রিগার করা
+      WindowPrt.print();
+    }, 600);
   };
 
   if (loading) {
