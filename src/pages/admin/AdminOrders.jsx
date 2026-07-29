@@ -530,7 +530,7 @@ export const AdminOrders = () => {
                             >
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
-                              <option value="Ready to Pick">Ready to Pick / Food Ready</option>
+                              <option value="Ready to Pick">Ready to Pick</option>
                               <option value="Out for Delivery">Out for Delivery</option>
                               <option value="Delivered">Delivered</option>
                             </select>
