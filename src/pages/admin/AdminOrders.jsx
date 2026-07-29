@@ -157,6 +157,8 @@ export const AdminOrders = () => {
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [adjustments, setAdjustments] = useState({}); // 🎯 ডাইনামিক অ্যাডজাস্টমেন্ট স্টেট
+  
   const chatEndRef = useRef(null);
   const invoiceRef = useRef(null);
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
@@ -425,6 +427,13 @@ export const AdminOrders = () => {
       toast.error("Failed to send message: " + err.message);
     }
   };
+
+  // 🎯 হিসাব-নিকাশ ও অ্যাডজাস্টমেন্ট ক্যালকুলেশন ভেরিয়েবল
+  const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
+  const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
+  const subTotal = selectedOrderDetails?.total || 0;
+  const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
+  const grandTotal = subTotal + deliveryCharge + currentAdjustment;
 
   return (
     <div className="w-full px-2 sm:px-4 space-y-6">
@@ -842,7 +851,7 @@ export const AdminOrders = () => {
                   </table>
                 </div>
 
-                {/* ৪. হিসাব-নিকাশ সেকশন (Totals & Charges) */}
+                {/* ৪. হিসাব-নিকাশ ও ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন */}
                 <div className="flex justify-end pt-2">
                   <div className="w-full sm:w-80 space-y-1.5 text-xs">
                     <div className="flex justify-between py-1 border-b border-neutral-200">
@@ -859,7 +868,7 @@ export const AdminOrders = () => {
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-neutral-800">
                       <span>Sub Total (Including Tax):</span>
-                      <span>৳{(selectedOrderDetails.total || 0).toFixed(2)}</span>
+                      <span>৳{subTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Service Charge:</span>
@@ -867,15 +876,29 @@ export const AdminOrders = () => {
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Shipping Charge:</span>
-                      <span className="font-medium">৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}</span>
+                      <span className="font-medium">৳{deliveryCharge.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
+                    
+                    {/* ডাইনামিক অ্যাডজাস্টমেন্ট ইনপুট বক্স */}
+                    <div className="flex justify-between items-center py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Adjustment:</span>
-                      <span className="font-medium">0.00</span>
+                      <input
+                        type="number"
+                        value={adjustments[currentOrderId] !== undefined ? adjustments[currentOrderId] : ""}
+                        onChange={(e) => {
+                          setAdjustments({
+                            ...adjustments,
+                            [currentOrderId]: e.target.value
+                          });
+                        }}
+                        placeholder="0.00"
+                        className="w-24 px-2 py-0.5 text-right border border-neutral-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 print:border-none print:bg-transparent"
+                      />
                     </div>
+
                     <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-extrabold text-sm text-neutral-900">
                       <span>Total:</span>
-                      <span>৳{(((selectedOrderDetails.total || 0) + (selectedOrderDetails.deliveryCharge || 0))).toFixed(2)}</span>
+                      <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Advance Amount:</span>
@@ -883,14 +906,14 @@ export const AdminOrders = () => {
                     </div>
                     <div className="flex justify-between py-1.5 font-bold text-neutral-900">
                       <span>Remaining Amount:</span>
-                      <span>৳{(((selectedOrderDetails.total || 0) + (selectedOrderDetails.deliveryCharge || 0))).toFixed(2)}</span>
+                      <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Amount in Words */}
                 <div className="pt-2 text-xs text-neutral-600 font-medium">
-                  Amount in Words (BDT): <span className="italic font-semibold text-neutral-800 uppercase">BDT {(selectedOrderDetails.total || 0).toFixed(0)} Taka Only</span>
+                  Amount in Words (BDT): <span className="italic font-semibold text-neutral-800 uppercase">BDT {grandTotal.toFixed(0)} Taka Only</span>
                 </div>
 
                 {/* ৫. ফুটার ব্র্যান্ড লিস্ট */}
