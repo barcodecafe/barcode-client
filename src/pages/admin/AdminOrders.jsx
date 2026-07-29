@@ -13,6 +13,7 @@ import {
   RefreshCw,
   BellRing,
   Printer,
+  FileDown,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -288,13 +289,13 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 প্রিন্ট এবং পিডিএফ ডাউনলোড করার ফাংশন
-  const handlePrintInvoice = () => {
+  // 🖨️ প্রিন্ট করার ফাংশন
+  const handlePrint = () => {
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
     const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
-    WindowPrt.document.write('<html><head><title>Order Invoice</title>');
+    WindowPrt.document.write('<html><head><title>Print Invoice</title>');
     WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
     WindowPrt.document.write('</head><body class="bg-white p-6">');
     WindowPrt.document.write(printContent.innerHTML);
@@ -303,6 +304,25 @@ export const AdminOrders = () => {
     WindowPrt.focus();
     setTimeout(() => {
       WindowPrt.print();
+      WindowPrt.close();
+    }, 500);
+  };
+
+  // 📥 পিডিএফ ডাউনলোড করার ফাংশন (Browser Print to PDF shortcut)
+  const handleDownloadPDF = () => {
+    const printContent = invoiceRef.current;
+    if (!printContent) return;
+
+    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+    WindowPrt.document.write('<html><head><title>Download PDF Invoice</title>');
+    WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+    WindowPrt.document.write('</head><body class="bg-white p-6">');
+    WindowPrt.document.write(printContent.innerHTML);
+    WindowPrt.document.write('</body></html>');
+    WindowPrt.document.close();
+    WindowPrt.focus();
+    setTimeout(() => {
+      WindowPrt.print(); // ব্রাউজার প্রিন্ট উইন্ডোতে "Save as PDF" সিলেক্ট করলে পিডিএফ হিসেবে সেভ হবে
       WindowPrt.close();
     }, 500);
   };
@@ -736,19 +756,28 @@ export const AdminOrders = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* 🖨️ প্রিন্ট / পিডিএফ ডাউনলোড বাটন */}
+                <div className="flex items-center gap-1.5">
+                  {/* 🖨️ প্রিন্ট বাটন */}
                   <button
-                    onClick={handlePrintInvoice}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    title="Print or Save as PDF"
+                    onClick={handlePrint}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    title="Print Invoice"
                   >
-                    <Printer className="w-3.5 h-3.5" /> Print / PDF
+                    <Printer className="w-3.5 h-3.5 text-primary-500" /> Print
+                  </button>
+
+                  {/* 📥 পিডিএফ ডাউনলোড বাটন */}
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    title="Download PDF"
+                  >
+                    <FileDown className="w-3.5 h-3.5" /> PDF
                   </button>
 
                   <button
                     onClick={() => setSelectedOrderDetails(null)}
-                    className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                    className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors ml-1"
                   >
                     <X className="w-5 h-5" />
                   </button>
