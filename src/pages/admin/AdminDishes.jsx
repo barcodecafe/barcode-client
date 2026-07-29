@@ -349,8 +349,17 @@ export const AdminDishes = () => {
     });
 
     return matched.sort((a, b) => {
-      const indexA = sortedCategories.findIndex(c => c.toLowerCase() === a.category?.trim().toLowerCase());
-      const indexB = sortedCategories.findIndex(c => c.toLowerCase() === b.category?.trim().toLowerCase());
+      const catA = a.category?.trim().toLowerCase() || "";
+      const catB = b.category?.trim().toLowerCase() || "";
+      const selected = selectedCategory.trim().toLowerCase();
+
+      if (selected !== "all") {
+        if (catA === selected && catB !== selected) return -1;
+        if (catB === selected && catA !== selected) return 1;
+      }
+
+      const indexA = sortedCategories.findIndex(c => c.toLowerCase() === catA);
+      const indexB = sortedCategories.findIndex(c => c.toLowerCase() === catB);
       if (indexA !== -1 && indexB !== -1) {
         return indexA - indexB;
       }
@@ -367,7 +376,7 @@ export const AdminDishes = () => {
             Manage Menu Items
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Total {foods.length} dishes registered
+            Total {foods.length} dishes registered[cite: 2]
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -403,7 +412,7 @@ export const AdminDishes = () => {
             />
           </div>
 
-          {/* 🎯 কাস্টম ক্যাটাগরি ড্রপডাউন ফিল্টার */}
+          {/* 🎯 ক্যাটাগরি ফিল্টার ও ডাইরেক্ট সর্টিং ড্রপডাউন */}
           <div className="relative min-w-[200px] flex-1 sm:flex-initial">
             <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
             <select
