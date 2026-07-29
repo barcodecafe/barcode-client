@@ -309,40 +309,28 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-// 📥 সরাসরি .pdf এক্সটেনশনে ফাইল ডাউনলোড করার ফাংশন (fix oklch color error)
+// 📥 সরাসরি ব্রাউজার প্রিন্ট ডায়ালগের মাধ্যমে নিখুঁত .pdf সেভ করার ফাংশন
   const handleDownloadPDF = () => {
-    const element = invoiceRef.current;
-    if (!element) return;
+    const printContent = invoiceRef.current;
+    if (!printContent) return;
 
-    // পিডিএফ রেন্ডার করার সময় oklch কালার ইস্যু এড়াতে ব্যাকগ্রাউন্ড ও কালার ফিক্সড করে দেওয়া
-    const opt = {
-      margin:       10,
-      filename:     `Invoice-${(selectedOrderDetails?.id || selectedOrderDetails?._id || 'order').toUpperCase()}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true,
-        onclone: (clonedDoc) => {
-          // ক্লোন করা ডকুমেন্টের সব এলিমেন্ট থেকে oklch কালার বা প্রবলেমেটিক ক্লাস রিমুভ করে স্টাইল পরিষ্কার করা
-          const allElements = clonedDoc.querySelectorAll('*');
-          allElements.forEach(el => {
-            const computedStyle = window.getComputedStyle(el);
-            if (computedStyle.color.includes('oklch') || computedStyle.backgroundColor.includes('oklch')) {
-              el.style.color = '#171717';
-              el.style.backgroundColor = '#ffffff';
-            }
-          });
-        }
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900');
+    WindowPrt.document.write('<html><head><title>Invoice-' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || 'Order').toUpperCase() + '</title>');
+    WindowPrt.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; color: #333; } .text-primary-500 { color: #f97316; } font-weight-bold { font-weight: bold; }</style>');
+    WindowPrt.document.write('</head><body>');
+    WindowPrt.document.write('<h2 style="border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Order Invoice #' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || '').toUpperCase() + '</h2>');
+    WindowPrt.document.write(printContent.innerHTML);
+    WindowPrt.document.write('</body></html>');
+    WindowPrt.document.close();
+    WindowPrt.focus();
 
-    html2pdf().from(element).set(opt).save().then(() => {
-      toast.success("PDF downloaded successfully!");
-    }).catch((err) => {
-      toast.error("Failed to generate PDF: " + err.message);
-    });
+    setTimeout(() => {
+      WindowPrt.print();
+      WindowPrt.close();
+      toast.success("PDF window opened! Select 'Save as PDF' to download.");
+    }, 500);
   };
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
