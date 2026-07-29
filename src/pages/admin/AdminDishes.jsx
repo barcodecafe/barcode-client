@@ -121,7 +121,7 @@ export const AdminDishes = () => {
         });
   }, []);
 
-  // ড্রপডাউনের বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাওয়ার হ্যান্ডলার
+  // ড্রপডাউনের বাইরে ক্লিক করলে বন্ধ হবে
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -388,7 +388,7 @@ export const AdminDishes = () => {
             Manage Menu Items
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Total {foods.length} dishes registered
+            Total {foods.length} dishes registered[cite: 3]
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -427,7 +427,7 @@ export const AdminDishes = () => {
           {/* 🎯 কাস্টম ড্রপডাউন যেখানে সরাসরি ড্র্যাগ করে সর্ট করা যাবে */}
           <div className="relative min-w-[220px] flex-1 sm:flex-initial" ref={dropdownRef}>
             <div
-              onClick={() => setIsCustomDropdownOpen(!isCustomDropdownOpen)}
+              onClick={() => setIsCustomDropdownOpen((prev) => !prev)}
               className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm font-medium cursor-pointer flex items-center justify-between select-none shadow-xs"
             >
               <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
@@ -438,7 +438,7 @@ export const AdminDishes = () => {
             {selectedCategory !== "All" && (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setSelectedCategory("All"); }}
+                onClick={(e) => { e.stopPropagation(); setSelectedCategory("All"); setIsCustomDropdownOpen(false); }}
                 className="absolute right-9 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
@@ -477,18 +477,24 @@ export const AdminDishes = () => {
                       <Reorder.Item 
                         key={cat} 
                         value={cat}
-                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-grab active:cursor-grabbing select-none transition-colors ${
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold select-none transition-colors ${
                           selectedCategory === cat 
                             ? "bg-primary-500 text-white" 
                             : "bg-neutral-50 dark:bg-neutral-800/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
                         }`}
-                        onClick={() => { setSelectedCategory(cat); setIsCustomDropdownOpen(false); }}
                       >
-                        <span className="flex items-center gap-2 truncate">
-                          <GripVertical className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                        {/* ক্যাটাগরি নেমে ক্লিক করলে ড্রপডাউন অফ হয়ে সিলেক্ট হবে */}
+                        <span 
+                          onClick={() => { setSelectedCategory(cat); setIsCustomDropdownOpen(false); }}
+                          className="flex-1 truncate cursor-pointer py-0.5"
+                        >
                           {cat}
                         </span>
-                        <span className="text-[9px] opacity-60 font-normal">Drag</span>
+                        {/* গ্রিপ বাটন দিয়ে ড্র্যাগ করা যাবে */}
+                        <span className="flex items-center gap-1 pl-2 cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-600 shrink-0">
+                          <span className="text-[9px] opacity-60 font-normal">Drag</span>
+                          <GripVertical className="w-3.5 h-3.5" />
+                        </span>
                       </Reorder.Item>
                     ))}
                   </Reorder.Group>
