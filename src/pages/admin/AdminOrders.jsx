@@ -112,7 +112,8 @@ const getPaymentStatusColor = (status, method, orderStatus) => {
   }
 
   if (st === "paid") return "bg-emerald-500/10 text-emerald-500";
-  if (st === "failed" || st === "cancelled") return "bg-red-500/10 text-red-500";
+  if (st === "failed" || st === "cancelled")
+    return "bg-red-500/10 text-red-500";
   return "bg-amber-500/10 text-amber-500";
 };
 
@@ -201,7 +202,7 @@ export const AdminOrders = () => {
       window.dispatchEvent(
         new CustomEvent("order_updated", {
           detail: { orderId: newOrder?.id || newOrder?._id },
-        })
+        }),
       );
     };
 
@@ -211,15 +212,15 @@ export const AdminOrders = () => {
     socket.on("order_updated", (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
-        prev.map((o) => ((o.id || o._id) === updatedId ? updatedOrder : o))
+        prev.map((o) => ((o.id || o._id) === updatedId ? updatedOrder : o)),
       );
       setSelectedOrderDetails((prev) =>
-        (prev?.id || prev?._id) === updatedId ? updatedOrder : prev
+        (prev?.id || prev?._id) === updatedId ? updatedOrder : prev,
       );
       window.dispatchEvent(
         new CustomEvent("order_updated", {
           detail: { orderId: updatedId, id: updatedId },
-        })
+        }),
       );
     });
 
@@ -229,7 +230,7 @@ export const AdminOrders = () => {
 
     socket.on("rider_updated", (updatedRider) => {
       setRiders((prev) =>
-        prev.map((r) => (r.id === updatedRider.id ? updatedRider : r))
+        prev.map((r) => (r.id === updatedRider.id ? updatedRider : r)),
       );
     });
 
@@ -243,7 +244,7 @@ export const AdminOrders = () => {
             };
           }
           return ord;
-        })
+        }),
       );
     });
 
@@ -277,7 +278,9 @@ export const AdminOrders = () => {
       }
       toast.success(result?.reason || result?.message || "Re-check complete.");
     } catch (err) {
-      toast.error("Re-check failed: " + (err.response?.data?.message || err.message));
+      toast.error(
+        "Re-check failed: " + (err.response?.data?.message || err.message),
+      );
     } finally {
       setRecheckingOrderId(null);
     }
@@ -295,11 +298,15 @@ export const AdminOrders = () => {
     try {
       await updateOrderStatus(orderId, newStatus);
 
-      socket.emit("order_status_updated", { orderId, id: orderId, status: newStatus });
+      socket.emit("order_status_updated", {
+        orderId,
+        id: orderId,
+        status: newStatus,
+      });
       window.dispatchEvent(
         new CustomEvent("order_updated", {
           detail: { orderId, id: orderId, status: newStatus },
-        })
+        }),
       );
 
       fetchOrdersAndFleet();
@@ -310,16 +317,29 @@ export const AdminOrders = () => {
         toast.success(`Order #${shortId} has been Accepted!`, {
           duration: 3000,
           position: "top-right",
-          style: { background: "#10B981", color: "#FFFFFF", fontWeight: "bold", borderRadius: "10px" },
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+            fontWeight: "bold",
+            borderRadius: "10px",
+          },
         });
       } else if (newStatus === "Rejected" || newStatus === "REJECTED") {
         toast.error(`Order #${shortId} has been Rejected!`, {
           duration: 3000,
           position: "top-right",
-          style: { background: "#EF4444", color: "#FFFFFF", fontWeight: "bold", borderRadius: "10px" },
+          style: {
+            background: "#EF4444",
+            color: "#FFFFFF",
+            fontWeight: "bold",
+            borderRadius: "10px",
+          },
         });
       } else {
-        toast(`Order status updated to ${newStatus}`, { icon: "🔄", position: "top-right" });
+        toast(`Order status updated to ${newStatus}`, {
+          icon: "🔄",
+          position: "top-right",
+        });
       }
     } catch (err) {
       toast.error("Failed to update status: " + err.message);
@@ -370,7 +390,7 @@ export const AdminOrders = () => {
       });
 
       setOrders((prev) =>
-        prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o))
+        prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o)),
       );
       if (!customText) setAdminChatMessage("");
       toast.success("Message sent to rider/customer!");
@@ -397,19 +417,20 @@ export const AdminOrders = () => {
 
       <div className="w-full flex flex-col gap-6">
         {/* Table List */}
-        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-5 shadow-xs">
-          {/* 🎯 ল্যাপটপ স্ক্রিনের জন্য হরিজন্টাল স্ক্রল বাদ দিয়ে নির্দিষ্ট হাইট ও টপ-টু-বটম (vertical) স্ক্রলবার দেওয়া হলো */}
-          <div className="w-full max-h-[650px] overflow-y-auto overflow-x-hidden pr-1">
-            <table className="w-full text-xs text-left table-auto">
+        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
+          {/* 🎯 নির্দিষ্ট হাইট এবং টপ-টু-বটম স্ক্রলবার যা শুধুমাত্র টেবিল বডিতে কাজ করবে এবং হেডার ফিক্সড রাখবে */}
+          <div className="w-full max-h-[520px] overflow-y-auto overflow-x-auto relative">
+            <table className="w-full text-xs text-left min-w-[950px]">
               <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40 sticky top-0 z-10 backdrop-blur-md">
-                  <th className="px-3 py-3">Order ID</th>
-                  <th className="px-3 py-3">Customer</th>
-                  <th className="px-3 py-3">Total Amount</th>
-                  <th className="px-3 py-3">Order Action</th>
-                  <th className="px-3 py-3">Delivery Status</th>
-                  <th className="px-3 py-3">Assigned Rider</th>
-                  <th className="px-3 py-3 text-right">Actions</th>
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
+                  <th className="px-3 py-3.5">Order ID</th>
+                  <th className="px-3 py-3.5">Customer</th>
+                  <th className="px-3 py-3.5">Address</th>
+                  <th className="px-3 py-3.5">Total Amount</th>
+                  <th className="px-3 py-3.5">Order Action</th>
+                  <th className="px-3 py-3.5">Delivery Status</th>
+                  <th className="px-3 py-3.5">Assigned Rider</th>
+                  <th className="px-3 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -454,6 +475,14 @@ export const AdminOrders = () => {
                           {ord.user?.phone}
                         </span>
                       </td>
+                      <td className="px-3 py-3.5">
+                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[130px]">
+                          {ord.user?.address}
+                        </span>
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          {ord.user?.pickArea}
+                        </span>
+                      </td>
                       <td className="px-3 py-3.5 font-bold text-primary-500">
                         ৳{ord.total?.toFixed(2)}
                       </td>
@@ -463,14 +492,18 @@ export const AdminOrders = () => {
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
-                              onClick={() => handleStatusChange(ordId, "Accepted")}
+                              onClick={() =>
+                                handleStatusChange(ordId, "Accepted")
+                              }
                               className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
-                              onClick={() => handleStatusChange(ordId, "Rejected")}
+                              onClick={() =>
+                                handleStatusChange(ordId, "Rejected")
+                              }
                               className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
@@ -503,33 +536,48 @@ export const AdminOrders = () => {
                             <select
                               value={
                                 ord.riderAcceptStatus === "accepted" &&
-                                (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                (ord.status === "Accepted" ||
+                                  ord.status === "ACCEPTED")
                                   ? "Preparing"
                                   : ord.status
                               }
-                              disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
-                              onChange={(e) => handleStatusChange(ordId, e.target.value)}
+                              disabled={
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
+                              }
+                              onChange={(e) =>
+                                handleStatusChange(ordId, e.target.value)
+                              }
                               className={`px-2 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                !ord.riderId || ord.riderAcceptStatus !== "accepted"
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                   : `${getStatusColor(
                                       ord.riderAcceptStatus === "accepted" &&
-                                      (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                        (ord.status === "Accepted" ||
+                                          ord.status === "ACCEPTED")
                                         ? "Preparing"
-                                        : ord.status
+                                        : ord.status,
                                     )} cursor-pointer`
                               }`}
                             >
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
-                              <option value="Ready to Pick">Ready to Pick</option>
-                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Ready to Pick">
+                                Ready to Pick
+                              </option>
+                              <option value="Out for Delivery">
+                                Out for Delivery
+                              </option>
                               <option value="Delivered">Delivered</option>
                             </select>
-                            
-                            {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
+
+                            {(!ord.riderId ||
+                              ord.riderAcceptStatus !== "accepted") && (
                               <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
-                                {!ord.riderId ? "Assign Rider First" : "Awaiting Rider Accept"}
+                                {!ord.riderId
+                                  ? "Assign Rider First"
+                                  : "Awaiting Rider Accept"}
                               </span>
                             )}
                           </div>
@@ -541,10 +589,18 @@ export const AdminOrders = () => {
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
-                            disabled={isPendingUnhandled || isRejected || ord.status === "Delivered"}
-                            onChange={(e) => handleAssignRider(ordId, e.target.value)}
+                            disabled={
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
+                            }
+                            onChange={(e) =>
+                              handleAssignRider(ordId, e.target.value)
+                            }
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              isPendingUnhandled || isRejected || ord.status === "Delivered"
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
                             }`}
@@ -612,9 +668,12 @@ export const AdminOrders = () => {
                 onClick={() => {
                   handleSendAdminMessage(
                     null,
-                    "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant."
+                    "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant.",
                   );
-                  handleStatusChange(currentChat.id || currentChat._id, "Ready to Pick");
+                  handleStatusChange(
+                    currentChat.id || currentChat._id,
+                    "Ready to Pick",
+                  );
                 }}
                 className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
               >
@@ -668,13 +727,15 @@ export const AdminOrders = () => {
                 <div>
                   <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
                     Order Details #
-                    {(selectedOrderDetails.id || selectedOrderDetails._id)?.toUpperCase()}
+                    {(
+                      selectedOrderDetails.id || selectedOrderDetails._id
+                    )?.toUpperCase()}
                   </h2>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     Status:{" "}
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(
-                        selectedOrderDetails.status
+                        selectedOrderDetails.status,
                       )}`}
                     >
                       {selectedOrderDetails.status}
@@ -768,22 +829,28 @@ export const AdminOrders = () => {
                     className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
                       selectedOrderDetails.paymentStatus,
                       selectedOrderDetails.paymentMethod,
-                      selectedOrderDetails.status
+                      selectedOrderDetails.status,
                     )}`}
                   >
                     {(() => {
-                      const pm = String(selectedOrderDetails.paymentMethod || "cod").toLowerCase();
-                      const st = String(selectedOrderDetails.status || "").toUpperCase();
+                      const pm = String(
+                        selectedOrderDetails.paymentMethod || "cod",
+                      ).toLowerCase();
+                      const st = String(
+                        selectedOrderDetails.status || "",
+                      ).toUpperCase();
                       if (st === "REJECTED") {
                         return pm === "cod" ? "CANCELLED" : "REFUND REQUIRED";
                       }
-                      return selectedOrderDetails.paymentStatus || "AWAITING PAYMENT";
+                      return (
+                        selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"
+                      );
                     })()}
                   </span>
                 </div>
 
                 {String(
-                  selectedOrderDetails.paymentMethod || "cod"
+                  selectedOrderDetails.paymentMethod || "cod",
                 ).toLowerCase() !== "cod" &&
                   selectedOrderDetails.paymentStatus !== "Paid" &&
                   selectedOrderDetails.status !== "Rejected" && (
@@ -791,7 +858,7 @@ export const AdminOrders = () => {
                       <button
                         onClick={() =>
                           handleRecheckPayment(
-                            selectedOrderDetails.id || selectedOrderDetails._id
+                            selectedOrderDetails.id || selectedOrderDetails._id,
                           )
                         }
                         disabled={
@@ -803,7 +870,8 @@ export const AdminOrders = () => {
                         <RefreshCw
                           className={`w-3 h-3 ${
                             recheckingOrderId ===
-                            (selectedOrderDetails.id || selectedOrderDetails._id)
+                            (selectedOrderDetails.id ||
+                              selectedOrderDetails._id)
                               ? "animate-spin"
                               : ""
                           }`}
