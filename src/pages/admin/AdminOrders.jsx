@@ -416,10 +416,10 @@ export const AdminOrders = () => {
       </div>
 
       <div className="w-full flex flex-col gap-6">
-        {/* Table List */}
+       {/* Table List */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
-          {/* 🎯 নির্দিষ্ট হাইট এবং টপ-টু-বটম স্ক্রলবার যা শুধুমাত্র টেবিল বডিতে কাজ করবে এবং হেডার ফিক্সড রাখবে */}
-          <div className="w-full max-h-[520px] overflow-y-auto overflow-x-auto relative">
+          {/* 🎯 নির্দিষ্ট হাইট (যেমন: প্রায় ৫-৬টি রো দেখা যাওয়ার মতো) এবং উভয় স্ক্রলবার ফিক্সড */}
+          <div className="w-full max-h-[460px] overflow-auto relative">
             <table className="w-full text-xs text-left min-w-[950px]">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
@@ -492,18 +492,14 @@ export const AdminOrders = () => {
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Accepted")
-                              }
+                              onClick={() => handleStatusChange(ordId, "Accepted")}
                               className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Rejected")
-                              }
+                              onClick={() => handleStatusChange(ordId, "Rejected")}
                               className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
@@ -536,48 +532,33 @@ export const AdminOrders = () => {
                             <select
                               value={
                                 ord.riderAcceptStatus === "accepted" &&
-                                (ord.status === "Accepted" ||
-                                  ord.status === "ACCEPTED")
+                                (ord.status === "Accepted" || ord.status === "ACCEPTED")
                                   ? "Preparing"
                                   : ord.status
                               }
-                              disabled={
-                                !ord.riderId ||
-                                ord.riderAcceptStatus !== "accepted"
-                              }
-                              onChange={(e) =>
-                                handleStatusChange(ordId, e.target.value)
-                              }
+                              disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
+                              onChange={(e) => handleStatusChange(ordId, e.target.value)}
                               className={`px-2 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                !ord.riderId ||
-                                ord.riderAcceptStatus !== "accepted"
+                                !ord.riderId || ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                   : `${getStatusColor(
                                       ord.riderAcceptStatus === "accepted" &&
-                                        (ord.status === "Accepted" ||
-                                          ord.status === "ACCEPTED")
+                                      (ord.status === "Accepted" || ord.status === "ACCEPTED")
                                         ? "Preparing"
-                                        : ord.status,
+                                        : ord.status
                                     )} cursor-pointer`
                               }`}
                             >
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
-                              <option value="Ready to Pick">
-                                Ready to Pick
-                              </option>
-                              <option value="Out for Delivery">
-                                Out for Delivery
-                              </option>
+                              <option value="Ready to Pick">Ready to Pick</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
                               <option value="Delivered">Delivered</option>
                             </select>
-
-                            {(!ord.riderId ||
-                              ord.riderAcceptStatus !== "accepted") && (
+                            
+                            {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
                               <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
-                                {!ord.riderId
-                                  ? "Assign Rider First"
-                                  : "Awaiting Rider Accept"}
+                                {!ord.riderId ? "Assign Rider First" : "Awaiting Rider Accept"}
                               </span>
                             )}
                           </div>
@@ -589,18 +570,10 @@ export const AdminOrders = () => {
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
-                            disabled={
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
-                            }
-                            onChange={(e) =>
-                              handleAssignRider(ordId, e.target.value)
-                            }
+                            disabled={isPendingUnhandled || isRejected || ord.status === "Delivered"}
+                            onChange={(e) => handleAssignRider(ordId, e.target.value)}
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
+                              isPendingUnhandled || isRejected || ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
                             }`}
