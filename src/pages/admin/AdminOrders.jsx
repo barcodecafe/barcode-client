@@ -12,6 +12,7 @@ import {
   Utensils,
   RefreshCw,
   BellRing,
+  Printer,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -157,6 +158,7 @@ export const AdminOrders = () => {
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const chatEndRef = useRef(null);
+  const invoiceRef = useRef(null);
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
@@ -284,6 +286,25 @@ export const AdminOrders = () => {
     } finally {
       setRecheckingOrderId(null);
     }
+  };
+
+  // 🎯 প্রিন্ট এবং পিডিএফ ডাউনলোড করার ফাংশন
+  const handlePrintInvoice = () => {
+    const printContent = invoiceRef.current;
+    if (!printContent) return;
+
+    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+    WindowPrt.document.write('<html><head><title>Order Invoice</title>');
+    WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+    WindowPrt.document.write('</head><body class="bg-white p-6">');
+    WindowPrt.document.write(printContent.innerHTML);
+    WindowPrt.document.write('</body></html>');
+    WindowPrt.document.close();
+    WindowPrt.focus();
+    setTimeout(() => {
+      WindowPrt.print();
+      WindowPrt.close();
+    }, 500);
   };
 
   if (loading) {
@@ -416,9 +437,8 @@ export const AdminOrders = () => {
       </div>
 
       <div className="w-full flex flex-col gap-6">
-       {/* Table List */}
+        {/* Table List */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
-          {/* 🎯 নির্দিষ্ট হাইট (যেমন: প্রায় ৫-৬টি রো দেখা যাওয়ার মতো) এবং উভয় স্ক্রলবার ফিক্সড */}
           <div className="w-full max-h-[460px] overflow-auto relative">
             <table className="w-full text-xs text-left min-w-[950px]">
               <thead>
@@ -686,7 +706,7 @@ export const AdminOrders = () => {
         )}
       </div>
 
-      {/* Order Details Modal */}
+      {/* Order Details & Invoice Modal */}
       <AnimatePresence>
         {selectedOrderDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -715,166 +735,182 @@ export const AdminOrders = () => {
                     </span>
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedOrderDetails(null)}
-                  className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              <div className="bg-neutral-50 dark:bg-neutral-950/50 p-3.5 rounded-xl space-y-2 text-xs">
-                <h4 className="font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider text-[10px]">
-                  Customer Details
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-600 dark:text-neutral-300">
-                  <div className="flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span className="font-semibold">
-                      {selectedOrderDetails.user?.name || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>{selectedOrderDetails.user?.phone || "N/A"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 sm:col-span-2">
-                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>
-                      {selectedOrderDetails.user?.address}{" "}
-                      {selectedOrderDetails.user?.pickArea &&
-                        `(${selectedOrderDetails.user?.pickArea})`}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  {/* 🖨️ প্রিন্ট / পিডিএফ ডাউনলোড বাটন */}
+                  <button
+                    onClick={handlePrintInvoice}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    title="Print or Save as PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Print / PDF
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedOrderDetails(null)}
+                    className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-neutral-700 dark:text-neutral-300 text-xs mb-2 flex items-center gap-1.5">
-                  <Utensils className="w-3.5 h-3.5 text-primary-500" />
-                  Ordered Items (
-                  {selectedOrderDetails.items?.length ||
-                    selectedOrderDetails.cart?.length ||
-                    0}
-                  )
-                </h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {(
-                    selectedOrderDetails.items ||
-                    selectedOrderDetails.cart ||
-                    []
-                  ).map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center p-2.5 bg-neutral-50/60 dark:bg-neutral-950/30 rounded-xl text-xs border border-neutral-100 dark:border-neutral-800/60"
-                    >
-                      <div>
-                        <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                          {item.name}
-                        </span>
-                        {item.selectedSize && (
-                          <span className="text-[10px] font-semibold text-primary-500 ml-1">
-                            ({item.selectedSize})
-                          </span>
-                        )}
-                        <span className="block text-[10px] text-neutral-400 mt-0.5">
-                          Qty: {item.quantity} × ৳{item.price}
-                        </span>
-                      </div>
-                      <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                        ৳{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+              {/* 🧾 ইনভয়েস কন্টেন্ট (যা প্রিন্ট বা পিডিএফ হবে) */}
+              <div ref={invoiceRef} className="space-y-4">
+                <div className="bg-neutral-50 dark:bg-neutral-950/50 p-3.5 rounded-xl space-y-2 text-xs">
+                  <h4 className="font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider text-[10px]">
+                    Customer Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-600 dark:text-neutral-300">
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span className="font-semibold">
+                        {selectedOrderDetails.user?.name || "N/A"}
                       </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs space-y-2">
-                <div className="flex justify-between text-neutral-500">
-                  <span>Payment Method:</span>
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
-                    {selectedOrderDetails.paymentMethod || "COD"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-neutral-500">
-                  <span>Payment Status:</span>
-                  <span
-                    className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
-                      selectedOrderDetails.paymentStatus,
-                      selectedOrderDetails.paymentMethod,
-                      selectedOrderDetails.status,
-                    )}`}
-                  >
-                    {(() => {
-                      const pm = String(
-                        selectedOrderDetails.paymentMethod || "cod",
-                      ).toLowerCase();
-                      const st = String(
-                        selectedOrderDetails.status || "",
-                      ).toUpperCase();
-                      if (st === "REJECTED") {
-                        return pm === "cod" ? "CANCELLED" : "REFUND REQUIRED";
-                      }
-                      return (
-                        selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"
-                      );
-                    })()}
-                  </span>
-                </div>
-
-                {String(
-                  selectedOrderDetails.paymentMethod || "cod",
-                ).toLowerCase() !== "cod" &&
-                  selectedOrderDetails.paymentStatus !== "Paid" &&
-                  selectedOrderDetails.status !== "Rejected" && (
-                    <div className="pt-1">
-                      <button
-                        onClick={() =>
-                          handleRecheckPayment(
-                            selectedOrderDetails.id || selectedOrderDetails._id,
-                          )
-                        }
-                        disabled={
-                          recheckingOrderId ===
-                          (selectedOrderDetails.id || selectedOrderDetails._id)
-                        }
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wide hover:bg-primary-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                      >
-                        <RefreshCw
-                          className={`w-3 h-3 ${
-                            recheckingOrderId ===
-                            (selectedOrderDetails.id ||
-                              selectedOrderDetails._id)
-                              ? "animate-spin"
-                              : ""
-                          }`}
-                        />
-                        {recheckingOrderId ===
-                        (selectedOrderDetails.id || selectedOrderDetails._id)
-                          ? "Checking with gateway…"
-                          : "Re-check payment with gateway"}
-                      </button>
-                      <p className="text-[9px] text-neutral-400 mt-1 text-center normal-case">
-                        Use this if the customer says they paid but the order
-                        still shows unpaid.
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span>{selectedOrderDetails.user?.phone || "N/A"}</span>
                     </div>
-                  )}
-                {selectedOrderDetails.deliveryCharge !== undefined && (
+                    <div className="flex items-center gap-2 sm:col-span-2">
+                      <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span>
+                        {selectedOrderDetails.user?.address}{" "}
+                        {selectedOrderDetails.user?.pickArea &&
+                          `(${selectedOrderDetails.user?.pickArea})`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-neutral-700 dark:text-neutral-300 text-xs mb-2 flex items-center gap-1.5">
+                    <Utensils className="w-3.5 h-3.5 text-primary-500" />
+                    Ordered Items (
+                    {selectedOrderDetails.items?.length ||
+                      selectedOrderDetails.cart?.length ||
+                      0}
+                    )
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {(
+                      selectedOrderDetails.items ||
+                      selectedOrderDetails.cart ||
+                      []
+                    ).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center p-2.5 bg-neutral-50/60 dark:bg-neutral-950/30 rounded-xl text-xs border border-neutral-100 dark:border-neutral-800/60"
+                      >
+                        <div>
+                          <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                            {item.name}
+                          </span>
+                          {item.selectedSize && (
+                            <span className="text-[10px] font-semibold text-primary-500 ml-1">
+                              ({item.selectedSize})
+                            </span>
+                          )}
+                          <span className="block text-[10px] text-neutral-400 mt-0.5">
+                            Qty: {item.quantity} × ৳{item.price}
+                          </span>
+                        </div>
+                        <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                          ৳{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs space-y-2">
                   <div className="flex justify-between text-neutral-500">
-                    <span>Delivery Charge:</span>
-                    <span>
-                      ৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}
+                    <span>Payment Method:</span>
+                    <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
+                      {selectedOrderDetails.paymentMethod || "COD"}
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-neutral-100 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800">
-                  <span>Total Amount:</span>
-                  <span className="text-primary-500">
-                    ৳{(selectedOrderDetails.total || 0).toFixed(2)}
-                  </span>
+                  <div className="flex justify-between text-neutral-500">
+                    <span>Payment Status:</span>
+                    <span
+                      className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
+                        selectedOrderDetails.paymentStatus,
+                        selectedOrderDetails.paymentMethod,
+                        selectedOrderDetails.status,
+                      )}`}
+                    >
+                      {(() => {
+                        const pm = String(
+                          selectedOrderDetails.paymentMethod || "cod",
+                        ).toLowerCase();
+                        const st = String(
+                          selectedOrderDetails.status || "",
+                        ).toUpperCase();
+                        if (st === "REJECTED") {
+                          return pm === "cod" ? "CANCELLED" : "REFUND REQUIRED";
+                        }
+                        return (
+                          selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"
+                        );
+                      })()}
+                    </span>
+                  </div>
+
+                  {selectedOrderDetails.deliveryCharge !== undefined && (
+                    <div className="flex justify-between text-neutral-500">
+                      <span>Delivery Charge:</span>
+                      <span>
+                        ৳{(selectedOrderDetails.deliveryCharge || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-neutral-100 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-800">
+                    <span>Total Amount:</span>
+                    <span className="text-primary-500">
+                      ৳{(selectedOrderDetails.total || 0).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              {String(
+                selectedOrderDetails.paymentMethod || "cod",
+              ).toLowerCase() !== "cod" &&
+                selectedOrderDetails.paymentStatus !== "Paid" &&
+                selectedOrderDetails.status !== "Rejected" && (
+                  <div className="pt-1">
+                    <button
+                      onClick={() =>
+                        handleRecheckPayment(
+                          selectedOrderDetails.id || selectedOrderDetails._id,
+                        )
+                      }
+                      disabled={
+                        recheckingOrderId ===
+                        (selectedOrderDetails.id || selectedOrderDetails._id)
+                      }
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wide hover:bg-primary-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      <RefreshCw
+                        className={`w-3 h-3 ${
+                          recheckingOrderId ===
+                          (selectedOrderDetails.id ||
+                            selectedOrderDetails._id)
+                            ? "animate-spin"
+                            : ""
+                        }`}
+                      />
+                      {recheckingOrderId ===
+                      (selectedOrderDetails.id || selectedOrderDetails._id)
+                        ? "Checking with gateway…"
+                        : "Re-check payment with gateway"}
+                    </button>
+                    <p className="text-[9px] text-neutral-400 mt-1 text-center normal-case">
+                      Use this if the customer says they paid but the order
+                      still shows unpaid.
+                    </p>
+                  </div>
+                )}
             </motion.div>
           </div>
         )}
