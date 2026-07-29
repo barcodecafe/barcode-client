@@ -313,31 +313,52 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-  // 📥 পিডিএফ ডিরেক্ট ডাউনলোডের নিরাপদ ফাংশন (কোনো ব্যাকগ্রাউন্ড বা পেজ ব্যাক ইস্যু ছাড়াই)
+// 📥 ব্রাউজারে পপআপ ছাড়াই সরাসরি .pdf ফাইল ডাউনলোড করার আধুনিক ফাংশন
   const handleDownloadPDF = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=800,height=900');
-    if (!WindowPrt) {
-      toast.error("Please allow popups for this website to download PDF.");
-      return;
-    }
+    const orderId = ((selectedOrderDetails?.id || selectedOrderDetails?._id) || 'order').toUpperCase();
+    
+    // একটি সাময়িক লুকানো আইফ্রেম বা উইন্ডো তৈরি করে সরাসরি কন্টেন্ট রেন্ডার করা
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice-${orderId}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 25px; color: #111; background: #fff; }
+            .text-primary-500 { color: #f97316; }
+          </style>
+        </head>
+        <body>
+          <h2 style="border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 15px;">Order Invoice #${orderId}</h2>
+          ${printContent.innerHTML}
+          <script>
+            window.onload = function() {
+              setTimeout(() => {
+                window.print();
+              }, 200);
+            };
+          </script>
+        </body>
+      </html>
+    `;
 
-    WindowPrt.document.write('<html><head><title>Invoice-' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || 'Order').toUpperCase() + '</title>');
-    WindowPrt.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; color: #333; } .text-primary-500 { color: #f97316; }</style>');
-    WindowPrt.document.write('</head><body>');
-    WindowPrt.document.write('<h2 style="border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Order Invoice #' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || '').toUpperCase() + '</h2>');
-    WindowPrt.document.write(printContent.innerHTML);
-    WindowPrt.document.write('</body></html>');
-    WindowPrt.document.close();
-    WindowPrt.focus();
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
 
+    iframe.contentWindow.focus();
     setTimeout(() => {
-      WindowPrt.print();
-      WindowPrt.close();
-      toast.success("PDF dialog opened! Select 'Save as PDF' to download.");
+      iframe.contentWindow.print();
+      toast.success("PDF Download ready! Select 'Save as PDF'.");
     }, 500);
   };
   
