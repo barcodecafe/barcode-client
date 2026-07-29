@@ -213,7 +213,7 @@ export const AdminDishes = () => {
       variations: (food.variations || []).map(v => ({
         name: v.name || "",
         price: v.price || 0,
-        image: v.image || "" // Load variant specific image
+        image: v.image || ""
       })),
     });
     setIsModalOpen(true);
@@ -273,7 +273,6 @@ export const AdminDishes = () => {
     }
   };
 
-  // Add variation handler with optional image field
   const handleAddVariation = () => {
     setFormData((prev) => ({
       ...prev,
@@ -289,7 +288,6 @@ export const AdminDishes = () => {
     });
   };
 
-  // Variant base image upload
   const handleVariationImageChange = (index, file) => {
     if (file) {
       const reader = new FileReader();
@@ -377,14 +375,14 @@ export const AdminDishes = () => {
             onClick={handleManualRefresh}
             disabled={isRefreshing}
             title="Refresh the list now"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 disabled:opacity-50 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 disabled:opacity-50 active:scale-95 transition-all cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </button>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add New Dish
           </button>
@@ -405,41 +403,37 @@ export const AdminDishes = () => {
             />
           </div>
 
+          {/* 🎯 কাস্টম ক্যাটাগরি ড্রপডাউন ফিল্টার */}
           <div className="relative min-w-[200px] flex-1 sm:flex-initial">
             <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
-            <input
-              type="text"
-              list="category-options"
-              placeholder="Filter by category..."
-              value={selectedCategory === "All" ? "" : selectedCategory}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedCategory(val === "" ? "All" : val);
-              }}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium"
-            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
+            >
+              <option value="All">All Categories</option>
+              {sortedCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
             {selectedCategory !== "All" && (
               <button
                 type="button"
                 onClick={() => setSelectedCategory("All")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 z-10 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
-            <datalist id="category-options">
-              <option value="All">All Categories</option>
-              {sortedCategories.map((cat) => (
-                <option key={cat} value={cat} />
-              ))}
-            </datalist>
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => setIsSortOpen(!isSortOpen)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
             isSortOpen 
               ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
               : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
@@ -556,8 +550,8 @@ export const AdminDishes = () => {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
@@ -581,7 +575,7 @@ export const AdminDishes = () => {
                 <h2 className="text-lg font-black text-neutral-900 dark:text-white">
                   {editingFood ? "Edit Menu Dish" : "Create New Dish"}
                 </h2>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -595,8 +589,8 @@ export const AdminDishes = () => {
                     <div className="relative group w-full h-36 rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50">
                       <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button type="button" onClick={() => fileInputRef.current.click()} className="px-3 py-1.5 bg-white text-neutral-900 rounded-xl font-bold text-xs shadow">Change</button>
-                        <button type="button" onClick={() => { setImagePreview(null); setFormData({ ...formData, image: "" }); }} className="px-3 py-1.5 bg-red-500 text-white rounded-xl font-bold text-xs shadow">Remove</button>
+                        <button type="button" onClick={() => fileInputRef.current.click()} className="px-3 py-1.5 bg-white text-neutral-900 rounded-xl font-bold text-xs shadow cursor-pointer">Change</button>
+                        <button type="button" onClick={() => { setImagePreview(null); setFormData({ ...formData, image: "" }); }} className="px-3 py-1.5 bg-red-500 text-white rounded-xl font-bold text-xs shadow cursor-pointer">Remove</button>
                       </div>
                     </div>
                   ) : (
@@ -617,7 +611,7 @@ export const AdminDishes = () => {
 
                   <div className={isCustomCategory ? "col-span-2 space-y-2" : "col-span-1"}>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Category *</label>
-                    <select value={isCustomCategory ? "Custom" : formData.category} onChange={(e) => { if (e.target.value === "Custom") { setIsCustomCategory(true); setFormData({ ...formData, category: "" }); } else { setIsCustomCategory(false); setFormData({ ...formData, category: e.target.value }); } }} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none">
+                    <select value={isCustomCategory ? "Custom" : formData.category} onChange={(e) => { if (e.target.value === "Custom") { setIsCustomCategory(true); setFormData({ ...formData, category: "" }); } else { setIsCustomCategory(false); setFormData({ ...formData, category: e.target.value }); } }} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer">
                       {sortedCategories.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
@@ -626,7 +620,7 @@ export const AdminDishes = () => {
                     {isCustomCategory && (
                       <div className="flex gap-2 items-center mt-2">
                         <input type="text" required placeholder="Enter custom category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                        <button type="button" onClick={() => { setIsCustomCategory(false); setFormData({ ...formData, category: sortedCategories[0] || "Mains" }); }} className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1">Reset</button>
+                        <button type="button" onClick={() => { setIsCustomCategory(false); setFormData({ ...formData, category: sortedCategories[0] || "Mains" }); }} className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer">Reset</button>
                       </div>
                     )}
                   </div>
@@ -659,14 +653,13 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Variants Component (Supports Custom Variant Types + Per-Variant Images) */}
+                {/* Variants Component */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight / Custom Variants</label>
-                    <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Variant</button>
+                    <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg cursor-pointer">+ Add Variant</button>
                   </div>
 
-                  {/* Custom Variant Type Selector */}
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
@@ -704,7 +697,7 @@ export const AdminDishes = () => {
                         <button 
                           type="button" 
                           onClick={() => { setIsCustomVariantLabel(false); setFormData({ ...formData, variantLabel: "Size" }); }} 
-                          className="text-[11px] text-neutral-400 hover:text-neutral-600 px-2 py-1"
+                          className="text-[11px] text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer"
                         >
                           Reset
                         </button>
@@ -716,7 +709,6 @@ export const AdminDishes = () => {
                     <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price.</p>
                   )}
 
-                  {/* Variation Items List */}
                   <div className="space-y-2.5 pt-1">
                     {formData.variations.map((v, index) => (
                       <div key={index} className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm">
@@ -745,14 +737,13 @@ export const AdminDishes = () => {
                           <button 
                             type="button" 
                             onClick={() => handleRemoveVariation(index)} 
-                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                             title="Remove variant"
                           >
                             ✕
                           </button>
                         </div>
 
-                        {/* Variant Specific Image Upload Option */}
                         <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-neutral-100 dark:border-neutral-800/60 text-[11px]">
                           <span className="text-neutral-500 font-medium flex items-center gap-1">
                             <ImageIcon className="w-3.5 h-3.5 text-neutral-400" /> Variant Image:
@@ -764,7 +755,7 @@ export const AdminDishes = () => {
                               <button 
                                 type="button" 
                                 onClick={() => handleVariationChange(index, "image", "")} 
-                                className="text-red-500 hover:underline font-semibold"
+                                className="text-red-500 hover:underline font-semibold cursor-pointer"
                               >
                                 Remove
                               </button>
@@ -793,7 +784,7 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* BULLETPROOF BRANCH AVAILABILITY RENDER */}
+                {/* Branch Availability */}
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex justify-between items-center flex-wrap gap-2">
@@ -867,16 +858,16 @@ export const AdminDishes = () => {
 
                 <div className="flex flex-wrap gap-4 pt-1">
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-                    <input type="checkbox" checked={formData.popular} onChange={(e) => setFormData({ ...formData, popular: e.target.checked })} className="rounded text-primary-500" /> Mark as Popular
+                    <input type="checkbox" checked={formData.popular} onChange={(e) => setFormData({ ...formData, popular: e.target.checked })} className="rounded text-primary-500 cursor-pointer" /> Mark as Popular
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-                    <input type="checkbox" checked={formData.isAdminFeatured} onChange={(e) => setFormData({ ...formData, isAdminFeatured: e.target.checked })} className="rounded text-primary-500" /> Featured Dish
+                    <input type="checkbox" checked={formData.isAdminFeatured} onChange={(e) => setFormData({ ...formData, isAdminFeatured: e.target.checked })} className="rounded text-primary-500 cursor-pointer" /> Featured Dish
                   </label>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold">Cancel</button>
-                  <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold cursor-pointer">Cancel</button>
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold cursor-pointer">
                     {editingFood ? "Save Changes" : "Create Dish"}
                   </button>
                 </div>
