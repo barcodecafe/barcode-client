@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion"; 
+import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion"; 
 import {
   Search,
   Star,
@@ -25,6 +25,84 @@ import {
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
+
+// 🎯 প্রতিটি ডিশ কার্ডের জন্য আলাদা ড্র্যাগ কম্পোনেন্ট
+const DishItem = ({ food, openEditModal, handleDelete, branchNameById }) => {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={food}
+      dragListener={false}
+      dragControls={controls}
+      className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-4"
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0 w-full sm:w-auto">
+        {/* 🎯 শুধু এই ড্র্যাগ হ্যান্ডেলটিতে মাউস ধরে ডিশটি টেনে উপরে/নিচে নেওয়া যাবে */}
+        <div
+          onPointerDown={(e) => controls.start(e)}
+          className="p-2 -ml-1 text-neutral-300 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-5 h-5" />
+        </div>
+
+        {food.image ? (
+          <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0 pointer-events-none" />
+        ) : (
+          <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
+            <Layers className="w-5 h-5" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+            <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+              {food.category}
+            </span>
+            {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+            {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
+          </div>
+          <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate select-none">{food.name}</h3>
+          <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block select-none">{food.description || "No description provided."}</p>
+
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap select-none">
+            <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
+            {(food.branchIds || []).length === 0 ? (
+              <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                All branches
+              </span>
+            ) : (
+              <>
+                {food.branchIds.slice(0, 3).map((bid) => (
+                  <span key={bid} className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500">
+                    {branchNameById.get(String(bid)) || `Branch #${bid}`}
+                  </span>
+                ))}
+                {food.branchIds.length > 3 && (
+                  <span className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                    +{food.branchIds.length - 3} more
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
+        <div className="text-left sm:text-right min-w-[75px] select-none">
+          <p className="text-sm font-black text-primary-500">৳{food.price}</p>
+          {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+          <button onClick={() => handleDelete(food.id || food._id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+        </div>
+      </div>
+    </Reorder.Item>
+  );
+};
 
 export const AdminDishes = () => {
   const [foods, setFoods] = useState([]);
@@ -72,7 +150,6 @@ export const AdminDishes = () => {
         .then(([foodsData, branchesData]) => {
           let loadedFoods = foodsData || [];
           
-          // লোকাল স্টোরেজ থেকে ডিশের রিনাম্বার্ড/সর্টেড অর্ডার চেক
           const savedFoodOrder = localStorage.getItem("custom_food_order");
           if (savedFoodOrder) {
             try {
@@ -169,17 +246,12 @@ export const AdminDishes = () => {
     localStorage.setItem("custom_category_order", JSON.stringify(finalUniqueOrder));
   };
 
-  // 🎯 খাবারের কার্ড সরাসরি ড্র্যাগ করে অর্ডারিং হ্যান্ডলার
   const handleFoodReorder = (reorderedFoods) => {
-    if (search || selectedCategory !== "All") {
-      // ফিল্টার বা সার্চ চলাকালীন শুধু ভিউ চেঞ্জ হবে
-      setFoods(reorderedFoods);
-      return;
-    }
-
     setFoods(reorderedFoods);
-    const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
-    localStorage.setItem("custom_food_order", JSON.stringify(orderedIds));
+    if (!search && selectedCategory === "All") {
+      const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
+      localStorage.setItem("custom_food_order", JSON.stringify(orderedIds));
+    }
   };
 
   const openCreateModal = () => {
@@ -299,7 +371,7 @@ export const AdminDishes = () => {
     if (window.confirm("Are you sure you want to delete this dish?")) {
       try {
         await deleteFood(id);
-        setFoods(foods.filter((f) => f.id !== id));
+        setFoods(foods.filter((f) => (f.id || f._id) !== id));
       } catch (err) {
         alert("Failed to delete dish.");
       }
@@ -350,8 +422,8 @@ export const AdminDishes = () => {
       };
 
       if (editingFood) {
-        const updated = await updateFood(editingFood.id, cleanedFormData);
-        setFoods(foods.map((f) => (f.id === editingFood.id ? updated : f)));
+        const updated = await updateFood(editingFood.id || editingFood._id, cleanedFormData);
+        setFoods(foods.map((f) => ((f.id || f._id) === (editingFood.id || editingFood._id) ? updated : f)));
       } else {
         const created = await createFood(cleanedFormData);
         setFoods([created, ...foods]);
@@ -413,7 +485,7 @@ export const AdminDishes = () => {
         </div>
       </div>
 
-      {/* Filters & Settings Trigger Next to Dropdown */}
+      {/* Filters & Settings */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center max-w-2xl flex-1">
           <div className="relative flex-1">
@@ -427,7 +499,6 @@ export const AdminDishes = () => {
             />
           </div>
 
-          {/* Category Filter & Sort Setting Icon Button */}
           <div className="relative min-w-[200px] flex-1 sm:flex-initial flex items-center gap-2">
             <div className="relative flex-1">
               <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
@@ -454,7 +525,6 @@ export const AdminDishes = () => {
               )}
             </div>
 
-            {/* 🎯 ফিল্টার ড্রপডাউনের পাশেই ছোট সেটিংস বাটন */}
             <button
               type="button"
               onClick={() => setIsSortOpen(!isSortOpen)}
@@ -511,7 +581,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* 🎯 Foods List with Drag and Drop Reordering */}
+      {/* 🎯 Foods List with Drag Controls */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
@@ -532,71 +602,13 @@ export const AdminDishes = () => {
               className="flex flex-col gap-3"
             >
               {filteredFoods.map((food) => (
-                <Reorder.Item
+                <DishItem
                   key={food.id || food._id}
-                  value={food}
-                  className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-all gap-4 cursor-grab active:cursor-grabbing"
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
-                    {/* Drag Grip Handle */}
-                    <div className="p-1 text-neutral-300 group-hover:text-neutral-500 transition-colors shrink-0">
-                      <GripVertical className="w-5 h-5" />
-                    </div>
-
-                    {food.image ? (
-                      <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0 pointer-events-none" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
-                        <Layers className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                          {food.category}
-                        </span>
-                        {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                        {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
-                      </div>
-                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate select-none">{food.name}</h3>
-                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block select-none">{food.description || "No description provided."}</p>
-
-                      <div className="flex items-center gap-1 mt-1.5 flex-wrap select-none">
-                        <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
-                        {(food.branchIds || []).length === 0 ? (
-                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-                            All branches
-                          </span>
-                        ) : (
-                          <>
-                            {food.branchIds.slice(0, 3).map((bid) => (
-                              <span key={bid} className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500">
-                                {branchNameById.get(String(bid)) || `Branch #${bid}`}
-                              </span>
-                            ))}
-                            {food.branchIds.length > 3 && (
-                              <span className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
-                                +{food.branchIds.length - 3} more
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
-                    <div className="text-left sm:text-right min-w-[75px] select-none">
-                      <p className="text-sm font-black text-primary-500">৳{food.price}</p>
-                      {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(food.id || food._id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                </Reorder.Item>
+                  food={food}
+                  openEditModal={openEditModal}
+                  handleDelete={handleDelete}
+                  branchNameById={branchNameById}
+                />
               ))}
             </Reorder.Group>
           )}
