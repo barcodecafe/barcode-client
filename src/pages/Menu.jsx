@@ -47,12 +47,33 @@ export const Menu = () => {
     else getFoodsByBranch(null, 100).then(setFoods);
   }, [popularOnly]);
 
+  // 🎯 ব্যাকএন্ডের categoryOrder ধরে ক্যাটাগরি সর্টিং সিঙ্ক করা হলো
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
 
-    const rawCats = foods.map((item) => item.category?.trim()).filter(Boolean);
-    const uniqueCatsSet = new Set(rawCats);
-    return ["All", ...Array.from(uniqueCatsSet)];
+    const categoryMap = new Map();
+
+    foods.forEach((item) => {
+      if (item.category?.trim()) {
+        const catName = item.category.trim();
+        const lowerName = catName.toLowerCase();
+        const orderVal = typeof item.categoryOrder === "number" ? item.categoryOrder : 999;
+
+        if (!categoryMap.has(lowerName)) {
+          categoryMap.set(lowerName, { name: catName, order: orderVal });
+        } else {
+          if (orderVal < categoryMap.get(lowerName).order) {
+            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          }
+        }
+      }
+    });
+
+    const sortedCats = Array.from(categoryMap.values())
+      .sort((a, b) => a.order - b.order)
+      .map((item) => item.name);
+
+    return ["All", ...sortedCats];
   }, [foods]);
 
   const checkScroll = () => {

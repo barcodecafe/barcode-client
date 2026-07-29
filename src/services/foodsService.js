@@ -7,7 +7,6 @@
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
-
 /** GET /api/foods */
 export async function getAllFoods() {
   return apiClient.get('/foods');
@@ -62,16 +61,15 @@ export async function updateFoodOrder(orderedFoodIds) {
   return apiClient.put('/foods/reorder', { foodIds: orderedFoodIds });
 }
 
-/** PUT /api/categories/reorder (admin) — Reorder category order in Database */
+/** PUT /api/foods/categories/reorder (admin) — Reorder category order in Database */
 export async function updateCategoryOrder(orderedCategories) {
-  return apiClient.put('/categories/reorder', { categories: orderedCategories });
+  return apiClient.put('/foods/categories/reorder', { categories: orderedCategories }); // 🎯 404 Error Fix (/foods/ added)
 }
 
 /** DELETE /api/foods/:id (admin) */
 export async function deleteFood(id) {
   return apiClient.delete(`/foods/${id}`);
 }
-
 
 // ── Pure client-side display helpers (unchanged — operate on a food object) ──
 
@@ -95,8 +93,6 @@ export function getDiscountedPrice(food, branchId, selectedSize = null) {
 }
 
 // ── Discount helpers — percentage OR flat ৳ amount (single source of truth) ──
-// A food discounts either by a percentage (discountPct) or a flat ৳ amount per
-// unit (discountAmount), chosen by discountType ('percent' default for legacy).
 
 /** true if the food currently has any active discount. */
 export function hasFoodDiscount(food) {

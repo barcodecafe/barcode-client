@@ -69,6 +69,41 @@ export const AdminDishes = () => {
   const standardCategories = ["Mains", "Starters", "Desserts", "Beverages"];
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
+  // 🎯 ব্যাকএন্ডের categoryOrder মেইনটেইন করে ক্যাটাগরি প্রসেস করার হেল্পার ফাংশন
+  const processCategories = (loadedFoods) => {
+    const categoryMap = new Map();
+
+    // ১. ব্যাকএন্ডের খাবারের ভিতর থাকা categoryOrder রিড করা
+    loadedFoods.forEach((f) => {
+      if (f.category?.trim()) {
+        const catName = f.category.trim();
+        const lowerName = catName.toLowerCase();
+        const orderVal = typeof f.categoryOrder === "number" ? f.categoryOrder : 999;
+
+        if (!categoryMap.has(lowerName)) {
+          categoryMap.set(lowerName, { name: catName, order: orderVal });
+        } else {
+          // সবচেয়ে কম orderVal থাকলে সেটা মেইনটেইন করবে
+          if (orderVal < categoryMap.get(lowerName).order) {
+            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          }
+        }
+      }
+    });
+
+    // ২. standard categories এর ব্যাকআপ নিশ্চিত করা (যদি ডাটাবেজে আগে না থাকে)
+    standardCategories.forEach((sc, idx) => {
+      if (!categoryMap.has(sc.toLowerCase())) {
+        categoryMap.set(sc.toLowerCase(), { name: sc, order: 100 + idx });
+      }
+    });
+
+    // ৩. categoryOrder অনুযায়ী সর্ট করে অ্যারেই রিটার্ন করা
+    return Array.from(categoryMap.values())
+      .sort((a, b) => a.order - b.order)
+      .map((item) => item.name);
+  };
+
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches()])
       .then(([foodsData, branchesData]) => {
@@ -77,24 +112,9 @@ export const AdminDishes = () => {
         setBranches(branchesData || []);
         setIsLoading(false);
 
-        const cats = loadedFoods.map((f) => f.category?.trim()).filter(Boolean);
-        const uniqueMap = new Map();
-        cats.forEach(cat => {
-          const lowerCaseCat = cat.toLowerCase();
-          let finalCatName = cat;
-          if (lowerCaseCat === "deserts") finalCatName = "Desserts";
-          
-          const finalKey = finalCatName.toLowerCase();
-          if (!uniqueMap.has(finalKey)) {
-            uniqueMap.set(finalKey, finalCatName);
-          }
-        });
-
-        const uniqueCustom = Array.from(uniqueMap.values()).filter(
-          (c) => !standardCategories.map(sc => sc.toLowerCase()).includes(c.toLowerCase())
-        );
-        
-        setSortedCategories([...standardCategories, ...uniqueCustom]);
+        // 🎯 ব্যাকএন্ডের categoryOrder অনুযায়ী ক্যাটাগরি সেট করা হলো
+        const orderedCats = processCategories(loadedFoods);
+        setSortedCategories(orderedCats);
       })
       .catch((err) => {
         console.error("Error loading admin foods data:", err);
@@ -106,8 +126,13 @@ export const AdminDishes = () => {
     () =>
       Promise.all([getAllFoods(), getAllBranches()])
         .then(([foodsData, branchesData]) => {
-          setFoods(foodsData || []);
+          const loadedFoods = foodsData || [];
+          setFoods(loadedFoods);
           setBranches(branchesData || []);
+          
+          // পোলিং রিফ্রেশেও ক্যাটাগরি অর্ডার অপটিমাইজ করা
+          const orderedCats = processCategories(loadedFoods);
+          setSortedCategories(orderedCats);
         })
         .catch((err) => console.error("Background sync failed:", err)),
     [],
@@ -120,15 +145,27 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  // 🎯 ক্যাটাগরি সরাসরি লাইভ API-তে সেভ
+  // 🎯 ক্যাটাগরি ড্র্যাগ অ্যান্ড ড্রপ সম্পূর্ণ সিঙ্ক করার হ্যান্ডলার
   const handleCategoryReorder = async (newOrder) => {
     const orderMap = new Map();
-    newOrder.forEach(cat => {
+    newOrder.forEach((cat) => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
     });
     const finalUniqueOrder = Array.from(orderMap.values());
+    
+    // ১. রিয়েল-টাইম স্ক্রিন আপডেট
     setSortedCategories(finalUniqueOrder);
 
+    // ২. local foods অবজেক্টগুলোর categoryOrder আপডেট করা
+    const orderLookup = new Map(finalUniqueOrder.map((cat, idx) => [cat.toLowerCase(), idx + 1]));
+    setFoods((prevFoods) =>
+      prevFoods.map((f) => ({
+        ...f,
+        categoryOrder: orderLookup.get(f.category?.trim().toLowerCase()) ?? 999,
+      }))
+    );
+
+    // ৩. ব্যাকএন্ডে API কাল করে স্থায়ীভাবে DB-তে সেভ করা
     try {
       if (typeof updateCategoryOrder === "function") {
         await updateCategoryOrder(finalUniqueOrder);
@@ -141,7 +178,7 @@ export const AdminDishes = () => {
   // 🎯 ডিশ সরাসরি লাইভ API-তে সেভ
   const handleFoodReorder = async (reorderedFoods) => {
     setFoods(reorderedFoods);
-    const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
+    const orderedIds = reorderedFoods.map((f) => String(f.id || f._id));
 
     try {
       if (typeof updateFoodOrder === "function") {
@@ -464,7 +501,7 @@ export const AdminDishes = () => {
                     <GripVertical className="w-4 h-4 text-neutral-400" />
                     {cat}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-normal">Tug</span>
+                  <span className="text-[10px] text-neutral-400 font-normal">Drag</span>
                 </Reorder.Item>
               ))}
             </Reorder.Group>
