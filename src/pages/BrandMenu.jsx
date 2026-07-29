@@ -16,8 +16,6 @@ import FoodCard from "../components/FoodCard";
 import "swiper/css";
 import "swiper/css/pagination";
 
-// The brand's menu: dishes served at any of the brand's branches, grouped by
-// category, reusing the same FoodCard as the group menu.
 export const BrandMenu = () => {
   const brand = useBrand();
   const [foods, setFoods] = useState([]);
@@ -28,10 +26,26 @@ export const BrandMenu = () => {
 
   useEffect(() => {
     if (!brand?.slug) return;
+
+    let isMounted = true;
+    setLoading(true);
+
     getBrandMenu(brand.slug)
-      .then((res) => setFoods(res?.foods || []))
-      .catch(() => setFoods([]))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (isMounted) {
+          setFoods(Array.isArray(res?.foods) ? res.foods : []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setFoods([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [brand?.slug]);
 
   // 🎯 ব্যাকএন্ডের categoryOrder মেইনটেইন করে ক্যাটাগরি সর্ট করা
@@ -103,7 +117,9 @@ export const BrandMenu = () => {
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {[1, 2, 3, 4].map((n) => <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
+          ))}
         </div>
       ) : shown.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400">

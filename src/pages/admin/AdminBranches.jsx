@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   Search,
@@ -71,27 +71,38 @@ export const AdminBranches = () => {
   const [formError, setFormError] = useState("");
   const [mapLinkInput, setMapLinkInput] = useState("");
 
-  const fetchBranchesData = () => {
-    setIsLoading(true);
-    getAllBrandsAdmin().then((b) => setBrands(Array.isArray(b) ? b : [])).catch(() => {});
-    Promise.all([getAllBranches(), getRevenueByBranch(), getAllRegions()]).then(
-      ([branchData, revenueData, regionData]) => {
-        setBranches(branchData || []);
-        setRegions(Array.isArray(regionData) ? regionData : []);
-        setRevenueMap(
-          (revenueData || []).reduce((map, r) => {
-            map[r.branchId] = r;
-            return map;
-          }, {}),
-        );
-        setIsLoading(false);
-      },
-    );
-  };
+  // 🚀 ১. একসাথে প্যারালালি ডাটা ফেচ করা (Superfast Parallel Loading)
+  const fetchBranchesData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [branchData, revenueData, regionData, brandData] = await Promise.all([
+        getAllBranches().catch(() => []),
+        getRevenueByBranch().catch(() => []),
+        getAllRegions().catch(() => []),
+        getAllBrandsAdmin().catch(() => []),
+      ]);
+
+      setBranches(branchData || []);
+      setRegions(Array.isArray(regionData) ? regionData : []);
+      setBrands(Array.isArray(brandData) ? brandData : []);
+
+      if (Array.isArray(revenueData)) {
+        const revMap = revenueData.reduce((map, r) => {
+          map[r.branchId] = r;
+          return map;
+        }, {});
+        setRevenueMap(revMap);
+      }
+    } catch (err) {
+      console.error("Failed to load admin branches data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchBranchesData();
-  }, []);
+  }, [fetchBranchesData]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -103,17 +114,18 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  // 🎯 Drag & Drop Reorder Handler
-  const handleBranchReorder = async (reorderedBranches) => {
+  // 🚀 ২. ইনস্ট্যান্ট অপটিমিস্টিক ড্র্যাগ অ্যান্ড ড্রপ (Instant Drag & Drop Reorder)
+  const handleBranchReorder = (reorderedBranches) => {
+    // ১. সাথে সাথে ইউআই আপডেট (0ms Lag)
     setBranches(reorderedBranches);
+
     const orderedIds = reorderedBranches.map((b) => String(b.id || b._id));
 
-    try {
-      if (typeof updateBranchOrder === "function") {
-        await updateBranchOrder(orderedIds);
-      }
-    } catch (err) {
-      console.error("Error updating branch order on server:", err);
+    // ২. ব্যাকগ্রাউন্ডে নিভৃত এপিআই রিকোয়েস্ট
+    if (typeof updateBranchOrder === "function") {
+      updateBranchOrder(orderedIds).catch((err) => {
+        console.error("Background sync error for branch order:", err);
+      });
     }
   };
 
@@ -173,6 +185,7 @@ export const AdminBranches = () => {
       deliveryZones: [...prev.deliveryZones, { name: "", charge: prev.defaultDeliveryCharge }],
     }));
   };
+
   const handleZoneChange = (index, field, val) => {
     setFormData((prev) => ({
       ...prev,
@@ -181,6 +194,7 @@ export const AdminBranches = () => {
       ),
     }));
   };
+
   const handleRemoveZone = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -298,7 +312,7 @@ export const AdminBranches = () => {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.3 }}
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
@@ -306,7 +320,7 @@ export const AdminBranches = () => {
             Branches Management
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            {branches.length} locations registered. Drag cards to reorder list.
+            {branches.length} locations registered. Drag cards up and down to reorder list.
           </p>
         </div>
 
@@ -332,7 +346,7 @@ export const AdminBranches = () => {
         </div>
       </motion.div>
 
-      {/* Reorderable Branches Grid */}
+      {/* 🎯 Vertical Drag & Drop List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -342,7 +356,7 @@ export const AdminBranches = () => {
           axis="y"
           values={filtered}
           onReorder={handleBranchReorder}
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+          className="flex flex-col gap-3 max-w-4xl"
         >
           {filtered.map((branch) => {
             const rev = revenueMap[branch.id];
@@ -350,92 +364,78 @@ export const AdminBranches = () => {
               <Reorder.Item
                 key={branch.id || branch._id}
                 value={branch}
-                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between cursor-grab active:cursor-grabbing select-none"
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
               >
-                <div>
-                  <div className="relative h-28">
+                <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
+                  {/* Image & Grip */}
+                  <div className="relative w-full sm:w-44 h-28 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
                     <img
                       src={branch.image}
                       alt={branch.name}
                       className="w-full h-full object-cover pointer-events-none"
+                      loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-neutral-900/50 to-transparent pointer-events-none" />
 
-                    <div className="absolute top-2.5 left-2.5 p-1.5 rounded-lg bg-black/40 backdrop-blur-md text-white/80">
+                    <div className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 backdrop-blur-md text-white">
                       <GripVertical className="w-4 h-4" />
                     </div>
 
-                    {/* Actions Overlay */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() => openEditModal(branch)}
-                        className="p-1.5 rounded-lg bg-white/95 text-neutral-700 hover:text-primary-500 hover:bg-white shadow-sm transition-all cursor-pointer"
-                        title="Edit Branch"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDeleteClick(branch.id, branch.name)
-                        }
-                        className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 shadow-sm transition-all cursor-pointer"
-                        title="Delete Branch"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between gap-2 pointer-events-none">
-                      <h3 className="text-white font-display font-bold text-sm leading-tight truncate">
-                        {branch.name}
-                      </h3>
-                      <div className="flex items-center gap-1 text-amber-400 text-xs font-semibold shrink-0 bg-neutral-900/50 px-1.5 py-0.5 rounded-md">
-                        <Star className="w-3 h-3 fill-current" />
-                        {branch.rating}
-                      </div>
+                    <div className="absolute bottom-2 left-2.5 flex items-center gap-1 text-amber-400 text-xs font-semibold bg-neutral-900/70 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                      <Star className="w-3 h-3 fill-current" />
+                      {branch.rating}
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2 pointer-events-none">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-start gap-1.5 line-clamp-2">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary-500" />
-                      {branch.location}
+                  {/* Branch Main Details */}
+                  <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center space-y-1">
+                    <h3 className="font-display font-bold text-base text-neutral-800 dark:text-neutral-100 truncate">
+                      {branch.name}
+                    </h3>
+
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500" />
+                      <span className="truncate">{branch.location}</span>
                     </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 shrink-0 text-primary-500" />
-                      {branch.contact}
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 shrink-0 text-primary-500" />
-                      {branch.hours}
-                    </p>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-primary-500" />
+                        {branch.contact}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-primary-500" />
+                        {branch.hours}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="px-4 pb-4">
+                {/* Revenue & Action Buttons */}
+                <div className="p-3.5 sm:p-4 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
                   {rev && (
-                    <div className="flex items-center justify-between pt-2 mt-2 border-t border-neutral-100 dark:border-neutral-800 pointer-events-none">
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Revenue
-                      </span>
-                      <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">
+                    <div className="text-left sm:text-right">
+                      <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
+                      <span className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">
                         ৳{rev.revenue?.toLocaleString() || 0}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-neutral-100 dark:border-neutral-800 md:hidden">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(branch)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-600 dark:text-neutral-300 cursor-pointer"
+                      className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+                      title="Edit Branch"
                     >
-                      <Edit2 className="w-3 h-3" /> Edit
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteClick(branch.id, branch.name)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 text-xs text-red-500 cursor-pointer"
+                      className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
+                      title="Delete Branch"
                     >
-                      <Trash2 className="w-3 h-3" /> Delete
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -451,7 +451,7 @@ export const AdminBranches = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Modal Section */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

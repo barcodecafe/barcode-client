@@ -54,20 +54,23 @@ export const Home = () => {
 
   const [activeSort, setActiveSort] = useState("popular");
 
+  // 🚀 ১. সমান্তরাল ডাটা লোডিং (Superfast Parallel Request Processing)
   useEffect(() => {
-    getAllBrands()
-      .then(setBrands)
-      .catch(() => setBrands([]));
+    Promise.all([
+      getAllBrands().catch(() => []),
+      getAllBranches().catch(() => []),
+      getAllSlides().catch(() => []),
+      getAllFoods().catch(() => []),
+    ]).then(([brandsData, branchesData, slidesData, foodsData]) => {
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
       
-    // 🎯 ডাটাবেজের কাস্টম ড্র্যাগ অর্ডার বজায় রেখে প্রিভিউ ব্রাঞ্চ প্রসেস
-    getAllBranches().then((branchesData) => {
       const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
       setAllBranches(sortedBranches);
       setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
-    });
 
-    getAllSlides().then(setHeroSlides);
-    getAllFoods().then(setAllFoods);
+      setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
+      setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+    });
   }, []);
 
   const sortTabs = [
@@ -181,7 +184,7 @@ export const Home = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: "easeOut" },
+      transition: { duration: 0.4, ease: "easeOut" },
     },
   };
 
@@ -189,7 +192,7 @@ export const Home = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.05 },
+      transition: { staggerChildren: 0.04 },
     },
   };
 

@@ -36,15 +36,19 @@ export const Branches = () => {
   const { addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
 
+  // 🚀 ১. সমান্তরাল নন-ব্লকিং ডাটা লোডিং (Superfast Parallel Request Processing)
   useEffect(() => {
-    Promise.all([getAllBranches(), getAllRegions(), getAllFoods()]).then(
-      ([branchData, regionData, foodsData]) => {
-        setBranches(branchData || []);
-        setRegions(Array.isArray(regionData) ? regionData : []);
-        setAllFoods(foodsData || []);
-        setIsLoading(false);
-      }
-    );
+    setIsLoading(true);
+    Promise.all([
+      getAllBranches().catch(() => []),
+      getAllRegions().catch(() => []),
+      getAllFoods().catch(() => []),
+    ]).then(([branchData, regionData, foodsData]) => {
+      setBranches(Array.isArray(branchData) ? branchData : []);
+      setRegions(Array.isArray(regionData) ? regionData : []);
+      setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+      setIsLoading(false);
+    });
   }, []);
 
   // Filters branches by search text + selected region (by regionId)
@@ -145,14 +149,14 @@ export const Branches = () => {
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
   };
 
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.05 },
+      transition: { staggerChildren: 0.04 },
     },
   };
 
@@ -198,13 +202,13 @@ export const Branches = () => {
 
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
                 className="rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden animate-pulse"
               >
-                <div className="h-48 w-full bg-neutral-100 dark:bg-neutral-800" />
-                <div className="p-5 space-y-3">
+                <div className="h-44 w-full bg-neutral-100 dark:bg-neutral-800" />
+                <div className="p-4 space-y-3">
                   <div className="h-4 w-3/4 bg-neutral-100 dark:bg-neutral-800 rounded" />
                   <div className="h-3 w-full bg-neutral-100 dark:bg-neutral-800 rounded" />
                   <div className="h-3 w-1/2 bg-neutral-100 dark:bg-neutral-800 rounded" />
@@ -472,7 +476,7 @@ export const Branches = () => {
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.4 }}
                   className="overflow-hidden"
                 >
