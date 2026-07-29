@@ -12,10 +12,10 @@ import {
   MapPin,
   Filter,
   Layers,
-  Settings,
   GripVertical,
   RefreshCw,
   ImageIcon,
+  ChevronDown,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -35,7 +35,8 @@ export const AdminDishes = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [sortedCategories, setSortedCategories] = useState([]);
-  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isCustomDropdownOpen, setIsCustomDropdownOpen] = useState(false); // 🎯 কাস্টম ড্রপডাউন স্টেট
+  const dropdownRef = useRef(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
@@ -106,7 +107,7 @@ export const AdminDishes = () => {
 
             const combined = [
               ...uniqueSavedOrder.filter(so => currentTotalCategories.map(cc => cc.toLowerCase()).includes(so.toLowerCase())),
-              ...currentTotalCategories.filter(cc => !uniqueSavedOrder.map(so => so.toLowerCase()).includes(cc.toLowerCase()))
+              ...currentTotalCategories.filter(cc => !uniqueSavedOrder.map(so => so.toLowerCase()).includes(so.toLowerCase()))
             ];
             
             setSortedCategories(combined);
@@ -118,6 +119,17 @@ export const AdminDishes = () => {
           console.error("Error loading admin foods data:", err);
           setIsLoading(false);
         });
+  }, []);
+
+  // ড্রপডাউনের বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাওয়ার হ্যান্ডলার
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsCustomDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const syncFromServer = useCallback(
@@ -376,7 +388,7 @@ export const AdminDishes = () => {
             Manage Menu Items
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Total {foods.length} dishes registered[cite: 2]
+            Total {foods.length} dishes registered
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -398,7 +410,7 @@ export const AdminDishes = () => {
         </div>
       </div>
 
-      {/* Filters & Compact Reorder Trigger */}
+      {/* Filters & Custom Drag-and-Drop Category Dropdown */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center max-w-2xl flex-1">
           <div className="relative flex-1">
@@ -412,89 +424,80 @@ export const AdminDishes = () => {
             />
           </div>
 
-          {/* Category Filter & Sort Dropdown */}
-          <div className="relative min-w-[200px] flex-1 sm:flex-initial flex items-center gap-2">
-            <div className="relative flex-1">
-              <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
-              >
-                <option value="All">All Categories</option>
-                {sortedCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              {selectedCategory !== "All" && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory("All")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 z-10 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+          {/* 🎯 কাস্টম ড্রপডাউন যেখানে সরাসরি ড্র্যাগ করে সর্ট করা যাবে */}
+          <div className="relative min-w-[220px] flex-1 sm:flex-initial" ref={dropdownRef}>
+            <div
+              onClick={() => setIsCustomDropdownOpen(!isCustomDropdownOpen)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm font-medium cursor-pointer flex items-center justify-between select-none shadow-xs"
+            >
+              <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              <span className="truncate">{selectedCategory === "All" ? "All Categories" : selectedCategory}</span>
+              <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isCustomDropdownOpen ? "rotate-180" : ""}`} />
             </div>
 
-            {/* 🎯 ড্রপডাউনের পাশেই ছোট সেটিংস বাটন যা দিয়ে ক্যাটাগরি সাজানো যাবে */}
-            <button
-              type="button"
-              onClick={() => setIsSortOpen(!isSortOpen)}
-              className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                isSortOpen 
-                  ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
-                  : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
-              }`}
-              title="Sort Categories"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
+            {selectedCategory !== "All" && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setSelectedCategory("All"); }}
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* ড্রপডাউন মেনু উইথ ড্র্যাগ অ্যান্ড ড্রপ */}
+            <AnimatePresence>
+              {isCustomDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                  className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-50 overflow-hidden p-2 space-y-1 max-h-72 overflow-y-auto"
+                >
+                  <div
+                    onClick={() => { setSelectedCategory("All"); setIsCustomDropdownOpen(false); }}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                      selectedCategory === "All" ? "bg-primary-500 text-white" : "hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+                    }`}
+                  >
+                    All Categories
+                  </div>
+
+                  <p className="text-[10px] text-neutral-400 uppercase tracking-wider px-2 pt-1 font-bold">
+                    💡 Drag items to reorder:
+                  </p>
+
+                  <Reorder.Group 
+                    axis="y" 
+                    values={sortedCategories} 
+                    onReorder={handleReorder}
+                    className="flex flex-col gap-1"
+                  >
+                    {sortedCategories.map((cat) => (
+                      <Reorder.Item 
+                        key={cat} 
+                        value={cat}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-grab active:cursor-grabbing select-none transition-colors ${
+                          selectedCategory === cat 
+                            ? "bg-primary-500 text-white" 
+                            : "bg-neutral-50 dark:bg-neutral-800/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+                        }`}
+                        onClick={() => { setSelectedCategory(cat); setIsCustomDropdownOpen(false); }}
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <GripVertical className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          {cat}
+                        </span>
+                        <span className="text-[9px] opacity-60 font-normal">Drag</span>
+                      </Reorder.Item>
+                    ))}
+                  </Reorder.Group>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
-
-      {/* Category Reordering Popup Panel */}
-      <AnimatePresence>
-        {isSortOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4 bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-md space-y-2"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                💡 Drag categories to reorder list:
-              </p>
-              <button onClick={() => setIsSortOpen(false)} className="text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer">Close</button>
-            </div>
-            
-            <Reorder.Group 
-              axis="y" 
-              values={sortedCategories} 
-              onReorder={handleReorder}
-              className="flex flex-col gap-1.5"
-            >
-              {sortedCategories.map((cat) => (
-                <Reorder.Item 
-                  key={cat} 
-                  value={cat}
-                  className="flex items-center justify-between px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-sm text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-grab active:cursor-grabbing select-none hover:border-neutral-200"
-                >
-                  <span className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-neutral-400" />
-                    {cat}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 font-normal">Tug</span>
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Foods List */}
       {isLoading ? (
