@@ -70,11 +70,31 @@ export const AdminDishes = () => {
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches()])
         .then(([foodsData, branchesData]) => {
-          setFoods(foodsData || []);
+          let loadedFoods = foodsData || [];
+          
+          // লোকাল স্টোরেজ থেকে ডিশের রিনাম্বার্ড/সর্টেড অর্ডার চেক
+          const savedFoodOrder = localStorage.getItem("custom_food_order");
+          if (savedFoodOrder) {
+            try {
+              const parsedIds = JSON.parse(savedFoodOrder);
+              loadedFoods.sort((a, b) => {
+                const indexA = parsedIds.indexOf(String(a.id || a._id));
+                const indexB = parsedIds.indexOf(String(b.id || b._id));
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return 0;
+              });
+            } catch (e) {
+              console.error("Error parsing saved food order", e);
+            }
+          }
+
+          setFoods(loadedFoods);
           setBranches(branchesData || []);
           setIsLoading(false);
 
-          const cats = (foodsData || []).map((f) => f.category?.trim()).filter(Boolean);
+          const cats = loadedFoods.map((f) => f.category?.trim()).filter(Boolean);
           
           const uniqueMap = new Map();
           cats.forEach(cat => {
@@ -138,7 +158,7 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  const handleReorder = (newOrder) => {
+  const handleCategoryReorder = (newOrder) => {
     const orderMap = new Map();
     newOrder.forEach(cat => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
@@ -147,6 +167,19 @@ export const AdminDishes = () => {
 
     setSortedCategories(finalUniqueOrder);
     localStorage.setItem("custom_category_order", JSON.stringify(finalUniqueOrder));
+  };
+
+  // 🎯 খাবারের কার্ড সরাসরি ড্র্যাগ করে অর্ডারিং হ্যান্ডলার
+  const handleFoodReorder = (reorderedFoods) => {
+    if (search || selectedCategory !== "All") {
+      // ফিল্টার বা সার্চ চলাকালীন শুধু ভিউ চেঞ্জ হবে
+      setFoods(reorderedFoods);
+      return;
+    }
+
+    setFoods(reorderedFoods);
+    const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
+    localStorage.setItem("custom_food_order", JSON.stringify(orderedIds));
   };
 
   const openCreateModal = () => {
@@ -342,30 +375,12 @@ export const AdminDishes = () => {
   );
 
   const filteredFoods = useMemo(() => {
-    const matched = foods.filter((f) => {
+    return foods.filter((f) => {
       const matchesSearch = f.name?.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = selectedCategory === "All" || f.category?.trim().toLowerCase() === selectedCategory.trim().toLowerCase();
       return matchesSearch && matchesCategory;
     });
-
-    return matched.sort((a, b) => {
-      const catA = a.category?.trim().toLowerCase() || "";
-      const catB = b.category?.trim().toLowerCase() || "";
-      const selected = selectedCategory.trim().toLowerCase();
-
-      if (selected !== "all") {
-        if (catA === selected && catB !== selected) return -1;
-        if (catB === selected && catA !== selected) return 1;
-      }
-
-      const indexA = sortedCategories.findIndex(c => c.toLowerCase() === catA);
-      const indexB = sortedCategories.findIndex(c => c.toLowerCase() === catB);
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-      return 0;
-    });
-  }, [foods, search, selectedCategory, sortedCategories]);
+  }, [foods, search, selectedCategory]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -475,7 +490,7 @@ export const AdminDishes = () => {
             <Reorder.Group 
               axis="y" 
               values={sortedCategories} 
-              onReorder={handleReorder}
+              onReorder={handleCategoryReorder}
               className="flex flex-col gap-1.5"
             >
               {sortedCategories.map((cat) => (
@@ -496,7 +511,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* Foods List */}
+      {/* 🎯 Foods List with Drag and Drop Reordering */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
@@ -510,15 +525,26 @@ export const AdminDishes = () => {
               <p className="text-sm text-neutral-400 italic">No food items match your filter criteria.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <Reorder.Group 
+              axis="y" 
+              values={filteredFoods} 
+              onReorder={handleFoodReorder}
+              className="flex flex-col gap-3"
+            >
               {filteredFoods.map((food) => (
-                <div
-                  key={food.id}
-                  className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-all gap-4"
+                <Reorder.Item
+                  key={food.id || food._id}
+                  value={food}
+                  className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-2xl shadow-sm hover:shadow-md transition-all gap-4 cursor-grab active:cursor-grabbing"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                    {/* Drag Grip Handle */}
+                    <div className="p-1 text-neutral-300 group-hover:text-neutral-500 transition-colors shrink-0">
+                      <GripVertical className="w-5 h-5" />
+                    </div>
+
                     {food.image ? (
-                      <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0" />
+                      <img src={food.image} alt={food.name} className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0 pointer-events-none" />
                     ) : (
                       <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
                         <Layers className="w-5 h-5" />
@@ -532,10 +558,10 @@ export const AdminDishes = () => {
                         {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
                         {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
                       </div>
-                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">{food.name}</h3>
-                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">{food.description || "No description provided."}</p>
+                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate select-none">{food.name}</h3>
+                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block select-none">{food.description || "No description provided."}</p>
 
-                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap select-none">
                         <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
                         {(food.branchIds || []).length === 0 ? (
                           <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
@@ -560,19 +586,19 @@ export const AdminDishes = () => {
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
-                    <div className="text-left sm:text-right min-w-[75px]">
+                    <div className="text-left sm:text-right min-w-[75px] select-none">
                       <p className="text-sm font-black text-primary-500">৳{food.price}</p>
                       {food.rating && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">★ {food.rating}</span>}
                     </div>
 
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEditModal(food)} className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(food.id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(food.id || food._id)} className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
-                </div>
+                </Reorder.Item>
               ))}
-            </div>
+            </Reorder.Group>
           )}
         </>
       )}
