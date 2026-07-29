@@ -380,7 +380,7 @@ export const AdminOrders = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-2 sm:px-4 space-y-6">
       <Toaster />
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -395,25 +395,21 @@ export const AdminOrders = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="w-full flex flex-col gap-6">
         {/* Table List */}
-        <div
-          className={`${
-            activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"
-          } bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs overflow-hidden`}
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-5 shadow-xs overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-xs text-left min-w-[950px]">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
-                  <th className="px-4 py-3">Order ID</th>
-                  <th className="px-4 py-3">Customer</th>
-                  <th className="px-4 py-3">Address</th>
-                  <th className="px-4 py-3">Total Amount</th>
-                  <th className="px-4 py-3">Order Action</th>
-                  <th className="px-4 py-3">Delivery Status</th>
-                  <th className="px-4 py-3">Assigned Rider</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-3 py-3">Order ID</th>
+                  <th className="px-3 py-3">Customer</th>
+                  <th className="px-3 py-3">Address</th>
+                  <th className="px-3 py-3">Total Amount</th>
+                  <th className="px-3 py-3">Order Action</th>
+                  <th className="px-3 py-3">Delivery Status</th>
+                  <th className="px-3 py-3">Assigned Rider</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -438,7 +434,7 @@ export const AdminOrders = () => {
                     >
                       <td
                         onClick={() => setSelectedOrderDetails(ord)}
-                        className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
+                        className="px-3 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
                         title="Click to view details"
                       >
                         {ordId}
@@ -450,64 +446,64 @@ export const AdminOrders = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[120px]">
+                      <td className="px-3 py-3.5">
+                        <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[110px]">
                           {ord.user?.name}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.phone}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5">
-                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[150px]">
+                      <td className="px-3 py-3.5">
+                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[130px]">
                           {ord.user?.address}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.pickArea}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-primary-500">
+                      <td className="px-3 py-3.5 font-bold text-primary-500">
                         ৳{ord.total?.toFixed(2)}
                       </td>
 
                       {/* 🎯 ১. ORDER ACTION কলাম */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-3 py-3.5">
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleStatusChange(ordId, "Accepted")}
-                              className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
                               onClick={() => handleStatusChange(ordId, "Rejected")}
-                              className="px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
                               <X className="w-3 h-3 stroke-[3]" /> Reject
                             </button>
                           </div>
                         ) : isRejected ? (
-                          <span className="px-2.5 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
+                          <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
                             Rejected
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
+                          <span className="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
                             Accepted
                           </span>
                         )}
                       </td>
 
-                      {/* 🎯 ২. DELIVERY STATUS কলাম (এডমিন চাইলে এখান থেকে Ready to Pick এবং সরাসরি Delivered সিলেক্ট করতে পারবেন) */}
-                      <td className="px-4 py-3.5">
+                      {/* 🎯 ২. DELIVERY STATUS কলাম */}
+                      <td className="px-3 py-3.5">
                         {isPendingUnhandled ? (
-                          <span className="px-2.5 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                          <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                             Pending
                           </span>
                         ) : isRejected ? (
-                          <span className="px-2.5 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                          <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                             Cancelled
                           </span>
                         ) : (
@@ -521,7 +517,7 @@ export const AdminOrders = () => {
                               }
                               disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
                               onChange={(e) => handleStatusChange(ordId, e.target.value)}
-                              className={`px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                              className={`px-2 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                 !ord.riderId || ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                   : `${getStatusColor(
@@ -549,7 +545,7 @@ export const AdminOrders = () => {
                       </td>
 
                       {/* 🎯 ৩. ASSIGNED RIDER কলাম */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-3 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
@@ -571,7 +567,7 @@ export const AdminOrders = () => {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-3 py-3.5 text-right">
                         <button
                           onClick={() => setActiveChatOrderId(ordId)}
                           className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
@@ -592,13 +588,13 @@ export const AdminOrders = () => {
           </div>
         </div>
 
-        {/* 🎯 Chat Console Panel with Quick "Food Ready" Notification Button */}
+        {/* 🎯 Chat Console Panel */}
         {activeChatOrderId && currentChat && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="lg:col-span-5 flex flex-col h-[560px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
+            className="w-full flex flex-col h-[520px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
           >
             <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
               <div>
@@ -614,7 +610,7 @@ export const AdminOrders = () => {
               </button>
             </div>
 
-            {/* ⚡ Quick Action: Send Food Ready / Ready to Pick message to Rider */}
+            {/* Quick Kitchen Alert */}
             <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <BellRing className="w-3 h-3" /> Quick Kitchen Alert:
@@ -774,7 +770,7 @@ export const AdminOrders = () => {
                     {selectedOrderDetails.paymentMethod || "COD"}
                   </span>
                 </div>
-                <div className="flex justify-speech text-neutral-500">
+                <div className="flex justify-between text-neutral-500">
                   <span>Payment Status:</span>
                   <span
                     className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${getPaymentStatusColor(
