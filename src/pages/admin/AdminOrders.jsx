@@ -295,16 +295,22 @@ export const AdminOrders = () => {
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=800,height=900');
+    const WindowPrt = window.open(
+      "",
+      "_blank",
+      "left=0,top=0,width=800,height=900",
+    );
     if (!WindowPrt) {
       toast.error("Please allow popups for this website to print.");
       return;
     }
-    WindowPrt.document.write('<html><head><title>Print Invoice</title>');
-    WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+    WindowPrt.document.write("<html><head><title>Print Invoice</title>");
+    WindowPrt.document.write(
+      '<script src="https://cdn.tailwindcss.com"></script>',
+    );
     WindowPrt.document.write('</head><body class="bg-white p-6">');
     WindowPrt.document.write(printContent.innerHTML);
-    WindowPrt.document.write('</body></html>');
+    WindowPrt.document.write("</body></html>");
     WindowPrt.document.close();
     WindowPrt.focus();
     setTimeout(() => {
@@ -313,14 +319,18 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-// 📥 ব্রাউজারে পপআপ ছাড়াই সরাসরি .pdf ফাইল ডাউনলোড করার আধুনিক ফাংশন
+  // 📥 ব্রাউজারে পপআপ ছাড়াই সরাসরি .pdf ফাইল ডাউনলোড করার আধুনিক ফাংশন
   const handleDownloadPDF = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const orderId = ((selectedOrderDetails?.id || selectedOrderDetails?._id) || 'order').toUpperCase();
-    
+    const orderId = (
+      selectedOrderDetails?.id ||
+      selectedOrderDetails?._id ||
+      "order"
+    ).toUpperCase();
+
     // একটি সাময়িক লুকানো আইফ্রেম বা উইন্ডো তৈরি করে সরাসরি কন্টেন্ট রেন্ডার করা
     const htmlContent = `
       <!DOCTYPE html>
@@ -347,11 +357,11 @@ export const AdminOrders = () => {
       </html>
     `;
 
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
+
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
     iframe.src = blobUrl;
     document.body.appendChild(iframe);
 
@@ -361,7 +371,7 @@ export const AdminOrders = () => {
       toast.success("PDF Download ready! Select 'Save as PDF'.");
     }, 500);
   };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -567,14 +577,18 @@ export const AdminOrders = () => {
                         {isPendingUnhandled ? (
                           <div className="flex gap-1">
                             <button
-                              onClick={() => handleStatusChange(ordId, "Accepted")}
+                              onClick={() =>
+                                handleStatusChange(ordId, "Accepted")
+                              }
                               className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
                             </button>
                             <button
-                              onClick={() => handleStatusChange(ordId, "Rejected")}
+                              onClick={() =>
+                                handleStatusChange(ordId, "Rejected")
+                              }
                               className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
@@ -607,33 +621,48 @@ export const AdminOrders = () => {
                             <select
                               value={
                                 ord.riderAcceptStatus === "accepted" &&
-                                (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                (ord.status === "Accepted" ||
+                                  ord.status === "ACCEPTED")
                                   ? "Preparing"
                                   : ord.status
                               }
-                              disabled={!ord.riderId || ord.riderAcceptStatus !== "accepted"}
-                              onChange={(e) => handleStatusChange(ordId, e.target.value)}
+                              disabled={
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
+                              }
+                              onChange={(e) =>
+                                handleStatusChange(ordId, e.target.value)
+                              }
                               className={`px-2 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                !ord.riderId || ord.riderAcceptStatus !== "accepted"
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                   : `${getStatusColor(
                                       ord.riderAcceptStatus === "accepted" &&
-                                      (ord.status === "Accepted" || ord.status === "ACCEPTED")
+                                        (ord.status === "Accepted" ||
+                                          ord.status === "ACCEPTED")
                                         ? "Preparing"
-                                        : ord.status
+                                        : ord.status,
                                     )} cursor-pointer`
                               }`}
                             >
                               <option value="Accepted">Accepted</option>
                               <option value="Preparing">Preparing</option>
-                              <option value="Ready to Pick">Ready to Pick</option>
-                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Ready to Pick">
+                                Ready to Pick
+                              </option>
+                              <option value="Out for Delivery">
+                                Out for Delivery
+                              </option>
                               <option value="Delivered">Delivered</option>
                             </select>
-                            
-                            {(!ord.riderId || ord.riderAcceptStatus !== "accepted") && (
+
+                            {(!ord.riderId ||
+                              ord.riderAcceptStatus !== "accepted") && (
                               <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
-                                {!ord.riderId ? "Assign Rider First" : "Awaiting Rider Accept"}
+                                {!ord.riderId
+                                  ? "Assign Rider First"
+                                  : "Awaiting Rider Accept"}
                               </span>
                             )}
                           </div>
@@ -645,10 +674,18 @@ export const AdminOrders = () => {
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
-                            disabled={isPendingUnhandled || isRejected || ord.status === "Delivered"}
-                            onChange={(e) => handleAssignRider(ordId, e.target.value)}
+                            disabled={
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
+                            }
+                            onChange={(e) =>
+                              handleAssignRider(ordId, e.target.value)
+                            }
                             className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                              isPendingUnhandled || isRejected || ord.status === "Delivered"
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                 : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
                             }`}
@@ -792,24 +829,14 @@ export const AdminOrders = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  {/* 🖨️ প্রিন্ট বাটন */}
+                  {/* 🖨️ প্রিন্ট বাটন (এটির মাধ্যমে প্রিন্ট বা সেভ এজ পিডিএফ উভয় কাজই করা যাবে) */}
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    title="Print Invoice"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    title="Print / Save as PDF"
                   >
-                    <Printer className="w-3.5 h-3.5 text-primary-500" /> Print
-                  </button>
-
-                  {/* 📥 পিডিএফ ডাউনলোড বাটন (যাতে পেজ ব্যাক না করে এবং সরাসরি ডাউনলোড উইন্ডো খোলে) */}
-                  <button
-                    type="button"
-                    onClick={handleDownloadPDF}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    title="Download PDF"
-                  >
-                    <FileDown className="w-3.5 h-3.5" /> PDF
+                    <Printer className="w-3.5 h-3.5" /> Print / PDF
                   </button>
 
                   <button
@@ -883,7 +910,10 @@ export const AdminOrders = () => {
                           </span>
                         </div>
                         <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                          ৳{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          ৳
+                          {((item.price || 0) * (item.quantity || 1)).toFixed(
+                            2,
+                          )}
                         </span>
                       </div>
                     ))}
@@ -917,7 +947,8 @@ export const AdminOrders = () => {
                           return pm === "cod" ? "CANCELLED" : "REFUND REQUIRED";
                         }
                         return (
-                          selectedOrderDetails.paymentStatus || "AWAITING PAYMENT"
+                          selectedOrderDetails.paymentStatus ||
+                          "AWAITING PAYMENT"
                         );
                       })()}
                     </span>
@@ -961,8 +992,7 @@ export const AdminOrders = () => {
                       <RefreshCw
                         className={`w-3 h-3 ${
                           recheckingOrderId ===
-                          (selectedOrderDetails.id ||
-                            selectedOrderDetails._id)
+                          (selectedOrderDetails.id || selectedOrderDetails._id)
                             ? "animate-spin"
                             : ""
                         }`}
