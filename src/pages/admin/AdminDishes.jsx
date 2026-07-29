@@ -398,7 +398,7 @@ export const AdminDishes = () => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Compact Reorder Trigger */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center max-w-2xl flex-1">
           <div className="relative flex-1">
@@ -412,58 +412,65 @@ export const AdminDishes = () => {
             />
           </div>
 
-          {/* 🎯 ক্যাটাগরি ফিল্টার ও ডাইরেক্ট সর্টিং ড্রপডাউন */}
-          <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-            <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
-            >
-              <option value="All">All Categories</option>
-              {sortedCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            {selectedCategory !== "All" && (
-              <button
-                type="button"
-                onClick={() => setSelectedCategory("All")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 z-10 cursor-pointer"
+          {/* Category Filter & Sort Dropdown */}
+          <div className="relative min-w-[200px] flex-1 sm:flex-initial flex items-center gap-2">
+            <div className="relative flex-1">
+              <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+                <option value="All">All Categories</option>
+                {sortedCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              {selectedCategory !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("All")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 z-10 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* 🎯 ড্রপডাউনের পাশেই ছোট সেটিংস বাটন যা দিয়ে ক্যাটাগরি সাজানো যাবে */}
+            <button
+              type="button"
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                isSortOpen 
+                  ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
+                  : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
+              }`}
+              title="Sort Categories"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsSortOpen(!isSortOpen)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-            isSortOpen 
-              ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
-              : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
-          }`}
-        >
-          <Settings className="w-3.5 h-3.5" /> Drag & Drop Categories
-        </button>
       </div>
 
-      {/* Category Reordering Panel */}
+      {/* Category Reordering Popup Panel */}
       <AnimatePresence>
         {isSortOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-4 bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-xl space-y-2"
+            className="p-4 bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-md space-y-2"
           >
-            <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-              💡 Click and drag any category to move it up or down.
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                💡 Drag categories to reorder list:
+              </p>
+              <button onClick={() => setIsSortOpen(false)} className="text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer">Close</button>
+            </div>
             
             <Reorder.Group 
               axis="y" 
@@ -481,7 +488,7 @@ export const AdminDishes = () => {
                     <GripVertical className="w-4 h-4 text-neutral-400" />
                     {cat}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-normal">Tug to move</span>
+                  <span className="text-[10px] text-neutral-400 font-normal">Tug</span>
                 </Reorder.Item>
               ))}
             </Reorder.Group>
@@ -590,7 +597,6 @@ export const AdminDishes = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-4 space-y-4">
-                {/* Image upload */}
                 <div>
                   <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Main Dish Image *</label>
                   <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
@@ -611,7 +617,6 @@ export const AdminDishes = () => {
                   )}
                 </div>
 
-                {/* Info Fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Dish Name *</label>
@@ -640,7 +645,6 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Rating & Discount */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
@@ -662,7 +666,6 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Variants Component */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight / Custom Variants</label>
@@ -793,7 +796,6 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* Branch Availability */}
                 {branches.length > 0 && (
                   <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex justify-between items-center flex-wrap gap-2">
