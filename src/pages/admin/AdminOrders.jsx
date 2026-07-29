@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import html2pdf from "html2pdf.js";
 import toast, { Toaster } from "react-hot-toast";
 import {
   MessageSquare,
@@ -308,37 +309,24 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-// 📥 সরাসরি ব্রাউজার থেকে ফাইল জেনারেট করে পিডিএফ ডাউনলোড করার ফাংশন
+// 📥 সরাসরি .pdf এক্সটেনশনে ফাইল ডাউনলোড করার ফাংশন
   const handleDownloadPDF = () => {
-    const printContent = invoiceRef.current;
-    if (!printContent) return;
+    const element = invoiceRef.current;
+    if (!element) return;
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Order-Invoice-${selectedOrderDetails?.id || selectedOrderDetails?._id || 'details'}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-        </head>
-        <body class="bg-white p-8 text-xs text-neutral-800">
-          <div class="max-w-md mx-auto space-y-4">
-            <h2 class="text-lg font-bold border-b pb-2">Order Invoice #${(selectedOrderDetails?.id || selectedOrderDetails?._id)?.toUpperCase()}</h2>
-            ${printContent.innerHTML}
-          </div>
-        </body>
-      </html>
-    `;
+    const opt = {
+      margin:       10,
+      filename:     `Invoice-${(selectedOrderDetails?.id || selectedOrderDetails?._id || 'order').toUpperCase()}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Invoice-${(selectedOrderDetails?.id || selectedOrderDetails?._id || 'order').toUpperCase()}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Invoice downloaded successfully!");
+    html2pdf().from(element).set(opt).save().then(() => {
+      toast.success("PDF downloaded successfully!");
+    }).catch((err) => {
+      toast.error("Failed to generate PDF: " + err.message);
+    });
   };
 
   if (loading) {
