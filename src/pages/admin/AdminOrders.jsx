@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import html2pdf from "html2pdf.js";
 import toast, { Toaster } from "react-hot-toast";
 import {
   MessageSquare,
@@ -290,12 +289,17 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🖨️ প্রিন্ট করার ফাংশন
-  const handlePrint = () => {
+  // 🖨️ প্রিন্ট করার নিরাপদ ফাংশন
+  const handlePrint = (e) => {
+    if (e) e.preventDefault();
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+    const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=800,height=900');
+    if (!WindowPrt) {
+      toast.error("Please allow popups for this website to print.");
+      return;
+    }
     WindowPrt.document.write('<html><head><title>Print Invoice</title>');
     WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
     WindowPrt.document.write('</head><body class="bg-white p-6">');
@@ -309,14 +313,20 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-// 📥 সরাসরি ব্রাউজার প্রিন্ট ডায়ালগের মাধ্যমে নিখুঁত .pdf সেভ করার ফাংশন
-  const handleDownloadPDF = () => {
+  // 📥 পিডিএফ ডিরেক্ট ডাউনলোডের নিরাপদ ফাংশন (কোনো ব্যাকগ্রাউন্ড বা পেজ ব্যাক ইস্যু ছাড়াই)
+  const handleDownloadPDF = (e) => {
+    if (e) e.preventDefault();
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900');
+    const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=800,height=900');
+    if (!WindowPrt) {
+      toast.error("Please allow popups for this website to download PDF.");
+      return;
+    }
+
     WindowPrt.document.write('<html><head><title>Invoice-' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || 'Order').toUpperCase() + '</title>');
-    WindowPrt.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; color: #333; } .text-primary-500 { color: #f97316; } font-weight-bold { font-weight: bold; }</style>');
+    WindowPrt.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; color: #333; } .text-primary-500 { color: #f97316; }</style>');
     WindowPrt.document.write('</head><body>');
     WindowPrt.document.write('<h2 style="border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Order Invoice #' + ((selectedOrderDetails?.id || selectedOrderDetails?._id) || '').toUpperCase() + '</h2>');
     WindowPrt.document.write(printContent.innerHTML);
@@ -327,7 +337,7 @@ export const AdminOrders = () => {
     setTimeout(() => {
       WindowPrt.print();
       WindowPrt.close();
-      toast.success("PDF window opened! Select 'Save as PDF' to download.");
+      toast.success("PDF dialog opened! Select 'Save as PDF' to download.");
     }, 500);
   };
   
@@ -763,6 +773,7 @@ export const AdminOrders = () => {
                 <div className="flex items-center gap-1.5">
                   {/* 🖨️ প্রিন্ট বাটন */}
                   <button
+                    type="button"
                     onClick={handlePrint}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
                     title="Print Invoice"
@@ -770,8 +781,9 @@ export const AdminOrders = () => {
                     <Printer className="w-3.5 h-3.5 text-primary-500" /> Print
                   </button>
 
-                  {/* 📥 পিডিএফ ডাউনলোড বাটন */}
+                  {/* 📥 পিডিএফ ডাউনলোড বাটন (যাতে পেজ ব্যাক না করে এবং সরাসরি ডাউনলোড উইন্ডো খোলে) */}
                   <button
+                    type="button"
                     onClick={handleDownloadPDF}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
                     title="Download PDF"
@@ -780,8 +792,9 @@ export const AdminOrders = () => {
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setSelectedOrderDetails(null)}
-                    className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors ml-1"
+                    className="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors ml-1 cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
