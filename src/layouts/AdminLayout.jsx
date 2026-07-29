@@ -193,7 +193,7 @@ export const AdminLayout = () => {
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
     socket.on("order_status_updated", handleStatusUpdate);
-    socket.on("rider_cash_submitted", handleRiderCashSubmitted); // 👈 নতুন ইভেন্ট যুক্ত করা হয়েছে
+    socket.on("rider_cash_submitted", handleRiderCashSubmitted);
 
     const handleCustomOrderUpdate = (e) => {
       fetchPendingOrders();
@@ -209,7 +209,7 @@ export const AdminLayout = () => {
       socket.off("admin_new_order", handleNewOrder);
       socket.off("order_updated", handleStatusUpdate);
       socket.off("order_status_updated", handleStatusUpdate);
-      socket.off("rider_cash_submitted", handleRiderCashSubmitted); // 👈 ক্লিনআপ
+      socket.off("rider_cash_submitted", handleRiderCashSubmitted);
       window.removeEventListener("order_updated", handleCustomOrderUpdate);
     };
   }, [navigate, settings?.logoLight]);
@@ -323,7 +323,6 @@ export const AdminLayout = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                  {/* 🎯 ডায়নামিক টাইটেল */}
                   {toastNotification.id === "CASH_REQ" ? "💰 ক্যাশ সাবমিট রিকোয়েস্ট!" : "🚨 নতুন অর্ডার এসেছে!"}
                 </h4>
                 <button
@@ -462,7 +461,8 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
+        {/* 🎯 ল্যাপটপ এবং বড় মনিটরের জন্য ফুল উইডথ ও অপ্টিমাইজড প্যাডিং */}
+        <main className="flex-grow p-2 sm:p-4 lg:p-6 w-full max-w-full mx-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
