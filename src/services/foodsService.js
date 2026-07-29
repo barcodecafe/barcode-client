@@ -57,6 +57,16 @@ export async function updateFood(id, updatedFields) {
   return apiClient.patch(`/foods/${id}`, updatedFields);
 }
 
+/** PUT /api/foods/reorder (admin) — Reorder dishes order in Database */
+export async function updateFoodOrder(orderedFoodIds) {
+  return apiClient.put('/foods/reorder', { foodIds: orderedFoodIds });
+}
+
+/** PUT /api/categories/reorder (admin) — Reorder category order in Database */
+export async function updateCategoryOrder(orderedCategories) {
+  return apiClient.put('/categories/reorder', { categories: orderedCategories });
+}
+
 /** DELETE /api/foods/:id (admin) */
 export async function deleteFood(id) {
   return apiClient.delete(`/foods/${id}`);

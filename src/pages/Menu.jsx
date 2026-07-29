@@ -7,7 +7,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// Swiper imports
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
@@ -16,7 +15,6 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
 
-// Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -49,42 +47,13 @@ export const Menu = () => {
     else getFoodsByBranch(null, 100).then(setFoods);
   }, [popularOnly]);
 
-  // localStorage থেকে এডমিনের কাস্টম ক্যাটগরি অর্ডার আনা
-  const sortedCategoriesList = useMemo(() => {
-    const savedOrder = localStorage.getItem("custom_category_order");
-    if (savedOrder) {
-      try {
-        return JSON.parse(savedOrder).map((c) => c?.trim()).filter(Boolean);
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  }, [foods]);
-
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
 
     const rawCats = foods.map((item) => item.category?.trim()).filter(Boolean);
     const uniqueCatsSet = new Set(rawCats);
-    const currentUniqueCategories = Array.from(uniqueCatsSet);
-
-    const finalSortedCategories = currentUniqueCategories.sort((a, b) => {
-      const indexA = sortedCategoriesList.findIndex(
-        (c) => c.toLowerCase() === a.toLowerCase()
-      );
-      const indexB = sortedCategoriesList.findIndex(
-        (c) => c.toLowerCase() === b.toLowerCase()
-      );
-
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      return a.localeCompare(b);
-    });
-
-    return ["All", ...finalSortedCategories];
-  }, [foods, sortedCategoriesList]);
+    return ["All", ...Array.from(uniqueCatsSet)];
+  }, [foods]);
 
   const checkScroll = () => {
     if (tabsRef.current) {
@@ -110,13 +79,11 @@ export const Menu = () => {
     }
   };
 
-  // 💡 AdminDishes ডাটা স্কিমা অনুযায়ী নিখুঁত প্রাইস হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
     let basePrice = Number(food.price) || 0;
 
-    // ১. এডমিন স্কিমা অনুযায়ী food.variations চেক করা হচ্ছে
     const variationsList = Array.isArray(food.variations)
       ? food.variations
       : Array.isArray(food.variants)
@@ -130,20 +97,17 @@ export const Menu = () => {
 
       if (validVarPrices.length > 0) {
         const minVarPrice = Math.min(...validVarPrices);
-        // যদি মেইন প্রাইস ০ হয় অথবা ভ্যারিয়েন্টের সর্বনিম্ন দাম মেইন প্রাইস থেকে কম হয়
         if (basePrice === 0 || minVarPrice < basePrice) {
           basePrice = minVarPrice;
         }
       }
     }
 
-    // ২. ডিসকাউন্ট প্রয়োগ (Service function অথবা Direct Calculation)
     if (typeof applyFoodDiscount === "function") {
       const discounted = applyFoodDiscount(basePrice, food);
       if (!isNaN(discounted) && discounted >= 0) return Number(discounted);
     }
 
-    // ৩. সেফটি ব্যাকআপ (AdminDishes discountType অনুসারে)
     let finalPrice = basePrice;
     if (food.discountType === "flat" && Number(food.discountAmount) > 0) {
       finalPrice = Math.max(0, basePrice - Number(food.discountAmount));
@@ -157,7 +121,6 @@ export const Menu = () => {
     return finalPrice;
   };
 
-  // 💡 ফিল্টারিং এবং সর্টিং
   const filteredFoods = useMemo(() => {
     const matched = foods.filter(
       (food) =>
@@ -175,19 +138,9 @@ export const Menu = () => {
       if (sortBy === "price-high") return priceB - priceA;
       if (sortBy === "rating") return ratingB - ratingA;
 
-      // Default / Featured Order
-      const catA = a.category?.trim().toLowerCase() || "";
-      const catB = b.category?.trim().toLowerCase() || "";
-      const indexA = sortedCategoriesList.findIndex((c) => c.toLowerCase() === catA);
-      const indexB = sortedCategoriesList.findIndex((c) => c.toLowerCase() === catB);
-
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-
-      return (Number(a.id) || 0) - (Number(b.id) || 0);
+      return 0; // 🎯 ডাটাবেজ থেকে যেই অর্ডারে রেসপন্স আসবে ঠিক সেই অর্ডারে দেখাবে
     });
-  }, [foods, activeCategory, sortBy, sortedCategoriesList]);
+  }, [foods, activeCategory, sortBy]);
 
   const containerVariants = {
     hidden: {},
@@ -222,7 +175,6 @@ export const Menu = () => {
         </div>
       </div>
 
-      {/* Catalog Filters Bar */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8 pb-4 border-b border-neutral-200/50 dark:border-neutral-800/60">
         <div className="relative flex items-center max-w-full lg:max-w-[70%] xl:max-w-[75%] flex-grow group">
           {categories.length > 8 && showLeftArrow && (
@@ -283,7 +235,6 @@ export const Menu = () => {
         </div>
       </div>
 
-      {/* Main Foods Section */}
       {filteredFoods.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-neutral-500 dark:text-neutral-400 text-lg font-medium">
@@ -292,7 +243,6 @@ export const Menu = () => {
         </div>
       ) : (
         <>
-          {/* Mobile View: Swiper Slider */}
           <div className="sm:hidden -mx-4">
             <Swiper
               key={`${activeCategory}-${sortBy}`}
@@ -303,10 +253,10 @@ export const Menu = () => {
               className="!px-4 !pb-8"
             >
               {filteredFoods.map((food) => (
-                <SwiperSlide key={food.id}>
+                <SwiperSlide key={food.id || food._id}>
                   <FoodCard
                     food={food}
-                    favorited={isFavorite(food.id)}
+                    favorited={isFavorite(food.id || food._id)}
                     onToggleFavorite={toggleFavorite}
                     onAddToCart={addToCart}
                   />
@@ -315,7 +265,6 @@ export const Menu = () => {
             </Swiper>
           </div>
 
-          {/* Desktop & Tablet View: Grid */}
           <motion.div
             key={`${activeCategory}-${sortBy}`}
             variants={containerVariants}
@@ -325,9 +274,9 @@ export const Menu = () => {
           >
             {filteredFoods.map((food) => (
               <FoodCard
-                key={food.id}
+                key={food.id || food._id}
                 food={food}
-                favorited={isFavorite(food.id)}
+                favorited={isFavorite(food.id || food._id)}
                 onToggleFavorite={toggleFavorite}
                 onAddToCart={addToCart}
                 variants={itemVariants}

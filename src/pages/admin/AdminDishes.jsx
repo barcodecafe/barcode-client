@@ -22,6 +22,8 @@ import {
   createFood,
   updateFood,
   deleteFood,
+  updateFoodOrder,
+  updateCategoryOrder,
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
@@ -69,74 +71,35 @@ export const AdminDishes = () => {
 
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches()])
-        .then(([foodsData, branchesData]) => {
-          let loadedFoods = foodsData || [];
+      .then(([foodsData, branchesData]) => {
+        const loadedFoods = foodsData || [];
+        setFoods(loadedFoods);
+        setBranches(branchesData || []);
+        setIsLoading(false);
+
+        const cats = loadedFoods.map((f) => f.category?.trim()).filter(Boolean);
+        const uniqueMap = new Map();
+        cats.forEach(cat => {
+          const lowerCaseCat = cat.toLowerCase();
+          let finalCatName = cat;
+          if (lowerCaseCat === "deserts") finalCatName = "Desserts";
           
-          const savedFoodOrder = localStorage.getItem("custom_food_order");
-          if (savedFoodOrder) {
-            try {
-              const parsedIds = JSON.parse(savedFoodOrder);
-              loadedFoods.sort((a, b) => {
-                const indexA = parsedIds.indexOf(String(a.id || a._id));
-                const indexB = parsedIds.indexOf(String(b.id || b._id));
-                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                if (indexA !== -1) return -1;
-                if (indexB !== -1) return 1;
-                return 0;
-              });
-            } catch (e) {
-              console.error("Error parsing saved food order", e);
-            }
+          const finalKey = finalCatName.toLowerCase();
+          if (!uniqueMap.has(finalKey)) {
+            uniqueMap.set(finalKey, finalCatName);
           }
-
-          setFoods(loadedFoods);
-          setBranches(branchesData || []);
-          setIsLoading(false);
-
-          const cats = loadedFoods.map((f) => f.category?.trim()).filter(Boolean);
-          
-          const uniqueMap = new Map();
-          cats.forEach(cat => {
-            const lowerCaseCat = cat.toLowerCase();
-            let finalCatName = cat;
-            if (lowerCaseCat === "deserts") finalCatName = "Desserts";
-            
-            const finalKey = finalCatName.toLowerCase();
-            if (!uniqueMap.has(finalKey)) {
-              uniqueMap.set(finalKey, finalCatName);
-            }
-          });
-
-          const uniqueCustom = Array.from(uniqueMap.values()).filter(
-            (c) => !standardCategories.map(sc => sc.toLowerCase()).includes(c.toLowerCase())
-          );
-          
-          const currentTotalCategories = [...standardCategories, ...uniqueCustom];
-
-          const savedOrder = localStorage.getItem("custom_category_order");
-          if (savedOrder) {
-            const parsedOrder = JSON.parse(savedOrder).map(c => c?.trim()).filter(Boolean);
-            
-            const cleanedSavedMap = new Map();
-            parsedOrder.forEach(cat => {
-              cleanedSavedMap.set(cat.toLowerCase(), cat);
-            });
-            const uniqueSavedOrder = Array.from(cleanedSavedMap.values());
-
-            const combined = [
-              ...uniqueSavedOrder.filter(so => currentTotalCategories.map(cc => cc.toLowerCase()).includes(so.toLowerCase())),
-              ...currentTotalCategories.filter(cc => !uniqueSavedOrder.map(so => so.toLowerCase()).includes(cc.toLowerCase()))
-            ];
-            
-            setSortedCategories(combined);
-          } else {
-            setSortedCategories(currentTotalCategories);
-          }
-        })
-        .catch((err) => {
-          console.error("Error loading admin foods data:", err);
-          setIsLoading(false);
         });
+
+        const uniqueCustom = Array.from(uniqueMap.values()).filter(
+          (c) => !standardCategories.map(sc => sc.toLowerCase()).includes(c.toLowerCase())
+        );
+        
+        setSortedCategories([...standardCategories, ...uniqueCustom]);
+      })
+      .catch((err) => {
+        console.error("Error loading admin foods data:", err);
+        setIsLoading(false);
+      });
   }, []);
 
   const syncFromServer = useCallback(
@@ -157,22 +120,35 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  const handleCategoryReorder = (newOrder) => {
+  // 🎯 ক্যাটাগরি সরাসরি লাইভ API-তে সেভ
+  const handleCategoryReorder = async (newOrder) => {
     const orderMap = new Map();
     newOrder.forEach(cat => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
     });
     const finalUniqueOrder = Array.from(orderMap.values());
-
     setSortedCategories(finalUniqueOrder);
-    localStorage.setItem("custom_category_order", JSON.stringify(finalUniqueOrder));
+
+    try {
+      if (typeof updateCategoryOrder === "function") {
+        await updateCategoryOrder(finalUniqueOrder);
+      }
+    } catch (err) {
+      console.error("Error updating category order on server:", err);
+    }
   };
 
-  const handleFoodReorder = (reorderedFoods) => {
+  // 🎯 ডিশ সরাসরি লাইভ API-তে সেভ
+  const handleFoodReorder = async (reorderedFoods) => {
     setFoods(reorderedFoods);
-    if (!search && selectedCategory === "All") {
-      const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
-      localStorage.setItem("custom_food_order", JSON.stringify(orderedIds));
+    const orderedIds = reorderedFoods.map(f => String(f.id || f._id));
+
+    try {
+      if (typeof updateFoodOrder === "function") {
+        await updateFoodOrder(orderedIds);
+      }
+    } catch (err) {
+      console.error("Error updating food order on server:", err);
     }
   };
 
@@ -349,13 +325,6 @@ export const AdminDishes = () => {
       } else {
         const created = await createFood(cleanedFormData);
         setFoods([created, ...foods]);
-        
-        const createdCatTrimmed = created.category?.trim();
-        if (createdCatTrimmed && !sortedCategories.map(c => c.toLowerCase()).includes(createdCatTrimmed.toLowerCase())) {
-          const newCats = [...sortedCategories, createdCatTrimmed];
-          setSortedCategories(newCats);
-          localStorage.setItem("custom_category_order", JSON.stringify(newCats));
-        }
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -503,7 +472,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* 🎯 Foods List with Full Body Drag System */}
+      {/* Foods List with Full Body Drag System */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
