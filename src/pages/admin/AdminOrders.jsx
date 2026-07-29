@@ -397,14 +397,14 @@ export const AdminOrders = () => {
 
       <div className="w-full flex flex-col gap-6">
         {/* Table List */}
-        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-5 shadow-xs overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-xs text-left min-w-[950px]">
+        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-5 shadow-xs">
+          {/* 🎯 ল্যাপটপ স্ক্রিনের জন্য হরিজন্টাল স্ক্রল বাদ দিয়ে নির্দিষ্ট হাইট ও টপ-টু-বটম (vertical) স্ক্রলবার দেওয়া হলো */}
+          <div className="w-full max-h-[650px] overflow-y-auto overflow-x-hidden pr-1">
+            <table className="w-full text-xs text-left table-auto">
               <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40 sticky top-0 z-10 backdrop-blur-md">
                   <th className="px-3 py-3">Order ID</th>
                   <th className="px-3 py-3">Customer</th>
-                  <th className="px-3 py-3">Address</th>
                   <th className="px-3 py-3">Total Amount</th>
                   <th className="px-3 py-3">Order Action</th>
                   <th className="px-3 py-3">Delivery Status</th>
@@ -452,14 +452,6 @@ export const AdminOrders = () => {
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.phone}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[130px]">
-                          {ord.user?.address}
-                        </span>
-                        <span className="block text-[10px] text-neutral-400 mt-0.5">
-                          {ord.user?.pickArea}
                         </span>
                       </td>
                       <td className="px-3 py-3.5 font-bold text-primary-500">
