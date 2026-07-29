@@ -48,7 +48,7 @@ export const BrandMenu = () => {
     };
   }, [brand?.slug]);
 
-  // 🎯 ব্যাকএন্ডের categoryOrder মেইনটেইন করে ক্যাটাগরি সর্ট করা
+  // 🎯 ১. ক্যাটাগরিগুলোকে categoryOrder অনুযায়ী সঠিকভাবে সর্ট করা
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
 
@@ -62,10 +62,8 @@ export const BrandMenu = () => {
 
         if (!categoryMap.has(lowerName)) {
           categoryMap.set(lowerName, { name: catName, order: orderVal });
-        } else {
-          if (orderVal < categoryMap.get(lowerName).order) {
-            categoryMap.set(lowerName, { name: catName, order: orderVal });
-          }
+        } else if (orderVal < categoryMap.get(lowerName).order) {
+          categoryMap.set(lowerName, { name: catName, order: orderVal });
         }
       }
     });
@@ -77,13 +75,33 @@ export const BrandMenu = () => {
     return ["All", ...sortedCats];
   }, [foods]);
 
-  const shown = useMemo(
-    () =>
-      activeCategory === "All"
-        ? foods
-        : foods.filter((f) => f.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()),
-    [foods, activeCategory],
-  );
+  // 🎯 ২. Menu.jsx এবং BranchDetails-এর মতো ক্যাটাগরি ও ফুড ড্র্যাগ অর্ডার মেইনটেইন করা
+  const sortedAndGroupedFoods = useMemo(() => {
+    if (!foods || foods.length === 0) return [];
+
+    let filtered = foods;
+    if (activeCategory !== "All") {
+      filtered = foods.filter(
+        (f) => f.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
+      );
+    }
+
+    // Menu/BranchDetails পেজের ন্যায় categoryOrder ও item order অক্ষুণ্ণ রেখে সর্ট করা
+    return [...filtered].sort((a, b) => {
+      const orderA = typeof a.categoryOrder === "number" ? a.categoryOrder : 999;
+      const orderB = typeof b.categoryOrder === "number" ? b.categoryOrder : 999;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // একই ক্যাটাগরির ভেতরে এডমিনের ড্র্যাগ অর্ডার (order) অনুযায়ী সাজানো
+      const itemOrderA = typeof a.order === "number" ? a.order : 999;
+      const itemOrderB = typeof b.order === "number" ? b.order : 999;
+
+      return itemOrderA - itemOrderB;
+    });
+  }, [foods, activeCategory]);
 
   if (!brand) return null;
 
@@ -96,7 +114,7 @@ export const BrandMenu = () => {
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Dishes available across {brand.name} branches.</p>
       </div>
 
-      {/* Category tabs */}
+      {/* Category Navigation Tabs */}
       {categories.length > 1 && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none">
           {categories.map((cat) => (
@@ -121,7 +139,7 @@ export const BrandMenu = () => {
             <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
           ))}
         </div>
-      ) : shown.length === 0 ? (
+      ) : sortedAndGroupedFoods.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400">
           <UtensilsCrossed className="w-8 h-8 mx-auto stroke-1 mb-2" />
           <p className="text-sm">No dishes available for {brand.name} yet.</p>
@@ -138,7 +156,7 @@ export const BrandMenu = () => {
               pagination={{ clickable: true }}
               className="!px-4 !pb-8"
             >
-              {shown.map((food) => (
+              {sortedAndGroupedFoods.map((food) => (
                 <SwiperSlide key={food.id || food._id}>
                   <FoodCard
                     food={food}
@@ -157,7 +175,7 @@ export const BrandMenu = () => {
             variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
             className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
           >
-            {shown.map((food) => (
+            {sortedAndGroupedFoods.map((food) => (
               <FoodCard
                 key={food.id || food._id}
                 food={food}
