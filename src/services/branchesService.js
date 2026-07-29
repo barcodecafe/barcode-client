@@ -36,6 +36,11 @@ export async function updateBranch(id, updatedFields) {
   return apiClient.patch(`/branches/${id}`, updatedFields);
 }
 
+/** PUT /api/branches/reorder (admin) — Reorder branches order in Database */
+export async function updateBranchOrder(orderedBranchIds) {
+  return apiClient.put('/branches/reorder', { branchIds: orderedBranchIds });
+}
+
 /** DELETE /api/branches/:id (admin) */
 export async function deleteBranch(id) {
   return apiClient.delete(`/branches/${id}`);

@@ -58,8 +58,14 @@ export const Home = () => {
     getAllBrands()
       .then(setBrands)
       .catch(() => setBrands([]));
-    getFeaturedBranches(PREVIEW_COUNT).then(setPreviewBranches);
-    getAllBranches().then(setAllBranches);
+      
+    // 🎯 ডাটাবেজের কাস্টম ড্র্যাগ অর্ডার বজায় রেখে প্রিভিউ ব্রাঞ্চ প্রসেস
+    getAllBranches().then((branchesData) => {
+      const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
+      setAllBranches(sortedBranches);
+      setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
+    });
+
     getAllSlides().then(setHeroSlides);
     getAllFoods().then(setAllFoods);
   }, []);
@@ -121,7 +127,7 @@ export const Home = () => {
       if (activeSort === "price-high") return priceB - priceA;
       if (activeSort === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
 
-      return 0;
+      return 0; // 🎯 ডাটাবেজের ড্র্যাগ অর্ডার ধরে রাখবে
     });
   }, [allFoods, activeSort]);
 
@@ -253,7 +259,7 @@ export const Home = () => {
                             addToCart(featuredFood);
                             openCart();
                           }}
-                          className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold flex items-center gap-2 group shadow-xl shadow-primary-500/20 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-95 transition-all duration-300 pointer-events-auto"
+                          className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold flex items-center gap-2 group shadow-xl shadow-primary-500/20 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-95 transition-all duration-300 pointer-events-auto cursor-pointer"
                         >
                           {slide.cta || "Order Now"}
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -288,7 +294,7 @@ export const Home = () => {
             {remainingBranches.length > 0 ? (
               <button
                 onClick={() => setShowAllBranches((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllBranches ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -377,7 +383,7 @@ export const Home = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveSort(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
                   activeSort === tab.id
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
@@ -392,7 +398,7 @@ export const Home = () => {
             {totalPopularFoods.length > PREVIEW_COUNT ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllPopular ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -505,7 +511,7 @@ export const Home = () => {
             {remainingFeaturedMenu.length > 0 ? (
               <button
                 onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllFeatured ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -622,7 +628,7 @@ export const Home = () => {
               {brands.length > PREVIEW_COUNT ? (
                 <button
                   onClick={() => setShowAllBrands((v) => !v)}
-                  className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                  className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
                 >
                   {showAllBrands ? "Show Fewer" : "View All"}
                   <ChevronDown
@@ -749,7 +755,6 @@ const BranchCard = memo(({ branch, variants }) => {
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       className="group flex flex-col justify-between rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 transition-all duration-300"
     >
-      {/* 💡 p-3 sm:p-4 তুলে দেওয়া হয়েছে */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
         <Link to={`/branches/${branch.id}`} className="w-full h-full flex items-center justify-center">
           <img
@@ -778,7 +783,6 @@ const BranchCard = memo(({ branch, variants }) => {
         </div>
 
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium">
-          {/* 💡 Call আইকন ও টেক্সটকে tel: লিংকে রূপান্তর করা হয়েছে */}
           <a
             href={branchPhone ? `tel:${branchPhone}` : "#"}
             className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"

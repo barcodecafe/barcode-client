@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   Search,
   Star,
@@ -10,20 +10,20 @@ import {
   Edit2,
   Trash2,
   X,
+  GripVertical,
 } from "lucide-react";
 import {
   getAllBranches,
   createBranch,
   updateBranch,
   deleteBranch,
+  updateBranchOrder,
 } from "../../services/branchesService";
 import { getRevenueByBranch } from "../../services/analyticsService";
 import { getAllRegions } from "../../services/regionsService";
 import { getAllBrandsAdmin } from "../../services/brandsService";
 import LeafletMap from "../../components/LeafletMap";
 
-// Pull lat/lng out of a pasted Google Maps link (supports @lat,lng / q=lat,lng
-// / query=lat,lng / !3dLAT!4dLNG). Returns null if none found.
 const parseLatLngFromUrl = (url) => {
   if (!url) return null;
   const patterns = [
@@ -38,12 +38,6 @@ const parseLatLngFromUrl = (url) => {
   return null;
 };
 
-// ---------------------------------------------------------------------------
-// AdminBranches.jsx — /admin/branches
-//
-// Full CRUD panel for managing branches. Includes adding new branches,
-// editing details, and deleting branches. Data persists via branchesService.
-// ---------------------------------------------------------------------------
 export const AdminBranches = () => {
   const [branches, setBranches] = useState([]);
   const [regions, setRegions] = useState([]);
@@ -82,10 +76,10 @@ export const AdminBranches = () => {
     getAllBrandsAdmin().then((b) => setBrands(Array.isArray(b) ? b : [])).catch(() => {});
     Promise.all([getAllBranches(), getRevenueByBranch(), getAllRegions()]).then(
       ([branchData, revenueData, regionData]) => {
-        setBranches(branchData);
+        setBranches(branchData || []);
         setRegions(Array.isArray(regionData) ? regionData : []);
         setRevenueMap(
-          revenueData.reduce((map, r) => {
+          (revenueData || []).reduce((map, r) => {
             map[r.branchId] = r;
             return map;
           }, {}),
@@ -108,6 +102,20 @@ export const AdminBranches = () => {
         b.location.toLowerCase().includes(q),
     );
   }, [branches, search]);
+
+  // 🎯 Drag & Drop Reorder Handler
+  const handleBranchReorder = async (reorderedBranches) => {
+    setBranches(reorderedBranches);
+    const orderedIds = reorderedBranches.map((b) => String(b.id || b._id));
+
+    try {
+      if (typeof updateBranchOrder === "function") {
+        await updateBranchOrder(orderedIds);
+      }
+    } catch (err) {
+      console.error("Error updating branch order on server:", err);
+    }
+  };
 
   const openAddModal = () => {
     setEditingBranch(null);
@@ -159,7 +167,6 @@ export const AdminBranches = () => {
     setIsModalOpen(true);
   };
 
-  // ── Delivery zone editor (per-branch: area name + charge) ──
   const handleAddZone = () => {
     setFormData((prev) => ({
       ...prev,
@@ -197,7 +204,6 @@ export const AdminBranches = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      //  Max 2MB
       if (file.size > 2 * 1024 * 1024) {
         setFormError("File size should be less than 2MB");
         return;
@@ -214,7 +220,6 @@ export const AdminBranches = () => {
     }
   };
 
-  // Map location helpers
   const handlePickLocation = (lat, lng) => {
     setFormData((prev) => ({ ...prev, lat, lng }));
   };
@@ -301,8 +306,7 @@ export const AdminBranches = () => {
             Branches Management
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            {branches.length} locations across Chattogram, Cox's Bazar, and
-            Dhaka.
+            {branches.length} locations registered. Drag cards to reorder list.
           </p>
         </div>
 
@@ -320,7 +324,7 @@ export const AdminBranches = () => {
 
           <button
             onClick={openAddModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all duration-200 shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all duration-200 shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Branch
@@ -328,42 +332,44 @@ export const AdminBranches = () => {
         </div>
       </motion.div>
 
+      {/* Reorderable Branches Grid */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.03 } } }}
+        <Reorder.Group
+          axis="y"
+          values={filtered}
+          onReorder={handleBranchReorder}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
           {filtered.map((branch) => {
             const rev = revenueMap[branch.id];
             return (
-              <motion.div
-                key={branch.id}
-                variants={{
-                  hidden: { opacity: 0, y: 16 },
-                  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-                }}
-                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between"
+              <Reorder.Item
+                key={branch.id || branch._id}
+                value={branch}
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between cursor-grab active:cursor-grabbing select-none"
               >
                 <div>
                   <div className="relative h-28">
                     <img
                       src={branch.image}
                       alt={branch.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none" />
+
+                    <div className="absolute top-2.5 left-2.5 p-1.5 rounded-lg bg-black/40 backdrop-blur-md text-white/80">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
 
                     {/* Actions Overlay */}
                     <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         onClick={() => openEditModal(branch)}
-                        className="p-1.5 rounded-lg bg-white/95 text-neutral-700 hover:text-primary-500 hover:bg-white shadow-sm transition-all"
+                        className="p-1.5 rounded-lg bg-white/95 text-neutral-700 hover:text-primary-500 hover:bg-white shadow-sm transition-all cursor-pointer"
                         title="Edit Branch"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -372,14 +378,14 @@ export const AdminBranches = () => {
                         onClick={() =>
                           handleDeleteClick(branch.id, branch.name)
                         }
-                        className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 shadow-sm transition-all"
+                        className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 shadow-sm transition-all cursor-pointer"
                         title="Delete Branch"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between gap-2">
+                    <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between gap-2 pointer-events-none">
                       <h3 className="text-white font-display font-bold text-sm leading-tight truncate">
                         {branch.name}
                       </h3>
@@ -390,7 +396,7 @@ export const AdminBranches = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2">
+                  <div className="p-4 space-y-2 pointer-events-none">
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-start gap-1.5 line-clamp-2">
                       <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary-500" />
                       {branch.location}
@@ -408,12 +414,12 @@ export const AdminBranches = () => {
 
                 <div className="px-4 pb-4">
                   {rev && (
-                    <div className="flex items-center justify-between pt-2 mt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    <div className="flex items-center justify-between pt-2 mt-2 border-t border-neutral-100 dark:border-neutral-800 pointer-events-none">
                       <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Revenue (Mock)
+                        Revenue
                       </span>
                       <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">
-                        ${rev.revenue.toLocaleString()}
+                        ৳{rev.revenue?.toLocaleString() || 0}
                       </span>
                     </div>
                   )}
@@ -421,22 +427,22 @@ export const AdminBranches = () => {
                   <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-neutral-100 dark:border-neutral-800 md:hidden">
                     <button
                       onClick={() => openEditModal(branch)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-600 dark:text-neutral-300"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-600 dark:text-neutral-300 cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" /> Edit
                     </button>
                     <button
                       onClick={() => handleDeleteClick(branch.id, branch.name)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 text-xs text-red-500"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 text-xs text-red-500 cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" /> Delete
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </Reorder.Item>
             );
           })}
-        </motion.div>
+        </Reorder.Group>
       )}
 
       {!isLoading && filtered.length === 0 && (
@@ -449,7 +455,6 @@ export const AdminBranches = () => {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -458,21 +463,19 @@ export const AdminBranches = () => {
               className="absolute inset-0 bg-neutral-950/50 backdrop-blur-sm"
             />
 
-            
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-10 p-6 overflow-hidden"
             >
-              {/* Header - Fixed */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <h3 className="text-lg font-bold font-display text-neutral-800 dark:text-white">
                   {editingBranch ? "Edit Branch Details" : "Add New Branch"}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -484,12 +487,10 @@ export const AdminBranches = () => {
                 </div>
               )}
 
-              {/* Form Container - flex flex-col overflow-hidden */}
               <form
                 onSubmit={handleFormSubmit}
                 className="flex-1 flex flex-col overflow-hidden"
               >
-                
                 <div className="flex-1 overflow-y-auto space-y-4 pr-1.5 pb-2 scrollbar-thin">
                   <div>
                     <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
@@ -521,7 +522,6 @@ export const AdminBranches = () => {
                     />
                   </div>
 
-                  {/* Map Location Picker */}
                   <div>
                     <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
                       Map Location — click the map to drop a pin
@@ -545,7 +545,7 @@ export const AdminBranches = () => {
                       <button
                         type="button"
                         onClick={applyMapLink}
-                        className="px-3 py-2 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-semibold shrink-0 hover:bg-neutral-900 transition-colors"
+                        className="px-3 py-2 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-semibold shrink-0 hover:bg-neutral-900 transition-colors cursor-pointer"
                       >
                         Use link
                       </button>
@@ -560,7 +560,7 @@ export const AdminBranches = () => {
                         <button
                           type="button"
                           onClick={clearLocation}
-                          className="text-red-500 font-semibold hover:underline"
+                          className="text-red-500 font-semibold hover:underline cursor-pointer"
                         >
                           Clear pin
                         </button>
@@ -618,7 +618,7 @@ export const AdminBranches = () => {
 
                     <div>
                       <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Upload Image (JPG, JPEG, PNG)
+                        Upload Image
                       </label>
                       <input
                         type="file"
@@ -639,7 +639,7 @@ export const AdminBranches = () => {
                             onClick={() =>
                               setFormData((prev) => ({ ...prev, image: "" }))
                             }
-                            className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl hover:bg-red-600"
+                            className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl hover:bg-red-600 cursor-pointer"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -740,50 +740,44 @@ export const AdminBranches = () => {
                     </div>
                   </div>
 
-                  {/* Delivery Zones (per-branch: area name → charge) */}
                   <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">🚚 Delivery Zones</label>
-                      <button type="button" onClick={handleAddZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg">+ Add Zone</button>
+                      <button type="button" onClick={handleAddZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg cursor-pointer">+ Add Zone</button>
                     </div>
-                    <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">এই ব্রাঞ্চ থেকে কোন অঞ্চলে কত টাকা ডেলিভারি — customer checkout-এ নিজের অঞ্চল বাছবে।</p>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">Default charge (অন্য অঞ্চল)</span>
+                      <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">Default charge</span>
                       <div className="relative w-28">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                        <input type="number" min="0" step="1" value={formData.defaultDeliveryCharge} onChange={(e) => setFormData((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                        <input type="number" min="0" step="1" value={formData.defaultDeliveryCharge} onChange={(e) => setFormData((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none" />
                       </div>
                     </div>
 
-                    {formData.deliveryZones.length === 0 && (
-                      <p className="text-xs text-neutral-400 italic">কোনো zone নেই — সব ডেলিভারিতে উপরের default charge নেওয়া হবে।</p>
-                    )}
                     {formData.deliveryZones.map((z, index) => (
                       <div key={index} className="flex gap-2 items-center">
-                        <input type="text" placeholder="Area name (e.g. Agrabad)" value={z.name} onChange={(e) => handleZoneChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" required />
+                        <input type="text" placeholder="Area name" value={z.name} onChange={(e) => handleZoneChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
                         <div className="relative w-28 shrink-0">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                          <input type="number" min="0" step="1" placeholder="Charge" value={z.charge} onChange={(e) => handleZoneChange(index, "charge", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" required />
+                          <input type="number" min="0" step="1" placeholder="Charge" value={z.charge} onChange={(e) => handleZoneChange(index, "charge", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
                         </div>
-                        <button type="button" onClick={() => handleRemoveZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
+                        <button type="button" onClick={() => handleRemoveZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg cursor-pointer">✕</button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-               
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800 mt-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all"
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all"
+                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all cursor-pointer"
                   >
                     {editingBranch ? "Save Changes" : "Create Branch"}
                   </button>

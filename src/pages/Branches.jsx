@@ -71,7 +71,33 @@ export const Branches = () => {
     { id: 'rating', label: 'Highest Rated' },
   ];
 
-  const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
+  // 🎯 Variations সাপোর্ট সহ সঠিক দাম পাওয়ার ফাংশন
+  const getEffectivePrice = (food) => {
+    if (!food) return 0;
+
+    let basePrice = Number(food.price) || 0;
+
+    const variationsList = Array.isArray(food.variations)
+      ? food.variations
+      : Array.isArray(food.variants)
+      ? food.variants
+      : [];
+
+    if (variationsList.length > 0) {
+      const validVarPrices = variationsList
+        .map((v) => Number(v.price))
+        .filter((p) => !isNaN(p) && p > 0);
+
+      if (validVarPrices.length > 0) {
+        const minVarPrice = Math.min(...validVarPrices);
+        if (basePrice === 0 || minVarPrice < basePrice) {
+          basePrice = minVarPrice;
+        }
+      }
+    }
+
+    return applyFoodDiscount(basePrice, food);
+  };
 
   // ---------------------------------------------------------------------
   // Bestsellers (Popular Foods) Logic
@@ -80,14 +106,16 @@ export const Branches = () => {
     if (!allFoods || allFoods.length === 0) return [];
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    if (activeSort === 'price-low') {
-      filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (activeSort === 'price-high') {
-      filteredList.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (activeSort === 'rating') {
-      filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-    return filteredList;
+    return [...filteredList].sort((a, b) => {
+      const priceA = getEffectivePrice(a);
+      const priceB = getEffectivePrice(b);
+
+      if (activeSort === 'price-low') return priceA - priceB;
+      if (activeSort === 'price-high') return priceB - priceA;
+      if (activeSort === 'rating') return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+
+      return 0; // 🎯 DB Drag Order মেইনটেইন করবে
+    });
   }, [allFoods, activeSort]);
 
   const previewPopularFoods = useMemo(
@@ -138,7 +166,7 @@ export const Branches = () => {
             <button
               key={region.id}
               onClick={() => setActiveRegion(region.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
                 activeRegion === region.id
                   ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                   : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
@@ -235,7 +263,7 @@ export const Branches = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveSort(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
                   activeSort === tab.id
                     ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                     : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
@@ -250,7 +278,7 @@ export const Branches = () => {
             {totalPopularFoods.length > PREVIEW_COUNT ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllPopular ? 'Show Fewer' : 'View All'}
                 <ChevronDown
@@ -367,7 +395,7 @@ export const Branches = () => {
             {remainingFeaturedMenu.length > 0 ? (
               <button
                 onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllFeatured ? 'Show Fewer' : 'View All'}
                 <ChevronDown
@@ -444,7 +472,7 @@ export const Branches = () => {
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
+                  exit={{ opacity: 0, height: 'auto' }}
                   transition={{ duration: 0.4 }}
                   className="overflow-hidden"
                 >
@@ -484,7 +512,6 @@ const BranchCard = memo(({ branch, variants }) => {
     localStorage.setItem('selectedBranchId', String(branch.id));
   };
 
-  // 💡 ব্র্যাঞ্চ থেকে ডাইনামিকভাবে ফোন নম্বর বের করে আনা হচ্ছে
   const branchPhone = branch.phone || branch.contactNumber || branch.contact || branch.phoneNo;
 
   return (
@@ -522,7 +549,6 @@ const BranchCard = memo(({ branch, variants }) => {
         </div>
 
         <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-medium mt-auto">
-          {/* 💡 Call অপশনটিতে `tel:` লিঙ্কিং যোগ করা হয়েছে */}
           <a
             href={branchPhone ? `tel:${branchPhone}` : '#'}
             className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"

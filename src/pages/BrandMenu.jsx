@@ -34,13 +34,40 @@ export const BrandMenu = () => {
       .finally(() => setLoading(false));
   }, [brand?.slug]);
 
+  // 🎯 ব্যাকএন্ডের categoryOrder মেইনটেইন করে ক্যাটাগরি সর্ট করা
   const categories = useMemo(() => {
-    const set = new Set(foods.map((f) => f.category?.trim()).filter(Boolean));
-    return ["All", ...Array.from(set)];
+    if (!foods || foods.length === 0) return ["All"];
+
+    const categoryMap = new Map();
+
+    foods.forEach((f) => {
+      if (f.category?.trim()) {
+        const catName = f.category.trim();
+        const lowerName = catName.toLowerCase();
+        const orderVal = typeof f.categoryOrder === "number" ? f.categoryOrder : 999;
+
+        if (!categoryMap.has(lowerName)) {
+          categoryMap.set(lowerName, { name: catName, order: orderVal });
+        } else {
+          if (orderVal < categoryMap.get(lowerName).order) {
+            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          }
+        }
+      }
+    });
+
+    const sortedCats = Array.from(categoryMap.values())
+      .sort((a, b) => a.order - b.order)
+      .map((item) => item.name);
+
+    return ["All", ...sortedCats];
   }, [foods]);
 
   const shown = useMemo(
-    () => (activeCategory === "All" ? foods : foods.filter((f) => f.category?.trim() === activeCategory)),
+    () =>
+      activeCategory === "All"
+        ? foods
+        : foods.filter((f) => f.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()),
     [foods, activeCategory],
   );
 
@@ -62,8 +89,8 @@ export const BrandMenu = () => {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
-                activeCategory === cat
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                activeCategory.trim().toLowerCase() === cat.trim().toLowerCase()
                   ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                   : "bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
               }`}
@@ -85,7 +112,7 @@ export const BrandMenu = () => {
         </div>
       ) : (
         <>
-          {/* Mobile View: Swiper Slider (Same as Home.jsx) */}
+          {/* Mobile View: Swiper Slider */}
           <div className="sm:hidden -mx-4">
             <Swiper
               key={activeCategory}
@@ -96,10 +123,10 @@ export const BrandMenu = () => {
               className="!px-4 !pb-8"
             >
               {shown.map((food) => (
-                <SwiperSlide key={food.id}>
+                <SwiperSlide key={food.id || food._id}>
                   <FoodCard
                     food={food}
-                    favorited={isFavorite(food.id)}
+                    favorited={isFavorite(food.id || food._id)}
                     onToggleFavorite={toggleFavorite}
                     onAddToCart={addToCart}
                   />
@@ -116,9 +143,9 @@ export const BrandMenu = () => {
           >
             {shown.map((food) => (
               <FoodCard
-                key={food.id}
+                key={food.id || food._id}
                 food={food}
-                favorited={isFavorite(food.id)}
+                favorited={isFavorite(food.id || food._id)}
                 onToggleFavorite={toggleFavorite}
                 onAddToCart={addToCart}
                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
