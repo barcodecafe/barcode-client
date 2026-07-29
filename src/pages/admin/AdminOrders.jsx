@@ -308,24 +308,37 @@ export const AdminOrders = () => {
     }, 500);
   };
 
-// 📥 সরাসরি পিডিএফ ফাইল ডাউনলোড করার ফাংশন
+// 📥 সরাসরি ব্রাউজার থেকে ফাইল জেনারেট করে পিডিএফ ডাউনলোড করার ফাংশন
   const handleDownloadPDF = () => {
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900');
-    WindowPrt.document.write('<html><head><title>Invoice-PDF</title>');
-    WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
-    WindowPrt.document.write('</head><body class="bg-white p-8">');
-    WindowPrt.document.write(printContent.innerHTML);
-    WindowPrt.document.write('</body></html>');
-    WindowPrt.document.close();
-    WindowPrt.focus();
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Order-Invoice-${selectedOrderDetails?.id || selectedOrderDetails?._id || 'details'}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-white p-8 text-xs text-neutral-800">
+          <div class="max-w-md mx-auto space-y-4">
+            <h2 class="text-lg font-bold border-b pb-2">Order Invoice #${(selectedOrderDetails?.id || selectedOrderDetails?._id)?.toUpperCase()}</h2>
+            ${printContent.innerHTML}
+          </div>
+        </body>
+      </html>
+    `;
 
-    setTimeout(() => {
-      // ব্যাকগ্রাউন্ডে পিডিএফ রেন্ডার ট্রিগার করা
-      WindowPrt.print();
-    }, 600);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Invoice-${(selectedOrderDetails?.id || selectedOrderDetails?._id || 'order').toUpperCase()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Invoice downloaded successfully!");
   };
 
   if (loading) {
