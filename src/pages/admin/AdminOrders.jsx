@@ -452,7 +452,6 @@ export const AdminOrders = () => {
 
   // পে-অ্যাবল সাবটোটাল
   const subTotal = orderItems.reduce((sum, item) => sum + getItemPayableTotal(item), 0);
-  const itemsSavings = Math.max(0, itemsOriginalTotal - subTotal);
 
   const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
   const grandTotal = subTotal + deliveryCharge + currentAdjustment;
@@ -784,7 +783,7 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট (পূর্বের সব কলাম ও অপশনসহ) */}
+              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট */}
               <div ref={invoiceRef} className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans">
                 
                 {/* ১. হেডার সেশন */}
@@ -836,7 +835,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. আইটেম টেবিল (পূর্বের সব কলাম - Custom Item, Description, Unit Price, Quantity, Discount, TAX, Total) */}
+                {/* ৩. আইটেম টেবিল (সঠিক BOGO/ডিসকাউন্ট হিসাবসহ) */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -875,7 +874,7 @@ export const AdminOrders = () => {
                               {offerLabel ? offerLabel : "-"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
-                              ৳{unitPrice.toFixed(2)}
+                              ৳{origPrice.toFixed(2)}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">{qty}</td>
                             <td className="p-2.5 border-r border-neutral-300 text-right font-semibold text-emerald-600">
@@ -892,25 +891,10 @@ export const AdminOrders = () => {
                   </table>
                 </div>
 
-                {/* ৪. হিসাব-নিকাশ ও ড্রাগ/ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন (পূর্বের সব ফিল্ডসহ) */}
+                {/* ৪. হিসাব-নিকাশ ও ড্রাগ/ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন */}
                 <div className="flex justify-end pt-2">
                   <div className="w-full sm:w-80 space-y-1.5 text-xs">
                     
-                    {/* গ্রস সাবটোটাল ও সেভিংস */}
-                    {itemsSavings > 0 && (
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
-                        <span className="text-neutral-500">Gross Subtotal:</span>
-                        <span className="font-medium line-through text-neutral-400">৳{itemsOriginalTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-
-                    {itemsSavings > 0 && (
-                      <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-600 font-bold">
-                        <span>Total Offer Savings:</span>
-                        <span>-৳{itemsSavings.toFixed(2)}</span>
-                      </div>
-                    )}
-
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Total SD:</span>
                       <span className="font-medium">0.00</span>
