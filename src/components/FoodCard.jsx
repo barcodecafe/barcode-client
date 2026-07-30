@@ -50,7 +50,7 @@ const FoodCard = ({
 
         {/* 🎯 Badge: Priority -> Offer Badge (BOGO) > Discount Badge */}
         {offerLabel ? (
-          <span className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1 rounded-none bg-purple-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+          <span className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1 rounded-none bg-primary-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
             <Gift className="h-3 w-3" /> {offerLabel}
           </span>
         ) : hasDiscount ? (

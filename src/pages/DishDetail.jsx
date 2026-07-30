@@ -14,6 +14,7 @@ import {
   Plus,
   Check,
   Zap,
+  Gift,
 } from "lucide-react";
 
 // Swiper imports (matching Home.jsx pattern)
@@ -118,7 +119,7 @@ export const DishDetail = () => {
         </p>
         <button
           onClick={() => navigate("/menu")}
-          className="px-5 py-2 rounded-none bg-primary-500 text-white font-bold text-sm shadow"
+          className="px-5 py-2 rounded-none bg-primary-500 text-white font-bold text-sm shadow cursor-pointer"
         >
           Back to Menu
         </button>
@@ -126,7 +127,17 @@ export const DishDetail = () => {
     );
   }
 
-  const hasDiscount = hasFoodDiscount(food);
+  // 🎯 BOGO Offer Text Helper
+  const getOfferLabel = (offerType) => {
+    if (offerType === "bogo_1g1") return "BUY 1 GET 1 FREE";
+    if (offerType === "bogo_1g2") return "BUY 1 GET 2 FREE";
+    if (offerType === "combo") return "SPECIAL COMBO";
+    return null;
+  };
+
+  const offerLabel = getOfferLabel(food.offerType);
+  const hasDiscount = hasFoodDiscount(food) && (!food.offerType || food.offerType === "none");
+  
   const activePrice = getActivePrice(
     food,
     branchId,
@@ -159,19 +170,29 @@ export const DishDetail = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-primary-500 mb-6 transition-colors"
+        className="inline-flex items-center gap-2 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-primary-500 mb-6 transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      {/* Main Container (rounded-none) */}
+      {/* Main Container */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-none p-6 sm:p-8 shadow-sm">
-        {/* Left Section: Image Display (rounded-none) */}
+        {/* Left Section: Image Display */}
         <div className="relative aspect-square rounded-none overflow-hidden bg-neutral-50 dark:bg-neutral-800">
-          {hasDiscount && (
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-primary-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/35 z-10">
-              {foodDiscountLabel(food)}
+          
+          {/* 🎯 BOGO Offer Badge (Purple) */}
+          {offerLabel ? (
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-purple-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-600/35 z-10 flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5" />
+              <span>{offerLabel}</span>
             </div>
+          ) : (
+            /* Standard Discount Badge (Red) */
+            hasDiscount && (
+              <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-primary-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/35 z-10">
+                {foodDiscountLabel(food)}
+              </div>
+            )
           )}
 
           <img
@@ -182,7 +203,7 @@ export const DishDetail = () => {
 
           <button
             onClick={() => toggleFavorite(food.id)}
-            className={`absolute top-4 right-4 p-2.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all ${
+            className={`absolute top-4 right-4 p-2.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all cursor-pointer ${
               isFavorite(food.id)
                 ? "text-red-500 scale-110"
                 : "text-neutral-400 hover:text-red-500"
@@ -198,9 +219,19 @@ export const DishDetail = () => {
         <div className="flex flex-col justify-between py-2">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                {food.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                  {food.category}
+                </span>
+
+                {/* 🎯 Extra Badge under Title for Offer */}
+                {offerLabel && (
+                  <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 uppercase tracking-wider border border-purple-200 dark:border-purple-800/60 flex items-center gap-1">
+                    <Gift className="w-3 h-3" /> {offerLabel}
+                  </span>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-none">
                   <Star className="w-4 h-4 fill-current" />
@@ -236,7 +267,7 @@ export const DishDetail = () => {
                 "No description available for this delicious item."}
             </p>
 
-            {/* Variations (rounded-none) */}
+            {/* Variations */}
             {food.variations && food.variations.length > 0 && (
               <div className="pt-2 space-y-2">
                 <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
@@ -253,7 +284,7 @@ export const DishDetail = () => {
                         key={v.name}
                         type="button"
                         onClick={() => setSelectedVariation(v)}
-                        className={`px-4 py-2.5 rounded-none border text-xs font-bold flex items-center gap-2 transition-all ${
+                        className={`px-4 py-2.5 rounded-none border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20"
                             : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300"
@@ -279,7 +310,7 @@ export const DishDetail = () => {
                 type="button"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={quantity <= 1}
-                className="w-8 sm:w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
+                className="w-8 sm:w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40 cursor-pointer"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -290,7 +321,7 @@ export const DishDetail = () => {
                 type="button"
                 onClick={() => handleQuantityChange(quantity + 1)}
                 disabled={quantity >= 99}
-                className="w-8 sm:w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40"
+                className="w-8 sm:w-10 h-10 rounded-none flex items-center justify-center text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-40 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -300,7 +331,7 @@ export const DishDetail = () => {
             <button
               type="button"
               onClick={handleAddToCartClick}
-              className={`flex-1 h-12 rounded-none font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all ${
+              className={`flex-1 h-12 rounded-none font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all cursor-pointer ${
                 isAdded
                   ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
                   : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"
@@ -331,7 +362,6 @@ export const DishDetail = () => {
               Might Also Like
             </h2>
             
-            {/* 💡 ৫ টার বেশি কার্ড থাকলে কেবল View All বাটন দেখাবে */}
             {recommendedFoods.length > 5 && (
               <Link
                 to="/menu"
