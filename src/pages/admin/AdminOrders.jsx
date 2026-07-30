@@ -50,7 +50,7 @@ const getOfferText = (offerType) => {
   return null;
 };
 
-// 🎯 BOGO (Buy 1 Get 1 / Buy 1 Get 2) বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
+// 🎯 BOGO এবং নরমাল পার্সেন্টেজ/ফ্ল্যাট ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
 const getItemPayableTotal = (item) => {
   const price = Number(item.price) || 0;
   const qty = Number(item.quantity) || 0;
@@ -452,12 +452,6 @@ export const AdminOrders = () => {
 
   const orderItems =
     selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
-
-  // অরিজিনাল মোট মূল্য (ছাড় ছাড়া)
-  const itemsOriginalTotal = orderItems.reduce((sum, item) => {
-    const unitOrig = item.originalPrice || item.price || 0;
-    return sum + unitOrig * (item.quantity || 1);
-  }, 0);
 
   // পে-অ্যাবল সাবটোটাল
   const subTotal = orderItems.reduce(
@@ -925,7 +919,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. লজিক্যাল আইটেম টেবিল */}
+                {/* ৩. লজিক্যাল আইটেম টেবিল (BOGO ও নরমাল ডিসকাউন্ট উভয়টির জন্য) */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -954,13 +948,23 @@ export const AdminOrders = () => {
                     <tbody>
                       {orderItems.map((item, idx) => {
                         const offerLabel = getOfferText(item.offerType);
+                        
+                        // অরিজিনাল একক দাম (ডিসকাউন্ট না থাকলে নরমাল প্রাইজ)
                         const origUnitPrice =
-                          item.originalPrice || item.price || 0;
-                        const qty = item.quantity || 1;
+                          Number(item.originalPrice) && Number(item.originalPrice) > Number(item.price)
+                            ? Number(item.originalPrice)
+                            : Number(item.price) || 0;
 
-                        const fullGross = origUnitPrice * qty; // ৩৪০ x ৩ = ১০২০
-                        const netPayable = getItemPayableTotal(item); // অফার পরে দিতে হবে = ৩৪০
-                        const freeDiscount = fullGross - netPayable; // ফ্রি টাকা = ৬৮০
+                        const qty = Number(item.quantity) || 1;
+
+                        // ১. মোট অরিজিনাল গ্রস প্রাইজ (দাম x পরিমাণ)
+                        const fullGross = origUnitPrice * qty; 
+                        
+                        // ২. অফার বা ডিসকাউন্টের পর যা কাস্টমার দেবে
+                        const netPayable = getItemPayableTotal(item); 
+                        
+                        // ৩. মোট সেভিংস/ছাড়ের পরিমাণ
+                        const freeDiscount = Math.max(0, fullGross - netPayable);
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
@@ -971,7 +975,7 @@ export const AdminOrders = () => {
                                 : ""}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700">
-                              {offerLabel || "-"}
+                              {offerLabel || (item.originalPrice && item.originalPrice > item.price ? "REGULAR DISCOUNT" : "-")}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{origUnitPrice.toFixed(2)}
