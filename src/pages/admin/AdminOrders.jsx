@@ -50,17 +50,23 @@ const getOfferText = (offerType) => {
   return null;
 };
 
-// 🎯 BOGO এবং নরমাল পার্সেন্টেজ/ফ্ল্যাট ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
+// 🎯 BOGO এবং নরমাল ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার (অটো-ডিটেকশনসহ)
 const getItemPayableTotal = (item) => {
+  const name = String(item.name || "").toLowerCase();
   const price = Number(item.price) || 0;
   const qty = Number(item.quantity) || 0;
 
-  if (item.offerType === "bogo_1g1") {
+  let oType = item.offerType;
+  if (!oType) {
+    if (name.includes("fuchka platter") && qty >= 3) oType = "bogo_1g2";
+  }
+
+  if (oType === "bogo_1g1") {
     const paidQuantity = Math.ceil(qty / 2);
     return price * paidQuantity;
   }
 
-  if (item.offerType === "bogo_1g2") {
+  if (oType === "bogo_1g2") {
     const paidQuantity = Math.ceil(qty / 3);
     return price * paidQuantity;
   }
@@ -919,7 +925,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. লজিক্যাল আইটেম টেবিল (BOGO ও নরমাল ডিসকাউন্ট উভয়টির জন্য) */}
+                {/* ৩. লজিক্যাল আইটেম টেবিল (অটো-ডিটেক্ট ডিসকাউন্ট ও BOGO সহ) */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -947,23 +953,32 @@ export const AdminOrders = () => {
                     </thead>
                     <tbody>
                       {orderItems.map((item, idx) => {
-                        const offerLabel = getOfferText(item.offerType);
-                        
-                        // অরিজিনাল একক দাম (ডিসকাউন্ট না থাকলে নরমাল প্রাইজ)
-                        const origUnitPrice =
-                          Number(item.originalPrice) && Number(item.originalPrice) > Number(item.price)
-                            ? Number(item.originalPrice)
-                            : Number(item.price) || 0;
-
+                        const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
+                        const unitPrice = Number(item.price) || 0;
 
-                        // ১. মোট অরিজিনাল গ্রস প্রাইজ (দাম x পরিমাণ)
-                        const fullGross = origUnitPrice * qty; 
+                        // অটো-ডিটেক্ট অফার টাইপ যদি ব্যাকএন্ডে সেভ না থাকে
+                        let detectedOfferType = item.offerType;
+                        let origUnitPrice = Number(item.originalPrice) || unitPrice;
+
+                        if (!detectedOfferType && itemName.includes("fuchka platter") && qty >= 3) {
+                          detectedOfferType = "bogo_1g2";
+                          origUnitPrice = 340; // ফুচকা প্লাটারের অরিজিনাল একক দাম
+                        } else if (!detectedOfferType && itemName.includes("borhani") && unitPrice === 76) {
+                          origUnitPrice = 80; // বোরহানির অরিজিনাল একক দাম (৫% ছাড়ে ৭৬ হলে)
+                        }
+
+                        const offerLabel = getOfferText(detectedOfferType);
+
+                        const fullGross = origUnitPrice * qty;
                         
-                        // ২. অফার বা ডিসকাউন্টের পর যা কাস্টমার দেবে
-                        const netPayable = getItemPayableTotal(item); 
-                        
-                        // ৩. মোট সেভিংস/ছাড়ের পরিমাণ
+                        let netPayable = unitPrice * qty;
+                        if (detectedOfferType === "bogo_1g1") {
+                          netPayable = unitPrice * Math.ceil(qty / 2);
+                        } else if (detectedOfferType === "bogo_1g2") {
+                          netPayable = unitPrice * Math.ceil(qty / 3);
+                        }
+
                         const freeDiscount = Math.max(0, fullGross - netPayable);
 
                         return (
@@ -975,7 +990,7 @@ export const AdminOrders = () => {
                                 : ""}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700">
-                              {offerLabel || (item.originalPrice && item.originalPrice > item.price ? "REGULAR DISCOUNT" : "-")}
+                              {offerLabel || (origUnitPrice > unitPrice ? "REGULAR DISCOUNT" : "-")}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{origUnitPrice.toFixed(2)}
