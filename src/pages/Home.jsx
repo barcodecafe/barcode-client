@@ -94,7 +94,7 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // 💡 Admin Schema অনুযায়ী নিখুঁত Price হিসাবের ফাংশন
+  // 💡 Admin Schema অনুযায়ী টাইমার হিসাব সহ নিখুঁত Price হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
@@ -244,6 +244,8 @@ export const Home = () => {
               const showOrderButton =
                 slide.type === "promo" && Boolean(featuredFood);
 
+              const hasActiveDiscount = featuredFood && hasFoodDiscount(featuredFood);
+
               return (
                 <SwiperSlide
                   key={slide.id ?? index}
@@ -257,8 +259,7 @@ export const Home = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-6 sm:pb-8 gap-3">
                     <div className="max-w-3xl text-white flex flex-col items-center select-none pointer-events-none">
                       {slide.type === "promo" &&
-                        (slide.offerText ||
-                          (featuredFood && hasFoodDiscount(featuredFood))) && (
+                        (slide.offerText || hasActiveDiscount) && (
                           <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg shadow-red-500/35">
                             🔥{" "}
                             {slide.offerText || foodDiscountLabel(featuredFood)}
