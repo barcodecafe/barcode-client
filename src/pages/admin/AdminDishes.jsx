@@ -360,9 +360,19 @@ export const AdminDishes = () => {
     e.preventDefault();
 
     try {
+      const categoryName = formData.category?.trim();
+      const existingCategoryIndex = sortedCategories.findIndex(
+        (c) => c.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      // 🎯 যদি ক্যাটাগরিটি নতুন হয়, তবে সেটিকে সবার শেষে অর্ডার দেওয়া হবে (999) 
+      // আর আগে থেকে থাকলে সেই অর্ডারটি ব্যবহার করা হবে।
+      const categoryOrder = existingCategoryIndex !== -1 ? existingCategoryIndex + 1 : 999;
+
       const cleanedFormData = {
         ...formData,
-        category: formData.category?.trim(),
+        category: categoryName,
+        categoryOrder, // 🎯 এখানে categoryOrder সেভ করা হচ্ছে
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
         discountPct: formData.offerType !== "none" ? 0 : Number(formData.discountPct) || 0,
@@ -371,16 +381,19 @@ export const AdminDishes = () => {
         discountEndDate: formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
       };
 
+      let newFoodsList;
       if (editingFood) {
         const updated = await updateFood(editingFood.id || editingFood._id, cleanedFormData);
-        setFoods(foods.map((f) => ((f.id || f._id) === (editingFood.id || editingFood._id) ? updated : f)));
+        newFoodsList = foods.map((f) => ((f.id || f._id) === (editingFood.id || editingFood._id) ? updated : f));
+        setFoods(newFoodsList);
       } else {
         const created = await createFood(cleanedFormData);
-        setFoods([created, ...foods]);
+        newFoodsList = [created, ...foods];
+        setFoods(newFoodsList);
       }
 
       // Re-process categories dynamically after create/edit
-      const updatedCats = processCategories(foods);
+      const updatedCats = processCategories(newFoodsList);
       setSortedCategories(updatedCats);
 
       setIsModalOpen(false);
