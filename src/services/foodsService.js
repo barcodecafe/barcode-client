@@ -92,7 +92,16 @@ export function getDiscountedPrice(food, branchId, selectedSize = null) {
   return applyFoodDiscount(getActivePrice(food, branchId, selectedSize), food);
 }
 
-// ── Discount helpers — percentage OR flat ৳ amount + Date Timer Validation ──
+// ── Discount & Offer helpers — percentage OR flat ৳ amount + BOGO Deals + Date Timer ──
+
+/** 🎯 Offer Badge label, e.g. "BUY 1 GET 1 FREE" or "BUY 1 GET 2 FREE" */
+export function getFoodOfferLabel(food) {
+  if (!food || !food.offerType || food.offerType === 'none') return null;
+  if (food.offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE';
+  if (food.offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE';
+  if (food.offerType === 'combo') return 'COMBO DEAL';
+  return null;
+}
 
 /** 🎯 true if the food currently has an ACTIVE discount based on time range. */
 export function hasFoodDiscount(food) {
@@ -115,7 +124,11 @@ export function hasFoodDiscount(food) {
 /** Apply the food's discount to an already-computed active price (never below 0). */
 export function applyFoodDiscount(activePrice, food) {
   const p = Number(activePrice) || 0;
-  if (!food || !hasFoodDiscount(food)) return p; // 🎯 If discount timer is invalid, return original active price
+
+  // 🎯 BOGO/Special Offer চালু থাকলে পার্সেন্টেজ বা ফ্ল্যাট ডিসকাউন্ট প্রযোজ্য হবে না
+  if (food?.offerType && food.offerType !== 'none') return p;
+
+  if (!food || !hasFoodDiscount(food)) return p; // If discount timer is invalid, return original active price
 
   if (food.discountType === 'flat') {
     const amt = Number(food.discountAmount) || 0;
@@ -125,9 +138,12 @@ export function applyFoodDiscount(activePrice, food) {
   return pct > 0 ? p * (1 - pct / 100) : p;
 }
 
-/** Badge text for the discount, e.g. "20% OFF" or "৳50 OFF" (null if inactive/expired). */
+/** Badge text for the discount, e.g. "20% OFF" or "৳50 OFF" (null if inactive/expired/BOGO). */
 export function foodDiscountLabel(food) {
-  if (!food || !hasFoodDiscount(food)) return null; // 🎯 Hide badge if expired or not started
+  // 🎯 BOGO Offer থাকলে ডিসকাউন্ট ব্যাজ হাইড থাকবে
+  if (food?.offerType && food.offerType !== 'none') return null;
+
+  if (!food || !hasFoodDiscount(food)) return null; // Hide badge if expired or not started
 
   if (food.discountType === 'flat') {
     const a = Number(food.discountAmount) || 0;

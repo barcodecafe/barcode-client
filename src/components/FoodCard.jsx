@@ -1,14 +1,15 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { Star, Heart, ShoppingBag, SlidersHorizontal, Gift } from "lucide-react";
 import {
   hasFoodDiscount,
   applyFoodDiscount,
   foodDiscountLabel,
+  getFoodOfferLabel,
 } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
-// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ
+// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ + BOGO Offer Badge Support
 // ---------------------------------------------------------------------------
 const FoodCard = ({
   food,
@@ -22,8 +23,13 @@ const FoodCard = ({
   const basePrice = hasVariants
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
     : food.price;
-  const hasDiscount = hasFoodDiscount(food);
-  const discountedPrice = applyFoodDiscount(basePrice, food);
+
+  // 🎯 BOGO / Special Offer Check
+  const offerLabel = getFoodOfferLabel(food);
+  
+  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে
+  const hasDiscount = !offerLabel && hasFoodDiscount(food);
+  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;
 
   return (
     <motion.div
@@ -42,12 +48,16 @@ const FoodCard = ({
           />
         </Link>
 
-        {/* Discount Badge: Sharp Corner */}
-        {hasDiscount && (
+        {/* 🎯 Badge: Priority -> Offer Badge (BOGO) > Discount Badge */}
+        {offerLabel ? (
+          <span className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1 rounded-none bg-purple-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+            <Gift className="h-3 w-3" /> {offerLabel}
+          </span>
+        ) : hasDiscount ? (
           <span className="pointer-events-none absolute left-0 top-0 z-10 rounded-none bg-primary-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
             {foodDiscountLabel(food)}
           </span>
-        )}
+        ) : null}
 
         {/* Favorite Button */}
         <button
@@ -90,7 +100,7 @@ const FoodCard = ({
 
         {/* ── Footer: price + order ───────────────────────────── */}
         <div className="mt-auto flex items-center justify-between gap-1 pt-3">
-          {/* 💡 Price Section (flex-1 & min-w-0 prevents breaking) */}
+          {/* Price Section */}
           <div className="flex flex-col font-display min-w-0 flex-1">
             <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
               ৳{discountedPrice.toFixed(2)}
@@ -102,7 +112,7 @@ const FoodCard = ({
             )}
           </div>
 
-          {/* 💡 Button Section (shrink-0 ensures it stays on the side) */}
+          {/* Button Section */}
           {hasVariants ? (
             <Link
               to={`/menu/${food.id}`}
