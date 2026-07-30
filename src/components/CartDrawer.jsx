@@ -37,8 +37,8 @@ export const CartDrawer = () => {
 
   // 🎯 BOGO Offer Text Helper Function
   const getOfferText = (offerType) => {
-    if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE (+1 Free)';
-    if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE (+2 Free)';
+    if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE';
+    if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE';
     if (offerType === 'combo') return 'SPECIAL COMBO DEAL';
     return null;
   };
@@ -109,10 +109,15 @@ export const CartDrawer = () => {
                       const optionName = item.selectedVariation?.name || item.selectedSize;
                       const offerLabel = getOfferText(item.offerType);
                       
-                      // 🎯 BOGO লজিক অনুযায়ী দাম হিসেব
-                      const linePrice = typeof getCartItemLineTotal === 'function' 
+                      // 🎯 BOGO মূল এবং ডিসকাউন্ট ব্রেকডাউন হিসাব
+                      const originalTotal = item.price * item.quantity;
+                      const finalPayable = typeof getCartItemLineTotal === 'function' 
                         ? getCartItemLineTotal(item) 
-                        : (item.price * item.quantity);
+                        : originalTotal;
+                      const freeSavings = originalTotal - finalPayable;
+
+                      // 🎯 BOGO এর জোড়া (+২ বা +৩) অনুযায়ী কোয়ান্টিটি চেঞ্জ করার স্টেপ
+                      const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
 
                       return (
                         <div
@@ -142,14 +147,25 @@ export const CartDrawer = () => {
                               </span>
                             )}
 
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              {/* 🎯 BOGO বিয়োগকৃত সঠিক লাইন টোটাল */}
-                              <span className="text-xs text-primary-500 font-bold">
-                                ৳{linePrice.toFixed(2)}
-                              </span>
-                              {item.originalPrice && item.originalPrice > item.price && !offerLabel && (
-                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">
-                                  ৳{(item.originalPrice * item.quantity).toFixed(2)}
+                            {/* 🎯 মূল দাম, ফ্রি সেভিংস এবং ফাইনাল দামের ডিসপ্লে */}
+                            <div className="flex flex-col gap-0.5 mt-1">
+                              {offerLabel && freeSavings > 0 ? (
+                                <>
+                                  <div className="flex items-center gap-1.5 text-[10px]">
+                                    <span className="text-neutral-400 line-through">
+                                      ৳{originalTotal.toFixed(2)}
+                                    </span>
+                                    <span className="font-extrabold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 px-1 rounded">
+                                      FREE -৳{freeSavings.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-primary-500 font-black">
+                                    Payable: ৳{finalPayable.toFixed(2)}
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="text-xs text-primary-500 font-bold">
+                                  ৳{finalPayable.toFixed(2)}
                                 </span>
                               )}
                             </div>
@@ -157,17 +173,19 @@ export const CartDrawer = () => {
 
                           {/* Quantity Controls & Delete Icon */}
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
+                            <div className="flex items-center gap-1.5 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
                               <button
-                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
+                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - step)}
                                 className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500 cursor-pointer"
+                                title={step > 1 ? `Decrease by ${step}` : 'Decrease'}
                               >
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
                               <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
                               <button
-                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
+                                onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + step)}
                                 className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500 cursor-pointer"
+                                title={step > 1 ? `Increase by ${step}` : 'Increase'}
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
