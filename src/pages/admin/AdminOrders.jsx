@@ -14,7 +14,6 @@ import {
   BellRing,
   Printer,
   Gift,
-  Sparkles,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -445,7 +444,7 @@ export const AdminOrders = () => {
   
   const orderItems = selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
   
-  // অরিজিনাল মোট মূল্য (ডিসকাউন্ট ছাড়া)
+  // অরিজিনাল মোট মূল্য (ছাড় ছাড়া)
   const itemsOriginalTotal = orderItems.reduce((sum, item) => {
     const unitOrig = item.originalPrice || item.price || 0;
     return sum + (unitOrig * (item.quantity || 1));
@@ -785,7 +784,7 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট */}
+              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট (পূর্বের সব কলাম ও অপশনসহ) */}
               <div ref={invoiceRef} className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans">
                 
                 {/* ১. হেডার সেশন */}
@@ -837,16 +836,17 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. আইটেম টেবিল (BOGO ও ডিসকাউন্ট তথ্যসহ) */}
+                {/* ৩. আইটেম টেবিল (পূর্বের সব কলাম - Custom Item, Description, Unit Price, Quantity, Discount, TAX, Total) */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
                       <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
                         <th className="p-2.5 border-r border-neutral-300">Custom Item</th>
-                        <th className="p-2.5 border-r border-neutral-300">Offer Tag</th>
+                        <th className="p-2.5 border-r border-neutral-300">Description</th>
                         <th className="p-2.5 border-r border-neutral-300 text-right">Unit Price</th>
                         <th className="p-2.5 border-r border-neutral-300 text-center">Quantity</th>
                         <th className="p-2.5 border-r border-neutral-300 text-right">Discount / Free</th>
+                        <th className="p-2.5 border-r border-neutral-300 text-right">TAX</th>
                         <th className="p-2.5 text-right">Total</th>
                       </tr>
                     </thead>
@@ -864,16 +864,15 @@ export const AdminOrders = () => {
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
                             <td className="p-2.5 border-r border-neutral-300 font-medium">
-                              {item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}
-                            </td>
-                            <td className="p-2.5 border-r border-neutral-300">
-                              {offerLabel ? (
-                                <span className="inline-block text-[9px] font-extrabold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                              <div>{item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}</div>
+                              {offerLabel && (
+                                <span className="inline-block text-[8px] font-extrabold bg-purple-100 text-purple-700 px-1 rounded mt-0.5 border border-purple-200">
                                   {offerLabel}
                                 </span>
-                              ) : (
-                                <span className="text-neutral-400">-</span>
                               )}
+                            </td>
+                            <td className="p-2.5 border-r border-neutral-300 text-neutral-400">
+                              {offerLabel ? offerLabel : "-"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{unitPrice.toFixed(2)}
@@ -882,6 +881,7 @@ export const AdminOrders = () => {
                             <td className="p-2.5 border-r border-neutral-300 text-right font-semibold text-emerald-600">
                               {itemSavings > 0 ? `-৳${itemSavings.toFixed(2)}` : "0.00"}
                             </td>
+                            <td className="p-2.5 border-r border-neutral-300 text-right">0.00</td>
                             <td className="p-2.5 text-right font-bold text-neutral-900">
                               ৳{itemPayable.toFixed(2)}
                             </td>
@@ -892,31 +892,41 @@ export const AdminOrders = () => {
                   </table>
                 </div>
 
-                {/* ৪. হিসাব-নিকাশ ও ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন */}
+                {/* ৪. হিসাব-নিকাশ ও ড্রাগ/ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন (পূর্বের সব ফিল্ডসহ) */}
                 <div className="flex justify-end pt-2">
                   <div className="w-full sm:w-80 space-y-1.5 text-xs">
                     
-                    {/* অরিজিনাল গ্রস টোটাল (যদি অফার থাকে) */}
+                    {/* গ্রস সাবটোটাল ও সেভিংস */}
                     {itemsSavings > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200">
-                        <span className="text-neutral-500">Gross Total (Before Offer):</span>
+                        <span className="text-neutral-500">Gross Subtotal:</span>
                         <span className="font-medium line-through text-neutral-400">৳{itemsOriginalTotal.toFixed(2)}</span>
                       </div>
                     )}
 
-                    {/* অফার সেভিংস হাইলাইট */}
                     {itemsSavings > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-600 font-bold">
-                        <span>Total Free / Offer Savings:</span>
+                        <span>Total Offer Savings:</span>
                         <span>-৳{itemsSavings.toFixed(2)}</span>
                       </div>
                     )}
 
+                    <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <span className="text-neutral-500">Total SD:</span>
+                      <span className="font-medium">0.00</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <span className="text-neutral-500">Total Tax:</span>
+                      <span className="font-medium">0.00</span>
+                    </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-neutral-800">
-                      <span>Sub Total:</span>
+                      <span>Sub Total (Including Tax):</span>
                       <span>৳{subTotal.toFixed(2)}</span>
                     </div>
-
+                    <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <span className="text-neutral-500">Service Charge:</span>
+                      <span className="font-medium">0.00</span>
+                    </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Shipping Charge:</span>
                       <span className="font-medium">৳{deliveryCharge.toFixed(2)}</span>
@@ -940,12 +950,15 @@ export const AdminOrders = () => {
                     </div>
 
                     <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-extrabold text-sm text-neutral-900">
-                      <span>Grand Total:</span>
+                      <span>Total:</span>
                       <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
-
+                    <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <span className="text-neutral-500">Advance Amount:</span>
+                      <span className="font-medium">0.00</span>
+                    </div>
                     <div className="flex justify-between py-1.5 font-bold text-neutral-900">
-                      <span>Net Payable Amount:</span>
+                      <span>Remaining Amount:</span>
                       <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
                   </div>
