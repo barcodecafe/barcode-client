@@ -10,7 +10,7 @@ import {
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
-import { getFoodsByBranch, getPopularFoods, applyFoodDiscount } from "../services/foodsService";
+import { getFoodsByBranch, getPopularFoods, applyFoodDiscount, hasFoodDiscount } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
@@ -100,6 +100,7 @@ export const Menu = () => {
     }
   };
 
+  // 💡 Admin Schema অনুযায়ী টাইমার হিসাব সহ নিখুঁত Price হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
@@ -129,14 +130,17 @@ export const Menu = () => {
       if (!isNaN(discounted) && discounted >= 0) return Number(discounted);
     }
 
+    // Fallback if applyFoodDiscount is not defined, keeping timer validity
     let finalPrice = basePrice;
-    if (food.discountType === "flat" && Number(food.discountAmount) > 0) {
-      finalPrice = Math.max(0, basePrice - Number(food.discountAmount));
-    } else if (food.discountType === "percent" && Number(food.discountPct) > 0) {
-      finalPrice = Math.max(
-        0,
-        basePrice - (basePrice * Number(food.discountPct)) / 100
-      );
+    if (hasFoodDiscount(food)) {
+      if (food.discountType === "flat" && Number(food.discountAmount) > 0) {
+        finalPrice = Math.max(0, basePrice - Number(food.discountAmount));
+      } else if (food.discountType === "percent" && Number(food.discountPct) > 0) {
+        finalPrice = Math.max(
+          0,
+          basePrice - (basePrice * Number(food.discountPct)) / 100
+        );
+      }
     }
 
     return finalPrice;
