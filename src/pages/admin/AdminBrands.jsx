@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
 import {
   getAllBrandsAdmin,
   createBrand,
   updateBrand,
   deleteBrand,
+  updateBrandOrder, // 🎯 রি-অর্ডার এপিআই সার্ভিস
 } from "../../services/brandsService";
 
 const BLANK = {
@@ -32,6 +33,18 @@ export const AdminBrands = () => {
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
+
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI)
+  const handleBrandReorder = (reorderedBrands) => {
+    setBrands(reorderedBrands);
+    const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
+
+    if (typeof updateBrandOrder === "function") {
+      updateBrandOrder(orderedIds).catch((err) => {
+        console.error("Failed to sync brand order on server:", err);
+      });
+    }
+  };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
   const openEdit = (b) => {
@@ -91,20 +104,20 @@ export const AdminBrands = () => {
             Brands
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            The group's brands — each gets its own /brands/{"{slug}"} page. Assign branches to a brand from the Branches manager.
+            The group's brands — drag cards up/down to reorder display sequence.
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Brand
         </button>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((n) => <div key={n} className="h-40 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
+        <div className="flex flex-col gap-3 max-w-4xl">
+          {[1, 2, 3].map((n) => <div key={n} className="h-28 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
         </div>
       ) : brands.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-neutral-400">
@@ -112,39 +125,57 @@ export const AdminBrands = () => {
           <p className="text-sm">No brands yet. Add your first brand to get started.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* 🎯 ১ কলামে সিঙ্গেল লিস্টে স্মুথ ড্র্যাগ অ্যান্ড ড্রপ Reorder.Group */
+        <Reorder.Group
+          axis="y"
+          values={brands}
+          onReorder={handleBrandReorder}
+          className="flex flex-col gap-3 max-w-4xl"
+        >
           {brands.map((b) => (
-            <div key={b.id} className="rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
-              <div className="h-24 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center relative">
-                {b.cover ? (
-                  <img src={b.cover} alt={b.name} className="w-full h-full object-cover" />
-                ) : b.logoLight ? (
-                  <img src={b.logoLight} alt={b.name} className="max-h-14 max-w-[60%] object-contain" />
-                ) : (
-                  <Store className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
-                )}
-                {b.isActive === false && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-neutral-900/70 text-white text-[9px] font-bold uppercase flex items-center gap-1">
-                    <EyeOff className="w-2.5 h-2.5" /> Hidden
-                  </span>
-                )}
-              </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-sm text-neutral-800 dark:text-white truncate">{b.name}</h3>
-                    <p className="text-[11px] text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
+            <Reorder.Item
+              key={b.id || b._id}
+              value={b}
+              className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
+            >
+              <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
+                {/* Brand Image & Drag Handle */}
+                <div className="relative w-full sm:w-40 h-24 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
+                  {b.cover ? (
+                    <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
+                  ) : b.logoLight ? (
+                    <img src={b.logoLight} alt={b.name} className="max-h-12 max-w-[70%] object-contain pointer-events-none" />
+                  ) : (
+                    <Store className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                  )}
+
+                  <div className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 backdrop-blur-md text-white">
+                    <GripVertical className="w-4 h-4" />
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+
+                  {b.isActive === false && (
+                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-neutral-900/80 text-white text-[9px] font-bold uppercase flex items-center gap-1">
+                      <EyeOff className="w-2.5 h-2.5" /> Hidden
+                    </span>
+                  )}
                 </div>
-                {b.tagline && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 line-clamp-2">{b.tagline}</p>}
+
+                {/* Brand Info */}
+                <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
+                  <h3 className="font-bold text-sm text-neutral-800 dark:text-white truncate">{b.name}</h3>
+                  <p className="text-[11px] text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
+                  {b.tagline && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
+                </div>
               </div>
-            </div>
+
+              {/* Action Buttons */}
+              <div className="p-3.5 sm:p-4 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
+                <button onClick={() => openEdit(b)} className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(b.id)} className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </Reorder.Item>
           ))}
-        </div>
+        </Reorder.Group>
       )}
 
       {/* Modal */}
