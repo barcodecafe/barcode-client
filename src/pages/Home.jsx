@@ -12,10 +12,7 @@ import {
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
-import {
-  getFeaturedBranches,
-  getAllBranches,
-} from "../services/branchesService";
+import { getAllBranches } from "../services/branchesService";
 import {
   getAllFoods,
   hasFoodDiscount,
@@ -46,6 +43,7 @@ export const Home = () => {
   const [showAllBranches, setShowAllBranches] = useState(false);
   const [heroSlides, setHeroSlides] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Bestsellers, Featured Menu & Brands toggles
   const [showAllPopular, setShowAllPopular] = useState(false);
@@ -54,23 +52,39 @@ export const Home = () => {
 
   const [activeSort, setActiveSort] = useState("popular");
 
-  // 🚀 ১. সমান্তরাল ডাটা লোডিং (Superfast Parallel Request Processing)
+  // 🚀 ১. সমান্তরাল ডাটা লোডিং (সুপারফাস্ট লোডিং ও এডমিন ড্র্যাগ অর্ডার ধরে রাখা)
   useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+
     Promise.all([
       getAllBrands().catch(() => []),
       getAllBranches().catch(() => []),
       getAllSlides().catch(() => []),
       getAllFoods().catch(() => []),
     ]).then(([brandsData, branchesData, slidesData, foodsData]) => {
-      setBrands(Array.isArray(brandsData) ? brandsData : []);
+      if (!isMounted) return;
+
+      // 🎯 এডমিনের সেট করা ব্র্যান্ড অর্ডার বজায় রাখা
+      const sortedBrands = Array.isArray(brandsData)
+        ? [...brandsData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+        : [];
+      setBrands(sortedBrands);
       
+      // 🎯 এডমিনের সেট করা ব্রাঞ্চ ড্র্যাগ অর্ডার বজায় রাখা
       const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
       setAllBranches(sortedBranches);
       setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
 
+      // 🎯 স্লাইড ও ফুড ডাটা সেট
       setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
       setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+      setIsLoading(false);
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const sortTabs = [
@@ -130,7 +144,8 @@ export const Home = () => {
       if (activeSort === "price-high") return priceB - priceA;
       if (activeSort === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
 
-      return 0; // 🎯 ডাটাবেজের ড্র্যাগ অর্ডার ধরে রাখবে
+      // 🎯 এডমিন যেভাবে ডিশগুলোকে ড্র্যাগ এন্ড ড্রপ করে সাজাবে সেই 'order' মানবে
+      return (a.order ?? 999) - (b.order ?? 999);
     });
   }, [allFoods, activeSort]);
 
@@ -147,7 +162,9 @@ export const Home = () => {
   // Featured Menu Logic
   // ---------------------------------------------------------------------
   const totalFeaturedMenu = useMemo(() => {
-    return allFoods.filter((food) => food.isAdminFeatured === true);
+    return allFoods
+      .filter((food) => food.isAdminFeatured === true)
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)); // 🎯 এডমিন অর্ডারে সর্ট
   }, [allFoods]);
 
   const previewFeaturedMenu = useMemo(
@@ -184,7 +201,7 @@ export const Home = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4, ease: "easeOut" },
+      transition: { duration: 0.35, ease: "easeOut" },
     },
   };
 
@@ -192,7 +209,7 @@ export const Home = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.04 },
+      transition: { staggerChildren: 0.03 },
     },
   };
 
@@ -207,7 +224,7 @@ export const Home = () => {
 
       {/* 1. HERO BANNER CAROUSEL */}
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
-        {heroSlides.length > 0 && (
+        {heroSlides.length > 0 ? (
           <Swiper
             modules={[Autoplay, Navigation, Pagination, EffectFade]}
             effect={"fade"}
@@ -274,6 +291,8 @@ export const Home = () => {
               );
             })}
           </Swiper>
+        ) : (
+          <div className="w-full h-full bg-neutral-900 animate-pulse" />
         )}
       </section>
 
@@ -726,6 +745,7 @@ const BrandCard = memo(({ brand, variants }) => {
               src={brand.logoLight}
               alt={brand.name}
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
           ) : (
             <span className="font-display font-black text-primary-500 text-xl leading-none select-none">
