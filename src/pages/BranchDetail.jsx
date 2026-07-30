@@ -191,7 +191,8 @@ export const BranchDetail = () => {
     getBranchById(id).then((data) => {
       setBranch(data);
       if (data) {
-        getFoodsByBranch(data.id, 24).then((menuData) => {
+        // limit 100 দিয়ে সব মেনু ডিশ আনা হলো যেন কোনো ডিশ বা ক্যাটাগরি বাদ না পড়ে
+        getFoodsByBranch(data.id || id, 100).then((menuData) => {
           setBranchMenu(menuData || []);
           setLoading(false);
         });
@@ -201,7 +202,7 @@ export const BranchDetail = () => {
     });
   }, [id]);
 
-  // 🎯 ডাটাবেজের categoryOrder মেইনটেইন করে ক্যাটাগরি তৈরি
+  // 🎯 ১. এই নির্দিষ্ট ব্রাঞ্চের জন্য প্রাপ্ত মেনু ডিশগুলোর ওপর ভিত্তি করে শতভাগ ডাইনামিক ক্যাটাগরি ফিল্টার তৈরি
   const categories = useMemo(() => {
     if (!branchMenu || branchMenu.length === 0) return ['All'];
     
@@ -359,7 +360,7 @@ export const BranchDetail = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24 pt-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-4 border-b border-neutral-200/60 dark:border-neutral-800/60">
           <div className="relative flex items-center w-full max-w-full group">
-            {categories.length > 8 && (
+            {categories.length > 5 && (
               <button
                 type="button"
                 onClick={() => handleCategoryScroll('left')}
@@ -373,7 +374,7 @@ export const BranchDetail = () => {
             <div
               ref={scrollContainerRef}
               className={`flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none snap-x w-full transition-all ${
-                categories.length > 8 ? 'px-8' : ''
+                categories.length > 5 ? 'px-8' : ''
               }`}
             >
               {categories.map((cat) => (
@@ -392,7 +393,7 @@ export const BranchDetail = () => {
               ))}
             </div>
 
-            {categories.length > 8 && (
+            {categories.length > 5 && (
               <button
                 type="button"
                 onClick={() => handleCategoryScroll('right')}
