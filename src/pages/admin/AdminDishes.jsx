@@ -17,6 +17,7 @@ import {
   RefreshCw,
   ImageIcon,
   Calendar,
+  Gift,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -61,6 +62,7 @@ export const AdminDishes = () => {
     discountType: "percent",
     discountPct: 0,
     discountAmount: 0,
+    offerType: "none", // 🎯 Buy 1 Get 1 / Buy 1 Get 2 সাপোর্ট
     discountStartDate: "",
     discountEndDate: "",
     branchIds: [],
@@ -208,6 +210,7 @@ export const AdminDishes = () => {
       discountType: "percent",
       discountPct: 0,
       discountAmount: 0,
+      offerType: "none",
       discountStartDate: "",
       discountEndDate: "",
       branchIds: [],
@@ -250,6 +253,7 @@ export const AdminDishes = () => {
       discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
+      offerType: food.offerType || "none",
       discountStartDate: formatForDateTimeInput(food.discountStartDate),
       discountEndDate: formatForDateTimeInput(food.discountEndDate),
       branchIds: formattedBranches,
@@ -555,6 +559,11 @@ export const AdminDishes = () => {
                         <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
                           {food.category}
                         </span>
+                        {food.offerType && food.offerType !== "none" && (
+                          <span className="text-[10px] px-2 py-0.5 font-extrabold rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+                            {food.offerType === "bogo_1g1" ? "BUY 1 GET 1" : food.offerType === "bogo_1g2" ? "BUY 1 GET 2" : "COMBO DEAL"}
+                          </span>
+                        )}
                         {food.popular && <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
                         {food.isAdminFeatured && <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />}
                       </div>
@@ -690,6 +699,26 @@ export const AdminDishes = () => {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* 🎯 Special Offer Type / BOGO Promotion Section */}
+                <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2">
+                  <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Gift className="w-3.5 h-3.5" /> Special Promotion / Offer Type
+                  </label>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Buy 1 Get 1 বা Buy 1 Get 2 অফার চালু করতে সিলেক্ট করুন।
+                  </p>
+                  <select
+                    value={formData.offerType}
+                    onChange={(e) => setFormData({ ...formData, offerType: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer"
+                  >
+                    <option value="none">No Offer (Standard)</option>
+                    <option value="bogo_1g1">Buy 1 Get 1 Free (BUY 1 GET 1)</option>
+                    <option value="bogo_1g2">Buy 1 Get 2 Free (BUY 1 GET 2)</option>
+                    <option value="combo">Special Combo Deal</option>
+                  </select>
                 </div>
 
                 {/* 🎯 Discount Timer / Date Range Section */}
