@@ -18,6 +18,7 @@ import {
   ImageIcon,
   Calendar,
   Gift,
+  AlertCircle,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -74,7 +75,6 @@ export const AdminDishes = () => {
   const standardCategories = ["Mains", "Starters", "Desserts", "Beverages"];
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
-  // 🎯 ব্যাকএন্ডের categoryOrder মেইনটেইন করে ক্যাটাগরি প্রসেস করার হেল্পার ফাংশন
   const processCategories = (loadedFoods) => {
     const categoryMap = new Map();
 
@@ -183,7 +183,6 @@ export const AdminDishes = () => {
     }
   };
 
-  // Helper: ISO Date formatted for datetime-local input
   const formatForDateTimeInput = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -354,6 +353,17 @@ export const AdminDishes = () => {
     }));
   };
 
+  // 🎯 Offer Type পরিবর্তনের সাথে সাথে ডিসকাউন্ট অটো-ক্লিয়ার করার হ্যান্ডলার
+  const handleOfferTypeChange = (selectedOffer) => {
+    setFormData((prev) => ({
+      ...prev,
+      offerType: selectedOffer,
+      // অফার টাইপ থাকলে ম্যানুয়াল ডিসকাউন্ট শূন্য রাখা হবে
+      discountPct: selectedOffer !== "none" ? 0 : prev.discountPct,
+      discountAmount: selectedOffer !== "none" ? 0 : prev.discountAmount,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -363,6 +373,9 @@ export const AdminDishes = () => {
         category: formData.category?.trim(),
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
+        // 🎯 BOGO অফার সিলেক্ট থাকলে ডিসকাউন্ট ০ হিসেবে পাঠানো হবে
+        discountPct: formData.offerType !== "none" ? 0 : Number(formData.discountPct) || 0,
+        discountAmount: formData.offerType !== "none" ? 0 : Number(formData.discountAmount) || 0,
         discountStartDate: formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
         discountEndDate: formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
       };
@@ -680,38 +693,17 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
-                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount Value</label>
-                    <div className="flex gap-2">
-                      <select value={formData.discountType} onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer" title="Discount type">
-                        <option value="percent">%</option>
-                        <option value="flat">৳</option>
-                      </select>
-                      {formData.discountType === 'flat' ? (
-                        <input type="number" min="0" step="1" value={formData.discountAmount} onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })} placeholder="৳ off" className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                      ) : (
-                        <input type="number" min="0" max="100" value={formData.discountPct} onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} placeholder="% off" className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
                 {/* 🎯 Special Offer Type / BOGO Promotion Section */}
                 <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2">
                   <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Gift className="w-3.5 h-3.5" /> Special Promotion / Offer Type
                   </label>
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Buy 1 Get 1 বা Buy 1 Get 2 অফার চালু করতে সিলেক্ট করুন।
+                    Buy 1 Get 1 বা Buy 1 Get 2 অফার দিলে ম্যানুয়াল ফ্ল্যাট/পার্সেন্টেজ ডিসকাউন্ট বন্ধ থাকবে।
                   </p>
                   <select
                     value={formData.offerType}
-                    onChange={(e) => setFormData({ ...formData, offerType: e.target.value })}
+                    onChange={(e) => handleOfferTypeChange(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer"
                   >
                     <option value="none">No Offer (Standard)</option>
@@ -721,13 +713,66 @@ export const AdminDishes = () => {
                   </select>
                 </div>
 
-                {/* 🎯 Discount Timer / Date Range Section */}
+                {/* Rating & Discount Section */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
+                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount Value</label>
+                    <div className="flex gap-2">
+                      <select 
+                        disabled={formData.offerType !== "none"} 
+                        value={formData.discountType} 
+                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} 
+                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                        title="Discount type"
+                      >
+                        <option value="percent">%</option>
+                        <option value="flat">৳</option>
+                      </select>
+                      {formData.discountType === 'flat' ? (
+                        <input 
+                          type="number" 
+                          min="0" 
+                          step="1" 
+                          disabled={formData.offerType !== "none"} 
+                          value={formData.offerType !== "none" ? 0 : formData.discountAmount} 
+                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })} 
+                          placeholder="৳ off" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-900 disabled:cursor-not-allowed" 
+                        />
+                      ) : (
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="100" 
+                          disabled={formData.offerType !== "none"} 
+                          value={formData.offerType !== "none" ? 0 : formData.discountPct} 
+                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} 
+                          placeholder="% off" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-900 disabled:cursor-not-allowed" 
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {formData.offerType !== "none" && (
+                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[11px] font-medium border border-amber-200 dark:border-amber-900/50">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>বিশেষ প্রমোশন অফার সক্রিয় থাকায় ফ্ল্যাট/পার্সেন্টেজ ডিসকাউন্ট ইনপুট বন্ধ রাখা হয়েছে।</span>
+                  </div>
+                )}
+
+                {/* 🎯 Discount / Promotion Timer Section */}
                 <div className="p-3.5 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 space-y-2">
                   <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Calendar className="w-3.5 h-3.5" /> Discount Timer / Duration
+                    <Calendar className="w-3.5 h-3.5" /> Promotion / Discount Duration Timer
                   </label>
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    টাইমার সেট করলে নির্দিষ্ট সময়ের মধ্যে ডিসকাউন্ট সক্রিয় থাকবে। ফাঁকা রাখলে সবসময় কাজ করবে।
+                    টাইমার সেট করলে নির্দিষ্ট সময়ের মধ্যে BOGO অফার বা ডিসকাউন্ট সক্রিয় থাকবে। ফাঁকা রাখলে সবসময় কাজ করবে।
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
