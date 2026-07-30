@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Heart, ShoppingBag, SlidersHorizontal, Gift } from "lucide-react";
+import { Star, Heart, ShoppingBag, SlidersHorizontal, Gift, Tag } from "lucide-react";
 import {
   hasFoodDiscount,
   applyFoodDiscount,
@@ -9,7 +9,7 @@ import {
 } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
-// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ + BOGO Offer Badge Support
+// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ + BOGO Offer Badge + Dynamic Promo Code Support
 // ---------------------------------------------------------------------------
 const FoodCard = ({
   food,
@@ -24,12 +24,12 @@ const FoodCard = ({
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
     : food.price;
 
-  // 🎯 BOGO / Special Offer Check
-  const offerLabel = getFoodOfferLabel(food);
+  // 🎯 BOGO / Special Offer Check[cite: 8]
+  const offerLabel = getFoodOfferLabel(food);[cite: 8]
   
-  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে
-  const hasDiscount = !offerLabel && hasFoodDiscount(food);
-  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;
+  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে[cite: 8]
+  const hasDiscount = !offerLabel && hasFoodDiscount(food);[cite: 8]
+  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;[cite: 8]
 
   return (
     <motion.div
@@ -97,6 +97,14 @@ const FoodCard = ({
         <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
           {food.description}
         </p>
+
+        {/* 🎯 Dynamic Promotional Code Highlight (Fetches promoCode from Admin panel) */}
+        {food.promoCode && (
+          <div className="mt-2.5 flex items-center gap-1.5 rounded-none bg-primary-50 dark:bg-primary-950/30 px-2 py-1 border border-primary-200/60 dark:border-primary-900/40 text-[10px] text-primary-700 dark:text-primary-300 font-medium">
+            <Tag className="h-3 w-3 shrink-0 text-primary-500" />
+            <span>Use <strong className="font-mono font-bold">{food.promoCode}</strong> on payment!</span>
+          </div>
+        )}
 
         {/* ── Footer: price + order ───────────────────────────── */}
         <div className="mt-auto flex items-center justify-between gap-1 pt-3">

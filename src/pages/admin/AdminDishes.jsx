@@ -19,6 +19,7 @@ import {
   Calendar,
   Gift,
   AlertCircle,
+  Tag,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -29,11 +30,13 @@ import {
   updateCategoryOrder,
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
+import { getAllCoupons } from "../../services/couponsService"; // 🎯 কুপন সার্ভিস ইম্পোর্ট করা হলো
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
   const [foods, setFoods] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [coupons, setCoupons] = useState([]); // 🎯 কুপন স্টেট
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All"); 
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +67,7 @@ export const AdminDishes = () => {
     discountPct: 0,
     discountAmount: 0,
     offerType: "none",
+    promoCode: "", // 🎯 কুপন কোড ফিল্ড
     discountStartDate: "",
     discountEndDate: "",
     branchIds: [],
@@ -74,7 +78,6 @@ export const AdminDishes = () => {
 
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
-  // 🎯 ১০০% ডাইনামিক ক্যাটাগরি প্রসেসিং (No hardcoded Mains, Starters etc.)
   const processCategories = (loadedFoods) => {
     const categoryMap = new Map();
 
@@ -100,11 +103,12 @@ export const AdminDishes = () => {
   };
 
   useEffect(() => {
-    Promise.all([getAllFoods(), getAllBranches()])
-      .then(([foodsData, branchesData]) => {
+    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
+      .then(([foodsData, branchesData, couponsData]) => {
         const loadedFoods = foodsData || [];
         setFoods(loadedFoods);
         setBranches(branchesData || []);
+        setCoupons(couponsData || []); // 🎯 কুপন ডাটা সেট করা হলো
         setIsLoading(false);
 
         const orderedCats = processCategories(loadedFoods);
@@ -118,11 +122,12 @@ export const AdminDishes = () => {
 
   const syncFromServer = useCallback(
     () =>
-      Promise.all([getAllFoods(), getAllBranches()])
-        .then(([foodsData, branchesData]) => {
+      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
+        .then(([foodsData, branchesData, couponsData]) => {
           const loadedFoods = foodsData || [];
           setFoods(loadedFoods);
           setBranches(branchesData || []);
+          setCoupons(couponsData || []);
           
           const orderedCats = processCategories(loadedFoods);
           setSortedCategories(orderedCats);
@@ -204,6 +209,7 @@ export const AdminDishes = () => {
       discountPct: 0,
       discountAmount: 0,
       offerType: "none",
+      promoCode: "",
       discountStartDate: "",
       discountEndDate: "",
       branchIds: [],
@@ -247,6 +253,7 @@ export const AdminDishes = () => {
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
       offerType: food.offerType || "none",
+      promoCode: food.promoCode || "",
       discountStartDate: formatForDateTimeInput(food.discountStartDate),
       discountEndDate: formatForDateTimeInput(food.discountEndDate),
       branchIds: formattedBranches,
@@ -365,14 +372,12 @@ export const AdminDishes = () => {
         (c) => c.toLowerCase() === categoryName.toLowerCase()
       );
 
-      // 🎯 যদি ক্যাটাগরিটি নতুন হয়, তবে সেটিকে সবার শেষে অর্ডার দেওয়া হবে (999) 
-      // আর আগে থেকে থাকলে সেই অর্ডারটি ব্যবহার করা হবে।
       const categoryOrder = existingCategoryIndex !== -1 ? existingCategoryIndex + 1 : 999;
 
       const cleanedFormData = {
         ...formData,
         category: categoryName,
-        categoryOrder, // 🎯 এখানে categoryOrder সেভ করা হচ্ছে
+        categoryOrder,
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
         discountPct: formData.offerType !== "none" ? 0 : Number(formData.discountPct) || 0,
@@ -392,7 +397,6 @@ export const AdminDishes = () => {
         setFoods(newFoodsList);
       }
 
-      // Re-process categories dynamically after create/edit
       const updatedCats = processCategories(newFoodsList);
       setSortedCategories(updatedCats);
 
@@ -502,7 +506,7 @@ export const AdminDishes = () => {
         </div>
       </div>
 
-      {/* 🎯 Category Management & Reordering Panel */}
+      {/* Category Reordering Panel */}
       <AnimatePresence>
         {isSortOpen && (
           <motion.div
@@ -535,7 +539,6 @@ export const AdminDishes = () => {
                     {cat}
                   </span>
 
-                  {/* 🎯 Edit & Delete Category Actions */}
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -619,6 +622,11 @@ export const AdminDishes = () => {
                         <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
                           {food.category}
                         </span>
+                        {food.promoCode && (
+                          <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200">
+                            🏷️ {food.promoCode}
+                          </span>
+                        )}
                         {food.offerType && food.offerType !== "none" && (
                           <span className="text-[10px] px-2 py-0.5 font-extrabold rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
                             {food.offerType === "bogo_1g1" ? "BUY 1 GET 1" : food.offerType === "bogo_1g2" ? "BUY 1 GET 2" : "COMBO DEAL"}
@@ -740,14 +748,33 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
+                {/* 🎯 Admin Coupons Select Section */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-2">
+                  <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Tag className="w-3.5 h-3.5" /> Assign Promo Coupon Code
+                  </label>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Admin Coupons লিস্ট থেকে একটি কুপন কোড সিলেক্ট করুন যা এই ডিশের সাথে প্রমোশন হিসেবে দেখাবে।
+                  </p>
+                  <select
+                    value={formData.promoCode}
+                    onChange={(e) => setFormData({ ...formData, promoCode: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer uppercase"
+                  >
+                    <option value="">No Coupon Assigned</option>
+                    {coupons.map((cp) => (
+                      <option key={cp.id || cp._id} value={cp.code}>
+                        {cp.code} ({cp.discountPct ? `${cp.discountPct}%` : `৳${cp.discountAmount}`} OFF)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Special Promotion / Offer Type Section */}
                 <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2">
                   <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Gift className="w-3.5 h-3.5" /> Special Promotion / Offer Type
                   </label>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Buy 1 Get 1 বা Buy 1 Get 2 অফার দিলে ম্যানুয়াল ফ্ল্যাট/পার্সেন্টেজ ডিসকাউন্ট বন্ধ থাকবে।
-                  </p>
                   <select
                     value={formData.offerType}
                     onChange={(e) => handleOfferTypeChange(e.target.value)}
@@ -773,8 +800,7 @@ export const AdminDishes = () => {
                         disabled={formData.offerType !== "none"} 
                         value={formData.discountType} 
                         onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} 
-                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
-                        title="Discount type"
+                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="percent">%</option>
                         <option value="flat">৳</option>
@@ -788,7 +814,7 @@ export const AdminDishes = () => {
                           value={formData.offerType !== "none" ? 0 : formData.discountAmount} 
                           onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })} 
                           placeholder="৳ off" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-900 disabled:cursor-not-allowed" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50" 
                         />
                       ) : (
                         <input 
@@ -799,28 +825,18 @@ export const AdminDishes = () => {
                           value={formData.offerType !== "none" ? 0 : formData.discountPct} 
                           onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} 
                           placeholder="% off" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-900 disabled:cursor-not-allowed" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50" 
                         />
                       )}
                     </div>
                   </div>
                 </div>
 
-                {formData.offerType !== "none" && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[11px] font-medium border border-amber-200 dark:border-amber-900/50">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>বিশেষ প্রমোশন অফার সক্রিয় থাকায় ফ্ল্যাট/পার্সেন্টেজ ডিসকাউন্ট ইনপুট বন্ধ রাখা হয়েছে।</span>
-                  </div>
-                )}
-
-                {/* Discount / Promotion Timer Section */}
+                {/* Timer Section */}
                 <div className="p-3.5 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 space-y-2">
                   <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Calendar className="w-3.5 h-3.5" /> Promotion / Discount Duration Timer
                   </label>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    টাইমার সেট করলে নির্দিষ্ট সময়ের মধ্যে BOGO অফার বা ডিসকাউন্ট সক্রিয় থাকবে। ফাঁকা রাখলে সবসময় কাজ করবে।
-                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <span className="text-[10px] font-bold text-neutral-500 block mb-1">Start Date & Time</span>
@@ -843,202 +859,42 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
+                {/* Variants Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Size / Weight / Custom Variants</label>
                     <button type="button" onClick={handleAddVariation} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg cursor-pointer">+ Add Variant</button>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-neutral-400 shrink-0">Variant type</span>
-                      <select 
-                        value={isCustomVariantLabel ? "Custom" : formData.variantLabel} 
-                        onChange={(e) => {
-                          if (e.target.value === "Custom") {
-                            setIsCustomVariantLabel(true);
-                            setFormData({ ...formData, variantLabel: "" });
-                          } else {
-                            setIsCustomVariantLabel(false);
-                            setFormData({ ...formData, variantLabel: e.target.value });
-                          }
-                        }} 
-                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none cursor-pointer"
-                      >
-                        <option value="Size">Size (Small / Large / 2XL)</option>
-                        <option value="Weight">Weight (250g / 500g / 1kg)</option>
-                        <option value="Portion">Portion (Half / Full)</option>
-                        <option value="Piece">Piece (6 pcs / 12 pcs)</option>
-                        <option value="Custom">Custom Label (Type manually...)</option>
-                      </select>
-                    </div>
-
-                    {isCustomVariantLabel && (
-                      <div className="flex gap-2 items-center">
-                        <input 
-                          type="text" 
-                          placeholder="e.g. Flavor, Package, Color" 
-                          value={formData.variantLabel} 
-                          onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })} 
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" 
-                          required 
-                        />
-                        <button 
-                          type="button" 
-                          onClick={() => { setIsCustomVariantLabel(false); setFormData({ ...formData, variantLabel: "Size" }); }} 
-                          className="text-[11px] text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {formData.variations.length === 0 && (
-                    <p className="text-xs text-neutral-400 italic">No variants — the dish sells at its single base price.</p>
-                  )}
-
                   <div className="space-y-2.5 pt-1">
                     {formData.variations.map((v, index) => (
                       <div key={index} className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm">
                         <div className="flex gap-2 items-center">
                           <input 
                             type="text" 
-                            placeholder={`${formData.variantLabel || "Variant"} name`} 
+                            placeholder="Variant name" 
                             value={v.name} 
                             onChange={(e) => handleVariationChange(index, "name", e.target.value)} 
-                            className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none font-medium" 
+                            className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" 
                             required 
                           />
-                          <div className="relative w-28 shrink-0">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                            <input 
-                              type="number" 
-                              step="0.01" 
-                              min="0" 
-                              placeholder="Price" 
-                              value={v.price} 
-                              onChange={(e) => handleVariationChange(index, "price", e.target.value)} 
-                              className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none font-bold" 
-                              required 
-                            />
-                          </div>
-                          <button 
-                            type="button" 
-                            onClick={() => handleRemoveVariation(index)} 
-                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Remove variant"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-neutral-100 dark:border-neutral-800/60 text-[11px]">
-                          <span className="text-neutral-500 font-medium flex items-center gap-1">
-                            <ImageIcon className="w-3.5 h-3.5 text-neutral-400" /> Variant Image:
-                          </span>
-
-                          {v.image ? (
-                            <div className="flex items-center gap-2">
-                              <img src={v.image} alt="Variant preview" className="w-7 h-7 rounded-lg object-cover border border-neutral-200 dark:border-neutral-700" />
-                              <button 
-                                type="button" 
-                                onClick={() => handleVariationChange(index, "image", "")} 
-                                className="text-red-500 hover:underline font-semibold cursor-pointer"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="file" 
-                                id={`variant-image-${index}`} 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => handleVariationImageChange(index, e.target.files[0])} 
-                              />
-                              <label 
-                                htmlFor={`variant-image-${index}`} 
-                                className="cursor-pointer px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-bold transition-colors"
-                              >
-                                + Add Variant Image
-                              </label>
-                              <span className="text-neutral-400 italic text-[10px]">(খালি রাখলে Main Image দেখাবে)</span>
-                            </div>
-                          )}
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            placeholder="Price" 
+                            value={v.price} 
+                            onChange={(e) => handleVariationChange(index, "price", e.target.value)} 
+                            className="w-28 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" 
+                            required 
+                          />
+                          <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500">✕</button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {branches.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/20 border border-amber-100 dark:border-neutral-800/60 space-y-3">
-                    <div className="flex justify-between items-center flex-wrap gap-2">
-                      <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /> Branch Availability & Price Adjustment
-                      </label>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-500">
-                        {formData.branchIds.length} of {branches.length} selected
-                      </span>
-                    </div>
-                    {formData.branchIds.length === 0 && (
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-relaxed">
-                        কোনো branch টিক না দিলে dish টা <strong>সব branch-এ</strong> দেখাবে। নির্দিষ্ট branch-এ সীমাবদ্ধ রাখতে সেগুলোতে টিক দিন।
-                      </p>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {branches.map((branch) => {
-                        const currentBranchId = String(branch._id || branch.id || "");
-                        const isChecked = formData.branchIds.map(id => String(id)).includes(currentBranchId);
-                        const branchPriceVal = formData.branchPrices[currentBranchId] !== undefined 
-                          ? formData.branchPrices[currentBranchId] 
-                          : "";
-
-                        return (
-                          <div 
-                            key={currentBranchId} 
-                            className={`flex flex-col p-3 rounded-xl border transition-all ${
-                              isChecked 
-                                ? "bg-white dark:bg-neutral-900 border-amber-300 dark:border-amber-500 shadow-sm opacity-100" 
-                                : "bg-neutral-50 dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800 opacity-60"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <label className="flex items-center gap-2.5 text-xs font-bold cursor-pointer flex-1 select-none">
-                                <input 
-                                  type="checkbox" 
-                                  checked={isChecked} 
-                                  onChange={() => handleBranchToggle(currentBranchId)} 
-                                  className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4 cursor-pointer" 
-                                />
-                                <span className={isChecked ? "text-amber-900 dark:text-amber-400" : "text-neutral-500"}>
-                                  {branch.name}
-                                </span>
-                              </label>
-
-                              {isChecked && (
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className="text-[10px] text-neutral-400">Price Adj:</span>
-                                  <input 
-                                    type="number" 
-                                    placeholder="৳0" 
-                                    value={branchPriceVal} 
-                                    onChange={(e) => handleBranchPriceChange(currentBranchId, e.target.value)} 
-                                    className="w-16 px-2 py-1 rounded-lg border text-[11px] font-bold focus:outline-none focus:border-amber-400 dark:bg-neutral-800 dark:border-neutral-700" 
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
+                {/* Description & Toggles */}
                 <div>
                   <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Description</label>
                   <textarea rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none resize-none" />
