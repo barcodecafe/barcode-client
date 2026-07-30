@@ -28,7 +28,12 @@ export const BrandHome = () => {
     getBrandBranches(brand.slug)
       .then((res) => {
         if (isMounted) {
-          setBranches(Array.isArray(res?.branches) ? res.branches : []);
+          const loadedBranches = Array.isArray(res?.branches) ? res.branches : [];
+          // 🎯 এডমিনের সেট করা ড্র্যাগ অ্যান্ড ড্রপ অর্ডার (custom 'order' field) মেইনটেইন করা হলো
+          const sortedBranches = [...loadedBranches].sort(
+            (a, b) => (a.order ?? 999) - (b.order ?? 999)
+          );
+          setBranches(sortedBranches);
         }
       })
       .catch(() => {
