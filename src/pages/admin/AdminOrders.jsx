@@ -13,6 +13,8 @@ import {
   RefreshCw,
   BellRing,
   Printer,
+  Gift,
+  Sparkles,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -39,6 +41,32 @@ const deduplicateOrders = (orderList) => {
     seen.add(id);
     return true;
   });
+};
+
+// 🎯 BOGO Offer Text Helper Function
+const getOfferText = (offerType) => {
+  if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE';
+  if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE';
+  if (offerType === 'combo') return 'SPECIAL COMBO DEAL';
+  return null;
+};
+
+// 🎯 BOGO (Buy 1 Get 1 / Buy 1 Get 2) বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
+const getItemPayableTotal = (item) => {
+  const price = Number(item.price) || 0;
+  const qty = Number(item.quantity) || 0;
+
+  if (item.offerType === 'bogo_1g1') {
+    const paidQuantity = Math.ceil(qty / 2);
+    return price * paidQuantity;
+  }
+
+  if (item.offerType === 'bogo_1g2') {
+    const paidQuantity = Math.ceil(qty / 3);
+    return price * paidQuantity;
+  }
+
+  return price * qty;
 };
 
 // 🎯 পেমেন্ট ব্যাজ লজিক
@@ -101,23 +129,6 @@ const getPaymentBadge = (ord) => {
   };
 };
 
-const getPaymentStatusColor = (status, method, orderStatus) => {
-  const st = String(status || "").toLowerCase();
-  const ordSt = String(orderStatus || "").toUpperCase();
-
-  if (ordSt === "REJECTED") {
-    if (String(method || "cod").toLowerCase() === "cod") {
-      return "bg-neutral-500/10 text-neutral-400";
-    }
-    return "bg-rose-500/10 text-rose-600 dark:text-rose-400";
-  }
-
-  if (st === "paid") return "bg-emerald-500/10 text-emerald-500";
-  if (st === "failed" || st === "cancelled")
-    return "bg-red-500/10 text-red-500";
-  return "bg-amber-500/10 text-amber-500";
-};
-
 // 🟡 Delivery Status Color Handler
 const getStatusColor = (status) => {
   switch (status?.toString().toUpperCase()) {
@@ -157,7 +168,7 @@ export const AdminOrders = () => {
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
-  const [adjustments, setAdjustments] = useState({}); // 🎯 ডাইনামিক অ্যাডজাস্টমেন্ট স্টেট
+  const [adjustments, setAdjustments] = useState({});
   
   const chatEndRef = useRef(null);
   const invoiceRef = useRef(null);
@@ -290,7 +301,7 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🖨️ প্রিন্ট / সেভ এজ পিডিএফ ফাংশন (Unified Print & PDF Save)
+  // 🖨️ প্রিন্ট / সেভ এজ পিডিএফ ফাংশন
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -431,7 +442,19 @@ export const AdminOrders = () => {
   // 🎯 হিসাব-নিকাশ ও অ্যাডজাস্টমেন্ট ক্যালকুলেশন ভেরিয়েবল
   const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
   const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
-  const subTotal = selectedOrderDetails?.total || 0;
+  
+  const orderItems = selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
+  
+  // অরিজিনাল মোট মূল্য (ডিসকাউন্ট ছাড়া)
+  const itemsOriginalTotal = orderItems.reduce((sum, item) => {
+    const unitOrig = item.originalPrice || item.price || 0;
+    return sum + (unitOrig * (item.quantity || 1));
+  }, 0);
+
+  // পে-অ্যাবল সাবটোটাল
+  const subTotal = orderItems.reduce((sum, item) => sum + getItemPayableTotal(item), 0);
+  const itemsSavings = Math.max(0, itemsOriginalTotal - subTotal);
+
   const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
   const grandTotal = subTotal + deliveryCharge + currentAdjustment;
 
@@ -762,10 +785,10 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট (হেডার, বডি ও ফুটারসহ) */}
+              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট */}
               <div ref={invoiceRef} className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans">
                 
-                {/* ১. হেডার সেশন (Barcode Restaurant Group & Head Office) */}
+                {/* ১. হেডার সেশন */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-neutral-800 gap-4">
                   <div>
                     <h1 className="text-2xl font-black tracking-wider text-rose-900 uppercase">BARCODE</h1>
@@ -814,36 +837,54 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. আইটেম টেবিল */}
+                {/* ৩. আইটেম টেবিল (BOGO ও ডিসকাউন্ট তথ্যসহ) */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
                       <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
                         <th className="p-2.5 border-r border-neutral-300">Custom Item</th>
-                        <th className="p-2.5 border-r border-neutral-300">Description</th>
+                        <th className="p-2.5 border-r border-neutral-300">Offer Tag</th>
                         <th className="p-2.5 border-r border-neutral-300 text-right">Unit Price</th>
                         <th className="p-2.5 border-r border-neutral-300 text-center">Quantity</th>
-                        <th className="p-2.5 border-r border-neutral-300 text-right">Discount</th>
-                        <th className="p-2.5 border-r border-neutral-300 text-right">TAX</th>
+                        <th className="p-2.5 border-r border-neutral-300 text-right">Discount / Free</th>
                         <th className="p-2.5 text-right">Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(selectedOrderDetails.items || selectedOrderDetails.cart || []).map((item, idx) => {
-                        const itemPrice = item.price || 0;
-                        const itemQty = item.quantity || 1;
-                        const itemTotal = itemPrice * itemQty;
+                      {orderItems.map((item, idx) => {
+                        const offerLabel = getOfferText(item.offerType);
+                        const unitPrice = item.price || 0;
+                        const origPrice = item.originalPrice || unitPrice;
+                        const qty = item.quantity || 1;
+                        
+                        const itemOrigTotal = origPrice * qty;
+                        const itemPayable = getItemPayableTotal(item);
+                        const itemSavings = itemOrigTotal - itemPayable;
+
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
                             <td className="p-2.5 border-r border-neutral-300 font-medium">
                               {item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}
                             </td>
-                            <td className="p-2.5 border-r border-neutral-300 text-neutral-400">-</td>
-                            <td className="p-2.5 border-r border-neutral-300 text-right">৳{itemPrice.toFixed(2)}</td>
-                            <td className="p-2.5 border-r border-neutral-300 text-center">{itemQty}</td>
-                            <td className="p-2.5 border-r border-neutral-300 text-right">0.00</td>
-                            <td className="p-2.5 border-r border-neutral-300 text-right">0.00</td>
-                            <td className="p-2.5 text-right font-semibold">৳{itemTotal.toFixed(2)}</td>
+                            <td className="p-2.5 border-r border-neutral-300">
+                              {offerLabel ? (
+                                <span className="inline-block text-[9px] font-extrabold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                                  {offerLabel}
+                                </span>
+                              ) : (
+                                <span className="text-neutral-400">-</span>
+                              )}
+                            </td>
+                            <td className="p-2.5 border-r border-neutral-300 text-right">
+                              ৳{unitPrice.toFixed(2)}
+                            </td>
+                            <td className="p-2.5 border-r border-neutral-300 text-center font-bold">{qty}</td>
+                            <td className="p-2.5 border-r border-neutral-300 text-right font-semibold text-emerald-600">
+                              {itemSavings > 0 ? `-৳${itemSavings.toFixed(2)}` : "0.00"}
+                            </td>
+                            <td className="p-2.5 text-right font-bold text-neutral-900">
+                              ৳{itemPayable.toFixed(2)}
+                            </td>
                           </tr>
                         );
                       })}
@@ -854,26 +895,28 @@ export const AdminOrders = () => {
                 {/* ৪. হিসাব-নিকাশ ও ডাইনামিক অ্যাডজাস্টমেন্ট সেকশন */}
                 <div className="flex justify-end pt-2">
                   <div className="w-full sm:w-80 space-y-1.5 text-xs">
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Total SD:</span>
-                      <span className="font-medium">0.00</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Total Tax:</span>
-                      <span className="font-medium">0.00</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Discount:</span>
-                      <span className="font-medium">0.00</span>
-                    </div>
+                    
+                    {/* অরিজিনাল গ্রস টোটাল (যদি অফার থাকে) */}
+                    {itemsSavings > 0 && (
+                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                        <span className="text-neutral-500">Gross Total (Before Offer):</span>
+                        <span className="font-medium line-through text-neutral-400">৳{itemsOriginalTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {/* অফার সেভিংস হাইলাইট */}
+                    {itemsSavings > 0 && (
+                      <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-600 font-bold">
+                        <span>Total Free / Offer Savings:</span>
+                        <span>-৳{itemsSavings.toFixed(2)}</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-neutral-800">
-                      <span>Sub Total (Including Tax):</span>
+                      <span>Sub Total:</span>
                       <span>৳{subTotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Service Charge:</span>
-                      <span className="font-medium">0.00</span>
-                    </div>
+
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Shipping Charge:</span>
                       <span className="font-medium">৳{deliveryCharge.toFixed(2)}</span>
@@ -897,15 +940,12 @@ export const AdminOrders = () => {
                     </div>
 
                     <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-extrabold text-sm text-neutral-900">
-                      <span>Total:</span>
+                      <span>Grand Total:</span>
                       <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Advance Amount:</span>
-                      <span className="font-medium">0.00</span>
-                    </div>
+
                     <div className="flex justify-between py-1.5 font-bold text-neutral-900">
-                      <span>Remaining Amount:</span>
+                      <span>Net Payable Amount:</span>
                       <span>৳{grandTotal.toFixed(2)}</span>
                     </div>
                   </div>
