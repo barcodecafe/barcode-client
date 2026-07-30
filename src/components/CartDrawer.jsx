@@ -12,6 +12,7 @@ export const CartDrawer = () => {
     updateCartQuantity,
     closeCart,
     removeFromCart,
+    getCartItemLineTotal, // 🎯 BOGO লাইন টোটাল হিসেব করার হেল্পার
   } = useCart();
 
   const navigate = useNavigate();
@@ -107,6 +108,11 @@ export const CartDrawer = () => {
                       const itemImage = item.selectedVariation?.image || item.image;
                       const optionName = item.selectedVariation?.name || item.selectedSize;
                       const offerLabel = getOfferText(item.offerType);
+                      
+                      // 🎯 BOGO লজিক অনুযায়ী দাম হিসেব
+                      const linePrice = typeof getCartItemLineTotal === 'function' 
+                        ? getCartItemLineTotal(item) 
+                        : (item.price * item.quantity);
 
                       return (
                         <div
@@ -122,7 +128,7 @@ export const CartDrawer = () => {
                           <div className="flex-grow min-w-0">
                             <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
                             
-                            {/* 🎯 BOGO Offer Badge */}
+                            {/* BOGO Offer Badge */}
                             {offerLabel && (
                               <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded mt-0.5 border border-purple-200 dark:border-purple-800/60">
                                 <Gift className="w-2.5 h-2.5" />
@@ -137,8 +143,9 @@ export const CartDrawer = () => {
                             )}
 
                             <div className="flex items-center gap-1.5 mt-0.5">
+                              {/* 🎯 BOGO বিয়োগকৃত সঠিক লাইন টোটাল */}
                               <span className="text-xs text-primary-500 font-bold">
-                                ৳{(item.price * item.quantity).toFixed(2)}
+                                ৳{linePrice.toFixed(2)}
                               </span>
                               {item.originalPrice && item.originalPrice > item.price && !offerLabel && (
                                 <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">

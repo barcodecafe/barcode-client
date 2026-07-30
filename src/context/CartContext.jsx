@@ -1,11 +1,30 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'; // ADDED: useEffect ইম্পোর্ট করা হয়েছে[cite: 2]
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { getActivePrice, applyFoodDiscount } from '../services/foodsService';
 
 const CartContext = createContext(null);
 
+// 🎯 BOGO (Buy 1 Get 1 / Buy 1 Get 2) বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
+export const getCartItemLineTotal = (item) => {
+  const price = Number(item.price) || 0;
+  const qty = Number(item.quantity) || 0;
+
+  if (item.offerType === 'bogo_1g1') {
+    // ২টির জায়গায় ১টির দাম আসবে (যেমন: Qty 1->1, Qty 2->1, Qty 3->2, Qty 4->2)
+    const paidQuantity = Math.ceil(qty / 2);
+    return price * paidQuantity;
+  }
+
+  if (item.offerType === 'bogo_1g2') {
+    // ৩টির জায়গায় ১টির দাম আসবে (যেমন: Qty 1->1, Qty 2->1, Qty 3->1, Qty 4->2)
+    const paidQuantity = Math.ceil(qty / 3);
+    return price * paidQuantity;
+  }
+
+  // নরমাল আইটেমের জন্য
+  return price * qty;
+};
+
 export const CartProvider = ({ children }) => {
-  // Cart items
-  // NEW CHANGE: পেজ রিফ্রেশ দিলে ডাটা যেন হারিয়ে না যায়, তাই localStorage থেকে স্টেট ইনিশিয়ালাইজ করা হচ্ছে[cite: 2]
   const [cart, setCart] = useState(() => {
     try {
       const savedCart = localStorage.getItem('app_cart_items');
@@ -16,16 +35,11 @@ export const CartProvider = ({ children }) => {
     }
   });
 
-  // UI state — lifted out of Menu.jsx so any page/component can trigger them
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  // Tracks the active toast timeout so rapid add-to-cart clicks (e.g. one from
-  // Home, one from Menu, seconds apart) don't have an earlier timer cut short
-  // a newer toast's visible duration.
   const notificationTimeoutRef = useRef(null);
 
-  // NEW CHANGE: কার্টে কোনো পরিবর্তন হলেই তা স্বয়ংক্রিয়ভাবে localStorage-এ সেভ হবে[cite: 2]
   useEffect(() => {
     try {
       localStorage.setItem('app_cart_items', JSON.stringify(cart));
@@ -44,11 +58,6 @@ export const CartProvider = ({ children }) => {
     }, 3000);
   }, []);
 
-  // Add to cart. Accepts an optional size/variation and quantity so DishDetail's
-  // 4-arg call works (audit bug #14): variation is honored for pricing + the
-  // cart-line key, and the chosen quantity is respected instead of always +1.
-  //   addToCart(food, branchId?, selectedSize?, quantity?)
-  // selectedSize may be a variation object ({name,price}) or a plain name string.
   const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
     const sizeName = (selectedSize && (selectedSize.name || selectedSize)) || food.selectedSize || null;
     const variationObj = selectedSize && typeof selectedSize === 'object' ? selectedSize : null;
@@ -56,8 +65,8 @@ export const CartProvider = ({ children }) => {
 
     setCart((prevCart) => {
       const activeBranchId = branchId || Number(localStorage.getItem('selectedBranchId')) || null;
-      const basePrice = getActivePrice(food, activeBranchId, sizeName); // honors the variation price
-      const purchasePrice = applyFoodDiscount(basePrice, food); // percent or flat ৳ off
+      const basePrice = getActivePrice(food, activeBranchId, sizeName);
+      const purchasePrice = applyFoodDiscount(basePrice, food);
 
       const cartId = food.cartId || (sizeName ? `${food.id}-${sizeName}` : food.id);
 
@@ -73,20 +82,18 @@ export const CartProvider = ({ children }) => {
         ...food,
         cartId,
         selectedSize: sizeName,
-        selectedVariation: variationObj, // kept so DishDetail can match this line
+        selectedVariation: variationObj,
         quantity: qty,
         price: purchasePrice,
-        originalPrice: basePrice, // variant-aware pre-discount price (was food.price — wrong for variants)
-        basePrice: food.price, // raw base food price — lets checkout re-price at the chosen branch
+        originalPrice: basePrice,
+        basePrice: food.price,
+        offerType: food.offerType || 'none', // 🎯 BOGO Offer Type বজায় রাখা হলো
       }];
     });
 
     showNotification(`${food.name} added to order!`);
   }, [showNotification]);
 
-  // Set an item's quantity to an ABSOLUTE value (not a delta — audit bug #14).
-  //   updateCartQuantity(cartIdOrFoodId, newQuantity, selectedSize?)
-  // DishDetail passes the food id + variation; the drawer passes the cartId.
   const updateCartQuantity = useCallback((cartIdOrFoodId, newQuantity, selectedSize = null) => {
     const sizeName = selectedSize && (selectedSize.name || selectedSize);
     const targetId = sizeName ? `${cartIdOrFoodId}-${sizeName}` : cartIdOrFoodId;
@@ -103,29 +110,25 @@ export const CartProvider = ({ children }) => {
     );
   }, []);
 
-  // Empty the cart. (The stuck success alert was removed — audit #16; the
-  // checkout flow shows its own confirmation and navigates to tracking.)
   const clearCart = useCallback(() => {
     setCart([]);
     setIsCartOpen(false);
   }, []);
 
-  // Derived totals — computed once here so every consumer (Menu, Navbar badge,
-  // future checkout page, etc.) reads the same numbers instead of recalculating.
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // 🎯 BOGO লজিক প্রয়োগ করে সঠিক সাবটোটাল হিসাব করা
+  const cartTotal = cart.reduce((sum, item) => sum + getCartItemLineTotal(item), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const value = {
-    // state
     cart,
     isCartOpen,
     notification,
     cartTotal,
     cartItemCount,
-    // actions
     addToCart,
     updateCartQuantity,
     clearCart,
+    getCartItemLineTotal, // 👈 Exported for components like CartDrawer / Checkout
     openCart: () => setIsCartOpen(true),
     closeCart: () => setIsCartOpen(false),
   };
@@ -133,8 +136,6 @@ export const CartProvider = ({ children }) => {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
-// Custom hook — consumers import this instead of useContext + CartContext directly,
-// matching the existing useTheme.js pattern in this project.
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
