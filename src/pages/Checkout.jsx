@@ -12,7 +12,6 @@ import { useAuth } from '../context/AuthContext';
 import { validateCoupon, couponDiscountAmount, couponDiscountLabel } from '../services/couponsService';
 import { createOrder } from '../services/ordersService';
 import { getAllRegions } from '../services/regionsService';
-import { getDiscountedPrice } from '../services/foodsService';
 import { getRegionDeliveryCharge } from '../services/deliveryService';
 import { initPayment, MIN_ONLINE_AMOUNT } from '../services/paymentsService';
 import { getAuthErrorMessage } from '../services/authService';
@@ -30,7 +29,7 @@ const PASSWORD_RULES = [
 ];
 
 export const Checkout = () => {
-  const { cart, updateCartQuantity, clearCart } = useCart();
+  const { cart, updateCartQuantity, clearCart, getCartItemLineTotal } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
 
@@ -116,16 +115,20 @@ export const Checkout = () => {
 
   // 🎯 BOGO Offer Text Helper Function
   const getOfferText = (offerType) => {
-    if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE (+1 Free)';
-    if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE (+2 Free)';
+    if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE';
+    if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE';
     if (offerType === 'combo') return 'SPECIAL COMBO DEAL';
     return null;
   };
 
-  // ── Prices ─────────────────────────────────────────────────────────────
-  const unitPrice = (item) =>
-    getDiscountedPrice({ ...item, price: item.basePrice ?? item.price }, undefined, item.selectedSize);
-  const lineTotal = (item) => unitPrice(item) * item.quantity;
+  // ── Prices (BOGO & Discount Calculation) ──────────────────────────────
+  const lineTotal = (item) => {
+    if (typeof getCartItemLineTotal === 'function') {
+      return getCartItemLineTotal(item);
+    }
+    return (item.price || 0) * (item.quantity || 1);
+  };
+
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
   // ── Derived money ──────────────────────────────────────────────────────
@@ -441,6 +444,11 @@ export const Checkout = () => {
             <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
               {cart.map((item) => {
                 const offerLabel = getOfferText(item.offerType);
+                const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
+                
+                const itemOriginalTotal = (item.originalPrice || item.price) * item.quantity;
+                const itemFinalPayable = lineTotal(item);
+                const itemSavings = itemOriginalTotal - itemFinalPayable;
 
                 return (
                   <div key={item.cartId || item.id} className="flex gap-3 items-center">
@@ -448,7 +456,7 @@ export const Checkout = () => {
                     <div className="flex-grow min-w-0">
                       <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</p>
                       
-                      {/* 🎯 BOGO Offer Badge */}
+                      {/* BOGO Offer Badge */}
                       {offerLabel && (
                         <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded mt-0.5 border border-purple-200 dark:border-purple-800/60">
                           <Gift className="w-2.5 h-2.5" />
@@ -459,15 +467,27 @@ export const Checkout = () => {
                       {item.selectedSize && (
                         <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5 ml-1">{item.selectedSize}</span>
                       )}
+                      
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center gap-1.5 border border-neutral-200 dark:border-neutral-700 rounded-lg px-1 py-0.5">
-                          <button onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)} className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - step)} className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"><Minus className="w-3 h-3" /></button>
                           <span className="text-[11px] font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
-                          <button onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)} className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + step)} className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"><Plus className="w-3 h-3" /></button>
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 shrink-0">৳{lineTotal(item).toFixed(2)}</span>
+
+                    {/* 🎯 Item Price Breakdown */}
+                    <div className="text-right shrink-0">
+                      {(offerLabel && itemSavings > 0) || (item.originalPrice && item.originalPrice > item.price) ? (
+                        <>
+                          <span className="block text-[10px] text-neutral-400 line-through">৳{itemOriginalTotal.toFixed(2)}</span>
+                          <span className="text-xs font-black text-primary-500">৳{itemFinalPayable.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100">৳{itemFinalPayable.toFixed(2)}</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
