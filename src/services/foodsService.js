@@ -63,7 +63,7 @@ export async function updateFoodOrder(orderedFoodIds) {
 
 /** PUT /api/foods/categories/reorder (admin) — Reorder category order in Database */
 export async function updateCategoryOrder(orderedCategories) {
-  return apiClient.put('/foods/categories/reorder', { categories: orderedCategories }); // 🎯 404 Error Fix (/foods/ added)
+  return apiClient.put('/foods/categories/reorder', { categories: orderedCategories });
 }
 
 /** DELETE /api/foods/:id (admin) */
@@ -92,11 +92,21 @@ export function getDiscountedPrice(food, branchId, selectedSize = null) {
   return applyFoodDiscount(getActivePrice(food, branchId, selectedSize), food);
 }
 
-// ── Discount helpers — percentage OR flat ৳ amount (single source of truth) ──
+// ── Discount helpers — percentage OR flat ৳ amount + Date Timer Validation ──
 
-/** true if the food currently has any active discount. */
+/** 🎯 true if the food currently has an ACTIVE discount based on time range. */
 export function hasFoodDiscount(food) {
   if (!food) return false;
+
+  // 🕒 Check Timer/Date Validity
+  const now = new Date();
+  if (food.discountStartDate && new Date(food.discountStartDate) > now) {
+    return false; // Discount hasn't started yet
+  }
+  if (food.discountEndDate && new Date(food.discountEndDate) < now) {
+    return false; // Discount expired
+  }
+
   return food.discountType === 'flat'
     ? (Number(food.discountAmount) || 0) > 0
     : (Number(food.discountPct) || 0) > 0;
@@ -105,7 +115,8 @@ export function hasFoodDiscount(food) {
 /** Apply the food's discount to an already-computed active price (never below 0). */
 export function applyFoodDiscount(activePrice, food) {
   const p = Number(activePrice) || 0;
-  if (!food) return p;
+  if (!food || !hasFoodDiscount(food)) return p; // 🎯 If discount timer is invalid, return original active price
+
   if (food.discountType === 'flat') {
     const amt = Number(food.discountAmount) || 0;
     return amt > 0 ? Math.max(0, p - amt) : p;
@@ -114,9 +125,10 @@ export function applyFoodDiscount(activePrice, food) {
   return pct > 0 ? p * (1 - pct / 100) : p;
 }
 
-/** Badge text for the discount, e.g. "20% OFF" or "৳50 OFF" (null if none). */
+/** Badge text for the discount, e.g. "20% OFF" or "৳50 OFF" (null if inactive/expired). */
 export function foodDiscountLabel(food) {
-  if (!food) return null;
+  if (!food || !hasFoodDiscount(food)) return null; // 🎯 Hide badge if expired or not started
+
   if (food.discountType === 'flat') {
     const a = Number(food.discountAmount) || 0;
     return a > 0 ? `৳${a} OFF` : null;

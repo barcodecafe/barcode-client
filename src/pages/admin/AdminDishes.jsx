@@ -16,6 +16,7 @@ import {
   GripVertical,
   RefreshCw,
   ImageIcon,
+  Calendar,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -60,6 +61,8 @@ export const AdminDishes = () => {
     discountType: "percent",
     discountPct: 0,
     discountAmount: 0,
+    discountStartDate: "",
+    discountEndDate: "",
     branchIds: [],
     branchPrices: {},
     variantLabel: "Size",
@@ -73,7 +76,6 @@ export const AdminDishes = () => {
   const processCategories = (loadedFoods) => {
     const categoryMap = new Map();
 
-    // ১. ব্যাকএন্ডের খাবারের ভিতর থাকা categoryOrder রিড করা
     loadedFoods.forEach((f) => {
       if (f.category?.trim()) {
         const catName = f.category.trim();
@@ -83,7 +85,6 @@ export const AdminDishes = () => {
         if (!categoryMap.has(lowerName)) {
           categoryMap.set(lowerName, { name: catName, order: orderVal });
         } else {
-          // সবচেয়ে কম orderVal থাকলে সেটা মেইনটেইন করবে
           if (orderVal < categoryMap.get(lowerName).order) {
             categoryMap.set(lowerName, { name: catName, order: orderVal });
           }
@@ -91,14 +92,12 @@ export const AdminDishes = () => {
       }
     });
 
-    // ২. standard categories এর ব্যাকআপ নিশ্চিত করা (যদি ডাটাবেজে আগে না থাকে)
     standardCategories.forEach((sc, idx) => {
       if (!categoryMap.has(sc.toLowerCase())) {
         categoryMap.set(sc.toLowerCase(), { name: sc, order: 100 + idx });
       }
     });
 
-    // ৩. categoryOrder অনুযায়ী সর্ট করে অ্যারেই রিটার্ন করা
     return Array.from(categoryMap.values())
       .sort((a, b) => a.order - b.order)
       .map((item) => item.name);
@@ -112,7 +111,6 @@ export const AdminDishes = () => {
         setBranches(branchesData || []);
         setIsLoading(false);
 
-        // 🎯 ব্যাকএন্ডের categoryOrder অনুযায়ী ক্যাটাগরি সেট করা হলো
         const orderedCats = processCategories(loadedFoods);
         setSortedCategories(orderedCats);
       })
@@ -130,7 +128,6 @@ export const AdminDishes = () => {
           setFoods(loadedFoods);
           setBranches(branchesData || []);
           
-          // পোলিং রিফ্রেশেও ক্যাটাগরি অর্ডার অপটিমাইজ করা
           const orderedCats = processCategories(loadedFoods);
           setSortedCategories(orderedCats);
         })
@@ -145,7 +142,6 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  // 🎯 ক্যাটাগরি ড্র্যাগ অ্যান্ড ড্রপ সম্পূর্ণ সিঙ্ক করার হ্যান্ডলার
   const handleCategoryReorder = async (newOrder) => {
     const orderMap = new Map();
     newOrder.forEach((cat) => {
@@ -153,10 +149,8 @@ export const AdminDishes = () => {
     });
     const finalUniqueOrder = Array.from(orderMap.values());
     
-    // ১. রিয়েল-টাইম স্ক্রিন আপডেট
     setSortedCategories(finalUniqueOrder);
 
-    // ২. local foods অবজেক্টগুলোর categoryOrder আপডেট করা
     const orderLookup = new Map(finalUniqueOrder.map((cat, idx) => [cat.toLowerCase(), idx + 1]));
     setFoods((prevFoods) =>
       prevFoods.map((f) => ({
@@ -165,7 +159,6 @@ export const AdminDishes = () => {
       }))
     );
 
-    // ৩. ব্যাকএন্ডে API কাল করে স্থায়ীভাবে DB-তে সেভ করা
     try {
       if (typeof updateCategoryOrder === "function") {
         await updateCategoryOrder(finalUniqueOrder);
@@ -175,7 +168,6 @@ export const AdminDishes = () => {
     }
   };
 
-  // 🎯 ডিশ সরাসরি লাইভ API-তে সেভ
   const handleFoodReorder = async (reorderedFoods) => {
     setFoods(reorderedFoods);
     const orderedIds = reorderedFoods.map((f) => String(f.id || f._id));
@@ -187,6 +179,15 @@ export const AdminDishes = () => {
     } catch (err) {
       console.error("Error updating food order on server:", err);
     }
+  };
+
+  // Helper: ISO Date formatted for datetime-local input
+  const formatForDateTimeInput = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const tzoffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzoffset).toISOString().slice(0, 16);
   };
 
   const openCreateModal = () => {
@@ -207,6 +208,8 @@ export const AdminDishes = () => {
       discountType: "percent",
       discountPct: 0,
       discountAmount: 0,
+      discountStartDate: "",
+      discountEndDate: "",
       branchIds: [],
       branchPrices: {},
       variantLabel: "Size",
@@ -247,6 +250,8 @@ export const AdminDishes = () => {
       discountType: food.discountType === 'flat' ? 'flat' : 'percent',
       discountPct: food.discountPct || 0,
       discountAmount: food.discountAmount || 0,
+      discountStartDate: formatForDateTimeInput(food.discountStartDate),
+      discountEndDate: formatForDateTimeInput(food.discountEndDate),
       branchIds: formattedBranches,
       branchPrices: formattedBranchPrices,
       variantLabel: food.variantLabel || "Size",
@@ -354,6 +359,8 @@ export const AdminDishes = () => {
         category: formData.category?.trim(),
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
+        discountStartDate: formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
+        discountEndDate: formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
       };
 
       if (editingFood) {
@@ -509,7 +516,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* Foods List with Full Body Drag System */}
+      {/* Foods List */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((n) => (
@@ -670,7 +677,7 @@ export const AdminDishes = () => {
                     <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount Value</label>
                     <div className="flex gap-2">
                       <select value={formData.discountType} onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer" title="Discount type">
                         <option value="percent">%</option>
@@ -681,6 +688,36 @@ export const AdminDishes = () => {
                       ) : (
                         <input type="number" min="0" max="100" value={formData.discountPct} onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} placeholder="% off" className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                       )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🎯 Discount Timer / Date Range Section */}
+                <div className="p-3.5 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 space-y-2">
+                  <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Calendar className="w-3.5 h-3.5" /> Discount Timer / Duration
+                  </label>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    টাইমার সেট করলে নির্দিষ্ট সময়ের মধ্যে ডিসকাউন্ট সক্রিয় থাকবে। ফাঁকা রাখলে সবসময় কাজ করবে।
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <span className="text-[10px] font-bold text-neutral-500 block mb-1">Start Date & Time</span>
+                      <input
+                        type="datetime-local"
+                        value={formData.discountStartDate}
+                        onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-neutral-500 block mb-1">End Date & Time</span>
+                      <input
+                        type="datetime-local"
+                        value={formData.discountEndDate}
+                        onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
+                      />
                     </div>
                   </div>
                 </div>
