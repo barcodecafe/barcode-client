@@ -182,7 +182,7 @@ export const DishDetail = () => {
           
           {/* 🎯 BOGO Offer Badge (Purple) */}
           {offerLabel ? (
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-purple-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-600/35 z-10 flex items-center gap-1.5">
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-primary-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-600/35 z-10 flex items-center gap-1.5">
               <Gift className="w-3.5 h-3.5" />
               <span>{offerLabel}</span>
             </div>

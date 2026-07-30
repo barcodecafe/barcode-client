@@ -61,7 +61,14 @@ export const CartProvider = ({ children }) => {
   const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
     const sizeName = (selectedSize && (selectedSize.name || selectedSize)) || food.selectedSize || null;
     const variationObj = selectedSize && typeof selectedSize === 'object' ? selectedSize : null;
-    const qty = Number(quantity) > 0 ? Number(quantity) : 1;
+    
+    // 🎯 BOGO অটো-কোয়ান্টিটি লজিক: 
+    // ১টি ক্লিক করলে BOGO 1G1 হলে কার্টে ২ যুক্ত হবে, BOGO 1G2 হলে ৩ যুক্ত হবে
+    let targetQty = Number(quantity) > 0 ? Number(quantity) : 1;
+    if (quantity === 1) {
+      if (food.offerType === 'bogo_1g1') targetQty = 2;
+      else if (food.offerType === 'bogo_1g2') targetQty = 3;
+    }
 
     setCart((prevCart) => {
       const activeBranchId = branchId || Number(localStorage.getItem('selectedBranchId')) || null;
@@ -74,7 +81,7 @@ export const CartProvider = ({ children }) => {
       if (existing) {
         return prevCart.map((item) =>
           (item.cartId || item.id) === cartId
-            ? { ...item, quantity: item.quantity + qty, price: purchasePrice }
+            ? { ...item, quantity: item.quantity + targetQty, price: purchasePrice }
             : item
         );
       }
@@ -83,11 +90,11 @@ export const CartProvider = ({ children }) => {
         cartId,
         selectedSize: sizeName,
         selectedVariation: variationObj,
-        quantity: qty,
+        quantity: targetQty,
         price: purchasePrice,
         originalPrice: basePrice,
         basePrice: food.price,
-        offerType: food.offerType || 'none', // 🎯 BOGO Offer Type বজায় রাখা হলো
+        offerType: food.offerType || 'none',
       }];
     });
 
@@ -115,7 +122,6 @@ export const CartProvider = ({ children }) => {
     setIsCartOpen(false);
   }, []);
 
-  // 🎯 BOGO লজিক প্রয়োগ করে সঠিক সাবটোটাল হিসাব করা
   const cartTotal = cart.reduce((sum, item) => sum + getCartItemLineTotal(item), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -128,7 +134,7 @@ export const CartProvider = ({ children }) => {
     addToCart,
     updateCartQuantity,
     clearCart,
-    getCartItemLineTotal, // 👈 Exported for components like CartDrawer / Checkout
+    getCartItemLineTotal,
     openCart: () => setIsCartOpen(true),
     closeCart: () => setIsCartOpen(false),
   };
