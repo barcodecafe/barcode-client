@@ -12,7 +12,7 @@ export const CartDrawer = () => {
     updateCartQuantity,
     closeCart,
     removeFromCart,
-    getCartItemLineTotal, // 🎯 BOGO লাইন টোটাল হিসেব করার হেল্পার
+    getCartItemLineTotal,
   } = useCart();
 
   const navigate = useNavigate();
@@ -109,14 +109,14 @@ export const CartDrawer = () => {
                       const optionName = item.selectedVariation?.name || item.selectedSize;
                       const offerLabel = getOfferText(item.offerType);
                       
-                      // 🎯 BOGO মূল এবং ডিসকাউন্ট ব্রেকডাউন হিসাব
-                      const originalTotal = item.price * item.quantity;
+                      // 🎯 BOGO এবং ডিসকাউন্ট ক্যালকুলেশন
+                      const originalTotal = (item.originalPrice || item.price) * item.quantity;
                       const finalPayable = typeof getCartItemLineTotal === 'function' 
                         ? getCartItemLineTotal(item) 
-                        : originalTotal;
+                        : (item.price * item.quantity);
                       const freeSavings = originalTotal - finalPayable;
 
-                      // 🎯 BOGO এর জোড়া (+২ বা +৩) অনুযায়ী কোয়ান্টিটি চেঞ্জ করার স্টেপ
+                      // 🎯 BOGO এর জোড়া (+২ বা +৩) অনুযায়ী কোয়ান্টিটি স্টেপ
                       const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
 
                       return (
@@ -147,8 +147,9 @@ export const CartDrawer = () => {
                               </span>
                             )}
 
-                            {/* 🎯 মূল দাম, ফ্রি সেভিংস এবং ফাইনাল দামের ডিসপ্লে */}
+                            {/* 🎯 মূল দাম, ফ্রি/ডিসকাউন্ট সেভিংস এবং ফাইনাল প্রদেয় দামের ডিসপ্লে */}
                             <div className="flex flex-col gap-0.5 mt-1">
+                              {/* ১. BOGO অফারের ক্ষেত্রে */}
                               {offerLabel && freeSavings > 0 ? (
                                 <>
                                   <div className="flex items-center gap-1.5 text-[10px]">
@@ -163,7 +164,23 @@ export const CartDrawer = () => {
                                     Payable: ৳{finalPayable.toFixed(2)}
                                   </div>
                                 </>
+                              ) : item.originalPrice && item.originalPrice > item.price ? (
+                                /* ২. সাধারণ % বা ৳ ফ্ল্যাট ডিসকাউন্টের ক্ষেত্রে (যেমন: বোরহানি) */
+                                <>
+                                  <div className="flex items-center gap-1.5 text-[10px]">
+                                    <span className="text-neutral-400 line-through">
+                                      ৳{(item.originalPrice * item.quantity).toFixed(2)}
+                                    </span>
+                                    <span className="font-extrabold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 px-1 rounded">
+                                      SAVE ৳{((item.originalPrice - item.price) * item.quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-primary-500 font-black">
+                                    Payable: ৳{finalPayable.toFixed(2)}
+                                  </div>
+                                </>
                               ) : (
+                                /* ৩. কোনো ডিসকাউন্ট না থাকলে */
                                 <span className="text-xs text-primary-500 font-bold">
                                   ৳{finalPayable.toFixed(2)}
                                 </span>
