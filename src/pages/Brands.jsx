@@ -46,7 +46,12 @@ export const Brands = () => {
   useEffect(() => {
     Promise.all([getAllBrands(), getAllBranches(), getAllFoods()])
       .then(([b, br, f]) => {
-        setBrands(b || []);
+        // 🎯 ১. এডমিনের সেট করা ব্র্যান্ডের কাস্টম ড্র্যাগ অর্ডার বজায় রাখা
+        const sortedBrands = Array.isArray(b)
+          ? [...b].sort((x, y) => (x.order ?? 999) - (y.order ?? 999))
+          : [];
+
+        setBrands(sortedBrands);
         setBranches(br || []);
         setAllFoods(f || []);
       })
@@ -70,19 +75,23 @@ export const Brands = () => {
 
   const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
 
-  // Bestsellers Logic
+  // 🎯 ২. Bestsellers Logic (এডমিন ড্র্যাগ অ্যান্ড ড্রপ অর্ডার মেইনটেইন সহ)
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     let filteredList = allFoods.filter((food) => food.popular === true);
 
-    if (activeSort === "price-low") {
-      filteredList.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (activeSort === "price-high") {
-      filteredList.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (activeSort === "rating") {
-      filteredList.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-    return filteredList;
+    return [...filteredList].sort((a, b) => {
+      if (activeSort === "price-low") {
+        return getEffectivePrice(a) - getEffectivePrice(b);
+      } else if (activeSort === "price-high") {
+        return getEffectivePrice(b) - getEffectivePrice(a);
+      } else if (activeSort === "rating") {
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      
+      // 🎯 ডিফল্ট 'popular' থাকলে এডমিনের সেট করা order মানবে
+      return (a.order ?? 999) - (b.order ?? 999);
+    });
   }, [allFoods, activeSort]);
 
   const previewPopularFoods = useMemo(
@@ -94,9 +103,11 @@ export const Brands = () => {
     [totalPopularFoods]
   );
 
-  // Featured Menu Logic
+  // 🎯 ৩. Featured Menu Logic (এডমিন ড্র্যাগ অর্ডার মানবে)
   const totalFeaturedMenu = useMemo(() => {
-    return allFoods.filter((food) => food.isAdminFeatured === true);
+    return allFoods
+      .filter((food) => food.isAdminFeatured === true)
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   }, [allFoods]);
 
   const previewFeaturedMenu = useMemo(
@@ -198,7 +209,7 @@ export const Brands = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveSort(tab.id)}
-                className={`px-3.5 py-2 rounded-none text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-none text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
                   activeSort === tab.id
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
@@ -213,7 +224,7 @@ export const Brands = () => {
             {totalPopularFoods.length > PREVIEW_COUNT ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllPopular ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -328,7 +339,7 @@ export const Brands = () => {
             {remainingFeaturedMenu.length > 0 ? (
               <button
                 onClick={() => setShowAllFeatured((v) => !v)}
-                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {showAllFeatured ? "Show Fewer" : "View All"}
                 <ChevronDown
@@ -444,12 +455,12 @@ const BrandMainCard = memo(({ brand, branchCount }) => {
       to={`/brands/${brand.slug}`}
       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
     >
-      {/* 🛠️ brand.logoLight-কে প্রথম অগ্রাধিকার (priority) দেয়া হয়েছে যেন এডমিনের লোগো কার্ডে শো করে */}
       <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
         {brand.logoLight || brand.cover ? (
           <img
             src={brand.logoLight || brand.cover}
             alt={brand.name}
+            loading="lazy"
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -481,4 +492,3 @@ const BrandMainCard = memo(({ brand, branchCount }) => {
 BrandMainCard.displayName = "BrandMainCard";
 
 export default Brands;
-
