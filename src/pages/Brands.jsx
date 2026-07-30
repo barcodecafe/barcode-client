@@ -73,9 +73,35 @@ export const Brands = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  const getEffectivePrice = (food) => applyFoodDiscount(food.price || 0, food);
+  // 💡 Admin Schema অনুযায়ী টাইমার ও ভ্যারিয়েশন হিসাব সহ নিখুঁত Price হিসাবের ফাংশন
+  const getEffectivePrice = (food) => {
+    if (!food) return 0;
 
-  // 🎯 ২. Bestsellers Logic (এডমিন ড্র্যাগ অ্যান্ড ড্রপ অর্ডার মেইনটেইন সহ)
+    let basePrice = Number(food.price) || 0;
+
+    const variationsList = Array.isArray(food.variations)
+      ? food.variations
+      : Array.isArray(food.variants)
+      ? food.variants
+      : [];
+
+    if (variationsList.length > 0) {
+      const validVarPrices = variationsList
+        .map((v) => Number(v.price))
+        .filter((p) => !isNaN(p) && p > 0);
+
+      if (validVarPrices.length > 0) {
+        const minVarPrice = Math.min(...validVarPrices);
+        if (basePrice === 0 || minVarPrice < basePrice) {
+          basePrice = minVarPrice;
+        }
+      }
+    }
+
+    return applyFoodDiscount(basePrice, food);
+  };
+
+  // 🎯 ২. Bestsellers Logic (টাইমার সহ এডমিন ড্র্যাগ অ্যান্ড ড্রপ অর্ডার মেইনটেইন)
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     let filteredList = allFoods.filter((food) => food.popular === true);
