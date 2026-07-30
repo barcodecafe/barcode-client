@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2 } from 'lucide-react';
+import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -32,6 +32,14 @@ export const CartDrawer = () => {
     } else {
       updateCartQuantity(itemId, 0);
     }
+  };
+
+  // 🎯 BOGO Offer Text Helper Function
+  const getOfferText = (offerType) => {
+    if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE (+1 Free)';
+    if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE (+2 Free)';
+    if (offerType === 'combo') return 'SPECIAL COMBO DEAL';
+    return null;
   };
 
   return (
@@ -80,7 +88,7 @@ export const CartDrawer = () => {
                 </div>
                 <button
                   onClick={closeCart}
-                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -96,16 +104,15 @@ export const CartDrawer = () => {
                 ) : (
                   <div className="space-y-4">
                     {cart.map((item) => {
-                      {/* 💡 ভেরিয়েন্টের ছবি অথবা মেইন ছবি সিলেক্ট করার লজিক */}
                       const itemImage = item.selectedVariation?.image || item.image;
                       const optionName = item.selectedVariation?.name || item.selectedSize;
+                      const offerLabel = getOfferText(item.offerType);
 
                       return (
                         <div
                           key={item.cartId || item.id}
                           className="flex gap-3 items-center justify-between bg-neutral-50 dark:bg-neutral-950 p-3 rounded-xl border border-neutral-200/50 dark:border-neutral-800/60"
                         >
-                          {/* 💡 আপডেট করা ছবি */}
                           <img 
                             src={itemImage} 
                             alt={item.name} 
@@ -114,16 +121,26 @@ export const CartDrawer = () => {
 
                           <div className="flex-grow min-w-0">
                             <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
+                            
+                            {/* 🎯 BOGO Offer Badge */}
+                            {offerLabel && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded mt-0.5 border border-purple-200 dark:border-purple-800/60">
+                                <Gift className="w-2.5 h-2.5" />
+                                {offerLabel}
+                              </span>
+                            )}
+
                             {optionName && (
-                              <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5">
+                              <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5 ml-1">
                                 Option: {optionName}
                               </span>
                             )}
+
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-xs text-primary-500 font-bold">
                                 ৳{(item.price * item.quantity).toFixed(2)}
                               </span>
-                              {item.originalPrice && item.originalPrice > item.price && (
+                              {item.originalPrice && item.originalPrice > item.price && !offerLabel && (
                                 <span className="text-[10px] text-neutral-400 dark:text-neutral-500 line-through">
                                   ৳{(item.originalPrice * item.quantity).toFixed(2)}
                                 </span>
@@ -136,14 +153,14 @@ export const CartDrawer = () => {
                             <div className="flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
                               <button
                                 onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity - 1)}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500 cursor-pointer"
                               >
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
                               <span className="text-xs font-bold w-4 text-center text-neutral-800 dark:text-neutral-100">{item.quantity}</span>
                               <button
                                 onClick={() => updateCartQuantity(item.cartId || item.id, item.quantity + 1)}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500"
+                                className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-500 cursor-pointer"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
@@ -152,7 +169,7 @@ export const CartDrawer = () => {
                             {/* Delete Item Button */}
                             <button
                               onClick={() => handleRemoveItem(item.cartId || item.id)}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                               title="Remove item"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -165,7 +182,7 @@ export const CartDrawer = () => {
                     {/* + Add More Items Button */}
                     <button
                       onClick={handleAddMoreItems}
-                      className="w-full py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-500 hover:text-primary-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 bg-neutral-50/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/20"
+                      className="w-full py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-500 hover:text-primary-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 bg-neutral-50/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/20 cursor-pointer"
                     >
                       <Plus className="w-4 h-4 text-primary-500" />
                       Add More Items
@@ -184,7 +201,7 @@ export const CartDrawer = () => {
                   <p className="text-[11px] text-neutral-400 text-center -mt-1">Delivery, coupon &amp; points applied at checkout</p>
                   <button
                     onClick={goToCheckout}
-                    className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-center shadow-lg shadow-primary-500/10 hover:shadow-primary-500/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-center shadow-lg shadow-primary-500/10 hover:shadow-primary-500/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     Proceed to Checkout
                     <ArrowRight className="w-4 h-4" />
