@@ -52,7 +52,7 @@ export const AdminDishes = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    category: "Mains",
+    category: "",
     price: 0,
     rating: 4.5,
     image: "",
@@ -63,7 +63,7 @@ export const AdminDishes = () => {
     discountType: "percent",
     discountPct: 0,
     discountAmount: 0,
-    offerType: "none", // 🎯 Buy 1 Get 1 / Buy 1 Get 2 সাপোর্ট
+    offerType: "none",
     discountStartDate: "",
     discountEndDate: "",
     branchIds: [],
@@ -72,9 +72,9 @@ export const AdminDishes = () => {
     variations: [],
   });
 
-  const standardCategories = ["Mains", "Starters", "Desserts", "Beverages"];
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
+  // 🎯 ১০০% ডাইনামিক ক্যাটাগরি প্রসেসিং (No hardcoded Mains, Starters etc.)
   const processCategories = (loadedFoods) => {
     const categoryMap = new Map();
 
@@ -91,12 +91,6 @@ export const AdminDishes = () => {
             categoryMap.set(lowerName, { name: catName, order: orderVal });
           }
         }
-      }
-    });
-
-    standardCategories.forEach((sc, idx) => {
-      if (!categoryMap.has(sc.toLowerCase())) {
-        categoryMap.set(sc.toLowerCase(), { name: sc, order: 100 + idx });
       }
     });
 
@@ -198,7 +192,7 @@ export const AdminDishes = () => {
     setImagePreview(null);
     setFormData({
       name: "",
-      category: sortedCategories[0] || "Mains",
+      category: sortedCategories[0] || "",
       price: 0,
       rating: 4.5,
       image: "",
@@ -222,7 +216,7 @@ export const AdminDishes = () => {
 
   const openEditModal = (food) => {
     setEditingFood(food);
-    const isCustomCat = food.category && !standardCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
+    const isCustomCat = food.category && !sortedCategories.map(sc => sc.toLowerCase()).includes(food.category.trim().toLowerCase());
     setIsCustomCategory(isCustomCat);
 
     const isCustomVarLabel = food.variantLabel && !standardVariantLabels.map(sv => sv.toLowerCase()).includes(food.variantLabel.trim().toLowerCase());
@@ -241,7 +235,7 @@ export const AdminDishes = () => {
 
     setFormData({
       name: food.name || "",
-      category: food.category || "Mains",
+      category: food.category || "",
       price: food.price || 0,
       rating: food.rating || 4.5,
       image: food.image || "",
@@ -353,12 +347,10 @@ export const AdminDishes = () => {
     }));
   };
 
-  // 🎯 Offer Type পরিবর্তনের সাথে সাথে ডিসকাউন্ট অটো-ক্লিয়ার করার হ্যান্ডলার
   const handleOfferTypeChange = (selectedOffer) => {
     setFormData((prev) => ({
       ...prev,
       offerType: selectedOffer,
-      // অফার টাইপ থাকলে ম্যানুয়াল ডিসকাউন্ট শূন্য রাখা হবে
       discountPct: selectedOffer !== "none" ? 0 : prev.discountPct,
       discountAmount: selectedOffer !== "none" ? 0 : prev.discountAmount,
     }));
@@ -373,7 +365,6 @@ export const AdminDishes = () => {
         category: formData.category?.trim(),
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
-        // 🎯 BOGO অফার সিলেক্ট থাকলে ডিসকাউন্ট ০ হিসেবে পাঠানো হবে
         discountPct: formData.offerType !== "none" ? 0 : Number(formData.discountPct) || 0,
         discountAmount: formData.offerType !== "none" ? 0 : Number(formData.discountAmount) || 0,
         discountStartDate: formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
@@ -387,6 +378,11 @@ export const AdminDishes = () => {
         const created = await createFood(cleanedFormData);
         setFoods([created, ...foods]);
       }
+
+      // Re-process categories dynamically after create/edit
+      const updatedCats = processCategories(foods);
+      setSortedCategories(updatedCats);
+
       setIsModalOpen(false);
     } catch (err) {
       alert("Error saving dish details.");
@@ -485,7 +481,7 @@ export const AdminDishes = () => {
                   ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-400" 
                   : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
               }`}
-              title="Drag & Drop Categories"
+              title="Drag & Drop or Edit Categories"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -493,7 +489,7 @@ export const AdminDishes = () => {
         </div>
       </div>
 
-      {/* Category Reordering Popup Panel */}
+      {/* 🎯 Category Management & Reordering Panel */}
       <AnimatePresence>
         {isSortOpen && (
           <motion.div
@@ -504,7 +500,7 @@ export const AdminDishes = () => {
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                💡 Drag categories to reorder list:
+                💡 Drag, Rename or Delete Categories:
               </p>
               <button onClick={() => setIsSortOpen(false)} className="text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer">Close</button>
             </div>
@@ -521,11 +517,49 @@ export const AdminDishes = () => {
                   value={cat}
                   className="flex items-center justify-between px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-sm text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-grab active:cursor-grabbing select-none hover:border-neutral-200"
                 >
-                  <span className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-neutral-400" />
+                  <span className="flex items-center gap-2 truncate">
+                    <GripVertical className="w-4 h-4 text-neutral-400 shrink-0" />
                     {cat}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-normal">Drag</span>
+
+                  {/* 🎯 Edit & Delete Category Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const newCatName = prompt(`Rename category "${cat}" to:`, cat);
+                        if (newCatName && newCatName.trim() && newCatName.trim() !== cat) {
+                          const trimmed = newCatName.trim();
+                          const updatedFoods = foods.map(f => f.category === cat ? { ...f, category: trimmed } : f);
+                          setFoods(updatedFoods);
+                          
+                          const foodsToUpdate = foods.filter(f => f.category === cat);
+                          await Promise.all(foodsToUpdate.map(f => updateFood(f.id || f._id, { category: trimmed })));
+                          setSortedCategories(prev => prev.map(c => c === cat ? trimmed : c));
+                        }
+                      }}
+                      className="p-1 text-neutral-400 hover:text-blue-500 rounded cursor-pointer"
+                      title="Rename Category"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (confirm(`Delete category "${cat}" and all associated dishes?`)) {
+                          const foodsToDelete = foods.filter(f => f.category === cat);
+                          await Promise.all(foodsToDelete.map(f => deleteFood(f.id || f._id)));
+                          setFoods(prev => prev.filter(f => f.category !== cat));
+                          setSortedCategories(prev => prev.filter(c => c !== cat));
+                        }
+                      }}
+                      className="p-1 text-neutral-400 hover:text-red-500 rounded cursor-pointer"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </Reorder.Item>
               ))}
             </Reorder.Group>
@@ -682,7 +716,7 @@ export const AdminDishes = () => {
                     {isCustomCategory && (
                       <div className="flex gap-2 items-center mt-2">
                         <input type="text" required placeholder="Enter custom category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
-                        <button type="button" onClick={() => { setIsCustomCategory(false); setFormData({ ...formData, category: sortedCategories[0] || "Mains" }); }} className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer">Reset</button>
+                        <button type="button" onClick={() => { setIsCustomCategory(false); setFormData({ ...formData, category: sortedCategories[0] || "" }); }} className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer">Reset</button>
                       </div>
                     )}
                   </div>
@@ -693,7 +727,7 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* 🎯 Special Offer Type / BOGO Promotion Section */}
+                {/* Special Promotion / Offer Type Section */}
                 <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2">
                   <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Gift className="w-3.5 h-3.5" /> Special Promotion / Offer Type
@@ -766,7 +800,7 @@ export const AdminDishes = () => {
                   </div>
                 )}
 
-                {/* 🎯 Discount / Promotion Timer Section */}
+                {/* Discount / Promotion Timer Section */}
                 <div className="p-3.5 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 space-y-2">
                   <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <Calendar className="w-3.5 h-3.5" /> Promotion / Discount Duration Timer
