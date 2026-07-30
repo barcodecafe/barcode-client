@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2, Gift } from 'lucide-react';
+import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2, Gift, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -35,13 +35,20 @@ export const CartDrawer = () => {
     }
   };
 
-  // 🎯 BOGO Offer Text Helper Function
   const getOfferText = (offerType) => {
     if (offerType === 'bogo_1g1') return 'BUY 1 GET 1 FREE';
     if (offerType === 'bogo_1g2') return 'BUY 1 GET 2 FREE';
     if (offerType === 'combo') return 'SPECIAL COMBO DEAL';
     return null;
   };
+
+  // 🎯 পুরো কার্টের মূল মোট দাম এবং মোট কত টাকা সেভ হলো তার হিসেব
+  const overallOriginalTotal = cart.reduce((sum, item) => {
+    const origUnitPrice = item.originalPrice || item.price;
+    return sum + (origUnitPrice * item.quantity);
+  }, 0);
+
+  const totalSavings = Math.max(0, overallOriginalTotal - cartTotal);
 
   return (
     <>
@@ -109,14 +116,12 @@ export const CartDrawer = () => {
                       const optionName = item.selectedVariation?.name || item.selectedSize;
                       const offerLabel = getOfferText(item.offerType);
                       
-                      // 🎯 BOGO এবং ডিসকাউন্ট ক্যালকুলেশন
                       const originalTotal = (item.originalPrice || item.price) * item.quantity;
                       const finalPayable = typeof getCartItemLineTotal === 'function' 
                         ? getCartItemLineTotal(item) 
                         : (item.price * item.quantity);
                       const freeSavings = originalTotal - finalPayable;
 
-                      // 🎯 BOGO এর জোড়া (+২ বা +৩) অনুযায়ী কোয়ান্টিটি স্টেপ
                       const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
 
                       return (
@@ -133,7 +138,6 @@ export const CartDrawer = () => {
                           <div className="flex-grow min-w-0">
                             <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{item.name}</h4>
                             
-                            {/* BOGO Offer Badge */}
                             {offerLabel && (
                               <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded mt-0.5 border border-purple-200 dark:border-purple-800/60">
                                 <Gift className="w-2.5 h-2.5" />
@@ -147,9 +151,7 @@ export const CartDrawer = () => {
                               </span>
                             )}
 
-                            {/* 🎯 মূল দাম, ফ্রি/ডিসকাউন্ট সেভিংস এবং ফাইনাল প্রদেয় দামের ডিসপ্লে */}
                             <div className="flex flex-col gap-0.5 mt-1">
-                              {/* ১. BOGO অফারের ক্ষেত্রে */}
                               {offerLabel && freeSavings > 0 ? (
                                 <>
                                   <div className="flex items-center gap-1.5 text-[10px]">
@@ -165,7 +167,6 @@ export const CartDrawer = () => {
                                   </div>
                                 </>
                               ) : item.originalPrice && item.originalPrice > item.price ? (
-                                /* ২. সাধারণ % বা ৳ ফ্ল্যাট ডিসকাউন্টের ক্ষেত্রে (যেমন: বোরহানি) */
                                 <>
                                   <div className="flex items-center gap-1.5 text-[10px]">
                                     <span className="text-neutral-400 line-through">
@@ -180,7 +181,6 @@ export const CartDrawer = () => {
                                   </div>
                                 </>
                               ) : (
-                                /* ৩. কোনো ডিসকাউন্ট না থাকলে */
                                 <span className="text-xs text-primary-500 font-bold">
                                   ৳{finalPayable.toFixed(2)}
                                 </span>
@@ -188,7 +188,6 @@ export const CartDrawer = () => {
                             </div>
                           </div>
 
-                          {/* Quantity Controls & Delete Icon */}
                           <div className="flex items-center gap-1.5 shrink-0">
                             <div className="flex items-center gap-1.5 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg p-0.5">
                               <button
@@ -208,7 +207,6 @@ export const CartDrawer = () => {
                               </button>
                             </div>
 
-                            {/* Delete Item Button */}
                             <button
                               onClick={() => handleRemoveItem(item.cartId || item.id)}
                               className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
@@ -221,7 +219,6 @@ export const CartDrawer = () => {
                       );
                     })}
 
-                    {/* + Add More Items Button */}
                     <button
                       onClick={handleAddMoreItems}
                       className="w-full py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-500 hover:text-primary-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 bg-neutral-50/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/20 cursor-pointer"
@@ -233,14 +230,37 @@ export const CartDrawer = () => {
                 )}
               </div>
 
-              {/* Footer */}
+              {/* 🎯 Footer: Subtotal Section with Overall Savings Breakdown */}
               {cart.length > 0 && (
                 <div className="border-t border-neutral-200 dark:border-neutral-800 pt-4 space-y-3 shrink-0">
-                  <div className="flex justify-between font-bold text-base text-neutral-800 dark:text-white">
+                  
+                  {/* মোট সেভিংস থাকলে Green Badge দিয়ে দেখানো হবে */}
+                  {totalSavings > 0 && (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                        Total Savings & Free Offers:
+                      </span>
+                      <span className="text-sm font-black">-৳{totalSavings.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-baseline justify-between font-bold text-base text-neutral-800 dark:text-white">
                     <span>Subtotal</span>
-                    <span className="text-primary-500">৳{cartTotal.toFixed(2)}</span>
+                    <div className="text-right">
+                      {totalSavings > 0 && (
+                        <span className="block text-xs font-normal text-neutral-400 line-through">
+                          ৳{overallOriginalTotal.toFixed(2)}
+                        </span>
+                      )}
+                      <span className="text-xl font-black text-primary-500">৳{cartTotal.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-neutral-400 text-center -mt-1">Delivery, coupon &amp; points applied at checkout</p>
+
+                  <p className="text-[11px] text-neutral-400 text-center -mt-1">
+                    Delivery, coupon &amp; points applied at checkout
+                  </p>
+
                   <button
                     onClick={goToCheckout}
                     className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-center shadow-lg shadow-primary-500/10 hover:shadow-primary-500/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   ShoppingBag, Tag, Phone, MapPin, Lock, User, LogOut, ArrowRight,
   Loader2, Coins, Truck, CreditCard, Wallet, ShieldCheck, Minus, Plus,
-  Eye, EyeOff, Check, X, AlertCircle, Gift
+  Eye, EyeOff, Check, X, AlertCircle, Gift, Sparkles
 } from 'lucide-react';
 import Swal from 'sweetalert2'; 
 import { useCart } from '../context/CartContext';
@@ -130,6 +130,14 @@ export const Checkout = () => {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
+
+  // 🎯 কার্টের মূল মোট দাম এবং মোট সেভিংস/ছাড়ের হিসেব
+  const overallOriginalTotal = cart.reduce((sum, item) => {
+    const origUnitPrice = item.originalPrice || item.price;
+    return sum + (origUnitPrice * item.quantity);
+  }, 0);
+
+  const totalSavings = Math.max(0, overallOriginalTotal - cartTotal);
 
   // ── Derived money ──────────────────────────────────────────────────────
   const couponDiscount = appliedCoupon ? couponDiscountAmount(cartTotal, appliedCoupon) : 0;
@@ -477,7 +485,7 @@ export const Checkout = () => {
                       </div>
                     </div>
 
-                    {/* 🎯 Item Price Breakdown */}
+                    {/* Item Price Breakdown */}
                     <div className="text-right shrink-0">
                       {(offerLabel && itemSavings > 0) || (item.originalPrice && item.originalPrice > item.price) ? (
                         <>
@@ -523,9 +531,32 @@ export const Checkout = () => {
               </button>
             )}
 
-            {/* Totals */}
+            {/* 🎯 Totals Section in Checkout with Savings Badge */}
             <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-1.5 text-sm">
-              <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs"><span>Subtotal</span><span>৳{cartTotal.toFixed(2)}</span></div>
+              
+              {/* মোট সেভিংস থাকলে Green Badge দিয়ে দেখানো হবে */}
+              {totalSavings > 0 && (
+                <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-2">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                    Total Savings & Free Offers:
+                  </span>
+                  <span className="text-xs font-black">-৳{totalSavings.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-500 dark:text-neutral-400">Subtotal</span>
+                <div className="text-right font-semibold">
+                  {totalSavings > 0 && (
+                    <span className="text-[11px] text-neutral-400 line-through mr-1.5">
+                      ৳{overallOriginalTotal.toFixed(2)}
+                    </span>
+                  )}
+                  <span className="text-neutral-800 dark:text-neutral-100">৳{cartTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
               {appliedCoupon && <div className="flex justify-between text-emerald-500 text-xs font-semibold"><span>Coupon ({appliedCoupon.code})</span><span>-৳{couponDiscount.toFixed(2)}</span></div>}
               {pointsDiscount > 0 && <div className="flex justify-between text-amber-500 text-xs font-semibold"><span>Points ({pointsDiscount} pts)</span><span>-৳{pointsDiscount.toFixed(2)}</span></div>}
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs"><span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Delivery ({area || 'Other'})</span><span>৳{deliveryCharge.toFixed(2)}</span></div>
