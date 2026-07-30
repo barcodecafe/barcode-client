@@ -24,12 +24,12 @@ const FoodCard = ({
     ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
     : food.price;
 
-  // 🎯 BOGO / Special Offer Check[cite: 8]
-  const offerLabel = getFoodOfferLabel(food);[cite: 8]
+  // 🎯 BOGO / Special Offer Check
+  const offerLabel = getFoodOfferLabel(food);
   
-  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে[cite: 8]
-  const hasDiscount = !offerLabel && hasFoodDiscount(food);[cite: 8]
-  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;[cite: 8]
+  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে
+  const hasDiscount = !offerLabel && hasFoodDiscount(food);
+  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;
 
   return (
     <motion.div
@@ -98,7 +98,7 @@ const FoodCard = ({
           {food.description}
         </p>
 
-        {/* 🎯 Dynamic Promotional Code Highlight (Fetches promoCode from Admin panel) */}
+        {/* 🎯 Dynamic Promotional Code Highlight */}
         {food.promoCode && (
           <div className="mt-2.5 flex items-center gap-1.5 rounded-none bg-primary-50 dark:bg-primary-950/30 px-2 py-1 border border-primary-200/60 dark:border-primary-900/40 text-[10px] text-primary-700 dark:text-primary-300 font-medium">
             <Tag className="h-3 w-3 shrink-0 text-primary-500" />
