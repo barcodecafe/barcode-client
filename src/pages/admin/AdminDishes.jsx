@@ -30,13 +30,13 @@ import {
   updateCategoryOrder,
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
-import { getAllCoupons } from "../../services/couponsService"; // 🎯 কুপন সার্ভিস ইম্পোর্ট করা হলো
+import { getAllCoupons } from "../../services/couponsService"; 
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
   const [foods, setFoods] = useState([]);
   const [branches, setBranches] = useState([]);
-  const [coupons, setCoupons] = useState([]); // 🎯 কুপন স্টেট
+  const [coupons, setCoupons] = useState([]); 
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All"); 
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +67,7 @@ export const AdminDishes = () => {
     discountPct: 0,
     discountAmount: 0,
     offerType: "none",
-    promoCode: "", // 🎯 কুপন কোড ফিল্ড
+    promoCode: "", 
     discountStartDate: "",
     discountEndDate: "",
     branchIds: [],
@@ -108,7 +108,7 @@ export const AdminDishes = () => {
         const loadedFoods = foodsData || [];
         setFoods(loadedFoods);
         setBranches(branchesData || []);
-        setCoupons(couponsData || []); // 🎯 কুপন ডাটা সেট করা হলো
+        setCoupons(couponsData || []); 
         setIsLoading(false);
 
         const orderedCats = processCategories(loadedFoods);
@@ -337,29 +337,10 @@ export const AdminDishes = () => {
     });
   };
 
-  const handleVariationImageChange = (index, file) => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleVariationChange(index, "image", reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleRemoveVariation = (index) => {
     setFormData((prev) => ({
       ...prev,
       variations: prev.variations.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleOfferTypeChange = (selectedOffer) => {
-    setFormData((prev) => ({
-      ...prev,
-      offerType: selectedOffer,
-      discountPct: selectedOffer !== "none" ? 0 : prev.discountPct,
-      discountAmount: selectedOffer !== "none" ? 0 : prev.discountAmount,
     }));
   };
 
@@ -380,8 +361,8 @@ export const AdminDishes = () => {
         categoryOrder,
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
-        discountPct: formData.offerType !== "none" ? 0 : Number(formData.discountPct) || 0,
-        discountAmount: formData.offerType !== "none" ? 0 : Number(formData.discountAmount) || 0,
+        discountPct: formData.offerType !== "none" || formData.promoCode ? 0 : Number(formData.discountPct) || 0,
+        discountAmount: formData.offerType !== "none" || formData.promoCode ? 0 : Number(formData.discountAmount) || 0,
         discountStartDate: formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
         discountEndDate: formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
       };
@@ -418,6 +399,11 @@ export const AdminDishes = () => {
       return matchesSearch && matchesCategory;
     });
   }, [foods, search, selectedCategory]);
+
+  // 🎯 Mutual Exclusivity Logic Checkers
+  const isCouponActive = formData.promoCode !== "";
+  const isOfferActive = formData.offerType !== "none";
+  const isDiscountActive = formData.discountPct > 0 || formData.discountAmount > 0;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -748,59 +734,61 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* 🎯 Admin Coupons Select Section */}
-                <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-2">
-                  <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Tag className="w-3.5 h-3.5" /> Assign Promo Coupon Code
-                  </label>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Admin Coupons লিস্ট থেকে একটি কুপন কোড সিলেক্ট করুন যা এই ডিশের সাথে প্রমোশন হিসেবে দেখাবে।
-                  </p>
-                  <select
-                    value={formData.promoCode}
-                    onChange={(e) => setFormData({ ...formData, promoCode: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer uppercase"
-                  >
-                    <option value="">No Coupon Assigned</option>
-                    {coupons.map((cp) => (
-                      <option key={cp.id || cp._id} value={cp.code}>
-                        {cp.code} ({cp.discountPct ? `${cp.discountPct}%` : `৳${cp.discountAmount}`} OFF)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Special Promotion / Offer Type Section */}
-                <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2">
-                  <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Gift className="w-3.5 h-3.5" /> Special Promotion / Offer Type
-                  </label>
-                  <select
-                    value={formData.offerType}
-                    onChange={(e) => handleOfferTypeChange(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer"
-                  >
-                    <option value="none">No Offer (Standard)</option>
-                    <option value="bogo_1g1">Buy 1 Get 1 Free (BUY 1 GET 1)</option>
-                    <option value="bogo_1g2">Buy 1 Get 2 Free (BUY 1 GET 2)</option>
-                    <option value="combo">Special Combo Deal</option>
-                  </select>
-                </div>
-
-                {/* Rating & Discount Section */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
-                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                <div className="p-4 bg-neutral-50 dark:bg-neutral-950/40 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300">Promotion Rules: Only ONE promotion type can be active at a time.</span>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Discount Value</label>
+                  
+                  {/* Promo Coupon Section */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${isOfferActive || isDiscountActive ? 'opacity-50 grayscale border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 pointer-events-none' : 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/60'}`}>
+                    <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+                      <Tag className="w-3.5 h-3.5" /> 1. Assign Promo Coupon
+                    </label>
+                    <select
+                      value={formData.promoCode}
+                      onChange={(e) => setFormData({ ...formData, promoCode: e.target.value })}
+                      disabled={isOfferActive || isDiscountActive}
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer uppercase disabled:cursor-not-allowed"
+                    >
+                      <option value="">No Coupon Assigned</option>
+                      {coupons.map((cp) => (
+                        <option key={cp.id || cp._id} value={cp.code}>
+                          {cp.code} ({cp.discountPct ? `${cp.discountPct}%` : `৳${cp.discountAmount}`} OFF)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Offer Type Section */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${isCouponActive || isDiscountActive ? 'opacity-50 grayscale border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 pointer-events-none' : 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/60'}`}>
+                    <label className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+                      <Gift className="w-3.5 h-3.5" /> 2. Special Promotion Offer
+                    </label>
+                    <select
+                      value={formData.offerType}
+                      onChange={(e) => setFormData({ ...formData, offerType: e.target.value })}
+                      disabled={isCouponActive || isDiscountActive}
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      <option value="none">No Offer (Standard)</option>
+                      <option value="bogo_1g1">Buy 1 Get 1 Free (BUY 1 GET 1)</option>
+                      <option value="bogo_1g2">Buy 1 Get 2 Free (BUY 1 GET 2)</option>
+                      <option value="combo">Special Combo Deal</option>
+                    </select>
+                  </div>
+
+                  {/* Manual Discount Section */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${isCouponActive || isOfferActive ? 'opacity-50 grayscale border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 pointer-events-none' : 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/60'}`}>
+                    <label className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+                      <Star className="w-3.5 h-3.5" /> 3. Direct Discount Value
+                    </label>
                     <div className="flex gap-2">
                       <select 
-                        disabled={formData.offerType !== "none"} 
+                        disabled={isCouponActive || isOfferActive} 
                         value={formData.discountType} 
-                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} 
-                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        onChange={(e) => setFormData({ ...formData, discountType: e.target.value, discountAmount: 0, discountPct: 0 })} 
+                        className="px-2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer disabled:cursor-not-allowed"
                       >
                         <option value="percent">%</option>
                         <option value="flat">৳</option>
@@ -810,52 +798,61 @@ export const AdminDishes = () => {
                           type="number" 
                           min="0" 
                           step="1" 
-                          disabled={formData.offerType !== "none"} 
-                          value={formData.offerType !== "none" ? 0 : formData.discountAmount} 
-                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })} 
-                          placeholder="৳ off" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50" 
+                          disabled={isCouponActive || isOfferActive} 
+                          value={formData.discountAmount || ""} 
+                          onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0, discountPct: 0 })} 
+                          placeholder="৳ off (Enter 0 to clear)" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed" 
                         />
                       ) : (
                         <input 
                           type="number" 
                           min="0" 
                           max="100" 
-                          disabled={formData.offerType !== "none"} 
-                          value={formData.offerType !== "none" ? 0 : formData.discountPct} 
-                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0 })} 
-                          placeholder="% off" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:opacity-50" 
+                          disabled={isCouponActive || isOfferActive} 
+                          value={formData.discountPct || ""} 
+                          onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0, discountAmount: 0 })} 
+                          placeholder="% off (Enter 0 to clear)" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed" 
                         />
                       )}
                     </div>
                   </div>
+                  
+                  {/* Shared Universal Timer Section */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${(!isCouponActive && !isOfferActive && !isDiscountActive) ? 'opacity-50 grayscale border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900' : 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900/60'}`}>
+                    <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+                      <Calendar className="w-3.5 h-3.5" /> Promotion / Offer / Discount Duration Timer
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold text-neutral-500 block mb-1">Start Date & Time</span>
+                        <input
+                          type="datetime-local"
+                          value={formData.discountStartDate}
+                          onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value })}
+                          disabled={!isCouponActive && !isOfferActive && !isDiscountActive}
+                          className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none disabled:cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-neutral-500 block mb-1">End Date & Time</span>
+                        <input
+                          type="datetime-local"
+                          value={formData.discountEndDate}
+                          onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value })}
+                          disabled={!isCouponActive && !isOfferActive && !isDiscountActive}
+                          className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Timer Section */}
-                <div className="p-3.5 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 space-y-2">
-                  <label className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Calendar className="w-3.5 h-3.5" /> Promotion / Discount Duration Timer
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <span className="text-[10px] font-bold text-neutral-500 block mb-1">Start Date & Time</span>
-                      <input
-                        type="datetime-local"
-                        value={formData.discountStartDate}
-                        onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-neutral-500 block mb-1">End Date & Time</span>
-                      <input
-                        type="datetime-local"
-                        value={formData.discountEndDate}
-                        onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
+                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
                   </div>
                 </div>
 
