@@ -15,6 +15,7 @@ import {
   Check,
   Zap,
   Gift,
+  Tag,
 } from "lucide-react";
 
 // Swiper imports (matching Home.jsx pattern)
@@ -226,7 +227,7 @@ export const DishDetail = () => {
 
                 {/* 🎯 Extra Badge under Title for Offer */}
                 {offerLabel && (
-                  <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 uppercase tracking-wider border border-purple-200 dark:border-purple-800/60 flex items-center gap-1">
+                  <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-primary-100 dark:bg-purple-950/60 text-primary-700 dark:text-primary-300 uppercase tracking-wider border border-primary-200 dark:border-primary-800/60 flex items-center gap-1">
                     <Gift className="w-3 h-3" /> {offerLabel}
                   </span>
                 )}
@@ -261,6 +262,16 @@ export const DishDetail = () => {
                 </span>
               )}
             </div>
+
+            {/* 🎯 Dynamic Promotional Coupon Code Information Box */}
+            {food.promoCode && (
+              <div className="flex items-center gap-2 rounded-none bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+                <Tag className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>
+                  Use coupon <strong className="font-mono font-black">{food.promoCode}</strong> during payment to get special discounts!
+                </span>
+              </div>
+            )}
 
             <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 font-light leading-relaxed">
               {food.description ||
