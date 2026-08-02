@@ -102,10 +102,33 @@ export const AdminDishes = () => {
       .map((item) => item.name);
   };
 
+  // 💡 [NEW LOGIC] - এক্সপায়ার্ড অফারগুলো অটোমেটিক ক্লিয়ার করার ফাংশন
+  const cleanExpiredOffers = (foodList) => {
+    const now = new Date();
+    return foodList.map(food => {
+      if (food.discountEndDate) {
+        const endDate = new Date(food.discountEndDate);
+        if (endDate < now) {
+          return {
+            ...food,
+            offerType: "none",
+            promoCode: "",
+            discountPct: 0,
+            discountAmount: 0,
+            discountStartDate: null,
+            discountEndDate: null
+          };
+        }
+      }
+      return food;
+    });
+  };
+
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
       .then(([foodsData, branchesData, couponsData]) => {
-        const loadedFoods = foodsData || [];
+        // 💡 ডাটা ফেচ করেই আগে এক্সপায়ার্ড অফারগুলো ছেঁটে ফেলা হচ্ছে
+        const loadedFoods = cleanExpiredOffers(foodsData || []);
         setFoods(loadedFoods);
         setBranches(branchesData || []);
         setCoupons(couponsData || []); 
@@ -124,7 +147,8 @@ export const AdminDishes = () => {
     () =>
       Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
         .then(([foodsData, branchesData, couponsData]) => {
-          const loadedFoods = foodsData || [];
+          // 💡 পোলিং/রিফ্রেশিংয়ের সময়ও এক্সপায়ার্ড অফার চেক করা হচ্ছে
+          const loadedFoods = cleanExpiredOffers(foodsData || []);
           setFoods(loadedFoods);
           setBranches(branchesData || []);
           setCoupons(couponsData || []);
