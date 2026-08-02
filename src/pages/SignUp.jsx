@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Lock, User, Phone, Eye, EyeOff, Loader2, AlertCircle, Check, X } from 'lucide-react';
-import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
+import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
@@ -39,8 +39,8 @@ export const SignUp = ({ defaultRole = 'user' }) => {
   const isPasswordValid = passwordScore === PASSWORD_RULES.length;
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
-  // Live validation
-  const emailValid = STRICT_EMAIL.test(email.trim());
+  // Live validation — Email is optional for Users, required for Admin/Rider
+  const emailValid = email.trim() ? STRICT_EMAIL.test(email.trim()) : isUser;
   const phoneValid = BD_PHONE.test(phone.trim());
 
   // Submit button state
@@ -49,7 +49,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
     phoneValid &&
     isPasswordValid &&
     passwordsMatch &&
-    (!isUser ? emailValid : true) &&
+    emailValid &&
     !isSubmitting;
 
   const strengthLabel = passwordScore <= 2 ? 'Weak' : passwordScore === 3 ? 'Medium' : 'Strong';
@@ -61,12 +61,24 @@ export const SignUp = ({ defaultRole = 'user' }) => {
     setError('');
 
     // Client-side Validation Alerts
-    if (!isUser && !emailValid) {
+    if (email.trim() && !STRICT_EMAIL.test(email.trim())) {
       const msg = 'Please enter a valid email address.';
       setError(msg);
       Swal.fire({
         icon: 'warning',
         title: 'Invalid Email',
+        text: msg,
+        confirmButtonColor: '#f97316',
+      });
+      return;
+    }
+
+    if (!isUser && !email.trim()) {
+      const msg = 'Email address is required for this role.';
+      setError(msg);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Email Required',
         text: msg,
         confirmButtonColor: '#f97316',
       });
@@ -111,20 +123,13 @@ export const SignUp = ({ defaultRole = 'user' }) => {
 
     setIsSubmitting(true);
     try {
-      const payload = isUser
-        ? {
-            name: name.trim(),
-            phone: phone.trim(),
-            password,
-            role,
-          }
-        : {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            password,
-            role,
-          };
+      const payload = {
+        name: name.trim(),
+        email: email.trim() || undefined, // Send undefined if empty
+        phone: phone.trim(),
+        password,
+        role,
+      };
 
       const newUser = await register(payload);
 
@@ -189,7 +194,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
             {/* Full Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Full Name
+                Full Name *
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -205,36 +210,10 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               </div>
             </div>
 
-            {/* Email Field (Admin & Rider) */}
-            {!isUser && (
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-                  />
-                </div>
-                {email.length > 0 && !emailValid && (
-                  <p className="mt-1.5 text-[11px] flex items-center gap-1.5 text-red-500">
-                    <X className="w-3 h-3" /> Please enter a valid email address
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Mobile Number Field */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Mobile Number
+                Mobile Number *
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -257,10 +236,44 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               )}
             </div>
 
+            {/* Email Field (Optional for Customer/User, Required for Admin & Rider) */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Email Address {!isUser && '*'}
+                </label>
+                {isUser && (
+                  <span className="text-[10px] text-neutral-400 font-semibold uppercase">Optional</span>
+                )}
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  id="email"
+                  type="email"
+                  required={!isUser}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isUser ? "you@example.com (Optional for password recovery)" : "you@example.com"}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                />
+              </div>
+              {isUser && (
+                <p className="text-[11px] text-neutral-400 mt-1">
+                  💡 Adding an email allows free password recovery via email OTP.
+                </p>
+              )}
+              {email.length > 0 && !STRICT_EMAIL.test(email.trim()) && (
+                <p className="mt-1.5 text-[11px] flex items-center gap-1.5 text-red-500">
+                  <X className="w-3 h-3" /> Please enter a valid email address
+                </p>
+              )}
+            </div>
+
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Password
+                Password *
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -324,7 +337,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Confirm Password
+                Confirm Password *
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
