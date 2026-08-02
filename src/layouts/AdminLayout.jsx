@@ -13,8 +13,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  ChevronLeft,
-  Home as HomeIcon,
   Info,
   ShoppingBag,
   Users,
@@ -56,6 +54,13 @@ export const AdminLayout = () => {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // 🛡️ Role Protection Check
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      navigate('/admin/login', { replace: true });
+    }
+  }, [user, navigate]);
 
   // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
   const [pendingCount, setPendingCount] = useState(0);
@@ -168,7 +173,7 @@ export const AdminLayout = () => {
       }
     };
 
-    // ⚡ 4. Rider Cash Submit Notification (NEW FIX)
+    // ⚡ 4. Rider Cash Submit Notification
     const handleRiderCashSubmitted = (data) => {
       if (soundEnabledRef.current) {
         try {
@@ -230,7 +235,7 @@ export const AdminLayout = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/", { replace: true });
+    navigate("/admin/login", { replace: true });
   };
 
   const SidebarContent = ({ onNavigate }) => (
@@ -283,14 +288,6 @@ export const AdminLayout = () => {
       </nav>
 
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <Link
-          to="/"
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500 transition-all duration-200"
-        >
-          <HomeIcon className="w-4 h-4 shrink-0" />
-          Back to Site
-        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
@@ -393,13 +390,6 @@ export const AdminLayout = () => {
             >
               <MenuIcon className="w-4 h-4" />
             </button>
-            <Link
-              to="/"
-              className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              Back to Site
-            </Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -461,7 +451,6 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 🎯 ল্যাপটপ এবং বড় মনিটরের জন্য ফুল উইডথ ও অপ্টিমাইজড প্যাডিং */}
         <main className="flex-grow p-2 sm:p-4 lg:p-6 w-full max-w-full mx-auto overflow-x-hidden">
           <Outlet />
         </main>

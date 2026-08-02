@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LogIn as LogInIcon, Phone, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Bike, ArrowLeft, ArrowRight } from 'lucide-react';
-import Swal from 'sweetalert2'; // 🎯 SweetAlert2 Import
+import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
@@ -83,13 +83,30 @@ export const Login = ({ variant = 'user' }) => {
 
       const loggedInUser = await login(payload);
 
-      // Role gate (ভুল পোর্টাল চেক)
+      // 💡 Role Gate Logic (ভুল পোর্টালে স্মার্ট হ্যান্ডলিং)
       if (loggedInUser.role !== cfg.role) {
+        
+        // 🔄 ১. কাস্টমার পেজ (/login) দিয়ে রাইডার বা এডমিন লগইন করলে সরাসরি তাদের পোর্টালে রিডাইরেক্ট হবে
+        if (variant === 'user' && (loggedInUser.role === 'rider' || loggedInUser.role === 'admin')) {
+          const targetPortal = loggedInUser.role === 'rider' ? '/rider' : '/admin';
+          
+          await Swal.fire({
+            icon: 'info',
+            title: 'Redirecting...',
+            text: `Welcome! Redirecting you to the ${loggedInUser.role.toUpperCase()} portal.`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+
+          navigate(targetPortal, { replace: true });
+          return;
+        }
+
+        // ⚠️ ২. যদি রাইডার এডমিন পোর্টালে বা এডমিন রাইডার পোর্টালে ঢুকতে চায় (Wrong Door Alert)
         await logout();
         const doorMsg = wrongDoorMessage(loggedInUser.role);
         setWrongDoor({ message: doorMsg, to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
 
-        // 🎯 Wrong Portal Warning Alert
         Swal.fire({
           icon: 'warning',
           title: 'Incorrect Portal',
@@ -109,7 +126,10 @@ export const Login = ({ variant = 'user' }) => {
         showConfirmButton: false,
       });
 
-      const redirectTo = location.state?.from || cfg.home;
+      // Role ভিত্তিক হোম গন্তব্য নির্ধারণ
+      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : loggedInUser.role === 'admin' ? '/admin' : '/';
+      const redirectTo = location.state?.from || defaultHome;
+      
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const errMsg = getAuthErrorMessage(err);
