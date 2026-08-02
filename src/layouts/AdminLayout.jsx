@@ -451,8 +451,8 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 🎯 ল্যাপটপ এবং বড় মনিটরের জন্য ফুল উইডথ রেসপন্সিভ কন্টেইনার */}
-        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-y-auto">
+        {/* 🎯 ল্যাপটপ এবং বড় মনিটরের জন্য ফুল উইডথ কন্টেইনার (কোনো স্ক্রলবার সমস্যা থাকবে না) */}
+        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
       </div>

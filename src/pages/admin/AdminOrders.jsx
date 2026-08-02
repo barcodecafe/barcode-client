@@ -485,10 +485,10 @@ export const AdminOrders = () => {
       </div>
 
       <div className="w-full flex flex-col gap-6">
-        {/* Table List Container — 🎯 ল্যাপটপ ও মনিটরের রেসপন্সিভনেস ফিক্স */}
+        {/* Table List Container — 🎯 ফুল উইডথ রেসপন্সিভ (নো-স্ক্রলবার) ফিক্স */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
-          <div className="w-full overflow-x-auto max-h-[600px] overflow-y-auto">
-            <table className="w-full text-xs text-left border-collapse min-w-[1050px]">
+          <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <table className="w-full text-xs text-left border-collapse table-auto">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
                   <th className="px-4 py-3.5">Order ID</th>
