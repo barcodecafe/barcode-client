@@ -15,6 +15,7 @@ import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
 import { Login } from '../pages/Login';
 import { SignUp } from '../pages/SignUp';
+import { ForgotPassword } from '../pages/ForgotPassword'; // 👈 ForgotPassword ইমপোর্ট করা হলো
 import { Profile } from '../pages/Profile';
 import { Checkout } from '../pages/Checkout';
 import { OrderTracking } from '../pages/OrderTracking';
@@ -71,6 +72,7 @@ export const AppRoutes = () => {
                   <Route path="about" element={<About />} />
                   <Route path="login" element={<Login variant="user" />} />
                   <Route path="signup" element={<SignUp />} />
+                  <Route path="forgot-password" element={<ForgotPassword />} /> {/* 🔑 Password Reset Route */}
                   <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="checkout" element={<Checkout />} />

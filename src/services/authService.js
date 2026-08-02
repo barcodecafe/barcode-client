@@ -6,10 +6,11 @@
 // Bearer header on every request. Function signatures are unchanged so
 // AuthContext.jsx and the pages keep working as-is.
 //
-//   POST /api/auth/register  { name, email, password, ... } → { user, token }
-//   POST /api/auth/login     { email, password }            → { user, token }
+//   POST /api/auth/register        { name, email, password, ... } → { user, token }
+//   POST /api/auth/login           { email, password }            → { user, token }
+//   POST /api/auth/reset-password  { phone, newPassword }         → { message }
 //   POST /api/auth/logout
-//   GET  /api/auth/me        → user
+//   GET  /api/auth/me              → user
 //
 // SECURITY: passwords are bcrypt-hashed server-side; role is assigned by the
 // server (client-sent role is ignored), so /admin-signup can no longer mint
@@ -52,7 +53,6 @@ export async function register({ name, email, password, phone, pickArea, address
   return user;
 }
 
-
 /**
  * Logs in an existing user by phone/email and password (stores the JWT).
  * BACKEND: POST /api/auth/login
@@ -62,6 +62,18 @@ export async function login(credentials) {
   const { user, token } = await apiClient.post('/auth/login', credentials);
   localStorage.setItem(TOKEN_KEY, token);
   return user;
+}
+
+/**
+ * 🔑 Resets password for a user/rider by registered phone number or email.
+ * BACKEND: POST /api/auth/reset-password
+ */
+export async function resetPasswordService({ phone, email, newPassword }) {
+  return apiClient.post('/auth/reset-password', {
+    phone,
+    email,
+    newPassword,
+  });
 }
 
 /**
