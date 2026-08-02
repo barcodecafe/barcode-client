@@ -469,7 +469,7 @@ export const AdminOrders = () => {
   const grandTotal = subTotal + deliveryCharge + currentAdjustment;
 
   return (
-    <div className="w-full px-2 sm:px-4 space-y-6">
+    <div className="w-full space-y-6">
       <Toaster />
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -485,20 +485,20 @@ export const AdminOrders = () => {
       </div>
 
       <div className="w-full flex flex-col gap-6">
-        {/* Table List */}
+        {/* Table List Container — 🎯 ল্যাপটপ ও মনিটরের রেসপন্সিভনেস ফিক্স */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
-          <div className="w-full max-h-[460px] overflow-auto relative">
-            <table className="w-full text-xs text-left min-w-[950px]">
+          <div className="w-full overflow-x-auto max-h-[600px] overflow-y-auto">
+            <table className="w-full text-xs text-left border-collapse min-w-[1050px]">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
-                  <th className="px-3 py-3.5">Order ID</th>
-                  <th className="px-3 py-3.5">Customer</th>
-                  <th className="px-3 py-3.5">Address</th>
-                  <th className="px-3 py-3.5">Total Amount</th>
-                  <th className="px-3 py-3.5">Order Action</th>
-                  <th className="px-3 py-3.5">Delivery Status</th>
-                  <th className="px-3 py-3.5">Assigned Rider</th>
-                  <th className="px-3 py-3.5 text-right">Actions</th>
+                  <th className="px-4 py-3.5">Order ID</th>
+                  <th className="px-4 py-3.5">Customer</th>
+                  <th className="px-4 py-3.5">Address</th>
+                  <th className="px-4 py-3.5">Total Amount</th>
+                  <th className="px-4 py-3.5">Order Action</th>
+                  <th className="px-4 py-3.5">Delivery Status</th>
+                  <th className="px-4 py-3.5">Assigned Rider</th>
+                  <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -519,11 +519,11 @@ export const AdminOrders = () => {
                   return (
                     <tr
                       key={ordId}
-                      className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
+                      className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
                     >
                       <td
                         onClick={() => setSelectedOrderDetails(ord)}
-                        className="px-3 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
+                        className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
                         title="Click to view details"
                       >
                         {ordId}
@@ -535,35 +535,35 @@ export const AdminOrders = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3.5">
-                        <span className="block font-semibold text-neutral-855 dark:text-white truncate max-w-[110px]">
+                      <td className="px-4 py-3.5">
+                        <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[140px]">
                           {ord.user?.name}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.phone}
                         </span>
                       </td>
-                      <td className="px-3 py-3.5">
-                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[130px]">
+                      <td className="px-4 py-3.5">
+                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[180px]" title={ord.user?.address}>
                           {ord.user?.address}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.pickArea}
                         </span>
                       </td>
-                      <td className="px-3 py-3.5 font-bold text-primary-500">
+                      <td className="px-4 py-3.5 font-bold text-primary-500 whitespace-nowrap">
                         ৳{ord.total?.toFixed(2)}
                       </td>
 
                       {/* 🎯 ১. ORDER ACTION কলাম */}
-                      <td className="px-3 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         {isPendingUnhandled ? (
-                          <div className="flex gap-1">
+                          <div className="flex gap-1.5">
                             <button
                               onClick={() =>
                                 handleStatusChange(ordId, "Accepted")
                               }
-                              className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
@@ -572,7 +572,7 @@ export const AdminOrders = () => {
                               onClick={() =>
                                 handleStatusChange(ordId, "Rejected")
                               }
-                              className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="Reject Order"
                             >
                               <X className="w-3 h-3 stroke-[3]" /> Reject
@@ -590,7 +590,7 @@ export const AdminOrders = () => {
                       </td>
 
                       {/* 🎯 ২. DELIVERY STATUS কলাম */}
-                      <td className="px-3 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         {isPendingUnhandled ? (
                           <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                             Pending
@@ -653,7 +653,7 @@ export const AdminOrders = () => {
                       </td>
 
                       {/* 🎯 ৩. ASSIGNED RIDER কলাম */}
-                      <td className="px-3 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <select
                             value={ord.riderId || ""}
@@ -670,7 +670,7 @@ export const AdminOrders = () => {
                               isRejected ||
                               ord.status === "Delivered"
                                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
-                                : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-205 dark:border-neutral-800"
+                                : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"
                             }`}
                           >
                             <option value="">-- Assign Rider --</option>
@@ -683,7 +683,7 @@ export const AdminOrders = () => {
                         </div>
                       </td>
 
-                      <td className="px-3 py-3.5 text-right">
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
                         <button
                           onClick={() => setActiveChatOrderId(ordId)}
                           className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
@@ -963,13 +963,12 @@ export const AdminOrders = () => {
 
                         if (!detectedOfferType && itemName.includes("fuchka platter") && qty >= 3) {
                           detectedOfferType = "bogo_1g2";
-                          origUnitPrice = 340; // ফুচকা প্লাটারের অরিজিনাল একক দাম
+                          origUnitPrice = 340;
                         } else if (!detectedOfferType && itemName.includes("borhani") && unitPrice === 76) {
-                          origUnitPrice = 80; // বোরহানির অরিজিনাল একক দাম (৫% ছাড়ে ৭৬ হলে)
+                          origUnitPrice = 80;
                         }
 
                         const offerLabel = getOfferText(detectedOfferType);
-
                         const fullGross = origUnitPrice * qty;
                         
                         let netPayable = unitPrice * qty;
