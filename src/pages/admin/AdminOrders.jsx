@@ -170,15 +170,10 @@ export const AdminOrders = () => {
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
-  const [activeChatOrderId, setActiveChatOrderId] = useState(null);
-  const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [adjustments, setAdjustments] = useState({});
 
-  const chatEndRef = useRef(null);
   const invoiceRef = useRef(null);
-  const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
-  const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
@@ -277,15 +272,6 @@ export const AdminOrders = () => {
       socket.off("new_chat_message");
     };
   }, []);
-
-  useEffect(() => {
-    if (chatEndRef.current && activeChatOrderId) {
-      chatEndRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }
-  }, [activeChatOrderId, chatMessagesCount]);
 
   const handleRecheckPayment = async (orderId) => {
     try {
@@ -423,35 +409,6 @@ export const AdminOrders = () => {
     }
   };
 
-  const handleSendAdminMessage = async (e, customText = null) => {
-    if (e) e.preventDefault();
-    const textToSend = customText || adminChatMessage;
-    if (!textToSend.trim() || !activeChatOrderId) return;
-
-    try {
-      const messagePayload = {
-        sender: "admin",
-        senderName: "Barcode Admin",
-        text: textToSend.trim(),
-      };
-
-      const updated = await addChatMessage(activeChatOrderId, messagePayload);
-
-      socket.emit("send_message", {
-        orderId: activeChatOrderId,
-        message: messagePayload,
-      });
-
-      setOrders((prev) =>
-        prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o)),
-      );
-      if (!customText) setAdminChatMessage("");
-      toast.success("Message sent to rider/customer!");
-    } catch (err) {
-      toast.error("Failed to send message: " + err.message);
-    }
-  };
-
   // 🎯 হিসাব-নিকাশ ও অ্যাডজাস্টমেন্ট ক্যালকুলেশন ভেরিয়েবল
   const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
   const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
@@ -478,14 +435,13 @@ export const AdminOrders = () => {
             Orders & Live Chat
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Monitor incoming food deliveries, update delivery stages, and chat
-            with customers/riders.
+            Monitor incoming food deliveries, update delivery stages, and view customer/rider details.
           </p>
         </div>
       </div>
 
       <div className="w-full flex flex-col gap-6">
-        {/* Table List Container — 🎯 ফুল উইডথ রেসপন্সিভ (নো-স্ক্রলবার) ফিক্স */}
+        {/* Table List Container */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
           <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-xs text-left border-collapse table-auto">
@@ -683,15 +639,12 @@ export const AdminOrders = () => {
                         </div>
                       </td>
 
+                      {/* 🎯 ৪. ACTIONS — মেসেজ আইকনে ক্লিক করলেও এখন একই অর্ডার ডিটেইলস পপআপ শো করবে */}
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
                         <button
-                          onClick={() => setActiveChatOrderId(ordId)}
-                          className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all ${
-                            activeChatOrderId === ordId
-                              ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                              : ""
-                          }`}
-                          title="Chat Console"
+                          onClick={() => setSelectedOrderDetails(ord)}
+                          className="p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer"
+                          title="View Order Details & Invoice"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                         </button>
@@ -703,82 +656,6 @@ export const AdminOrders = () => {
             </table>
           </div>
         </div>
-
-        {/* 🎯 Chat Console Panel */}
-        {activeChatOrderId && currentChat && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="w-full flex flex-col h-[520px] bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs"
-          >
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
-              <div>
-                <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                  Chat for #{(currentChat.id || currentChat._id)?.toUpperCase()}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveChatOrderId(null)}
-                className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Kitchen Alert */}
-            <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
-              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <BellRing className="w-3 h-3" /> Quick Kitchen Alert:
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  handleSendAdminMessage(
-                    null,
-                    "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant.",
-                  );
-                  handleStatusChange(
-                    currentChat.id || currentChat._id,
-                    "Ready to Pick",
-                  );
-                }}
-                className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
-              >
-                Set Ready & Notify Rider
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
-              {(currentChat.chatHistory || []).map((msg, i) => (
-                <div key={i} className="text-xs">
-                  <span className="font-bold">{msg.senderName}: </span>
-                  <span>{msg.text}</span>
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-
-            <form
-              onSubmit={(e) => handleSendAdminMessage(e, null)}
-              className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
-            >
-              <input
-                type="text"
-                value={adminChatMessage}
-                onChange={(e) => setAdminChatMessage(e.target.value)}
-                placeholder="Type message as Barcode Admin..."
-                className="flex-grow px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <button
-                type="submit"
-                className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 cursor-pointer"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </motion.div>
-        )}
       </div>
 
       {/* Order Details & Official Barcode Invoice Modal */}
