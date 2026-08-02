@@ -42,6 +42,14 @@ const deduplicateOrders = (orderList) => {
   });
 };
 
+// 🎯 Order ID সংক্ষেপ করার হেলপার ফাংশন (যেমন: 6A6D...C7F90)
+const formatShortOrderId = (id) => {
+  if (!id) return "";
+  const strId = String(id).toUpperCase();
+  if (strId.length <= 10) return strId;
+  return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
+};
+
 // 🎯 BOGO Offer Text Helper Function
 const getOfferText = (offerType) => {
   if (offerType === "bogo_1g1") return "BUY 1 GET 1 FREE";
@@ -254,17 +262,12 @@ export const AdminOrders = () => {
       );
     });
 
-    // ❌ আগের কোড (মেসেজ ফিল্টার ছাড়া সরাসরি পুশ করতো):
-    // socket.on("new_chat_message", ({ orderId, message }) => { ... });
-
-    // ✅ ফিক্সড কোড (মেসেজ অলরেডি থাকলে তা এড়িয়ে যাবে):
     socket.on("new_chat_message", ({ orderId, message }) => {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           if ((ord.id || ord._id) === orderId) {
             const existingHistory = ord.chatHistory || [];
 
-            // 🛡️ ডুপ্লিকেট মেসেজ ফিল্টার চেক (মেসেজের পাঠাংক এবং প্রেরক মিলে গেলে স্কিপ করবে)
             const isDuplicate = existingHistory.some(
               (m) =>
                 m.text === message.text &&
@@ -494,8 +497,7 @@ export const AdminOrders = () => {
             Orders & Live Chat
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Monitor incoming food deliveries, update delivery stages, and chat
-            with customers/riders.
+            Monitor incoming food deliveries, update delivery stages, and chat with customers/riders.
           </p>
         </div>
       </div>
@@ -507,14 +509,14 @@ export const AdminOrders = () => {
             <table className="w-full text-xs text-left border-collapse table-auto">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
-                  <th className="px-4 py-3.5">Order ID</th>
-                  <th className="px-4 py-3.5">Customer</th>
-                  <th className="px-4 py-3.5">Address</th>
-                  <th className="px-4 py-3.5">Total Amount</th>
-                  <th className="px-4 py-3.5">Order Action</th>
-                  <th className="px-4 py-3.5">Delivery Status</th>
-                  <th className="px-4 py-3.5">Assigned Rider</th>
-                  <th className="px-4 py-3.5 text-right">Actions</th>
+                  <th className="px-2.5 py-3.5">Order ID</th>
+                  <th className="px-2.5 py-3.5">Customer</th>
+                  <th className="px-2.5 py-3.5">Address</th>
+                  <th className="px-2.5 py-3.5">Total Amount</th>
+                  <th className="px-2.5 py-3.5">Order Action</th>
+                  <th className="px-2.5 py-3.5">Delivery Status</th>
+                  <th className="px-2.5 py-3.5">Assigned Rider</th>
+                  <th className="px-2.5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -537,52 +539,59 @@ export const AdminOrders = () => {
                       key={ordId}
                       className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
                     >
+                      {/* 🎯 Order ID Column — ট্রাঙ্কেট ফর্মে দেখাবে (যেমন: 6A6D...C7F90) */}
                       <td
                         onClick={() => setSelectedOrderDetails(ord)}
-                        className="px-4 py-3.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors"
-                        title="Click to view details"
+                        className="px-2.5 py-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                        title={ordId}
                       >
-                        {ordId}
+                        {formatShortOrderId(ordId)}
                         {badge && (
                           <span
-                            className={`block mt-1 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
+                            className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
                           >
                             {badge.label}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[140px]">
+
+                      {/* Customer Column */}
+                      <td className="px-2.5 py-3">
+                        <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px]">
                           {ord.user?.name}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
                           {ord.user?.phone}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5">
+
+                      {/* Address Column — নির্দিষ্ট উইডথ শেষে ... চলে আসবে */}
+                      <td className="px-2.5 py-3">
                         <span
-                          className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[180px]"
+                          className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[120px]"
                           title={ord.user?.address}
                         >
                           {ord.user?.address}
                         </span>
-                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                        <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[120px]">
                           {ord.user?.pickArea}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-primary-500 whitespace-nowrap">
+
+                      {/* Total Amount Column */}
+                      <td className="px-2.5 py-3 font-bold text-primary-500 whitespace-nowrap">
                         ৳{ord.total?.toFixed(2)}
                       </td>
 
-                      {/* 🎯 ১. ORDER ACTION কলাম */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      {/* Order Action Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
                         {isPendingUnhandled ? (
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1">
                             <button
                               onClick={() =>
                                 handleStatusChange(ordId, "Accepted")
                               }
-                              className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Accept Order"
                             >
                               <Check className="w-3 h-3 stroke-[3]" /> Accept
@@ -591,7 +600,7 @@ export const AdminOrders = () => {
                               onClick={() =>
                                 handleStatusChange(ordId, "Rejected")
                               }
-                              className="px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                               title="Reject Order"
                             >
                               <X className="w-3 h-3 stroke-[3]" /> Reject
@@ -608,8 +617,8 @@ export const AdminOrders = () => {
                         )}
                       </td>
 
-                      {/* 🎯 ২. DELIVERY STATUS কলাম */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
+                      {/* Delivery Status Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
                         {isPendingUnhandled ? (
                           <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                             Pending
@@ -635,7 +644,7 @@ export const AdminOrders = () => {
                               onChange={(e) =>
                                 handleStatusChange(ordId, e.target.value)
                               }
-                              className={`px-2 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                              className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                 !ord.riderId ||
                                 ord.riderAcceptStatus !== "accepted"
                                   ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
@@ -661,7 +670,7 @@ export const AdminOrders = () => {
 
                             {(!ord.riderId ||
                               ord.riderAcceptStatus !== "accepted") && (
-                              <span className="block text-[9px] text-orange-500 font-bold mt-1 tracking-tight">
+                              <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
                                 {!ord.riderId
                                   ? "Assign Rider First"
                                   : "Awaiting Rider Accept"}
@@ -671,9 +680,9 @@ export const AdminOrders = () => {
                         )}
                       </td>
 
-                      {/* 🎯 ৩. ASSIGNED RIDER কলাম */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
+                      {/* Assigned Rider Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
                           <select
                             value={ord.riderId || ""}
                             disabled={
@@ -684,7 +693,7 @@ export const AdminOrders = () => {
                             onChange={(e) =>
                               handleAssignRider(ordId, e.target.value)
                             }
-                            className={`px-2 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                            className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] ${
                               isPendingUnhandled ||
                               isRejected ||
                               ord.status === "Delivered"
@@ -702,11 +711,11 @@ export const AdminOrders = () => {
                         </div>
                       </td>
 
-                      {/* 🎯 ৪. ACTIONS — মেসেজ আইকনে ক্লিক করলে এখন লাইভ চ্যাট মোডাল ওপেন হবে */}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      {/* Actions Column */}
+                      <td className="px-2.5 py-3 text-right whitespace-nowrap">
                         <button
                           onClick={() => setActiveChatOrderId(ordId)}
-                          className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                          className={`p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
                             activeChatOrderId === ordId
                               ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
                               : ""
@@ -725,7 +734,7 @@ export const AdminOrders = () => {
         </div>
       </div>
 
-      {/* 💬 Live Chat Modal Popup (মেসেজ আইকনে ক্লিক করলে এটি স্ক্রিনে ওপেন হবে) */}
+      {/* 💬 Live Chat Modal Popup */}
       <AnimatePresence>
         {activeChatOrderId && currentChat && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
