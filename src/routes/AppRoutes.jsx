@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { RootLayout } from '../layouts/RootLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
-import { RiderLayout } from '../layouts/RiderLayout'; // 👈 RiderLayout ইমপোর্ট
+import { RiderLayout } from '../layouts/RiderLayout'; 
 
 import { Home } from '../pages/Home';
 import { Branches } from '../pages/Branches';
@@ -15,14 +15,18 @@ import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
 import { Login } from '../pages/Login';
 import { SignUp } from '../pages/SignUp';
-import { ForgotPassword } from '../pages/ForgotPassword'; // 👈 ForgotPassword ইমপোর্ট করা হলো
+import { ForgotPassword } from '../pages/ForgotPassword'; 
 import { Profile } from '../pages/Profile';
 import { Checkout } from '../pages/Checkout';
 import { OrderTracking } from '../pages/OrderTracking';
 import { PaymentResult } from '../pages/PaymentResult';
 import { PaymentDemo } from '../pages/PaymentDemo';
 
-// 👈 ৩টি নতুন রাইডার পেজ ইমপোর্ট
+// 📄 পলিসি পেজসমূহ ইমপোর্ট
+import { PrivacyPolicy } from '../pages/PrivacyPolicy';
+import { TermsOfService } from '../pages/TermsOfService';
+
+// রাইডার পেজ ইমপোর্ট
 import RiderOverview from '../pages/rider/RiderOverview';
 import RiderOrders from '../pages/rider/RiderOrders';
 import RiderSettlement from '../pages/rider/RiderSettlement';
@@ -72,12 +76,17 @@ export const AppRoutes = () => {
                   <Route path="about" element={<About />} />
                   <Route path="login" element={<Login variant="user" />} />
                   <Route path="signup" element={<SignUp />} />
-                  <Route path="forgot-password" element={<ForgotPassword />} /> {/* 🔑 Password Reset Route */}
+                  <Route path="forgot-password" element={<ForgotPassword />} /> 
                   <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="checkout" element={<Checkout />} />
                   <Route path="rider-application" element={<RiderApplication />} />
                   <Route path="order-tracking/:id" element={<OrderTracking />} />
+                  
+                  {/* 📄 নতুন পলিসি রাউটস */}
+                  <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="terms-of-service" element={<TermsOfService />} />
+
                   <Route path="payment/success" element={<PaymentResult variant="success" />} />
                   <Route path="payment/fail" element={<PaymentResult variant="fail" />} />
                   <Route path="payment/cancel" element={<PaymentResult variant="cancel" />} />
