@@ -102,7 +102,6 @@ export const AdminDishes = () => {
       .map((item) => item.name);
   };
 
-  // 💡 [NEW LOGIC] - এক্সপায়ার্ড অফারগুলো অটোমেটিক ক্লিয়ার করার ফাংশন
   const cleanExpiredOffers = (foodList) => {
     const now = new Date();
     return foodList.map(food => {
@@ -127,7 +126,6 @@ export const AdminDishes = () => {
   useEffect(() => {
     Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
       .then(([foodsData, branchesData, couponsData]) => {
-        // 💡 ডাটা ফেচ করেই আগে এক্সপায়ার্ড অফারগুলো ছেঁটে ফেলা হচ্ছে
         const loadedFoods = cleanExpiredOffers(foodsData || []);
         setFoods(loadedFoods);
         setBranches(branchesData || []);
@@ -147,7 +145,6 @@ export const AdminDishes = () => {
     () =>
       Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
         .then(([foodsData, branchesData, couponsData]) => {
-          // 💡 পোলিং/রিফ্রেশিংয়ের সময়ও এক্সপায়ার্ড অফার চেক করা হচ্ছে
           const loadedFoods = cleanExpiredOffers(foodsData || []);
           setFoods(loadedFoods);
           setBranches(branchesData || []);
@@ -304,37 +301,6 @@ export const AdminDishes = () => {
     }
   };
 
-  const handleBranchToggle = (branchId) => {
-    const targetId = String(branchId);
-    setFormData((prev) => {
-      const isSelected = prev.branchIds.includes(targetId);
-      let updatedBranchIds;
-      let updatedPrices = { ...prev.branchPrices };
-
-      if (isSelected) {
-        updatedBranchIds = prev.branchIds.filter((id) => String(id) !== targetId);
-        delete updatedPrices[targetId];
-      } else {
-        updatedBranchIds = [...prev.branchIds, targetId];
-        if (updatedPrices[targetId] === undefined) updatedPrices[targetId] = 0;
-      }
-
-      return {
-        ...prev,
-        branchIds: updatedBranchIds,
-        branchPrices: updatedPrices,
-      };
-    });
-  };
-
-  const handleBranchPriceChange = (branchId, value) => {
-    const targetId = String(branchId);
-    setFormData((prev) => ({
-      ...prev,
-      branchPrices: { ...prev.branchPrices, [targetId]: parseFloat(value) || 0 },
-    }));
-  };
-
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this dish?")) {
       try {
@@ -424,7 +390,6 @@ export const AdminDishes = () => {
     });
   }, [foods, search, selectedCategory]);
 
-  // 🎯 Mutual Exclusivity Logic Checkers
   const isCouponActive = formData.promoCode !== "";
   const isOfferActive = formData.offerType !== "none";
   const isDiscountActive = formData.discountPct > 0 || formData.discountAmount > 0;
@@ -752,9 +717,17 @@ export const AdminDishes = () => {
                     )}
                   </div>
 
+                  {/* 🎯 Base Price (৳) — স্পিন বাটন সম্পূর্ণ হাইড করা হয়েছে */}
                   <div className={isCustomCategory ? "col-span-2" : "col-span-1"}>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Base Price (৳) *</label>
-                    <input type="number" step="0.01" required value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      required 
+                      value={formData.price} 
+                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} 
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
                   </div>
                 </div>
 
@@ -826,7 +799,7 @@ export const AdminDishes = () => {
                           value={formData.discountAmount || ""} 
                           onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0, discountPct: 0 })} 
                           placeholder="৳ off (Enter 0 to clear)" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                         />
                       ) : (
                         <input 
@@ -837,7 +810,7 @@ export const AdminDishes = () => {
                           value={formData.discountPct || ""} 
                           onChange={(e) => setFormData({ ...formData, discountPct: parseInt(e.target.value) || 0, discountAmount: 0 })} 
                           placeholder="% off (Enter 0 to clear)" 
-                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed" 
+                          className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                         />
                       )}
                     </div>
@@ -876,7 +849,16 @@ export const AdminDishes = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Rating *</label>
-                    <input type="number" step="0.1" min="1.0" max="5.0" required value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none" />
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      min="1.0" 
+                      max="5.0" 
+                      required 
+                      value={formData.rating} 
+                      onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} 
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
                   </div>
                 </div>
 
@@ -905,7 +887,7 @@ export const AdminDishes = () => {
                             placeholder="Price" 
                             value={v.price} 
                             onChange={(e) => handleVariationChange(index, "price", e.target.value)} 
-                            className="w-28 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" 
+                            className="w-28 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                             required 
                           />
                           <button type="button" onClick={() => handleRemoveVariation(index)} className="p-1.5 text-red-500">✕</button>
