@@ -50,7 +50,7 @@ const getOfferText = (offerType) => {
   return null;
 };
 
-// 🎯 BOGO এবং নরমাল ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার (অটো-ডিটেকশনসহ)
+// 🎯 BOGO এবং নরমাল ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
 const getItemPayableTotal = (item) => {
   const name = String(item.name || "").toLowerCase();
   const price = Number(item.price) || 0;
@@ -170,10 +170,15 @@ export const AdminOrders = () => {
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
+  const [activeChatOrderId, setActiveChatOrderId] = useState(null);
+  const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [adjustments, setAdjustments] = useState({});
 
+  const chatEndRef = useRef(null);
   const invoiceRef = useRef(null);
+  const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
+  const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
@@ -273,6 +278,15 @@ export const AdminOrders = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (chatEndRef.current && activeChatOrderId) {
+      chatEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [activeChatOrderId, chatMessagesCount]);
+
   const handleRecheckPayment = async (orderId) => {
     try {
       setRecheckingOrderId(orderId);
@@ -292,7 +306,6 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🖨️ প্রিন্ট / সেভ এজ পিডিএফ ফাংশন
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -409,14 +422,41 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 হিসাব-নিকাশ ও অ্যাডজাস্টমেন্ট ক্যালকুলেশন ভেরিয়েবল
+  const handleSendAdminMessage = async (e, customText = null) => {
+    if (e) e.preventDefault();
+    const textToSend = customText || adminChatMessage;
+    if (!textToSend.trim() || !activeChatOrderId) return;
+
+    try {
+      const messagePayload = {
+        sender: "admin",
+        senderName: "Barcode Admin",
+        text: textToSend.trim(),
+      };
+
+      const updated = await addChatMessage(activeChatOrderId, messagePayload);
+
+      socket.emit("send_message", {
+        orderId: activeChatOrderId,
+        message: messagePayload,
+      });
+
+      setOrders((prev) =>
+        prev.map((o) => ((o.id || o._id) === activeChatOrderId ? updated : o)),
+      );
+      if (!customText) setAdminChatMessage("");
+      toast.success("Message sent!");
+    } catch (err) {
+      toast.error("Failed to send message: " + err.message);
+    }
+  };
+
   const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
   const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
 
   const orderItems =
     selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
 
-  // পে-অ্যাবল সাবটোটাল
   const subTotal = orderItems.reduce(
     (sum, item) => sum + getItemPayableTotal(item),
     0,
@@ -435,7 +475,7 @@ export const AdminOrders = () => {
             Orders & Live Chat
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Monitor incoming food deliveries, update delivery stages, and view customer/rider details.
+            Monitor incoming food deliveries, update delivery stages, and chat with customers/riders.
           </p>
         </div>
       </div>
@@ -639,12 +679,16 @@ export const AdminOrders = () => {
                         </div>
                       </td>
 
-                      {/* 🎯 ৪. ACTIONS — মেসেজ আইকনে ক্লিক করলেও এখন একই অর্ডার ডিটেইলস পপআপ শো করবে */}
+                      {/* 🎯 ৪. ACTIONS — মেসেজ আইকনে ক্লিক করলে এখন লাইভ চ্যাট মোডাল ওপেন হবে */}
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
                         <button
-                          onClick={() => setSelectedOrderDetails(ord)}
-                          className="p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer"
-                          title="View Order Details & Invoice"
+                          onClick={() => setActiveChatOrderId(ordId)}
+                          className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                            activeChatOrderId === ordId
+                              ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                              : ""
+                          }`}
+                          title="Open Live Chat Console"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                         </button>
@@ -657,6 +701,114 @@ export const AdminOrders = () => {
           </div>
         </div>
       </div>
+
+      {/* 💬 Live Chat Modal Popup (মেসেজ আইকনে ক্লিক করলে এটি স্ক্রিনে ওপেন হবে) */}
+      <AnimatePresence>
+        {activeChatOrderId && currentChat && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-lg flex flex-col h-[580px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-2xl"
+            >
+              {/* Chat Header */}
+              <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 flex items-center justify-between shrink-0">
+                <div>
+                  <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                    Live Chat for Order #{(currentChat.id || currentChat._id)?.toUpperCase()}
+                  </h3>
+                  <p className="text-[11px] text-neutral-400 mt-0.5">
+                    Customer: {currentChat.user?.name || "Guest"} ({currentChat.user?.phone})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveChatOrderId(null)}
+                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Quick Kitchen Alert */}
+              <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between shrink-0">
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <BellRing className="w-3.5 h-3.5" /> Quick Kitchen Alert:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSendAdminMessage(
+                      null,
+                      "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant.",
+                    );
+                    handleStatusChange(
+                      currentChat.id || currentChat._id,
+                      "Ready to Pick",
+                    );
+                  }}
+                  className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
+                >
+                  Set Ready & Notify Rider
+                </button>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-950/20">
+                {(currentChat.chatHistory || []).length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-neutral-400 text-xs gap-1">
+                    <MessageSquare className="w-8 h-8 opacity-40" />
+                    <p>No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  (currentChat.chatHistory || []).map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-col ${
+                        msg.sender === "admin" ? "items-end" : "items-start"
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold text-neutral-400 mb-0.5 px-1">
+                        {msg.senderName}
+                      </span>
+                      <div
+                        className={`max-w-[80%] px-3.5 py-2 rounded-2xl text-xs ${
+                          msg.sender === "admin"
+                            ? "bg-primary-500 text-white rounded-br-none"
+                            : "bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 rounded-bl-none"
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Form */}
+              <form
+                onSubmit={(e) => handleSendAdminMessage(e, null)}
+                className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
+              >
+                <input
+                  type="text"
+                  value={adminChatMessage}
+                  onChange={(e) => setAdminChatMessage(e.target.value)}
+                  placeholder="Type message as Barcode Admin..."
+                  className="flex-grow px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <button
+                  type="submit"
+                  className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition-colors cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Order Details & Official Barcode Invoice Modal */}
       <AnimatePresence>
@@ -802,7 +954,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* ৩. লজিক্যাল আইটেম টেবিল (অটো-ডিটেক্ট ডিসকাউন্ট ও BOGO সহ) */}
+                {/* ৩. লজিক্যাল আইটেম টেবিল */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -834,7 +986,6 @@ export const AdminOrders = () => {
                         const qty = Number(item.quantity) || 1;
                         const unitPrice = Number(item.price) || 0;
 
-                        // অটো-ডিটেক্ট অফার টাইপ যদি ব্যাকএন্ডে সেভ না থাকে
                         let detectedOfferType = item.offerType;
                         let origUnitPrice = Number(item.originalPrice) || unitPrice;
 
@@ -918,7 +1069,6 @@ export const AdminOrders = () => {
                       </span>
                     </div>
 
-                    {/* ডাইনামিক অ্যাডজাস্টমেন্ট ইনপুট বক্স */}
                     <div className="flex justify-between items-center py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Adjustment:</span>
                       <input
@@ -954,7 +1104,6 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* Amount in Words */}
                 <div className="pt-2 text-xs text-neutral-600 font-medium">
                   Amount in Words (BDT):{" "}
                   <span className="italic font-semibold text-neutral-800 uppercase">
@@ -1004,7 +1153,7 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              {/* Gateway Re-check option if needed */}
+              {/* Gateway Re-check option */}
               {String(
                 selectedOrderDetails.paymentMethod || "cod",
               ).toLowerCase() !== "cod" &&
