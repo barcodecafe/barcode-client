@@ -254,13 +254,32 @@ export const AdminOrders = () => {
       );
     });
 
+    // ❌ আগের কোড (মেসেজ ফিল্টার ছাড়া সরাসরি পুশ করতো):
+    // socket.on("new_chat_message", ({ orderId, message }) => { ... });
+
+    // ✅ ফিক্সড কোড (মেসেজ অলরেডি থাকলে তা এড়িয়ে যাবে):
     socket.on("new_chat_message", ({ orderId, message }) => {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           if ((ord.id || ord._id) === orderId) {
+            const existingHistory = ord.chatHistory || [];
+
+            // 🛡️ ডুপ্লিকেট মেসেজ ফিল্টার চেক (মেসেজের পাঠাংক এবং প্রেরক মিলে গেলে স্কিপ করবে)
+            const isDuplicate = existingHistory.some(
+              (m) =>
+                m.text === message.text &&
+                m.sender === message.sender &&
+                Math.abs(
+                  new Date(m.timestamp || Date.now()) -
+                    new Date(message.timestamp || Date.now()),
+                ) < 3000,
+            );
+
+            if (isDuplicate) return ord;
+
             return {
               ...ord,
-              chatHistory: [...(ord.chatHistory || []), message],
+              chatHistory: [...existingHistory, message],
             };
           }
           return ord;
@@ -475,7 +494,8 @@ export const AdminOrders = () => {
             Orders & Live Chat
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Monitor incoming food deliveries, update delivery stages, and chat with customers/riders.
+            Monitor incoming food deliveries, update delivery stages, and chat
+            with customers/riders.
           </p>
         </div>
       </div>
@@ -540,7 +560,10 @@ export const AdminOrders = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[180px]" title={ord.user?.address}>
+                        <span
+                          className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[180px]"
+                          title={ord.user?.address}
+                        >
                           {ord.user?.address}
                         </span>
                         <span className="block text-[10px] text-neutral-400 mt-0.5">
@@ -716,10 +739,12 @@ export const AdminOrders = () => {
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
-                    Live Chat for Order #{(currentChat.id || currentChat._id)?.toUpperCase()}
+                    Live Chat for Order #
+                    {(currentChat.id || currentChat._id)?.toUpperCase()}
                   </h3>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    Customer: {currentChat.user?.name || "Guest"} ({currentChat.user?.phone})
+                    Customer: {currentChat.user?.name || "Guest"} (
+                    {currentChat.user?.phone})
                   </p>
                 </div>
                 <button
@@ -987,18 +1012,27 @@ export const AdminOrders = () => {
                         const unitPrice = Number(item.price) || 0;
 
                         let detectedOfferType = item.offerType;
-                        let origUnitPrice = Number(item.originalPrice) || unitPrice;
+                        let origUnitPrice =
+                          Number(item.originalPrice) || unitPrice;
 
-                        if (!detectedOfferType && itemName.includes("fuchka platter") && qty >= 3) {
+                        if (
+                          !detectedOfferType &&
+                          itemName.includes("fuchka platter") &&
+                          qty >= 3
+                        ) {
                           detectedOfferType = "bogo_1g2";
                           origUnitPrice = 340;
-                        } else if (!detectedOfferType && itemName.includes("borhani") && unitPrice === 76) {
+                        } else if (
+                          !detectedOfferType &&
+                          itemName.includes("borhani") &&
+                          unitPrice === 76
+                        ) {
                           origUnitPrice = 80;
                         }
 
                         const offerLabel = getOfferText(detectedOfferType);
                         const fullGross = origUnitPrice * qty;
-                        
+
                         let netPayable = unitPrice * qty;
                         if (detectedOfferType === "bogo_1g1") {
                           netPayable = unitPrice * Math.ceil(qty / 2);
@@ -1006,7 +1040,10 @@ export const AdminOrders = () => {
                           netPayable = unitPrice * Math.ceil(qty / 3);
                         }
 
-                        const freeDiscount = Math.max(0, fullGross - netPayable);
+                        const freeDiscount = Math.max(
+                          0,
+                          fullGross - netPayable,
+                        );
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
@@ -1017,7 +1054,10 @@ export const AdminOrders = () => {
                                 : ""}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700">
-                              {offerLabel || (origUnitPrice > unitPrice ? "REGULAR DISCOUNT" : "-")}
+                              {offerLabel ||
+                                (origUnitPrice > unitPrice
+                                  ? "REGULAR DISCOUNT"
+                                  : "-")}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{origUnitPrice.toFixed(2)}
