@@ -301,6 +301,37 @@ export const AdminDishes = () => {
     }
   };
 
+  const handleBranchToggle = (branchId) => {
+    const targetId = String(branchId);
+    setFormData((prev) => {
+      const isSelected = prev.branchIds.includes(targetId);
+      let updatedBranchIds;
+      let updatedPrices = { ...prev.branchPrices };
+
+      if (isSelected) {
+        updatedBranchIds = prev.branchIds.filter((id) => String(id) !== targetId);
+        delete updatedPrices[targetId];
+      } else {
+        updatedBranchIds = [...prev.branchIds, targetId];
+        if (updatedPrices[targetId] === undefined) updatedPrices[targetId] = 0;
+      }
+
+      return {
+        ...prev,
+        branchIds: updatedBranchIds,
+        branchPrices: updatedPrices,
+      };
+    });
+  };
+
+  const handleBranchPriceChange = (branchId, value) => {
+    const targetId = String(branchId);
+    setFormData((prev) => ({
+      ...prev,
+      branchPrices: { ...prev.branchPrices, [targetId]: parseFloat(value) || 0 },
+    }));
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this dish?")) {
       try {
@@ -717,7 +748,6 @@ export const AdminDishes = () => {
                     )}
                   </div>
 
-                  {/* 🎯 Base Price (৳) — স্পিন বাটন সম্পূর্ণ হাইড করা হয়েছে */}
                   <div className={isCustomCategory ? "col-span-2" : "col-span-1"}>
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">Base Price (৳) *</label>
                     <input 

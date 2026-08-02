@@ -47,15 +47,21 @@ export const Navbar = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
   const userMenuRef = useRef(null);
-  const mobileMenuRef = useRef(null); // 👈 মোবাইল ড্রয়ার এরিয়ার জন্য Ref
+  const mobileMenuRef = useRef(null);
 
-  const navLinks = [
+  // 🎯 বেসিক নেভিগেশন লিঙ্কসমূহ
+  const baseNavLinks = [
     { name: 'Home', path: '/' },
     { name: 'Our Brands', path: '/brands' },
     { name: 'Our Branches', path: '/branches' },
     { name: 'Menu', path: '/menu' },
     { name: 'About', path: '/about' },
   ];
+
+  // 🎯 কাস্টমার লগইন অবস্থায় নেভবারে সরাসরি "My Profile & Orders" ভেসে উঠবে
+  const navLinks = isAuthenticated
+    ? [...baseNavLinks, { name: 'My Profile & Orders', path: '/profile' }]
+    : baseNavLinks;
 
   const accountLinks = [];
   if (isAdmin) accountLinks.push({ to: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard });
@@ -68,15 +74,12 @@ export const Navbar = () => {
   useEffect(() => {
     if (!isOpen) return;
 
-    // স্ক্রোল করলে হাইড হবে
     const handleScroll = () => {
       setIsOpen(false);
     };
 
-    // মেনুর বাইরে ক্লিক/ট্যাপ করলে হাইড হবে
     const handleOutsideTouchOrClick = (e) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        // মেনু ওপেন করার বাটনটিতে ক্লিক করা হলেও যেন কনফ্লিক্ট না করে
         const toggleBtn = e.target.closest('[aria-label="Toggle menu"]');
         if (!toggleBtn) {
           setIsOpen(false);
@@ -362,7 +365,7 @@ export const Navbar = () => {
               className="fixed inset-0 top-14 z-40 bg-neutral-950/40 backdrop-blur-sm md:hidden"
             />
 
-            {/* Panel (Ref যুক্ত করা হয়েছে) */}
+            {/* Panel */}
             <motion.div
               ref={mobileMenuRef}
               initial={{ x: 40, opacity: 0 }}
