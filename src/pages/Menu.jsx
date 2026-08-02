@@ -5,6 +5,8 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
+  Tag,
+  CheckCircle,
 } from "lucide-react";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -26,6 +28,32 @@ export const Menu = () => {
 
   const activeFilter = searchParams.get("filter");
   const popularOnly = activeFilter === "popular";
+
+  // 💡 Standard Coupon Auto-Catch Logic (QR Code Scan)
+  const [appliedPromo, setAppliedPromo] = useState("");
+  const [showPromoBanner, setShowPromoBanner] = useState(false);
+
+  useEffect(() => {
+    const promoFromUrl = searchParams.get("promo");
+    if (promoFromUrl) {
+      const cleanCode = promoFromUrl.trim().toUpperCase();
+      // LocalStorage-এ সেভ রাখা যেন পরে Checkout Page রিড করতে পারে
+      localStorage.setItem("scanned_promo", cleanCode);
+      setAppliedPromo(cleanCode);
+      setShowPromoBanner(true);
+
+      // URL পরিষ্কার করার জন্য ?promo সরিয়ে ফেলা (ঐচ্ছিক)
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("promo");
+      setSearchParams(nextParams, { replace: true });
+    } else {
+      // যদি URL-এ না থাকে কিন্তু আগে স্ক্যান করে রাখা থাকে
+      const savedPromo = localStorage.getItem("scanned_promo");
+      if (savedPromo) {
+        setAppliedPromo(savedPromo);
+      }
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleCategoryChange = (catName) => {
     const next = { category: catName };
@@ -130,7 +158,6 @@ export const Menu = () => {
       if (!isNaN(discounted) && discounted >= 0) return Number(discounted);
     }
 
-    // Fallback if applyFoodDiscount is not defined, keeping timer validity
     let finalPrice = basePrice;
     if (hasFoodDiscount(food)) {
       if (food.discountType === "flat" && Number(food.discountAmount) > 0) {
@@ -163,7 +190,7 @@ export const Menu = () => {
       if (sortBy === "price-high") return priceB - priceA;
       if (sortBy === "rating") return ratingB - ratingA;
 
-      return 0; // 🎯 ডাটাবেজ থেকে যেই অর্ডারে রেসপন্স আসবে ঠিক সেই অর্ডারে দেখাবে
+      return 0;
     });
   }, [foods, activeCategory, sortBy]);
 
@@ -183,6 +210,34 @@ export const Menu = () => {
 
   return (
     <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      {/* 💡 Standard Coupon Alert Banner (QR Code Scan Toast) */}
+      {showPromoBanner && appliedPromo && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-emerald-600 dark:text-emerald-400"
+        >
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 shrink-0 text-emerald-500" />
+            <div className="text-xs sm:text-sm">
+              <span className="font-bold">Promo Code Active: </span>
+              <span className="font-mono font-extrabold bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300">
+                {appliedPromo}
+              </span>
+              <span className="ml-2 text-neutral-600 dark:text-neutral-400">
+                Add your favorite items to cart & proceed to checkout to claim discount!
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowPromoBanner(false)}
+            className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+          >
+            ✕
+          </button>
+        </motion.div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-neutral-100 dark:border-neutral-800/40 w-full overflow-hidden">
         <div className="text-center md:text-left min-w-0">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight truncate">
@@ -198,6 +253,14 @@ export const Menu = () => {
             </p>
           )}
         </div>
+
+        {/* 💡 Active Promo Badge Indicator */}
+        {appliedPromo && !showPromoBanner && (
+          <div className="inline-flex items-center gap-1.5 self-center md:self-auto px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-500 text-xs font-bold">
+            <Tag className="w-3.5 h-3.5" />
+            Promo Code: <span className="font-mono">{appliedPromo}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8 pb-4 border-b border-neutral-200/50 dark:border-neutral-800/60">

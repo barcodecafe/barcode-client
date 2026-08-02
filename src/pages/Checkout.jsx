@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag, Tag, Phone, MapPin, Lock, User, LogOut, ArrowRight,
@@ -32,6 +32,7 @@ export const Checkout = () => {
   const { cart, updateCartQuantity, clearCart, getCartItemLineTotal } = useCart();
   const { isAuthenticated, isAuthLoaded, user, login, register, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Region state
   const [regions, setRegions] = useState([]);
@@ -149,6 +150,57 @@ export const Checkout = () => {
   const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
   const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
 
+  // 💡 Coupon Auto-Apply Handler Function
+  const applyPromoCode = useCallback(async (codeToApply) => {
+    if (!codeToApply || cartTotal <= 0) return;
+    setCouponLoading(true);
+    setCouponError('');
+
+    const customerPhone = phone.trim() || user?.phone || searchParams.get('phone') || '';
+
+    try {
+      const coupon = await validateCoupon(codeToApply, cartTotal, customerPhone);
+      setAppliedCoupon(coupon);
+      setCouponInput('');
+      
+      // Successfully applied - clear stored promo
+      localStorage.removeItem('scanned_promo');
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Coupon Applied!',
+        text: `Promo code "${coupon.code}" applied successfully.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      setCouponError(err.message);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [cartTotal, phone, user, searchParams]);
+
+  // 💡 Auto-catch Promo Code (From URL Query or LocalStorage)
+  useEffect(() => {
+    if (cartTotal <= 0 || appliedCoupon) return;
+
+    const promoFromUrl = searchParams.get('promo');
+    const storedPromo = localStorage.getItem('scanned_promo');
+    const codeToValidate = promoFromUrl || storedPromo;
+
+    if (codeToValidate) {
+      applyPromoCode(codeToValidate.trim().toUpperCase());
+
+      // If promo was in URL, clean up the query param
+      if (promoFromUrl) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('promo');
+        setSearchParams(nextParams, { replace: true });
+      }
+    }
+  }, [cartTotal, appliedCoupon, searchParams, setSearchParams, applyPromoCode]);
+
   useEffect(() => {
     if (!canPayOnline && paymentMethod === 'sslcommerz') setPaymentMethod('cod');
   }, [canPayOnline, paymentMethod]);
@@ -239,33 +291,7 @@ export const Checkout = () => {
     e.preventDefault();
     setCouponError('');
     if (!couponInput.trim()) return;
-    setCouponLoading(true);
-
-    const customerPhone = phone.trim() || user?.phone || '';
-
-    try {
-      const coupon = await validateCoupon(couponInput, cartTotal, customerPhone);
-      setAppliedCoupon(coupon);
-      setCouponInput('');
-      Swal.fire({
-        icon: 'success',
-        title: 'Coupon Applied!',
-        text: `Promo code "${coupon.code}" applied successfully.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      setCouponError(err.message);
-      setAppliedCoupon(null);
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid Coupon',
-        text: err.message,
-        confirmButtonColor: '#ef4444',
-      });
-    } finally {
-      setCouponLoading(false);
-    }
+    await applyPromoCode(couponInput.trim().toUpperCase());
   };
 
   const handlePlaceOrder = async () => {
