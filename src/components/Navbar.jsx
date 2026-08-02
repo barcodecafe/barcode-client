@@ -49,7 +49,7 @@ export const Navbar = () => {
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
-  // 🎯 বেসিক নেভিগেশন লিঙ্কসমূহ
+  // 🎯 মেইন নেভিগেশন লিঙ্কসমূহ
   const baseNavLinks = [
     { name: 'Home', path: '/' },
     { name: 'Our Brands', path: '/brands' },
@@ -58,15 +58,15 @@ export const Navbar = () => {
     { name: 'About', path: '/about' },
   ];
 
-  // 🎯 কাস্টমার লগইন অবস্থায় নেভবারে সরাসরি "My Profile & Orders" ভেসে উঠবে
+  // 🎯 কাস্টমার লগইন অবস্থায় নেভবারে শর্ট নাম "My Orders" ভেসে উঠবে
   const navLinks = isAuthenticated
-    ? [...baseNavLinks, { name: 'My Profile & Orders', path: '/profile' }]
+    ? [...baseNavLinks, { name: 'My Orders', path: '/profile' }]
     : baseNavLinks;
 
+  // 🎯 ড্রপডাউন মেনু লিঙ্কস (এখান থেকে কাস্টমারদের জন্য "My Profile & Orders" রিমুভ করা হয়েছে)
   const accountLinks = [];
   if (isAdmin) accountLinks.push({ to: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard });
   if (isRider) accountLinks.push({ to: '/rider', label: 'Rider Portal', icon: Bike });
-  accountLinks.push({ to: '/profile', label: 'My Profile & Orders', icon: User });
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role;
 
@@ -127,26 +127,26 @@ export const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md transition-all duration-300 h-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="flex items-center justify-between h-full gap-4">
+        <div className="flex items-center justify-between h-full gap-2 lg:gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center shrink-0 group" aria-label="Barcode Restaurant — home">
+          <Link to="/" className="flex items-center shrink-0 group mr-1" aria-label="Barcode Restaurant — home">
             <img
               src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
               alt="Barcode Restaurant"
-              className="h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-8 lg:h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-7 shrink-0">
+          {/* Desktop Nav Links — গ্যাপ ও প্যাডিং অপ্টিমাইজ করা হয়েছে */}
+          <div className="hidden md:flex items-center gap-4 lg:gap-6 shrink-0">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
                 to={link.path}
                 end={link.path === '/'}
                 className={({ isActive }) =>
-                  `text-sm font-medium transition-colors duration-200 relative py-1 ${
+                  `text-xs lg:text-sm font-medium transition-colors duration-200 relative py-1 whitespace-nowrap ${
                     isActive
                       ? 'text-primary-600 dark:text-primary-500 font-semibold'
                       : 'text-neutral-600 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-500'
@@ -170,12 +170,12 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Search */}
-          <div className="hidden lg:block flex-1 max-w-xs">
+          <div className="hidden lg:block flex-1 max-w-[210px] xl:max-w-xs">
             <SearchBar variant="desktop" />
           </div>
 
           {/* Right Controls (desktop) */}
-          <div className="hidden md:flex items-center gap-2 shrink-0">
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-2 shrink-0">
             <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -229,7 +229,7 @@ export const Navbar = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-3 w-64 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
+                    className="absolute right-0 mt-3 w-60 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
                   >
                     {isAuthenticated ? (
                       <>
@@ -244,22 +244,25 @@ export const Navbar = () => {
                           </div>
                         </div>
 
-                        <div className="p-1.5">
-                          {accountLinks.map((item) => (
-                            <Link
-                              key={item.to}
-                              to={item.to}
-                              role="menuitem"
-                              onClick={() => setIsUserDropdownOpen(false)}
-                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
-                            >
-                              <item.icon className="w-4 h-4 shrink-0" />
-                              {item.label}
-                            </Link>
-                          ))}
-                        </div>
+                        {/* Admin / Rider এর ডায়নামিক লিঙ্কসমূহ (কাস্টমারের কোনো এক্সট্রা অপশন থাকলে এখানে আসবে) */}
+                        {accountLinks.length > 0 && (
+                          <div className="p-1.5 border-b border-neutral-100 dark:border-neutral-800">
+                            {accountLinks.map((item) => (
+                              <Link
+                                key={item.to}
+                                to={item.to}
+                                role="menuitem"
+                                onClick={() => setIsUserDropdownOpen(false)}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                              >
+                                <item.icon className="w-4 h-4 shrink-0" />
+                                {item.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
 
-                        <div className="p-1.5 border-t border-neutral-100 dark:border-neutral-800">
+                        <div className="p-1.5">
                           <button
                             onClick={handleLogout}
                             role="menuitem"
