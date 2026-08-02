@@ -212,17 +212,14 @@ export const Footer = () => {
               </Link>
             </div>
 
-            {/* Quick Policy Links */}
+            {/* Quick Policy Links — ডায়নামিক লিংক সেট করা হয়েছে */}
             <div className="order-3 md:order-0 flex gap-6 text-neutral-400 shrink-0">
-              <a href="#" className="hover:text-primary-500 transition-colors">
+              <Link to="/privacy-policy" className="hover:text-primary-500 transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-primary-500 transition-colors">
+              </Link>
+              <Link to="/terms-of-service" className="hover:text-primary-500 transition-colors">
                 Terms of Service
-              </a>
-              <a href="#" className="hover:text-primary-500 transition-colors">
-                Sitemap
-              </a>
+              </Link>
             </div>
           </div>
         </div>
