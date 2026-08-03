@@ -45,9 +45,6 @@ export async function createOrder(orderData) {
       id: i.id,
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
-      // 🎯 অফার টাইপ এবং অরিজিনাল প্রাইস ব্যাকএন্ডে পাঠানোর জন্য যুক্ত করা হলো
-      offerType: i.offerType || null,
-      originalPrice: i.originalPrice || i.price,
     })),
     regionId: orderData.regionId, // ordering is region-based now
     couponCode: orderData.couponCode || '',
@@ -100,3 +97,5 @@ export async function submitRiderDailyCash(dateString) {
 export async function confirmRiderCashSettlement(riderId, dateString) {
   return apiClient.post('/orders/confirm-cash-settlement', { riderId, date: dateString });
 }
+
+// sajib back to previous

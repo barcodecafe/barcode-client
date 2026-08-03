@@ -484,13 +484,8 @@ export const AdminOrders = () => {
     0,
   );
 
-  // 🎯 ডিসকাউন্ট এবং কুপন ক্যালকুলেশন লজিক যুক্ত করা হলো
-  const couponDiscount = Number(selectedOrderDetails?.couponDiscount || selectedOrderDetails?.discountAmount || selectedOrderDetails?.discount || 0);
-  const pointsDiscount = Number(selectedOrderDetails?.pointsToRedeem || selectedOrderDetails?.pointsDiscount || 0);
-  const totalDiscount = couponDiscount + pointsDiscount;
-
   const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
-  const grandTotal = Math.max(0, subTotal - totalDiscount + deliveryCharge + currentAdjustment);
+  const grandTotal = subTotal + deliveryCharge + currentAdjustment;
 
   return (
     <div className="w-full space-y-6">
@@ -1112,23 +1107,6 @@ export const AdminOrders = () => {
                       <span>Sub Total (Including Tax):</span>
                       <span>৳{subTotal.toFixed(2)}</span>
                     </div>
-
-                    {/* 🎯 কুপন ডিসকাউন্ট থাকলে ইনভয়েসে রেন্ডার হবে */}
-                    {couponDiscount > 0 && (
-                      <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-600 font-semibold">
-                        <span>Coupon Discount {selectedOrderDetails?.couponCode ? `(${selectedOrderDetails?.couponCode})` : ""}:</span>
-                        <span>-৳{couponDiscount.toFixed(2)}</span>
-                      </div>
-                    )}
-
-                    {/* 🎯 পয়েন্ট ডিসকাউন্ট থাকলে ইনভয়েসে রেন্ডার হবে */}
-                    {pointsDiscount > 0 && (
-                      <div className="flex justify-between py-1 border-b border-neutral-200 text-amber-600 font-semibold">
-                        <span>Points Discount:</span>
-                        <span>-৳{pointsDiscount.toFixed(2)}</span>
-                      </div>
-                    )}
-
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Service Charge:</span>
                       <span className="font-medium">0.00</span>
@@ -1263,3 +1241,6 @@ export const AdminOrders = () => {
 };
 
 export default AdminOrders;
+
+
+// // sajib back to previous

@@ -332,13 +332,8 @@ export const Checkout = () => {
       const orderData = {
         items: cart.map((item) => ({
           id: item.id,
-          name: item.name,
-          price: item.price,
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
-          // 🎯 অফার টাইপ এবং অরিজিনাল প্রাইস যুক্ত করা হলো[cite: 7]
-          offerType: item.offerType || null,
-          originalPrice: item.originalPrice || item.price,
         })),
         regionId,
         couponCode: appliedCoupon?.code || '',
@@ -421,7 +416,7 @@ export const Checkout = () => {
   // ── Empty / loading states ──────────────────────────────────────────────
   if (isAuthLoaded && cart.length === 0) {
     return (
-      <div className="site-container py-24 text-center">
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
         <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-5">
           <ShoppingBag className="w-8 h-8 text-neutral-400" />
         </div>
@@ -440,8 +435,7 @@ export const Checkout = () => {
   );
 
   return (
-    /* 🎯 Global site-container class applied matching navbar and footer */
-    <div className="site-container py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">Checkout</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Review your order and confirm delivery details.</p>
@@ -566,6 +560,7 @@ export const Checkout = () => {
             {/* 🎯 Totals Section in Checkout with Savings Badge */}
             <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-1.5 text-sm">
               
+              {/* মোট সেভিংস থাকলে Green Badge দিয়ে দেখানো হবে */}
               {totalSavings > 0 && (
                 <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-2">
                   <span className="flex items-center gap-1.5">
@@ -896,3 +891,4 @@ export const Checkout = () => {
 };
 
 export default Checkout;
+// sajib back to previous
