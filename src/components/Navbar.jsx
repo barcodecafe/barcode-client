@@ -113,8 +113,8 @@ export const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md transition-all duration-300 h-14">
-      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] বসানো হয়েছে */}
-      <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-full">
+      {/* 🎯 index.css-er custom @utility site-container use kora hoyeche */}
+      <div className="site-container h-full">
         <div className="flex items-center justify-between h-full gap-2 xl:gap-4">
 
           {/* Logo */}
