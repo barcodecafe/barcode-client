@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -31,22 +31,6 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getAllOrders, getActiveOrdersForUser } from '../services/ordersService';
 import { getAllFoods, hasFoodDiscount, applyFoodDiscount } from '../services/foodsService';
-
-// ---------------------------------------------------------------------------
-// Profile.jsx — Customer Dashboard
-//
-// A professional, self-contained account area rendered entirely on /profile
-// via internal section state (no extra routes). Sections:
-//   Overview · My Orders · Payments · Favorites · Settings
-//
-// Data sources (real services only — nothing fabricated):
-//   • orders    → getAllOrders()  (server scopes to the logged-in user; falls
-//                 back to getActiveOrdersForUser on failure)
-//   • favorites → useFavorites() context + getAllFoods() to resolve dishes
-//   • profile   → useAuth().user
-// Anything without a backend yet (reward points, profile editing) renders a
-// clean placeholder / "coming soon" state instead of faking success.
-// ---------------------------------------------------------------------------
 
 const SECTIONS = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -98,10 +82,6 @@ const paymentMethodLabel = (method) => {
   }
 };
 
-// Display-only derivation from order state — no invented data.
-// A cash order becomes 'Paid' when the admin confirms the rider handed the money
-// over; until that existed, nothing ever marked one paid and this page showed
-// ৳0.00 paid no matter how many orders a customer had received.
 const derivePaymentStatus = (order) => {
   if (order.paymentStatus) return order.paymentStatus;
   if (order.status === 'Rejected') return 'Cancelled';
@@ -109,8 +89,6 @@ const derivePaymentStatus = (order) => {
   return 'Pending';
 };
 
-// "Pending" reads as "we're waiting on you" — for a cash order nothing is owed
-// until the food arrives, so say that instead.
 const paymentStatusLabel = (order) => {
   const status = derivePaymentStatus(order);
   if (status !== 'Pending') return status;
@@ -127,8 +105,6 @@ const getPaymentStatusColor = (status) => {
     default: return 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20';
   }
 };
-
-// ── Small reusable pieces ───────────────────────────────────────────────────
 
 const StatTile = ({ icon: Icon, label, value, hint, delay = 0 }) => (
   <motion.div
@@ -178,8 +154,6 @@ const Card = ({ children, className = '' }) => (
     {children}
   </div>
 );
-
-// ── Order card (used in Overview + My Orders) ───────────────────────────────
 
 const OrderCard = ({ order, expanded, onToggle }) => {
   const active = isActive(order.status);
@@ -305,27 +279,31 @@ const OrderCard = ({ order, expanded, onToggle }) => {
   );
 };
 
-// ── Main component ──────────────────────────────────────────────────────────
-
 export const Profile = () => {
   const { user, logout, isAuthLoaded, updateProfile } = useAuth();
   const { favoriteIds, toggleFavorite, isFavoritesLoaded } = useFavorites();
   const navigate = useNavigate();
 
-  const [activeSection, setActiveSection] = useState('overview');
+  // 🎯 Search Params দিয়ে ডায়নামিক ট্যাব হ্যান্ডলিং (?tab=orders)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  const [activeSection, setActiveSection] = useState(
+    tabParam && ['overview', 'orders', 'payments', 'favorites', 'settings'].includes(tabParam)
+      ? tabParam
+      : 'overview'
+  );
+
   const [orders, setOrders] = useState([]);
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  // Settings form — persisted via PATCH /api/users/me
   const [form, setForm] = useState({ name: '', phone: '', pickArea: '', address: '' });
-  const [settingsNotice, setSettingsNotice] = useState(null); // { ok, text } | null
+  const [settingsNotice, setSettingsNotice] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to hydrate before redirecting — avoids a flash redirect to
-    // /login on direct navigation / refresh before getCurrentUser() resolves.
     if (isAuthLoaded && !user) {
       navigate('/login', { replace: true });
       return;
@@ -340,13 +318,18 @@ export const Profile = () => {
     }
   }, [user, isAuthLoaded, navigate]);
 
+  // URL পরিবর্তন হলেও যেন ট্যাব স্যুইচ হয়
+  useEffect(() => {
+    if (tabParam && ['overview', 'orders', 'payments', 'favorites', 'settings'].includes(tabParam)) {
+      setActiveSection(tabParam);
+    }
+  }, [tabParam]);
+
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      // Full order history: the server scopes /orders to the logged-in user.
-      // Fall back to the active-orders endpoint (same scoping) if it fails.
       getAllOrders()
         .catch(() => getActiveOrdersForUser(user.id))
         .catch(() => []),
@@ -394,6 +377,11 @@ export const Profile = () => {
 
   const toggleOrder = (id) => setExpandedOrderId((cur) => (cur === id ? null : id));
 
+  const handleTabChange = (key) => {
+    setActiveSection(key);
+    setSearchParams(key === 'overview' ? {} : { tab: key });
+  };
+
   const handleSettingsSubmit = async (e) => {
     e.preventDefault();
     setSavingProfile(true);
@@ -428,8 +416,6 @@ export const Profile = () => {
       <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
-
-  // ── Section renderers ─────────────────────────────────────────────────────
 
   const renderOverview = () => {
     const active = sortedOrders.filter((o) => isActive(o.status));
@@ -487,7 +473,7 @@ export const Profile = () => {
             </div>
             {orders.length > 0 && (
               <button
-                onClick={() => setActiveSection('orders')}
+                onClick={() => handleTabChange('orders')}
                 className="flex items-center gap-1 text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors"
               >
                 View all
@@ -563,8 +549,6 @@ export const Profile = () => {
     const pending = orders
       .filter((o) => derivePaymentStatus(o) === 'Pending')
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
-    // Failed and cancelled payments belong to neither tile above, so without
-    // this they vanished from the summary entirely.
     const failedOrders = orders.filter((o) =>
       ['Failed', 'Cancelled'].includes(derivePaymentStatus(o))
     );
@@ -857,78 +841,79 @@ export const Profile = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      {/* Page header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-4"
-      >
-        <div className="w-16 h-16 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-black text-2xl border border-primary-500/25 shadow-sm shrink-0">
-          {(user.name || 'U').charAt(0).toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
-            Welcome back, {firstName}!
-          </h1>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-              <Mail className="w-3.5 h-3.5" />
-              {user.email}
-            </span>
-            <span className="text-[10px] capitalize px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-semibold text-neutral-500 dark:text-neutral-400">
-              {user.role || 'user'}
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-red-500 hover:border-red-500/30 font-semibold text-xs active:scale-95 transition-all shrink-0"
+    <div className="min-h-[calc(100vh-3.5rem)] bg-neutral-50/50 dark:bg-neutral-950/50 transition-colors duration-300">
+      {/* 🎯 max-w-7xl এবং px-4 sm:px-6 lg:px-8 ব্যবহার করা হয়েছে যা Navbar-এর সাথে ১০০% মিলবে */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Page header */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-4"
         >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-        {/* Sidebar / tab nav */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <Card className="p-2">
-            <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible scrollbar-none">
-              {SECTIONS.map((s) => {
-                const active = activeSection === s.key;
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => setActiveSection(s.key)}
-                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shrink-0 lg:w-full ${
-                      active
-                        ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-                    }`}
-                  >
-                    <s.icon className="w-4 h-4 shrink-0" />
-                    {s.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </Card>
-        </div>
-
-        {/* Section content — keyed motion.div re-animates on switch. (No
-            AnimatePresence mode="wait" so a throttled tab can't get stuck
-            waiting on an exit animation that never completes.) */}
-        <div className="min-w-0">
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+          <div className="w-16 h-16 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-black text-2xl border border-primary-500/25 shadow-sm shrink-0">
+            {(user.name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
+              Welcome back, {firstName}!
+            </h1>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                <Mail className="w-3.5 h-3.5" />
+                {user.email}
+              </span>
+              <span className="text-[10px] capitalize px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-semibold text-neutral-500 dark:text-neutral-400">
+                {user.role || 'user'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-red-500 hover:border-red-500/30 font-semibold text-xs active:scale-95 transition-all shrink-0"
           >
-            {sectionContent[activeSection]()}
-          </motion.div>
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+          {/* Sidebar / tab nav */}
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <Card className="p-2">
+              <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible scrollbar-none">
+                {SECTIONS.map((s) => {
+                  const active = activeSection === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => handleTabChange(s.key)}
+                      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shrink-0 lg:w-full ${
+                        active
+                          ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                          : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
+                      }`}
+                    >
+                      <s.icon className="w-4 h-4 shrink-0" />
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </Card>
+          </div>
+
+          {/* Section content */}
+          <div className="min-w-0">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              {sectionContent[activeSection]()}
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>
