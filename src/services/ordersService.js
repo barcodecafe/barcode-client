@@ -45,6 +45,9 @@ export async function createOrder(orderData) {
       id: i.id,
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
+      // 🎯 অফার টাইপ এবং অরিজিনাল প্রাইস ব্যাকএন্ডে পাঠানোর জন্য যুক্ত করা হলো
+      offerType: i.offerType || null,
+      originalPrice: i.originalPrice || i.price,
     })),
     regionId: orderData.regionId, // ordering is region-based now
     couponCode: orderData.couponCode || '',
