@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Printer, RefreshCw } from 'lucide-react';
-import { recheckPayment } from '../services/paymentsService';
+import { recheckPayment } from '../../services/paymentsService';
 import toast from 'react-hot-toast';
 
 const getOfferText = (offerType) => {
