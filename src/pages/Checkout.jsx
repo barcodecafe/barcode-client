@@ -176,7 +176,7 @@ export const Checkout = () => {
     } catch (err) {
       setCouponError(err.message);
       setAppliedCoupon(null);
-    } fontally {
+    } finally {
       setCouponLoading(false);
     }
   }, [cartTotal, phone, user, searchParams]);
@@ -435,7 +435,7 @@ export const Checkout = () => {
   );
 
   return (
-    /* 🎯 Global site-container class applied */
+    /* 🎯 Global site-container class applied matching navbar and footer */
     <div className="site-container py-8">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">Checkout</h1>
@@ -561,7 +561,6 @@ export const Checkout = () => {
             {/* 🎯 Totals Section in Checkout with Savings Badge */}
             <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-1.5 text-sm">
               
-              {/* মোট সেভিংস থাকলে Green Badge দিয়ে দেখানো হবে */}
               {totalSavings > 0 && (
                 <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-bold mb-2">
                   <span className="flex items-center gap-1.5">
