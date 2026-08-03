@@ -276,8 +276,8 @@ export const Home = () => {
       </section>
 
       {/* 2. OUR BRANCHES SECTION */}
-      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
-      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
+      {/* 🎯 Padding standard (px-4 sm:px-6 lg:px-8) set kora hoyeche */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-0 sm:pt-5 sm:pb-0">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
           <div className="flex-1 flex justify-start">
             <Link
@@ -310,14 +310,14 @@ export const Home = () => {
         </div>
 
         {/* Mobile View: Carousel */}
-        <div className="sm:hidden -mx-2">
+        <div className="sm:hidden -mx-4">
           {previewBranches.length > 0 && (
             <Swiper
               modules={[Pagination]}
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-2 !pb-8"
+              className="!px-4 !pb-8"
             >
               {previewBranches.map((branch) => (
                 <SwiperSlide key={branch.id}>
@@ -372,8 +372,8 @@ export const Home = () => {
       </section>
 
       {/* 3. POPULAR FOODS SECTION (OUR BESTSELLERS) */}
-      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
-      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-0 sm:px-4 sm:pt-10 sm:pb-0 lg:px-8">
+      {/* 🎯 Padding standard (px-4 sm:px-6 lg:px-8) set kora hoyeche */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-0 sm:pt-10 sm:pb-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
@@ -415,7 +415,7 @@ export const Home = () => {
         </div>
 
         {/* Mobile View: Swiper Slider */}
-        <div className="sm:hidden -mx-2">
+        <div className="sm:hidden -mx-4">
           {previewPopularFoods.length > 0 && (
             <Swiper
               key={activeSort}
@@ -423,7 +423,7 @@ export const Home = () => {
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-2 !pb-8"
+              className="!px-4 !pb-8"
             >
               {previewPopularFoods.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -504,8 +504,8 @@ export const Home = () => {
       </section>
 
       {/* 4. FEATURED MENU SECTION */}
-      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
-      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+      {/* 🎯 Padding standard (px-4 sm:px-6 lg:px-8) set kora hoyeche */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 sm:pt-10 sm:pb-12">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
@@ -537,13 +537,13 @@ export const Home = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Slider */}
-            <div className="sm:hidden -mx-2">
+            <div className="sm:hidden -mx-4">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!px-4 !pb-8"
               >
                 {previewFeaturedMenu.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -622,9 +622,9 @@ export const Home = () => {
       </section>
 
       {/* 5. OUR BRANDS SECTION */}
-      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
+      {/* 🎯 Padding standard (px-4 sm:px-6 lg:px-8) set kora hoyeche */}
       {brands.length > 0 && (
-        <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 sm:pt-10 sm:pb-12">
           <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
               Our Family of Brands
@@ -647,14 +647,14 @@ export const Home = () => {
           </div>
 
           {/* Mobile View: Swiper Slider */}
-          <div className="sm:hidden -mx-2">
+          <div className="sm:hidden -mx-4">
             {previewBrands.length > 0 && (
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!px-4 !pb-8"
               >
                 {previewBrands.map((brand) => (
                   <SwiperSlide key={brand.id}>
@@ -812,5 +812,3 @@ const BranchCard = memo(({ branch, variants }) => {
 BranchCard.displayName = "BranchCard";
 
 export default Home;
-
-// before ultara wide
