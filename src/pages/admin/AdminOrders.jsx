@@ -14,11 +14,6 @@ import {
   BellRing,
   Printer,
   Gift,
-  Clock,
-  ShieldAlert,
-  CheckCircle2,
-  TrendingUp,
-  Filter,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -365,6 +360,14 @@ export const AdminOrders = () => {
     }, 500);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
@@ -470,54 +473,17 @@ export const AdminOrders = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // 📊 ড্যাশবোর্ড কার্ডের জন্য অবিকল স্ট্যাটিস্টিকস
-  const activeOrdersCount = orders.filter(
-    (o) =>
-      !["DELIVERED", "REJECTED"].includes(
-        String(o.status || "").toUpperCase(),
-      ),
-  ).length;
-
-  const pendingAcceptCount = orders.filter((o) => {
-    const st = String(o.status || "").toUpperCase();
-    return (
-      st === "PENDING" ||
-      st === "PLACED" ||
-      st === "AWAITING PAYMENT" ||
-      st === "AWAITING_PAYMENT" ||
-      !o.status
-    );
-  }).length;
-
-  const deliveredCount = orders.filter(
-    (o) => String(o.status || "").toUpperCase() === "DELIVERED",
-  ).length;
-
-  const totalFoodDelivered = orders
-    .filter((o) => String(o.status || "").toUpperCase() === "DELIVERED")
-    .reduce((sum, o) => sum + Number(o.total || 0), 0);
-
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + Number(o.total || 0),
-    0,
-  );
-
   const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
   const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
+
   const orderItems =
     selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
+
   const subTotal = orderItems.reduce(
     (sum, item) => sum + getItemPayableTotal(item),
     0,
   );
+
   const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
   const grandTotal = subTotal + deliveryCharge + currentAdjustment;
 
@@ -525,316 +491,250 @@ export const AdminOrders = () => {
     <div className="w-full space-y-6">
       <Toaster />
 
-      {/* 🚀 1. Rider Dashboard Overview Title */}
-      <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
-          Dashboard Overview
-        </h1>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Real-time snapshot of your active deliveries and income metrics.
-        </p>
-      </div>
-
-      {/* 🗓️ Filter Performance Bar */}
-      <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2 text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          <Filter className="w-4 h-4 text-primary-500" />
-          <span>Filter Earnings & Performance:</span>
-        </div>
-        <select className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold text-neutral-700 dark:text-neutral-300 focus:outline-none">
-          <option>Daily (Today)</option>
-          <option>Weekly</option>
-          <option>Monthly</option>
-        </select>
-      </div>
-
-      {/* 📊 2. Stat Cards Grid (Exactly like the Rider Panel UI image) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {/* Active Orders */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-neutral-800 dark:text-white">
-              {activeOrdersCount}
-            </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Active Orders
-            </div>
-          </div>
-        </div>
-
-        {/* Pending Accept */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-neutral-800 dark:text-white">
-              {pendingAcceptCount}
-            </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Pending Accept
-            </div>
-          </div>
-        </div>
-
-        {/* Delivered (Daily) */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 flex items-center gap-3.5 shadow-xs">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-neutral-800 dark:text-white">
-              {deliveredCount}
-            </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Delivered (Daily)
-            </div>
-          </div>
-        </div>
-
-        {/* Food Delivered Total */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 flex items-center gap-3.5 border-l-4 border-l-indigo-500 shadow-xs">
-          <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500">
-            <Utensils className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-neutral-800 dark:text-white">
-              ৳{totalFoodDelivered.toFixed(2)}
-            </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Food Delivered
-            </div>
-          </div>
-        </div>
-
-        {/* Total Revenue */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 flex items-center gap-3.5 border-l-4 border-l-rose-500 shadow-xs">
-          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-500">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-neutral-800 dark:text-white">
-              ৳{totalRevenue.toFixed(2)}
-            </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Total Revenue
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+            Orders & Live Chat
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Monitor incoming food deliveries, update delivery stages, and chat with customers/riders.
+          </p>
         </div>
       </div>
 
-      {/* 📦 3. Assigned Orders Management Banner */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500">
-              <Utensils className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base text-neutral-800 dark:text-white">
-                Assigned Orders Management
-              </h2>
-              <p className="text-xs text-neutral-400">
-                You have {activeOrdersCount} active orders waiting for action.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="w-full flex flex-col gap-6">
+        {/* Table List Container */}
+        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
+          <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <table className="w-full text-xs text-left border-collapse table-auto">
+              <thead>
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
+                  <th className="px-2.5 py-3.5">Order ID</th>
+                  <th className="px-2.5 py-3.5">Customer</th>
+                  <th className="px-2.5 py-3.5">Address</th>
+                  <th className="px-2.5 py-3.5">Total Amount</th>
+                  <th className="px-2.5 py-3.5">Order Action</th>
+                  <th className="px-2.5 py-3.5">Delivery Status</th>
+                  <th className="px-2.5 py-3.5">Assigned Rider</th>
+                  <th className="px-2.5 py-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((ord) => {
+                  const ordId = ord.id || ord._id;
+                  const currentStatus = String(ord.status || "").toUpperCase();
 
-        {/* 🎴 Order Cards Grid View (No Table!) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {orders.map((ord, index) => {
-            const ordId = ord.id || ord._id;
-            const currentStatus = String(ord.status || "").toUpperCase();
+                  const isPendingUnhandled =
+                    currentStatus === "PLACED" ||
+                    currentStatus === "PENDING" ||
+                    currentStatus === "AWAITING PAYMENT" ||
+                    currentStatus === "AWAITING_PAYMENT" ||
+                    !ord.status;
 
-            const isPendingUnhandled =
-              currentStatus === "PLACED" ||
-              currentStatus === "PENDING" ||
-              currentStatus === "AWAITING PAYMENT" ||
-              currentStatus === "AWAITING_PAYMENT" ||
-              !ord.status;
+                  const isRejected = currentStatus === "REJECTED";
+                  const badge = getPaymentBadge(ord);
 
-            const isRejected = currentStatus === "REJECTED";
-            const badge = getPaymentBadge(ord);
-
-            return (
-              <div
-                key={ordId}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xs hover:border-primary-500/40 transition-all flex flex-col justify-between"
-              >
-                {/* Header Row inside Card */}
-                <div className="flex items-start justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 font-extrabold text-xs text-neutral-500 dark:text-neutral-400">
-                      #{index + 1}
-                    </span>
-                    <div>
-                      <button
+                  return (
+                    <tr
+                      key={ordId}
+                      className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
+                    >
+                      {/* 🎯 Order ID Column — ট্রাঙ্কেট ফর্মে দেখাবে (যেমন: 6A6D...C7F90) */}
+                      <td
                         onClick={() => setSelectedOrderDetails(ord)}
-                        className="font-bold text-primary-500 hover:underline text-xs tracking-wider uppercase block text-left"
+                        className="px-2.5 py-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                        title={ordId}
                       >
                         {formatShortOrderId(ordId)}
-                      </button>
-                      {badge && (
-                        <span
-                          className={`inline-block mt-0.5 px-1.5 py-0.2 rounded border text-[9px] uppercase font-bold ${badge.tone}`}
-                        >
-                          {badge.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-base font-extrabold text-primary-500">
-                      ৳{ord.total?.toFixed(2)}
-                    </div>
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide mt-0.5 ${getStatusColor(
-                        ord.status,
-                      )}`}
-                    >
-                      {ord.status || "PLACED"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Customer Details */}
-                <div className="space-y-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-                  <div className="flex items-center gap-1.5 font-bold text-neutral-850 dark:text-white">
-                    <User className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>{ord.user?.name || "Guest Customer"}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-neutral-400">
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>{ord.user?.phone || "N/A"}</span>
-                  </div>
-                  <div className="flex items-start gap-1.5 text-neutral-500 dark:text-neutral-400">
-                    <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    <span className="line-clamp-2">
-                      {ord.user?.address || "No Address"}
-                      {ord.user?.pickArea ? ` (${ord.user?.pickArea})` : ""}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Status and Action Buttons */}
-                <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase text-neutral-400">
-                      Rider:
-                    </span>
-                    <select
-                      value={ord.riderId || ""}
-                      disabled={
-                        isPendingUnhandled ||
-                        isRejected ||
-                        ord.status === "Delivered"
-                      }
-                      onChange={(e) => handleAssignRider(ordId, e.target.value)}
-                      className="px-2 py-1 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold focus:outline-none max-w-[170px]"
-                    >
-                      <option value="">-- Assign Rider --</option>
-                      {riders.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name} ({r.vehicle})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    {isPendingUnhandled ? (
-                      <div className="flex gap-1.5 w-full">
-                        <button
-                          onClick={() => handleStatusChange(ordId, "Accepted")}
-                          className="flex-1 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs uppercase flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" /> Accept
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(ordId, "Rejected")}
-                          className="flex-1 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" /> Reject
-                        </button>
-                      </div>
-                    ) : isRejected ? (
-                      <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[10px] uppercase tracking-wide">
-                        Rejected
-                      </span>
-                    ) : (
-                      <div className="flex-1">
-                        <select
-                          value={
-                            ord.riderAcceptStatus === "accepted" &&
-                            (ord.status === "Accepted" ||
-                              ord.status === "ACCEPTED")
-                              ? "Preparing"
-                              : ord.status
-                          }
-                          disabled={
-                            !ord.riderId ||
-                            ord.riderAcceptStatus !== "accepted"
-                          }
-                          onChange={(e) =>
-                            handleStatusChange(ordId, e.target.value)
-                          }
-                          className={`w-full px-2 py-1 rounded-xl border font-bold text-xs uppercase focus:outline-none ${
-                            !ord.riderId ||
-                            ord.riderAcceptStatus !== "accepted"
-                              ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
-                              : `${getStatusColor(
-                                  ord.riderAcceptStatus === "accepted" &&
-                                    (ord.status === "Accepted" ||
-                                      ord.status === "ACCEPTED")
-                                    ? "Preparing"
-                                    : ord.status,
-                                )} cursor-pointer`
-                          }`}
-                        >
-                          <option value="Accepted">Accepted</option>
-                          <option value="Preparing">Preparing</option>
-                          <option value="Ready to Pick">Ready to Pick</option>
-                          <option value="Out for Delivery">
-                            Out for Delivery
-                          </option>
-                          <option value="Delivered">Delivered</option>
-                        </select>
-                        {(!ord.riderId ||
-                          ord.riderAcceptStatus !== "accepted") && (
-                          <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
-                            {!ord.riderId
-                              ? "Assign Rider First"
-                              : "Awaiting Rider Accept"}
+                        {badge && (
+                          <span
+                            className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
+                          >
+                            {badge.label}
                           </span>
                         )}
-                      </div>
-                    )}
+                      </td>
 
-                    <button
-                      onClick={() => setActiveChatOrderId(ordId)}
-                      className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 cursor-pointer ${
-                        activeChatOrderId === ordId
-                          ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                          : ""
-                      }`}
-                      title="Open Live Chat Console"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {/* Customer Column */}
+                      <td className="px-2.5 py-3">
+                        <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px]">
+                          {ord.user?.name}
+                        </span>
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          {ord.user?.phone}
+                        </span>
+                      </td>
+
+                      {/* Address Column — নির্দিষ্ট উইডথ শেষে ... চলে আসবে */}
+                      <td className="px-2.5 py-3">
+                        <span
+                          className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[120px]"
+                          title={ord.user?.address}
+                        >
+                          {ord.user?.address}
+                        </span>
+                        <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[120px]">
+                          {ord.user?.pickArea}
+                        </span>
+                      </td>
+
+                      {/* Total Amount Column */}
+                      <td className="px-2.5 py-3 font-bold text-primary-500 whitespace-nowrap">
+                        ৳{ord.total?.toFixed(2)}
+                      </td>
+
+                      {/* Order Action Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
+                        {isPendingUnhandled ? (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() =>
+                                handleStatusChange(ordId, "Accepted")
+                              }
+                              className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                              title="Accept Order"
+                            >
+                              <Check className="w-3 h-3 stroke-[3]" /> Accept
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleStatusChange(ordId, "Rejected")
+                              }
+                              className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                              title="Reject Order"
+                            >
+                              <X className="w-3 h-3 stroke-[3]" /> Reject
+                            </button>
+                          </div>
+                        ) : isRejected ? (
+                          <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
+                            Rejected
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
+                            Accepted
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Delivery Status Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
+                        {isPendingUnhandled ? (
+                          <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            Pending
+                          </span>
+                        ) : isRejected ? (
+                          <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            Cancelled
+                          </span>
+                        ) : (
+                          <div>
+                            <select
+                              value={
+                                ord.riderAcceptStatus === "accepted" &&
+                                (ord.status === "Accepted" ||
+                                  ord.status === "ACCEPTED")
+                                  ? "Preparing"
+                                  : ord.status
+                              }
+                              disabled={
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
+                              }
+                              onChange={(e) =>
+                                handleStatusChange(ordId, e.target.value)
+                              }
+                              className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                                !ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted"
+                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
+                                  : `${getStatusColor(
+                                      ord.riderAcceptStatus === "accepted" &&
+                                        (ord.status === "Accepted" ||
+                                          ord.status === "ACCEPTED")
+                                        ? "Preparing"
+                                        : ord.status,
+                                    )} cursor-pointer`
+                              }`}
+                            >
+                              <option value="Accepted">Accepted</option>
+                              <option value="Preparing">Preparing</option>
+                              <option value="Ready to Pick">
+                                Ready to Pick
+                              </option>
+                              <option value="Out for Delivery">
+                                Out for Delivery
+                              </option>
+                              <option value="Delivered">Delivered</option>
+                            </select>
+
+                            {(!ord.riderId ||
+                              ord.riderAcceptStatus !== "accepted") && (
+                              <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
+                                {!ord.riderId
+                                  ? "Assign Rider First"
+                                  : "Awaiting Rider Accept"}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Assigned Rider Column */}
+                      <td className="px-2.5 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={ord.riderId || ""}
+                            disabled={
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
+                            }
+                            onChange={(e) =>
+                              handleAssignRider(ordId, e.target.value)
+                            }
+                            className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] ${
+                              isPendingUnhandled ||
+                              isRejected ||
+                              ord.status === "Delivered"
+                                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                                : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"
+                            }`}
+                          >
+                            <option value="">-- Assign Rider --</option>
+                            {riders.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name} ({r.vehicle})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
+
+                      {/* Actions Column */}
+                      <td className="px-2.5 py-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setActiveChatOrderId(ordId)}
+                          className={`p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                            activeChatOrderId === ordId
+                              ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                              : ""
+                          }`}
+                          title="Open Live Chat Console"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* 💬 Live Chat Modal Popup (Original Logic Intact) */}
+      {/* 💬 Live Chat Modal Popup */}
       <AnimatePresence>
         {activeChatOrderId && currentChat && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
@@ -944,7 +844,7 @@ export const AdminOrders = () => {
         )}
       </AnimatePresence>
 
-      {/* Order Details & Official Barcode Invoice Modal (Original Logic Intact) */}
+      {/* Order Details & Official Barcode Invoice Modal */}
       <AnimatePresence>
         {selectedOrderDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
@@ -1341,3 +1241,6 @@ export const AdminOrders = () => {
 };
 
 export default AdminOrders;
+
+
+// // sajib back to previousbbb
