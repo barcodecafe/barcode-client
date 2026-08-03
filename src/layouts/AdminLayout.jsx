@@ -72,7 +72,7 @@ export const AdminLayout = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // ⚡ যেকোনো রেসপন্স ফরম্যাট থেকে নিখুঁতভাবে কাউন্ট ডাটা এক্সট্র্যাক্ট করার সেফ ফাংশন
+  // ⚡ ১০০% ব্যাকএন্ড ডিপেন্ডেন্ট কাউন্ট এপিআই কল
   const fetchPendingOrders = async () => {
     try {
       const res = await getPendingOrderCount();
@@ -87,7 +87,7 @@ export const AdminLayout = () => {
 
       setPendingCount(Number(rawCount) || 0);
     } catch (err) {
-      console.error("Failed to fetch pending count:", err);
+      console.error("Failed to fetch pending count from backend:", err);
     }
   };
 
@@ -160,7 +160,7 @@ export const AdminLayout = () => {
         }
       }
 
-      // সরাসরি ব্যাকএন্ড থেকে তাজা কাউন্ট রিফ্রেশ
+      // ব্যাকএন্ড থেকে কাউন্ট রিফ্রেশ
       fetchPendingOrders();
     };
 
@@ -451,7 +451,6 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 🎯 ল্যাপটপ এবং বড় মনিটরের জন্য ফুল উইডথ কন্টেইনার (কোনো স্ক্রলবার সমস্যা থাকবে না) */}
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
