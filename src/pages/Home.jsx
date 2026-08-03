@@ -34,9 +34,6 @@ import "swiper/css/effect-fade";
 const PREVIEW_COUNT = 5;
 
 export const Home = () => {
-  // ---------------------------------------------------------------------
-  // States & Hooks
-  // ---------------------------------------------------------------------
   const [brands, setBrands] = useState([]);
   const [previewBranches, setPreviewBranches] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
@@ -45,14 +42,12 @@ export const Home = () => {
   const [allFoods, setAllFoods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Bestsellers, Featured Menu & Brands toggles
   const [showAllPopular, setShowAllPopular] = useState(false);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [showAllBrands, setShowAllBrands] = useState(false);
 
   const [activeSort, setActiveSort] = useState("popular");
 
-  // 🚀 ১. সমান্তরাল ডাটা লোডিং (সুপারফাস্ট লোডিং ও এডমিন ড্র্যাগ অর্ডার ধরে রাখা)
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -65,18 +60,15 @@ export const Home = () => {
     ]).then(([brandsData, branchesData, slidesData, foodsData]) => {
       if (!isMounted) return;
 
-      // 🎯 এডমিনের সেট করা ব্র্যান্ড অর্ডার বজায় রাখা
       const sortedBrands = Array.isArray(brandsData)
         ? [...brandsData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
         : [];
       setBrands(sortedBrands);
       
-      // 🎯 এডমিনের সেট করা ব্রাঞ্চ ড্র্যাগ অর্ডার বজায় রাখা
       const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
       setAllBranches(sortedBranches);
       setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
 
-      // 🎯 স্লাইড ও ফুড ডাটা সেট
       setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
       setAllFoods(Array.isArray(foodsData) ? foodsData : []);
       setIsLoading(false);
@@ -94,7 +86,6 @@ export const Home = () => {
     { id: "rating", label: "Highest Rated" },
   ];
 
-  // 💡 Admin Schema অনুযায়ী টাইমার হিসাব সহ নিখুঁত Price হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
@@ -122,15 +113,9 @@ export const Home = () => {
     return applyFoodDiscount(basePrice, food);
   };
 
-  // ---------------------------------------------------------------------
-  // Brands Preview Logic
-  // ---------------------------------------------------------------------
   const previewBrands = useMemo(() => brands.slice(0, PREVIEW_COUNT), [brands]);
   const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
 
-  // ---------------------------------------------------------------------
-  // Bestsellers (Popular Foods) Logic
-  // ---------------------------------------------------------------------
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     
@@ -144,7 +129,6 @@ export const Home = () => {
       if (activeSort === "price-high") return priceB - priceA;
       if (activeSort === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
 
-      // 🎯 এডমিন যেভাবে ডিশগুলোকে ড্র্যাগ এন্ড ড্রপ করে সাজাবে সেই 'order' মানবে
       return (a.order ?? 999) - (b.order ?? 999);
     });
   }, [allFoods, activeSort]);
@@ -158,13 +142,10 @@ export const Home = () => {
     [totalPopularFoods],
   );
 
-  // ---------------------------------------------------------------------
-  // Featured Menu Logic
-  // ---------------------------------------------------------------------
   const totalFeaturedMenu = useMemo(() => {
     return allFoods
       .filter((food) => food.isAdminFeatured === true)
-      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)); // 🎯 এডমিন অর্ডারে সর্ট
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   }, [allFoods]);
 
   const previewFeaturedMenu = useMemo(
@@ -176,9 +157,6 @@ export const Home = () => {
     [totalFeaturedMenu],
   );
 
-  // ---------------------------------------------------------------------
-  // Remaining Branches Logic
-  // ---------------------------------------------------------------------
   const remainingBranches = useMemo(
     () => allBranches.slice(PREVIEW_COUNT),
     [allBranches],
@@ -298,7 +276,8 @@ export const Home = () => {
       </section>
 
       {/* 2. OUR BRANCHES SECTION */}
-      <section className="max-w-7xl mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
+      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-4 pb-0 sm:px-4 sm:pt-5 sm:pb-0 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
           <div className="flex-1 flex justify-start">
             <Link
@@ -393,7 +372,8 @@ export const Home = () => {
       </section>
 
       {/* 3. POPULAR FOODS SECTION (OUR BESTSELLERS) */}
-      <section className="max-w-7xl mx-auto px-2 pt-8 pb-0 sm:px-4 sm:pt-10 sm:pb-0 lg:px-8">
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
+      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-0 sm:px-4 sm:pt-10 sm:pb-0 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
@@ -524,7 +504,8 @@ export const Home = () => {
       </section>
 
       {/* 4. FEATURED MENU SECTION */}
-      <section className="max-w-7xl mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
+      <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
@@ -641,8 +622,9 @@ export const Home = () => {
       </section>
 
       {/* 5. OUR BRANDS SECTION */}
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] যুক্ত করা হয়েছে */}
       {brands.length > 0 && (
-        <section className="max-w-7xl mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
+        <section className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-2 pt-8 pb-8 sm:px-4 sm:pt-10 sm:pb-12 lg:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
               Our Family of Brands

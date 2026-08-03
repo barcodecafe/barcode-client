@@ -113,7 +113,8 @@ export const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md transition-all duration-300 h-14">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-full">
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] বসানো হয়েছে */}
+      <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between h-full gap-2 xl:gap-4">
 
           {/* Logo */}
@@ -188,7 +189,6 @@ export const Navbar = () => {
 
             <div className="relative" ref={userMenuRef}>
               {isAuthenticated ? (
-                /* 🎯 সার্কেল অবতার + অ্যারো এবং হভারে নাম দেখার টুলটিপ */
                 <div className="relative group">
                   <button
                     onClick={() => setIsUserDropdownOpen((v) => !v)}
@@ -205,7 +205,6 @@ export const Navbar = () => {
                     />
                   </button>
 
-                  {/* 🎯 Hover Tooltip: ইউজারের নাম দেখাবে */}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] font-semibold rounded-md whitespace-nowrap shadow-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50">
                     {user.name}
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral-900 dark:bg-neutral-100 rotate-45" />
