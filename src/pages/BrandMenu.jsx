@@ -106,7 +106,8 @@ export const BrandMenu = () => {
   if (!brand) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       <div className="mb-6">
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white flex items-center gap-2">
           <UtensilsCrossed className="w-6 h-6 text-primary-500" /> {brand.name} Menu

@@ -176,7 +176,7 @@ export const Checkout = () => {
     } catch (err) {
       setCouponError(err.message);
       setAppliedCoupon(null);
-    } finally {
+    } fontally {
       setCouponLoading(false);
     }
   }, [cartTotal, phone, user, searchParams]);
@@ -416,7 +416,7 @@ export const Checkout = () => {
   // ── Empty / loading states ──────────────────────────────────────────────
   if (isAuthLoaded && cart.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
+      <div className="site-container py-24 text-center">
         <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-5">
           <ShoppingBag className="w-8 h-8 text-neutral-400" />
         </div>
@@ -435,7 +435,8 @@ export const Checkout = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">Checkout</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Review your order and confirm delivery details.</p>

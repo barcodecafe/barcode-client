@@ -276,7 +276,7 @@ export const Home = () => {
       </section>
 
       {/* 2. OUR BRANCHES SECTION */}
-      {/* 🎯 Global site-container class applied */}
+      {/* 🎯 Clean site-container applied */}
       <section className="site-container pt-4 pb-0 sm:pt-5 sm:pb-0">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5">
           <div className="flex-1 flex justify-start">
@@ -372,7 +372,7 @@ export const Home = () => {
       </section>
 
       {/* 3. POPULAR FOODS SECTION (OUR BESTSELLERS) */}
-      {/* 🎯 Global site-container class applied */}
+      {/* 🎯 Clean site-container applied */}
       <section className="site-container pt-8 pb-0 sm:pt-10 sm:pb-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
@@ -504,7 +504,7 @@ export const Home = () => {
       </section>
 
       {/* 4. FEATURED MENU SECTION */}
-      {/* 🎯 Global site-container class applied */}
+      {/* 🎯 Clean site-container applied */}
       <section className="site-container pt-8 pb-8 sm:pt-10 sm:pb-12">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
@@ -622,7 +622,7 @@ export const Home = () => {
       </section>
 
       {/* 5. OUR BRANDS SECTION */}
-      {/* 🎯 Global site-container class applied */}
+      {/* 🎯 Clean site-container applied */}
       {brands.length > 0 && (
         <section className="site-container pt-8 pb-8 sm:pt-10 sm:pb-12">
           <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">

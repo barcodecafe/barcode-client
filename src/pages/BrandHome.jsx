@@ -70,7 +70,8 @@ export const BrandHome = () => {
 
         {/* Brand Details */}
         <div className="bg-neutral-100 dark:bg-neutral-900/80 border-b border-neutral-200/70 dark:border-neutral-800 py-8 sm:py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* 🎯 Global site-container class applied */}
+          <div className="site-container">
             <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
               {brand.name}
             </h1>
@@ -95,7 +96,8 @@ export const BrandHome = () => {
       </section>
 
       {/* Branches Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* 🎯 Global site-container class applied */}
+      <section className="site-container py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-800 dark:text-white">
             Our Branches ({branches.length})

@@ -113,7 +113,8 @@ export const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container min-h-[calc(100vh-5rem)] flex items-center justify-center py-12">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">

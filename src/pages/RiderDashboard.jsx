@@ -248,8 +248,9 @@ export const RiderDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 py-6 sm:py-8">
+      <div className="space-y-6">
         {/* Header Dashboard Banner */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">

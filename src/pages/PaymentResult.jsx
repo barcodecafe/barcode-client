@@ -68,7 +68,8 @@ export const PaymentResult = ({ variant = 'success' }) => {
   const pendingSettlement = variant === 'success' && status && !paid;
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container min-h-[calc(100vh-5rem)] flex items-center justify-center py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,7 +110,7 @@ export const PaymentResult = ({ variant = 'success' }) => {
           {orderId && (
             <Link
               to={`/order-tracking/${orderId}`}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm active:scale-95 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm active:scale-95 transition-all cursor-pointer"
             >
               Track your order <ArrowRight className="w-4 h-4" />
             </Link>
@@ -119,7 +120,7 @@ export const PaymentResult = ({ variant = 'success' }) => {
             <button
               onClick={handleRetry}
               disabled={retrying}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold text-sm hover:border-primary-500 hover:text-primary-500 transition-all disabled:opacity-60"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold text-sm hover:border-primary-500 hover:text-primary-500 transition-all disabled:opacity-60 cursor-pointer"
             >
               {retrying ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {retrying ? 'Opening gateway…' : 'Try payment again'}

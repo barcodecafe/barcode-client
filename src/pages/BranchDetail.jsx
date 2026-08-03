@@ -256,7 +256,7 @@ export const BranchDetail = () => {
 
   if (!branch) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+      <div className="site-container py-16 text-center">
         <h2 className="text-2xl font-bold mb-4 text-neutral-800 dark:text-neutral-200">Venue Not Found</h2>
         <p className="text-neutral-500 mb-6">The branch you are looking for doesn't exist or has moved.</p>
         <button
@@ -357,7 +357,7 @@ export const BranchDetail = () => {
       </section>
 
       {/* 2. BRANCH-SPECIFIC MENU GRID & INLINE CATEGORY FILTER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24 pt-16">
+      <section className="site-container pb-16 sm:pb-24 pt-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-4 border-b border-neutral-200/60 dark:border-neutral-800/60">
           <div className="relative flex items-center w-full max-w-full group">
             {categories.length > 5 && (
@@ -422,14 +422,14 @@ export const BranchDetail = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Carousel */}
-            <div className="sm:hidden -mx-2">
+            <div className="sm:hidden -mx-4">
               <Swiper
                 key={activeCategory}
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!px-4 !pb-8"
               >
                 {filteredMenu.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -477,7 +477,7 @@ export const BranchDetail = () => {
       </section>
 
       {/* 3. BRANCH INFORMATION — CARD GRID */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 relative z-10 pb-4">
+      <section className="site-container -mt-10 sm:-mt-14 relative z-10 pb-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoCard icon={<Clock className="w-5 h-5" />} label="Opening Hours" value={branch.hours} delay={0} />
           <InfoCard icon={<MapPin className="w-5 h-5" />} label="Full Address" value={branch.location} delay={0.05} />
@@ -493,7 +493,7 @@ export const BranchDetail = () => {
       </section>
 
       {/* 4. AMBIENCE / FEATURES + MAP ACTIONS */}
-      <section className="max-w-7xl mx-auto px-4 mb-6 sm:px-6 lg:px-8 py-0 pt-10 sm:py-14">
+      <section className="site-container mb-6 py-0 pt-10 sm:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}

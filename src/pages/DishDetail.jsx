@@ -36,7 +36,7 @@ import { useFavorites } from "../context/FavoritesContext";
 // 💡 Shared Global FoodCard Component
 import FoodCard from "../components/FoodCard";
 
-// Swiper styles
+// Import Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -114,7 +114,7 @@ export const DishDetail = () => {
 
   if (!food) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+      <div className="site-container min-h-[70vh] flex flex-col items-center justify-center gap-4 py-8">
         <p className="text-neutral-500 dark:text-neutral-400 font-medium">
           Dish not found.
         </p>
@@ -167,7 +167,8 @@ export const DishDetail = () => {
     .slice(0, 6);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}

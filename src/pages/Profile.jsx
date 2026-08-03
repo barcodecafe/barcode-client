@@ -842,8 +842,8 @@ export const Profile = () => {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-neutral-50/50 dark:bg-neutral-950/50 transition-colors duration-300">
-      {/* 🎯 max-w-7xl এবং px-4 sm:px-6 lg:px-8 ব্যবহার করা হয়েছে যা Navbar-এর সাথে ১০০% মিলবে */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* 🎯 Global site-container class applied */}
+      <div className="site-container py-6 sm:py-8">
         {/* Page header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

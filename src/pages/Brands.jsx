@@ -159,7 +159,8 @@ export const Brands = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-2 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       {/* BRAND HEADER & GRID */}
       <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
         <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-800 dark:text-white">

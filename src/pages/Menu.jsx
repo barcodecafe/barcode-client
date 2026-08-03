@@ -209,7 +209,8 @@ export const Menu = () => {
   };
 
   return (
-    <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="relative site-container py-8">
       {/* 💡 Standard Coupon Alert Banner (QR Code Scan Toast) */}
       {showPromoBanner && appliedPromo && (
         <motion.div

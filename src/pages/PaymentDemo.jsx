@@ -18,7 +18,8 @@ export const PaymentDemo = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container min-h-[calc(100vh-5rem)] flex items-center justify-center py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -55,19 +56,19 @@ export const PaymentDemo = () => {
           <div className="mt-7 flex flex-col gap-2.5">
             <button
               onClick={() => go('success')}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm active:scale-95 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm active:scale-95 transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4" /> Pay ৳{amount}
             </button>
             <button
               onClick={() => go('fail')}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-xs hover:border-red-400 hover:text-red-500 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-xs hover:border-red-400 hover:text-red-500 transition-all cursor-pointer"
             >
               <XCircle className="w-3.5 h-3.5" /> Simulate failure
             </button>
             <button
               onClick={() => go('cancel')}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-neutral-400 font-semibold text-xs hover:text-neutral-600 dark:hover:text-neutral-200 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-neutral-400 font-semibold text-xs hover:text-neutral-600 dark:hover:text-neutral-200 transition-all cursor-pointer"
             >
               <Ban className="w-3.5 h-3.5" /> Cancel payment
             </button>

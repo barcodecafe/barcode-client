@@ -166,7 +166,8 @@ export const SignUp = ({ defaultRole = 'user' }) => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container min-h-[calc(100vh-5rem)] flex items-center justify-center py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -161,9 +161,10 @@ export const Branches = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-2 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       {/* Filters and Search Bar Container */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-2 sm:px-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         {/* Regions Horizontal Navigation Toggle */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
           {regionTabs.map((region) => (
@@ -196,7 +197,7 @@ export const Branches = () => {
 
       {/* Main Content Showcase Section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200 mb-2 px-2 sm:px-0">
+        <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200 mb-2">
           Available Venues ({filteredBranches.length})
         </h2>
 
@@ -217,7 +218,7 @@ export const Branches = () => {
             ))}
           </div>
         ) : filteredBranches.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl mx-2 sm:mx-0">
+          <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl">
             <p className="text-neutral-500 dark:text-neutral-400 font-medium">
               No branches match your search or filter.
             </p>
@@ -225,13 +226,13 @@ export const Branches = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Carousel */}
-            <div className="sm:hidden -mx-2">
+            <div className="sm:hidden -mx-4">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!px-4 !pb-8"
               >
                 {filteredBranches.map((branch) => (
                   <SwiperSlide key={branch.id}>
@@ -255,7 +256,7 @@ export const Branches = () => {
       {/* OUR BESTSELLERS SECTION */}
       {/* ----------------------------------------------------------------- */}
       <section className="pt-12 sm:pt-16 pb-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60 px-2 sm:px-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <div className="shrink-0">
             <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
               Our Bestsellers
@@ -298,7 +299,7 @@ export const Branches = () => {
         </div>
 
         {/* Mobile View: Swiper Slider */}
-        <div className="sm:hidden -mx-2">
+        <div className="sm:hidden -mx-4">
           {previewPopularFoods.length > 0 && (
             <Swiper
               key={activeSort}
@@ -306,7 +307,7 @@ export const Branches = () => {
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-2 !pb-8"
+              className="!px-4 !pb-8"
             >
               {previewPopularFoods.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -390,7 +391,7 @@ export const Branches = () => {
       {/* FEATURED MENU SECTION */}
       {/* ----------------------------------------------------------------- */}
       <section className="pt-10 sm:pt-12 pb-8">
-        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60 px-2 sm:px-0">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
           <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
             Featured Menu
           </h2>
@@ -415,7 +416,7 @@ export const Branches = () => {
         </div>
 
         {previewFeaturedMenu.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none mx-2 sm:mx-0">
+          <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-none">
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">
               No featured items available right now.
             </p>
@@ -423,13 +424,13 @@ export const Branches = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Slider */}
-            <div className="sm:hidden -mx-2">
+            <div className="sm:hidden -mx-4">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!px-4 !pb-8"
               >
                 {previewFeaturedMenu.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -476,7 +477,7 @@ export const Branches = () => {
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
+                  exit={{ opacity: 0, height: 'auto' }}
                   transition={{ duration: 0.4 }}
                   className="overflow-hidden"
                 >

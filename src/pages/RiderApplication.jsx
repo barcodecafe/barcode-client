@@ -195,7 +195,8 @@ export const RiderApplication = () => {
   const labelCls = 'block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5';
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container max-w-3xl py-12">
       <div className="text-center mb-10">
         <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
           <Bike className="w-7 h-7 text-primary-500" />
@@ -252,7 +253,7 @@ export const RiderApplication = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -341,7 +342,7 @@ export const RiderApplication = () => {
                     <button
                       type="button"
                       onClick={() => { setPhoto(null); setPhotoPreview(null); }}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -367,7 +368,7 @@ export const RiderApplication = () => {
                     <button
                       type="button"
                       onClick={() => { setLicense(null); setLicenseName(''); }}
-                      className="mt-2 text-xs text-red-500 hover:underline"
+                      className="mt-2 text-xs text-red-500 hover:underline cursor-pointer"
                     >
                       Remove PDF
                     </button>
@@ -388,7 +389,7 @@ export const RiderApplication = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
         >
           {isSubmitting ? (
             <>
@@ -412,7 +413,7 @@ export const RiderApplication = () => {
 };
 
 const CenteredCard = ({ icon, tint, title, text, cta }) => (
-  <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+  <div className="site-container min-h-[calc(100vh-8rem)] flex items-center justify-center py-12">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -423,7 +424,7 @@ const CenteredCard = ({ icon, tint, title, text, cta }) => (
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3 leading-relaxed">{text}</p>
       <Link
         to={cta.to}
-        className="mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 font-bold text-sm text-white shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+        className="mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 font-bold text-sm text-white shadow-lg shadow-primary-500/20 active:scale-95 transition-all cursor-pointer"
       >
         {cta.label}
         <ChevronRight className="w-4 h-4" />

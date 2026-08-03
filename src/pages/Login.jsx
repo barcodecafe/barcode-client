@@ -6,12 +6,6 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage } from '../services/authService';
 
-// ---------------------------------------------------------------------------
-// Login.jsx — Dynamic role-segregated login:
-//   /login        → variant="user"   (Phone + Password)
-//   /admin/login  → variant="admin"  (Email + Password)
-//   /rider/login  → variant="rider"  (Email + Password)
-// ---------------------------------------------------------------------------
 const VARIANTS = {
   user: {
     role: 'user',
@@ -19,7 +13,6 @@ const VARIANTS = {
     badge: 'Customer',
     title: 'Welcome back',
     subtitle: 'Log in with your mobile number to pick up your favorites.',
-    home: '/',
     standalone: false,
     signupPrompt: "Don't have an account?",
     signupTo: '/signup',
@@ -31,7 +24,6 @@ const VARIANTS = {
     badge: 'Administrator',
     title: 'Admin Portal',
     subtitle: 'Sign in with your email to manage the Barcode dashboard.',
-    home: '/admin',
     standalone: true,
     signupPrompt: null,
   },
@@ -41,7 +33,6 @@ const VARIANTS = {
     badge: 'Delivery Rider',
     title: 'Rider Portal',
     subtitle: 'Sign in with your email to view and manage your deliveries.',
-    home: '/rider',
     standalone: true,
     signupPrompt: 'Want to ride with us?',
     signupTo: '/rider-application',
@@ -50,6 +41,7 @@ const VARIANTS = {
 };
 
 const LOGIN_ROUTE = { admin: '/admin/login', rider: '/rider/login', user: '/login' };
+
 const wrongDoorMessage = (role) =>
   `You signed in with ${role === 'admin' ? 'an administrator' : role === 'rider' ? 'a rider' : 'a customer'} account. Please use the ${role} login below.`;
 
@@ -61,7 +53,6 @@ export const Login = ({ variant = 'user' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Dynamic input field state (Phone for user, Email for rider/admin)
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -75,26 +66,25 @@ export const Login = ({ variant = 'user' }) => {
     setWrongDoor(null);
     setIsSubmitting(true);
 
+    const sanitizedIdentifier = identifier.trim();
+
     try {
-      // 🎯 User হলে { phone, password }, Admin/Rider হলে { email, password }
       const payload = cfg.role === 'user'
-        ? { phone: identifier.trim(), password }
-        : { email: identifier.trim(), password };
+        ? { phone: sanitizedIdentifier.replace(/\s+/g, ''), password }
+        : { email: sanitizedIdentifier.toLowerCase(), password };
 
       const loggedInUser = await login(payload);
 
-      // 💡 Role Gate Logic (ভুল পোর্টালে স্মার্ট হ্যান্ডলিং)
+      // Role Check Logic
       if (loggedInUser.role !== cfg.role) {
-        
-        // 🔄 ১. কাস্টমার পেজ (/login) দিয়ে রাইডার বা এডমিন লগইন করলে সরাসরি তাদের পোর্টালে রিডাইরেক্ট হবে
         if (variant === 'user' && (loggedInUser.role === 'rider' || loggedInUser.role === 'admin')) {
           const targetPortal = loggedInUser.role === 'rider' ? '/rider' : '/admin';
           
-          await Swal.fire({
+          Swal.fire({
             icon: 'info',
             title: 'Redirecting...',
             text: `Welcome! Redirecting you to the ${loggedInUser.role.toUpperCase()} portal.`,
-            timer: 1500,
+            timer: 1200,
             showConfirmButton: false,
           });
 
@@ -102,7 +92,6 @@ export const Login = ({ variant = 'user' }) => {
           return;
         }
 
-        // ⚠️ ২. যদি রাইডার এডমিন পোর্টালে বা এডমিন রাইডার পোর্টালে ঢুকতে চায় (Wrong Door Alert)
         await logout();
         const doorMsg = wrongDoorMessage(loggedInUser.role);
         setWrongDoor({ message: doorMsg, to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
@@ -117,25 +106,23 @@ export const Login = ({ variant = 'user' }) => {
         return;
       }
 
-      // 🎯 Success Alert Popup
-      await Swal.fire({
+      // Success Path
+      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : loggedInUser.role === 'admin' ? '/admin' : '/';
+      const redirectTo = location.state?.from || defaultHome;
+
+      Swal.fire({
         icon: 'success',
         title: 'Welcome Back!',
         text: `Logged in successfully as ${loggedInUser?.name || cfg.badge}.`,
-        timer: 1500,
+        timer: 1200,
         showConfirmButton: false,
       });
 
-      // Role ভিত্তিক হোম গন্তব্য নির্ধারণ
-      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : loggedInUser.role === 'admin' ? '/admin' : '/';
-      const redirectTo = location.state?.from || defaultHome;
-      
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const errMsg = getAuthErrorMessage(err);
       setError(errMsg);
 
-      // 🎯 Login Error Alert Popup
       Swal.fire({
         icon: 'error',
         title: 'Login Failed',
@@ -151,7 +138,7 @@ export const Login = ({ variant = 'user' }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.3 }}
       className="w-full max-w-md"
     >
       <div className="text-center mb-8">
@@ -191,7 +178,6 @@ export const Login = ({ variant = 'user' }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* User এর জন্য Phone Field, Rider & Admin এর জন্য Email Field */}
           {cfg.role === 'user' ? (
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
@@ -202,7 +188,8 @@ export const Login = ({ variant = 'user' }) => {
                 <input
                   id="phone"
                   type="tel"
-                  inputMode="numeric"
+                  inputMode="tel"
+                  autoComplete="tel"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -221,6 +208,7 @@ export const Login = ({ variant = 'user' }) => {
                 <input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -231,7 +219,6 @@ export const Login = ({ variant = 'user' }) => {
             </div>
           )}
 
-          {/* Password Field with Forgot Password Option */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -249,6 +236,7 @@ export const Login = ({ variant = 'user' }) => {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -258,7 +246,7 @@ export const Login = ({ variant = 'user' }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

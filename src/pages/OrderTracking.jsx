@@ -195,7 +195,8 @@ export const OrderTracking = () => {
   const displayId = (order?._id || order?.id || id || "").toUpperCase();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    /* 🎯 Global site-container class applied */
+    <div className="site-container py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
