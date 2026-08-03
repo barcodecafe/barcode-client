@@ -825,7 +825,7 @@ export const Profile = () => {
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 mt-5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-500 font-bold text-sm active:scale-95 transition-all"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            LogOut
           </button>
         </Card>
       </div>
@@ -873,7 +873,7 @@ export const Profile = () => {
             className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-red-500 hover:border-red-500/30 font-semibold text-xs active:scale-95 transition-all shrink-0"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            LogOut
           </button>
         </motion.div>
 
