@@ -332,8 +332,13 @@ export const Checkout = () => {
       const orderData = {
         items: cart.map((item) => ({
           id: item.id,
+          name: item.name,
+          price: item.price,
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
+          // 🎯 অফার টাইপ এবং অরিজিনাল প্রাইস যুক্ত করা হলো[cite: 7]
+          offerType: item.offerType || null,
+          originalPrice: item.originalPrice || item.price,
         })),
         regionId,
         couponCode: appliedCoupon?.code || '',
