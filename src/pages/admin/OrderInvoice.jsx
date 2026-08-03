@@ -37,14 +37,12 @@ export const OrderInvoice = ({ selectedOrderDetails, onClose, onOrderUpdated }) 
 
   const subTotal = orderItems.reduce((sum, item) => sum + getItemPayableTotal(item), 0);
   
-  // 🎯 ডিসকাউন্টের ভ্যালুগুলো বের করা হচ্ছে
-  const couponDiscount = selectedOrderDetails.couponDiscount || selectedOrderDetails.discountAmount || 0;
-  const pointsDiscount = selectedOrderDetails.pointsToRedeem || selectedOrderDetails.pointsDiscount || 0;
+  // 🎯 ডিসকাউন্ট এবং কুপন ক্যালকুলেশন লজিক
+  const couponDiscount = Number(selectedOrderDetails.couponDiscount || selectedOrderDetails.discountAmount || 0);
+  const pointsDiscount = Number(selectedOrderDetails.pointsToRedeem || selectedOrderDetails.pointsDiscount || 0);
   const totalDiscount = couponDiscount + pointsDiscount;
 
   const deliveryCharge = selectedOrderDetails.deliveryCharge || 0;
-  
-  // 🎯 গ্র্যান্ড টোটালে ডিসকাউন্ট মাইনাস করা হয়েছে
   const grandTotal = Math.max(0, subTotal - totalDiscount + deliveryCharge + currentAdjustment);
 
   const handlePrint = (e) => {
@@ -232,13 +230,12 @@ export const OrderInvoice = ({ selectedOrderDetails, onClose, onOrderUpdated }) 
                 <span className="text-neutral-500">Total Tax:</span>
                 <span className="font-medium">0.00</span>
               </div>
-              
               <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
                 <span>Sub Total (Including Tax):</span>
                 <span>৳{subTotal.toFixed(2)}</span>
               </div>
 
-              {/* 🎯 কুপন ডিসকাউন্ট থাকলে ইনভয়েসে শো করবে */}
+              {/* কুপন ডিসকাউন্ট থাকলে দেখাবে */}
               {couponDiscount > 0 && (
                 <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-600 font-semibold">
                   <span>Coupon Discount {selectedOrderDetails.couponCode ? `(${selectedOrderDetails.couponCode})` : ""}:</span>
@@ -246,7 +243,7 @@ export const OrderInvoice = ({ selectedOrderDetails, onClose, onOrderUpdated }) 
                 </div>
               )}
 
-              {/* 🎯 পয়েন্ট রিডেম্পশন ডিসকাউন্ট থাকলে শো করবে */}
+              {/* পয়েন্ট ডিসকাউন্ট থাকলে দেখাবে */}
               {pointsDiscount > 0 && (
                 <div className="flex justify-between py-1 border-b border-neutral-200 text-amber-600 font-semibold">
                   <span>Points Discount:</span>
