@@ -56,9 +56,9 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="w-full bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
-      {/* 🎯 index.css-er @utility site-container update kora hoyeche */}
-      <div className="site-container pt-12 pb-6 lg:pt-14 lg:pb-8">
+    <footer className="bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
+      {/* 🎯 max-w-7xl 2xl:max-w-[1440px] আপডেট করা হয়েছে */}
+      <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6 lg:pt-14 lg:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10">
           {/* 1 — Brand */}
           <div className="lg:col-span-4 flex flex-col gap-5">
@@ -233,3 +233,5 @@ export const Footer = () => {
 };
 
 export default Footer;
+
+// before ultara wide
