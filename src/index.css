@@ -48,6 +48,32 @@
   --font-display: 'Outfit', sans-serif;
 }
 
+/* ---------------------------------------------------------------------
+   Global Dynamic Responsive Container Utility
+------------------------------------------------------------------------ */
+@utility site-container {
+  width: 100%;
+  max-width: 80rem; /* 1280px (max-w-7xl) */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;  /* 24px - Mobile (px-6) */
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .site-container {
+    padding-left: 2.5rem; /* 40px - Tablet (sm:px-10) */
+    padding-right: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-container {
+    padding-left: 4rem;    /* 64px - Laptop/Desktop (lg:px-16) */
+    padding-right: 4rem;
+  }
+}
+
 @layer base {
   body {
     @apply bg-neutral-50 text-neutral-800 font-sans antialiased transition-colors duration-300;
@@ -145,4 +171,3 @@
   line-height: 1;
   color: var(--color-primary-500);
 }
-
