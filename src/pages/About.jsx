@@ -39,7 +39,6 @@ export const About = () => {
       =================================================================== */}
       <section className="relative py-16 sm:py-24 bg-gradient-to-br from-neutral-50 via-primary-50/20 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900/40 dark:to-neutral-950 text-neutral-900 dark:text-neutral-100 overflow-hidden border-b border-neutral-200 dark:border-neutral-800/60 transition-colors duration-300">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-        {/* 🎯 Global site-container class applied */}
         <div className="relative site-container z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* Left Column: Brand Story & Scale */}
@@ -157,7 +156,6 @@ export const About = () => {
       {/* ===================================================================
           2. OUR STORY — narrative + image, told as a timeline
       =================================================================== */}
-      {/* 🎯 Global site-container class applied */}
       <section className="site-container py-16 sm:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
           <motion.div
@@ -229,7 +227,6 @@ export const About = () => {
           3. MISSION & VISION
       =================================================================== */}
       <section className="bg-neutral-100 dark:bg-neutral-900/40 py-16 sm:py-24 transition-colors duration-300">
-        {/* 🎯 Global site-container class applied */}
         <div className="site-container">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">
@@ -305,7 +302,6 @@ export const About = () => {
       {/* ===================================================================
           4. OWNER & EXECUTIVE TEAM
       =================================================================== */}
-      {/* 🎯 Global site-container class applied */}
       <section className="site-container py-16 sm:py-24">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">

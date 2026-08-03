@@ -191,7 +191,6 @@ export const BranchDetail = () => {
     getBranchById(id).then((data) => {
       setBranch(data);
       if (data) {
-        // limit 100 দিয়ে সব মেনু ডিশ আনা হলো যেন কোনো ডিশ বা ক্যাটাগরি বাদ না পড়ে
         getFoodsByBranch(data.id || id, 100).then((menuData) => {
           setBranchMenu(menuData || []);
           setLoading(false);
@@ -202,7 +201,6 @@ export const BranchDetail = () => {
     });
   }, [id]);
 
-  // 🎯 ১. এই নির্দিষ্ট ব্রাঞ্চের জন্য প্রাপ্ত মেনু ডিশগুলোর ওপর ভিত্তি করে শতভাগ ডাইনামিক ক্যাটাগরি ফিল্টার তৈরি
   const categories = useMemo(() => {
     if (!branchMenu || branchMenu.length === 0) return ['All'];
     
@@ -422,14 +420,14 @@ export const BranchDetail = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Carousel */}
-            <div className="sm:hidden -mx-4">
+            <div className="sm:hidden px-2">
               <Swiper
                 key={activeCategory}
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-4 !pb-8"
+                className="!pb-8"
               >
                 {filteredMenu.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -555,7 +553,7 @@ export const BranchDetail = () => {
             <div className="flex gap-3">
               <a
                 href={telHref}
-                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300"
+                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300 cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
                 Call Branch
@@ -564,7 +562,7 @@ export const BranchDetail = () => {
                 href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300"
+                className="flex-1 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
               >
                 <Navigation className="w-4 h-4" />
                 Get Directions

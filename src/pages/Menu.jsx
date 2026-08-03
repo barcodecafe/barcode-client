@@ -37,17 +37,14 @@ export const Menu = () => {
     const promoFromUrl = searchParams.get("promo");
     if (promoFromUrl) {
       const cleanCode = promoFromUrl.trim().toUpperCase();
-      // LocalStorage-এ সেভ রাখা যেন পরে Checkout Page রিড করতে পারে
       localStorage.setItem("scanned_promo", cleanCode);
       setAppliedPromo(cleanCode);
       setShowPromoBanner(true);
 
-      // URL পরিষ্কার করার জন্য ?promo সরিয়ে ফেলা (ঐচ্ছিক)
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("promo");
       setSearchParams(nextParams, { replace: true });
     } else {
-      // যদি URL-এ না থাকে কিন্তু আগে স্ক্যান করে রাখা থাকে
       const savedPromo = localStorage.getItem("scanned_promo");
       if (savedPromo) {
         setAppliedPromo(savedPromo);
@@ -75,7 +72,6 @@ export const Menu = () => {
     else getFoodsByBranch(null, 100).then(setFoods);
   }, [popularOnly]);
 
-  // 🎯 ব্যাকএন্ডের categoryOrder ধরে ক্যাটাগরি সর্টিং সিঙ্ক করা হলো
   const categories = useMemo(() => {
     if (!foods || foods.length === 0) return ["All"];
 
@@ -128,7 +124,6 @@ export const Menu = () => {
     }
   };
 
-  // 💡 Admin Schema অনুযায়ী টাইমার হিসাব সহ নিখুঁত Price হিসাবের ফাংশন
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
@@ -210,7 +205,7 @@ export const Menu = () => {
 
   return (
     /* 🎯 Global site-container class applied */
-    <div className="relative site-container py-8">
+    <div className="site-container relative py-8">
       {/* 💡 Standard Coupon Alert Banner (QR Code Scan Toast) */}
       {showPromoBanner && appliedPromo && (
         <motion.div
@@ -232,7 +227,7 @@ export const Menu = () => {
           </div>
           <button
             onClick={() => setShowPromoBanner(false)}
-            className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+            className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
           >
             ✕
           </button>
@@ -269,7 +264,7 @@ export const Menu = () => {
           {categories.length > 8 && showLeftArrow && (
             <button
               onClick={() => scroll("left")}
-              className="absolute left-0 z-10 p-1.5 rounded-xl bg-white/90 dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 shadow-md hover:text-primary-500 transition-all backdrop-blur-sm"
+              className="absolute left-0 z-10 p-1.5 rounded-xl bg-white/90 dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 shadow-md hover:text-primary-500 transition-all backdrop-blur-sm cursor-pointer"
               aria-label="Scroll Left"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -285,7 +280,7 @@ export const Menu = () => {
               <button
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 shrink-0 ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 shrink-0 cursor-pointer ${
                   activeCategory.trim().toLowerCase() === cat.trim().toLowerCase()
                     ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                     : "bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
@@ -299,7 +294,7 @@ export const Menu = () => {
           {categories.length > 8 && showRightArrow && (
             <button
               onClick={() => scroll("right")}
-              className="absolute right-0 z-10 p-1.5 rounded-xl bg-white/90 dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 shadow-md hover:text-primary-500 transition-all backdrop-blur-sm"
+              className="absolute right-0 z-10 p-1.5 rounded-xl bg-white/90 dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 shadow-md hover:text-primary-500 transition-all backdrop-blur-sm cursor-pointer"
               aria-label="Scroll Right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -332,14 +327,14 @@ export const Menu = () => {
         </div>
       ) : (
         <>
-          <div className="sm:hidden -mx-4">
+          <div className="sm:hidden px-2">
             <Swiper
               key={`${activeCategory}-${sortBy}`}
               modules={[Pagination]}
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-4 !pb-8"
+              className="!pb-8"
             >
               {filteredFoods.map((food) => (
                 <SwiperSlide key={food.id || food._id}>

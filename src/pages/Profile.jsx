@@ -187,7 +187,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onToggle}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500 font-bold text-xs active:scale-95 transition-all"
+            className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500 font-bold text-xs active:scale-95 transition-all cursor-pointer"
           >
             Details
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
@@ -284,7 +284,6 @@ export const Profile = () => {
   const { favoriteIds, toggleFavorite, isFavoritesLoaded } = useFavorites();
   const navigate = useNavigate();
 
-  // 🎯 Search Params দিয়ে ডায়নামিক ট্যাব হ্যান্ডলিং (?tab=orders)
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
 
@@ -318,7 +317,6 @@ export const Profile = () => {
     }
   }, [user, isAuthLoaded, navigate]);
 
-  // URL পরিবর্তন হলেও যেন ট্যাব স্যুইচ হয়
   useEffect(() => {
     if (tabParam && ['overview', 'orders', 'payments', 'favorites', 'settings'].includes(tabParam)) {
       setActiveSection(tabParam);
@@ -474,7 +472,7 @@ export const Profile = () => {
             {orders.length > 0 && (
               <button
                 onClick={() => handleTabChange('orders')}
-                className="flex items-center gap-1 text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors"
+                className="flex items-center gap-1 text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors cursor-pointer"
               >
                 View all
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -669,7 +667,7 @@ export const Profile = () => {
                     </span>
                     <button
                       onClick={() => toggleFavorite(food.id)}
-                      className="p-1.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-90 transition-all"
+                      className="p-1.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-90 transition-all cursor-pointer"
                       aria-label={`Remove ${food.name} from favorites`}
                     >
                       <Heart className="w-4 h-4 fill-current" />
@@ -791,7 +789,7 @@ export const Profile = () => {
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 {savingProfile ? 'Saving…' : 'Save Changes'}
@@ -799,7 +797,7 @@ export const Profile = () => {
               <button
                 type="button"
                 onClick={resetForm}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 font-semibold text-sm active:scale-95 transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 font-semibold text-sm active:scale-95 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -822,7 +820,7 @@ export const Profile = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 mt-5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-500 font-bold text-sm active:scale-95 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 mt-5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-500 font-bold text-sm active:scale-95 transition-all cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             LogOut
@@ -870,7 +868,7 @@ export const Profile = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-red-500 hover:border-red-500/30 font-semibold text-xs active:scale-95 transition-all shrink-0"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-red-500 hover:border-red-500/30 font-semibold text-xs active:scale-95 transition-all shrink-0 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             LogOut
@@ -888,7 +886,7 @@ export const Profile = () => {
                     <button
                       key={s.key}
                       onClick={() => handleTabChange(s.key)}
-                      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shrink-0 lg:w-full ${
+                      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shrink-0 lg:w-full cursor-pointer ${
                         active
                           ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                           : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'

@@ -161,7 +161,7 @@ export const Branches = () => {
   };
 
   return (
-    /* 🎯 Global site-container class applied */
+    /* 🎯 Global site-container class applied for Navbar & Footer alignment */
     <div className="site-container py-8">
       {/* Filters and Search Bar Container */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -226,13 +226,13 @@ export const Branches = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Carousel */}
-            <div className="sm:hidden -mx-4">
+            <div className="sm:hidden px-2">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-4 !pb-8"
+                className="!pb-8"
               >
                 {filteredBranches.map((branch) => (
                   <SwiperSlide key={branch.id}>
@@ -299,7 +299,7 @@ export const Branches = () => {
         </div>
 
         {/* Mobile View: Swiper Slider */}
-        <div className="sm:hidden -mx-4">
+        <div className="sm:hidden px-2">
           {previewPopularFoods.length > 0 && (
             <Swiper
               key={activeSort}
@@ -307,7 +307,7 @@ export const Branches = () => {
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-4 !pb-8"
+              className="!pb-8"
             >
               {previewPopularFoods.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -424,13 +424,13 @@ export const Branches = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Slider */}
-            <div className="sm:hidden -mx-4">
+            <div className="sm:hidden px-2">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-4 !pb-8"
+                className="!pb-8"
               >
                 {previewFeaturedMenu.map((food) => {
                   const favorited = isFavorite(food.id);

@@ -159,7 +159,7 @@ export const Brands = () => {
   };
 
   return (
-    /* 🎯 Global site-container class applied */
+    /* 🎯 Global site-container class applied ensuring perfect alignment with Navbar & Footer */
     <div className="site-container py-8">
       {/* BRAND HEADER & GRID */}
       <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
@@ -185,13 +185,13 @@ export const Brands = () => {
       ) : (
         <>
           {/* Mobile View: Brands Swiper Slider */}
-          <div className="sm:hidden -mx-2">
+          <div className="sm:hidden px-2">
             <Swiper
               modules={[Pagination]}
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-2 !pb-8"
+              className="!pb-8"
             >
               {brands.map((brand) => (
                 <SwiperSlide key={brand.id}>
@@ -265,7 +265,7 @@ export const Brands = () => {
         </div>
 
         {/* Mobile View: Swiper Slider */}
-        <div className="sm:hidden -mx-2">
+        <div className="sm:hidden px-2">
           {previewPopularFoods.length > 0 && (
             <Swiper
               key={activeSort}
@@ -273,7 +273,7 @@ export const Brands = () => {
               slidesPerView={1.15}
               spaceBetween={16}
               pagination={{ clickable: true }}
-              className="!px-2 !pb-8"
+              className="!pb-8"
             >
               {previewPopularFoods.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -388,13 +388,13 @@ export const Brands = () => {
         ) : (
           <>
             {/* Mobile View: Swiper Slider */}
-            <div className="sm:hidden -mx-2">
+            <div className="sm:hidden px-2">
               <Swiper
                 modules={[Pagination]}
                 slidesPerView={1.15}
                 spaceBetween={16}
                 pagination={{ clickable: true }}
-                className="!px-2 !pb-8"
+                className="!pb-8"
               >
                 {previewFeaturedMenu.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -451,7 +451,7 @@ export const Brands = () => {
                     animate="visible"
                     className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
-                    {remainingFeaturedMenu.map((food) => {
+                    {remainingFeaturedMenu.main?.map((food) => {
                       const favorited = isFavorite(food.id);
                       return (
                         <FoodCard

@@ -17,10 +17,10 @@ export const PrivacyPolicy = () => {
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
-            Privacy Policy
+            Privacy Policy[cite: 12]
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Last updated: August 2026
+            Last updated: August 2026[cite: 12]
           </p>
         </div>
 
@@ -29,39 +29,39 @@ export const PrivacyPolicy = () => {
           
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Eye className="w-5 h-5 text-primary-500" /> 1. Information We Collect
+              <Eye className="w-5 h-5 text-primary-500" /> 1. Information We Collect[cite: 12]
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              When you place an order or create an account with Barcode Restaurant Group, we collect details such as your name, phone number, email address, and delivery location to ensure a seamless food ordering experience.
+              When you place an order or create an account with Barcode Restaurant Group, we collect details such as your name, phone number, email address, and delivery location to ensure a seamless food ordering experience[cite: 12].
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary-500" /> 2. How We Use Your Data
+              <FileText className="w-5 h-5 text-primary-500" /> 2. How We Use Your Data[cite: 12]
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Your personal information is strictly used for order fulfillment, rider assignment, delivery status updates, and customer support. We do not sell or rent your personal data to any third-party marketing services.
+              Your personal information is strictly used for order fulfillment, rider assignment, delivery status updates, and customer support. We do not sell or rent your personal data to any third-party marketing services[cite: 12].
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-primary-500" /> 3. Payment Security
+              <Lock className="w-5 h-5 text-primary-500" /> 3. Payment Security[cite: 12]
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              All digital transactions are processed securely through certified SSL payment gateways (bKash, Nagad, Cards, etc.). We do not store your credit card or PIN information on our servers.
+              All digital transactions are processed securely through certified SSL payment gateways (bKash, Nagad, Cards, etc.). We do not store your credit card or PIN information on our servers[cite: 12].
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-              4. Contact Us About Your Privacy
+              4. Contact Us About Your Privacy[cite: 12]
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
               If you have any questions or concerns about our privacy practices, please reach out to our team at{" "}
               <a href="mailto:info@barcoderestaurantgroup.com" className="text-primary-500 hover:underline font-semibold">
-                info@barcoderestaurantgroup.com
+                info@barcoderestaurantgroup.com[cite: 12]
               </a>.
             </p>
           </section>
