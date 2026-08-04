@@ -20,14 +20,12 @@ export async function getPendingOrderCount() {
   try {
     const response = await apiClient.get('/orders/pending-count');
     
-    // 🐞 ডিবাগিং: সার্ভিস লেয়ার ডাটা পাচ্ছে কি না তা দেখার জন্য
-    console.log("Service Layer Response:", response);
+    // 🐞 ডিবাগিং লগ
+    console.log("Direct API Response:", response);
     
-    // 🎯 ডাটা সঠিকভাবে রিটার্ন করা (Axios এর data অবজেক্ট থাকলে সেটি, না থাকলে পুরো রেসপন্স)
-    if (response && response.data) {
-      return response.data;
-    }
-    return response; 
+    // 🎯 যেহেতু response নিজেই সরাসরি ডেটা অবজেক্ট (যেমন: {success: true, pendingCount: 2})
+    // তাই সরাসরি response অথবা response.data রিটার্ন করতে হবে
+    return response?.pendingCount !== undefined ? response : (response?.data ?? response);
     
   } catch (error) {
     console.error("Error fetching pending count in service:", error);
