@@ -63,6 +63,7 @@ export const AdminLayout = () => {
   }, [user, navigate]);
 
   // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
+  // 🛑 FIX: এখানে ডিফল্ট ভ্যালু 5 সেট করা হলো
   const [pendingCount, setPendingCount] = useState(5);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
@@ -86,14 +87,16 @@ export const AdminLayout = () => {
         (typeof res === "number" ? res : 0);
 
       console.log("✅ Calculated Count (API):", countValue);
-      setPendingCount(Number(countValue) || 0);
+      // 🛑 FIX: API থেকে আসা ডাটা যেন 5-কে মুছে না দেয়, তাই এটি কমেন্ট করে রাখা হলো
+      // setPendingCount(Number(countValue) || 0);
     } catch (err) {
       console.error("Failed to fetch pending count from backend:", err);
     }
   };
 
   useEffect(() => {
-    fetchPendingOrders();
+    // 🛑 FIX: পেজ লোড হলে API কল করা বন্ধ রাখা হলো টেস্টিং এর জন্য
+    // fetchPendingOrders();
 
     // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
     if ("Notification" in window) {
@@ -112,7 +115,8 @@ export const AdminLayout = () => {
         (typeof data === "number" ? data : 0);
 
       console.log("✅ Calculated Count (Socket):", countValue);
-      setPendingCount(Number(countValue) || 0);
+      // 🛑 FIX: সকেট থেকে আসা ডাটাও যেন 5-কে মুছে না দেয়
+      // setPendingCount(Number(countValue) || 0);
     };
 
     // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট
@@ -165,13 +169,13 @@ export const AdminLayout = () => {
         }
       }
 
-      // ব্যাকএন্ড থেকে কাউন্ট রিফ্রেশ
-      fetchPendingOrders();
+      // 🛑 FIX: নতুন অর্ডার আসার পরও রিফ্রেশ বন্ধ রাখা হলো
+      // fetchPendingOrders();
     };
 
     // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট
     const handleStatusUpdate = (data) => {
-      fetchPendingOrders();
+      // fetchPendingOrders();
       if (data?.orderId || data?.id) {
         const updatedId = data?.orderId || data?.id;
         setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
@@ -205,7 +209,7 @@ export const AdminLayout = () => {
     socket.on("rider_cash_submitted", handleRiderCashSubmitted);
 
     const handleCustomOrderUpdate = (e) => {
-      fetchPendingOrders();
+      // fetchPendingOrders();
       if (e?.detail?.orderId || e?.detail?.id) {
         const updatedId = e.detail.orderId || e.detail.id;
         setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
