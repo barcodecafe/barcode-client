@@ -19,8 +19,9 @@ export async function getAllOrders() {
 export async function getPendingOrderCount() {
   const response = await apiClient.get('/orders/pending-count');
   
-  // 🎯 নিখুঁত সেফ এক্সট্রাকশন: রেসপন্স যেভাবেই আসুক না কেন সংখ্যাটি বের করে আনবে
-  const resData = response?.data ?? response;
+  // 🎯 সঠিক এবং সুনির্দিষ্ট সেফ এক্সট্রাকশন
+  const resData = response?.data ?? response?.data?.data ?? response;
+  
   const rawCount =
     typeof resData === "number"
       ? resData
@@ -28,7 +29,7 @@ export async function getPendingOrderCount() {
         resData?.count ??
         resData?.data?.pendingCount ??
         resData?.data?.count ??
-        (typeof resData?.data === "number" ? resData.data : 0));
+        (typeof resData === "number" ? resData : 0));
 
   return Number(rawCount) || 0;
 }
