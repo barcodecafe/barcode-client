@@ -20,25 +20,25 @@ export async function getPendingOrderCount() {
   try {
     const response = await apiClient.get('/orders/pending-count');
     
-    // ১. কোনো কারণে (যেমন: 304 status) রেসপন্স না আসলে সরাসরি ০ রিটার্ন করবে
     if (!response) {
       return { pendingCount: 0 };
     }
 
-    // ২. যদি রেসপন্সটি Axios-এর ডিফল্ট ফরম্যাটে (response.data) থাকে
-    if (response.data) {
-      return response.data;
-    }
+    // 🎯 ডিবাগিং ও সেফ এক্সট্রাকশন
+    const count = 
+      response.pendingCount ?? 
+      response.count ?? 
+      response.data?.pendingCount ?? 
+      response.data?.count ?? 
+      (typeof response === "number" ? response : 0);
 
-    // ৩. যদি apiClient আগে থেকেই ডাটা এক্সট্রাক্ট করে থাকে, তবে সরাসরি রেসপন্সটিই রিটার্ন করবে
-    return response;
+    return { pendingCount: Number(count) || 0 };
     
   } catch (error) {
     console.error("Error fetching pending count:", error);
     return { pendingCount: 0 };
   }
 }
-
 /** GET /api/orders/:id (ownership-checked server-side) */
 export async function getOrderById(id) {
   return apiClient.get(`/orders/${id}`);
