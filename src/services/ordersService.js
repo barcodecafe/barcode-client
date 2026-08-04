@@ -17,18 +17,14 @@ export async function getAllOrders() {
  * ফাস্ট ও লাইটওয়েট পেন্ডিং অর্ডারের সংখ্যা (Count) নিয়ে আসার জন্য
  */
 export async function getPendingOrderCount() {
-  const response = await apiClient.get('/orders/pending-count');
-  
-  // 🎯 সার্ভার থেকে আসা অবজেক্ট সরাসরি হ্যান্ডেল করার জন্য
-  const data = response?.data ?? response;
-  
-  if (typeof data === "number") return data;
-  if (typeof data?.pendingCount === "number") return data.pendingCount;
-  if (typeof data?.count === "number") return data.count;
-  if (typeof data?.data === "number") return data.data;
-  if (typeof data?.data?.pendingCount === "number") return data.data.pendingCount;
-
-  return 0;
+  try {
+    const response = await apiClient.get('/orders/pending-count');
+    // 🎯 ডাটা সরাসরি AdminLayout-এ পাঠিয়ে দিচ্ছি। AdminLayout নিজেই ফিল্টার করে নেবে।
+    return response?.data ?? response;
+  } catch (error) {
+    console.error("Error fetching pending count:", error);
+    return { pendingCount: 0 };
+  }
 }
 
 /** GET /api/orders/:id (ownership-checked server-side) */
