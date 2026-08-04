@@ -192,8 +192,7 @@ export const AdminLayout = () => {
       window.dispatchEvent(new CustomEvent("order_updated"));
     };
 
-    // Socket Events Listening
-    socket.emit("get_pending_count");
+    // Socket Events Listening (অপ্রয়োজনীয় socket.emit রিমুভ করা হলো যাতে কাউন্ট শূন্য না হয়)
     socket.on("pending_count_updated", handlePendingCountUpdated);
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
