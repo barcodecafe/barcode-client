@@ -63,8 +63,7 @@ export const AdminLayout = () => {
   }, [user, navigate]);
 
   // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
-  // 🛑 FIX: এখানে ডিফল্ট ভ্যালু 5 সেট করা হলো
-  const [pendingCount, setPendingCount] = useState(5);
+  const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
 
@@ -87,16 +86,15 @@ export const AdminLayout = () => {
         (typeof res === "number" ? res : 0);
 
       console.log("✅ Calculated Count (API):", countValue);
-      // 🛑 FIX: API থেকে আসা ডাটা যেন 5-কে মুছে না দেয়, তাই এটি কমেন্ট করে রাখা হলো
-      // setPendingCount(Number(countValue) || 0);
+      setPendingCount(Number(countValue) || 0);
     } catch (err) {
       console.error("Failed to fetch pending count from backend:", err);
     }
   };
 
   useEffect(() => {
-    // 🛑 FIX: পেজ লোড হলে API কল করা বন্ধ রাখা হলো টেস্টিং এর জন্য
-    // fetchPendingOrders();
+    // ✅ পেজ লোড হওয়ার সাথে সাথে প্রথমবার কাউন্ট ফেচ করবে
+    fetchPendingOrders();
 
     // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
     if ("Notification" in window) {
@@ -115,8 +113,7 @@ export const AdminLayout = () => {
         (typeof data === "number" ? data : 0);
 
       console.log("✅ Calculated Count (Socket):", countValue);
-      // 🛑 FIX: সকেট থেকে আসা ডাটাও যেন 5-কে মুছে না দেয়
-      // setPendingCount(Number(countValue) || 0);
+      setPendingCount(Number(countValue) || 0);
     };
 
     // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট
@@ -169,13 +166,23 @@ export const AdminLayout = () => {
         }
       }
 
-      // 🛑 FIX: নতুন অর্ডার আসার পরও রিফ্রেশ বন্ধ রাখা হলো
-      // fetchPendingOrders();
+      // 🟢 ম্যাজিক ফিক্স: নতুন অর্ডার আসার সাথে সাথেই UI-তে ইনস্ট্যান্ট +1 হয়ে যাবে
+      setPendingCount((prevCount) => prevCount + 1);
+
+      // ✅ ব্যাকএন্ড সিঙ্কিং
+      fetchPendingOrders();
     };
 
     // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট
     const handleStatusUpdate = (data) => {
-      // fetchPendingOrders();
+      // 🔴 ম্যাজিক ফিক্স: অর্ডারটি "ACCEPTED" বা "REJECTED" হলে ইনস্ট্যান্ট -1 হয়ে যাবে
+      const newStatus = data?.status?.toUpperCase();
+      if (newStatus === "ACCEPTED" || newStatus === "REJECTED") {
+        setPendingCount((prevCount) => (prevCount > 0 ? prevCount - 1 : 0));
+      }
+
+      // ✅ ব্যাকএন্ড সিঙ্কিং
+      fetchPendingOrders();
       if (data?.orderId || data?.id) {
         const updatedId = data?.orderId || data?.id;
         setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
@@ -209,7 +216,8 @@ export const AdminLayout = () => {
     socket.on("rider_cash_submitted", handleRiderCashSubmitted);
 
     const handleCustomOrderUpdate = (e) => {
-      // fetchPendingOrders();
+      // ✅ কাস্টম ইভেন্টের সময় ব্যাজ রিফ্রেশ হবে
+      fetchPendingOrders();
       if (e?.detail?.orderId || e?.detail?.id) {
         const updatedId = e.detail.orderId || e.detail.id;
         setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
