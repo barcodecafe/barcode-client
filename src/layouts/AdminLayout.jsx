@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { getPendingOrderCount } from "../services/ordersService";
-import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -13,6 +12,8 @@ import {
   Sun,
   Moon,
   LogOut,
+  ChevronLeft,
+  Home as HomeIcon,
   Info,
   ShoppingBag,
   Users,
@@ -20,293 +21,120 @@ import {
   Image,
   Bike,
   Settings,
-  Bell,
-  BellOff,
-  ShoppingBag as ToastIcon,
-} from "lucide-react";
-import { useTheme } from "../hooks/useTheme";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
-import { socket } from "../services/socket";
+} from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
+import { useOrders } from '../context/OrderContext'; // 👈 ১. অর্ডার কনটেক্সট ইম্পোর্ট করা হলো
 
-import resB from "../assets/Barcode_restaurant_group-B.png";
-import resW from "../assets/Barcode_restaurant_groupW.png";
+import resB from '../assets/Barcode_restaurant_group-B.png';
+import resW from '../assets/Barcode_restaurant_groupW.png';
+
+// ---------------------------------------------------------------------------
+// AdminLayout.jsx
+//
+// Admin layout shell: sidebar behaves as an inline panel on desktop screens
+// and overlay on mobile sizes.
+// ---------------------------------------------------------------------------
 
 const navItems = [
-  { name: "Overview", path: "/admin", icon: LayoutDashboard, end: true },
-  { name: "Dishes", path: "/admin/dishes", icon: UtensilsCrossed },
-  { name: "Brands", path: "/admin/brands", icon: Store },
-  { name: "Regions", path: "/admin/regions", icon: Map },
-  { name: "Branches", path: "/admin/branches", icon: Building2 },
-  { name: "Riders Fleet", path: "/admin/fleet-overview", icon: Bike },
-  { name: "Orders", path: "/admin/orders", icon: ShoppingBag },
-  { name: "Customers", path: "/admin/customers", icon: Users },
-  { name: "Coupons", path: "/admin/coupons", icon: Tag },
-  { name: "Hero Carousel", path: "/admin/hero", icon: Image },
-  { name: "About Info", path: "/admin/about", icon: Info },
-  { name: "Rider Applications", path: "/admin/rider-applications", icon: Bike },
-  { name: "Site Settings", path: "/admin/settings", icon: Settings },
+  { name: 'Overview', path: '/admin', icon: LayoutDashboard, end: true },
+  { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
+  { name: 'Brands', path: '/admin/brands', icon: Store },
+  { name: 'Regions', path: '/admin/regions', icon: Map },
+  { name: 'Branches', path: '/admin/branches', icon: Building2 },
+  { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
+  { name: 'Customers', path: '/admin/customers', icon: Users },
+  { name: 'Coupons', path: '/admin/coupons', icon: Tag },
+  { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
+  { name: 'About Info', path: '/admin/about', icon: Info },
+  { name: 'Rider Applications', path: '/admin/rider-applications', icon: Bike },
+  { name: 'Site Settings', path: '/admin/settings', icon: Settings },
 ];
 
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
+  const { unreadOrderCount, markOrdersAsRead } = useOrders(); // 👈 ২. কনটেক্সট থেকে কাউন্ট ও ফাংশন কল করা হলো
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 🛡️ Role Protection Check
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      navigate('/admin/login', { replace: true });
-    }
-  }, [user, navigate]);
-
-  // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
-  const [pendingCount, setPendingCount] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [toastNotification, setToastNotification] = useState(null);
-
-  const soundEnabledRef = useRef(soundEnabled);
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
-
-  // ⚡ ১০০% ব্যাকএন্ড ডিপেন্ডেন্ট কাউন্ট এপিআই কল
-  const fetchPendingOrders = async () => {
-    try {
-      const res = await getPendingOrderCount();
-      console.log("🔥 Fetch API Response:", res);
-      
-      const countValue = 
-        res?.pendingCount ?? 
-        res?.count ?? 
-        res?.data?.pendingCount ?? 
-        res?.data?.count ?? 
-        (typeof res === "number" ? res : 0);
-
-      console.log("✅ Calculated Count (API):", countValue);
-      setPendingCount(Number(countValue) || 0);
-    } catch (err) {
-      console.error("Failed to fetch pending count from backend:", err);
-    }
-  };
-
-  useEffect(() => {
-    // ✅ পেজ লোড হওয়ার সাথে সাথে প্রথমবার কাউন্ট ফেচ করবে
-    fetchPendingOrders();
-
-    // 🔔 ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
-    if ("Notification" in window) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-    }
-
-    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক
-    const handlePendingCountUpdated = (data) => {
-      const countValue = 
-        data?.pendingCount ?? 
-        data?.count ?? 
-        data?.data?.pendingCount ?? 
-        data?.data?.count ?? 
-        (typeof data === "number" ? data : 0);
-
-      console.log("✅ Calculated Count (Socket):", countValue);
-      setPendingCount(Number(countValue) || 0);
-    };
-
-    // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট
-    const handleNewOrder = (newOrder) => {
-      const orderId = newOrder?.id || newOrder?._id || "NEW";
-      const totalAmount = newOrder?.totalAmount || newOrder?.total || 0;
-      const customerName =
-        newOrder?.user?.name || newOrder?.customerName || "Guest";
-
-      // 🔊 অডিও প্লে
-      if (soundEnabledRef.current) {
-        try {
-          const audio = new Audio(
-            "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-          );
-          audio.play().catch(() => {});
-        } catch (e) {}
-      }
-
-      // 🚨 ইন-অ্যাপ টোস্টার নোটিফিকেশন
-      setToastNotification({
-        id: orderId,
-        total: totalAmount,
-        customer: customerName,
-      });
-
-      // ৭ সেকেন্ড পর টোস্টার অটো-ক্লোজ
-      setTimeout(() => {
-        setToastNotification((prev) => (prev?.id === orderId ? null : prev));
-      }, 7000);
-
-      // 💻 সিস্টেম নোটিফিকেশন
-      if ("Notification" in window && Notification.permission === "granted") {
-        try {
-          const systemNotif = new Notification("🚨 নতুন অর্ডার এসেছে!", {
-            body: `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`,
-            icon: settings?.logoLight || resB,
-            tag: `order-${orderId}`,
-            renotify: true,
-            requireInteraction: true,
-          });
-
-          systemNotif.onclick = () => {
-            window.focus();
-            navigate("/admin/orders");
-            systemNotif.close();
-          };
-        } catch (e) {
-          console.error("System notification error:", e);
-        }
-      }
-
-      // 🟢 ম্যাজিক ফিক্স: নতুন অর্ডার আসার সাথে সাথেই UI-তে ইনস্ট্যান্ট +1 হয়ে যাবে
-      setPendingCount((prevCount) => prevCount + 1);
-
-      // ✅ ব্যাকএন্ড সিঙ্কিং
-      fetchPendingOrders();
-    };
-
-    // ⚡ 3. অর্ডারের স্ট্যাটাস আপডেট
-    const handleStatusUpdate = (data) => {
-      // 🔴 ম্যাজিক ফিক্স: অর্ডারটি "ACCEPTED" বা "REJECTED" হলে ইনস্ট্যান্ট -1 হয়ে যাবে
-      const newStatus = data?.status?.toUpperCase();
-      if (newStatus === "ACCEPTED" || newStatus === "REJECTED") {
-        setPendingCount((prevCount) => (prevCount > 0 ? prevCount - 1 : 0));
-      }
-
-      // ✅ ব্যাকএন্ড সিঙ্কিং
-      fetchPendingOrders();
-      if (data?.orderId || data?.id) {
-        const updatedId = data?.orderId || data?.id;
-        setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
-      }
-    };
-
-    // ⚡ 4. Rider Cash Submit Notification
-    const handleRiderCashSubmitted = (data) => {
-      if (soundEnabledRef.current) {
-        try {
-          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          audio.play().catch(() => {});
-        } catch (e) {}
-      }
-
-      setToastNotification({
-        id: "CASH_REQ",
-        customer: `${data.riderName || "Rider"} has submitted cash for ${data.date}`,
-        total: "Check Fleet Overview"
-      });
-
-      setTimeout(() => setToastNotification(null), 7000);
-      window.dispatchEvent(new CustomEvent("order_updated"));
-    };
-
-    // Socket Events Listening
-    socket.on("pending_count_updated", handlePendingCountUpdated);
-    socket.on("admin_new_order", handleNewOrder);
-    socket.on("order_updated", handleStatusUpdate);
-    socket.on("order_status_updated", handleStatusUpdate);
-    socket.on("rider_cash_submitted", handleRiderCashSubmitted);
-
-    const handleCustomOrderUpdate = (e) => {
-      // ✅ কাস্টম ইভেন্টের সময় ব্যাজ রিফ্রেশ হবে
-      fetchPendingOrders();
-      if (e?.detail?.orderId || e?.detail?.id) {
-        const updatedId = e.detail.orderId || e.detail.id;
-        setToastNotification((prev) => (prev?.id === updatedId ? null : prev));
-      }
-    };
-    window.addEventListener("order_updated", handleCustomOrderUpdate);
-
-    return () => {
-      socket.off("pending_count_updated", handlePendingCountUpdated);
-      socket.off("admin_new_order", handleNewOrder);
-      socket.off("order_updated", handleStatusUpdate);
-      socket.off("order_status_updated", handleStatusUpdate);
-      socket.off("rider_cash_submitted", handleRiderCashSubmitted);
-      window.removeEventListener("order_updated", handleCustomOrderUpdate);
-    };
-  }, [navigate, settings?.logoLight]);
-
-  // ব্রাউজার ট্যাবের টাইটেল আপডেট
-  useEffect(() => {
-    if (pendingCount > 0) {
-      document.title = `(${pendingCount}) New Orders - Barcode Admin`;
-    } else {
-      document.title = "Barcode Restaurant - Admin";
-    }
-  }, [pendingCount]);
-
-  useEffect(() => {
-    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+  // Auto-open on desktop, auto-close on mobile initially
+  useState(() => {
+    // Run on initial load
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     setIsDrawerOpen(isDesktop);
-  }, []);
+  });
 
   const handleLogout = async () => {
     await logout();
-    navigate("/admin/login", { replace: true });
+    navigate('/', { replace: true });
   };
 
   const SidebarContent = ({ onNavigate }) => (
     <>
-      <Link
-        to="/admin"
-        onClick={onNavigate}
-        className="flex items-center gap-2 px-2 mb-8"
-      >
-        <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs">
+      <Link to="/admin" onClick={onNavigate} className="flex items-center gap-2 px-2 mb-8">
+        <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
           <img
-            src={
-              theme === "dark"
-                ? settings.logoDark || resW
-                : settings.logoLight || resB
-            }
+            src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
             alt="Barcode Cafe"
             className="h-6 w-auto object-contain"
           />
         </div>
+        {/* <span className="font-display text-sm font-bold text-neutral-400 dark:text-neutral-600 tracking-wide uppercase">
+          Admin
+        </span> */}
       </Link>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.end}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-primary-500/10 text-primary-500 font-semibold"
-                  : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500"
-              }`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <item.icon className="w-4 h-4 shrink-0" />
-              <span>{item.name}</span>
-            </div>
+        {navItems.map((item) => {
+          const isOrdersRoute = item.path === '/admin/orders';
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              onClick={() => {
+                if (isOrdersRoute) markOrdersAsRead(); // 👈 ৩. Orders পেজে গেলে কাউন্ট রিসেট হয়ে যাবে
+                onNavigate();
+              }}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? 'bg-primary-500/10 text-primary-500 font-semibold'
+                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500'
+                }`
+              }
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.name}
+              </div>
 
-            {item.name === "Orders" && pendingCount > 0 && (
-              <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                {pendingCount}
-              </span>
-            )}
-          </NavLink>
-        ))}
+              {/* 👈 ৪. Orders মেনুর পাশে লাইভ কাউন্ট ব্যাজ যুক্ত করা হলো */}
+              {isOrdersRoute && unreadOrderCount > 0 && (
+                <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
+                  {unreadOrderCount}
+                </span>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
+        <Link
+          to="/"
+          onClick={onNavigate}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500 transition-all duration-200"
+        >
+          <HomeIcon className="w-4 h-4 shrink-0" />
+          Back to Site
+        </Link>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           Log Out
@@ -316,49 +144,8 @@ export const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
-      {/* 🚨 In-App Toast Popup */}
-      <AnimatePresence>
-        {toastNotification && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white dark:bg-neutral-900 border-2 border-primary-500 shadow-2xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer"
-            onClick={() => {
-              navigate(toastNotification.id === "CASH_REQ" ? "/admin/fleet-overview" : "/admin/orders");
-              setToastNotification(null);
-            }}
-          >
-            <div className="p-2.5 bg-primary-500/10 text-primary-500 rounded-xl shrink-0 animate-bounce">
-              <ToastIcon className="w-6 h-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                  {toastNotification.id === "CASH_REQ" ? "💰 ক্যাশ সাবমিট রিকোয়েস্ট!" : "🚨 নতুন অর্ডার এসেছে!"}
-                </h4>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setToastNotification(null);
-                  }}
-                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mt-0.5">
-                {toastNotification.id === "CASH_REQ" ? "Action Required" : `Order ID: #${toastNotification.id}`}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                {toastNotification.id === "CASH_REQ" ? toastNotification.customer : `Customer: ${toastNotification.customer} • Total: ৳${toastNotification.total}`}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
+      {/* Mobile Sidebar Backdrop Overlay */}
       <AnimatePresence>
         {isDrawerOpen && (
           <motion.div
@@ -371,103 +158,77 @@ export const AdminLayout = () => {
         )}
       </AnimatePresence>
 
+      {/* Sidebar Panel - Inline on desktop, absolute overlay drawer on mobile */}
       <motion.aside
-        animate={{
+        animate={{ 
           width: isDrawerOpen ? 256 : 0,
         }}
-        transition={{ type: "tween", duration: 0.25 }}
-        className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-xs z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
+        transition={{ type: 'tween', duration: 0.25 }}
+        className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
       >
         <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white md:hidden"
+            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
           </button>
-          <SidebarContent
-            onNavigate={() => {
-              if (typeof window !== "undefined" && window.innerWidth < 768) {
-                setIsDrawerOpen(false);
-              }
-            }}
-          />
+          <SidebarContent onNavigate={() => {
+            // Auto close drawer on navigation click ONLY on mobile screens
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              setIsDrawerOpen(false);
+            }
+          }} />
         </div>
       </motion.aside>
 
+      {/* Main content body */}
       <div className="flex-grow flex flex-col min-w-0">
+        {/* Topbar */}
         <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
+            {/* Persistent Hamburger Button toggles sidebar on all screens */}
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all cursor-pointer"
+              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all"
               aria-label="Toggle Navigation Menu"
             >
               <MenuIcon className="w-4 h-4" />
             </button>
+            <Link
+              to="/"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Back to Site
+            </Link>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
-                title={
-                  soundEnabled
-                    ? "Sound Enabled (Click to Mute)"
-                    : "Sound Muted (Click to Unmute)"
-                }
-              >
-                {soundEnabled ? (
-                  <Bell className="w-4 h-4 text-primary-500 dark:text-primary-400" />
-                ) : (
-                  <BellOff className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                )}
-              </button>
-
-              <Link
-                to="/admin/orders"
-                className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
-                  pendingCount > 0
-                    ? "bg-red-500 scale-105"
-                    : "bg-neutral-400 dark:bg-neutral-600"
-                }`}
-                title="Click to view orders"
-              >
-                {pendingCount}
-              </Link>
-            </div>
-
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300 cursor-pointer"
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
               aria-label="Toggle Theme"
             >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
             <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-800">
               <div className="w-8 h-8 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-bold text-sm">
-                {user?.name?.charAt(0).toUpperCase() || "A"}
+                {user?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="leading-tight hidden sm:block">
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-                  {user?.name || "Admin"}
+                  {user?.name || 'Admin'}
                 </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                  Administrator
-                </p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Administrator</p>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full min-w-0">
+        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
           <Outlet />
         </main>
       </div>
@@ -476,3 +237,5 @@ export const AdminLayout = () => {
 };
 
 export default AdminLayout;
+
+// test purpose

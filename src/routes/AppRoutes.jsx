@@ -55,6 +55,8 @@ import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import AdminRidersFleet from '../pages/admin/AdminRidersFleet';
 
+import { OrderProvider } from '../context/OrderContext';
+
 export const AppRoutes = () => {
   return (
     <AuthProvider>
@@ -62,6 +64,7 @@ export const AppRoutes = () => {
         <FavoritesProvider>
           <CartProvider>
             <BranchProvider>
+            <OrderProvider>
               <ScrollToTop />
               <NormalizePath />
               <Routes>
@@ -142,6 +145,7 @@ export const AppRoutes = () => {
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
               </Routes>
+              </OrderProvider>
             </BranchProvider>
           </CartProvider>
         </FavoritesProvider>
