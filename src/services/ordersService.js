@@ -17,7 +17,20 @@ export async function getAllOrders() {
  * ফাস্ট ও লাইটওয়েট পেন্ডিং অর্ডারের সংখ্যা (Count) নিয়ে আসার জন্য
  */
 export async function getPendingOrderCount() {
-  return apiClient.get('/orders/pending-count');
+  const response = await apiClient.get('/orders/pending-count');
+  
+  // 🎯 নিখুঁত সেফ এক্সট্রাকশন: রেসপন্স যেভাবেই আসুক না কেন সংখ্যাটি বের করে আনবে
+  const resData = response?.data ?? response;
+  const rawCount =
+    typeof resData === "number"
+      ? resData
+      : (resData?.pendingCount ??
+        resData?.count ??
+        resData?.data?.pendingCount ??
+        resData?.data?.count ??
+        (typeof resData?.data === "number" ? resData.data : 0));
+
+  return Number(rawCount) || 0;
 }
 
 /** GET /api/orders/:id (ownership-checked server-side) */
@@ -46,7 +59,7 @@ export async function createOrder(orderData) {
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
     })),
-    regionId: orderData.regionId, // ordering is region-based now
+    regionId: orderData.regionId,
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
     deliveryArea: orderData.deliveryArea || '',
@@ -56,7 +69,6 @@ export async function createOrder(orderData) {
   };
   
   const response = await apiClient.post('/orders', payload);
-  // 🎯 সেফ রিটার্ন: ব্যাকএন্ড রেসপন্স আনরেপ করে অর্ডারের ডাটা অবজেক্ট রিটার্ন করবে
   return response?.data?.data || response?.data || response;
 }
 
@@ -97,5 +109,3 @@ export async function submitRiderDailyCash(dateString) {
 export async function confirmRiderCashSettlement(riderId, dateString) {
   return apiClient.post('/orders/confirm-cash-settlement', { riderId, date: dateString });
 }
-
-// sajib back to previous
