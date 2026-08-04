@@ -370,13 +370,14 @@ export const AdminLayout = () => {
           >
             <X className="w-5 h-5" />
           </button>
-          <SidebarContent
-            onNavigate={() => {
+          {/* 🎯 ফাংশন হিসেবে কল করা হলো রেন্ডারিং ইস্যু ফিক্স করার জন্য */}
+          {SidebarContent({
+            onNavigate: () => {
               if (typeof window !== "undefined" && window.innerWidth < 768) {
                 setIsDrawerOpen(false);
               }
-            }}
-          />
+            }
+          })}
         </div>
       </motion.aside>
 
