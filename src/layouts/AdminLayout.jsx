@@ -63,7 +63,7 @@ export const AdminLayout = () => {
   }, [user, navigate]);
 
   // 🎯 পেন্ডিং কাউন্ট, সাউন্ড ও ইন-অ্যাপ টোস্টার স্টেট
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(5);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
 
