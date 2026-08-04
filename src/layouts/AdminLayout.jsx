@@ -101,12 +101,16 @@ export const AdminLayout = () => {
       }
     }
 
-    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক
+    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক (নিখুঁত ডাটা এক্সট্র্যাকশনসহ)
     const handlePendingCountUpdated = (data) => {
       const rawCount =
         typeof data === "number"
           ? data
-          : (data?.pendingCount ?? data?.count ?? data?.data ?? 0);
+          : (data?.pendingCount ??
+            data?.count ??
+            data?.data?.pendingCount ??
+            data?.data?.count ??
+            (typeof data?.data === "number" ? data.data : 0));
       setPendingCount(Number(rawCount) || 0);
     };
 
@@ -192,7 +196,7 @@ export const AdminLayout = () => {
       window.dispatchEvent(new CustomEvent("order_updated"));
     };
 
-    // Socket Events Listening (অপ্রয়োজনীয় socket.emit রিমুভ করা হলো যাতে কাউন্ট শূন্য না হয়)
+    // Socket Events Listening
     socket.on("pending_count_updated", handlePendingCountUpdated);
     socket.on("admin_new_order", handleNewOrder);
     socket.on("order_updated", handleStatusUpdate);
@@ -369,14 +373,14 @@ export const AdminLayout = () => {
           >
             <X className="w-5 h-5" />
           </button>
-          {/* 🎯 ফাংশন হিসেবে কল করা হলো রেন্ডারিং ইস্যু ফিক্স করার জন্য */}
-          {SidebarContent({
-            onNavigate: () => {
+          {/* 🎯 সঠিক JSX ট্যাগ হিসেবে রেন্ডার করা হলো */}
+          <SidebarContent
+            onNavigate={() => {
               if (typeof window !== "undefined" && window.innerWidth < 768) {
                 setIsDrawerOpen(false);
               }
-            }
-          })}
+            }}
+          />
         </div>
       </motion.aside>
 
