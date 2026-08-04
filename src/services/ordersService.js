@@ -19,19 +19,16 @@ export async function getAllOrders() {
 export async function getPendingOrderCount() {
   const response = await apiClient.get('/orders/pending-count');
   
-  // 🎯 সঠিক এবং সুনির্দিষ্ট সেফ এক্সট্রাকশন
-  const resData = response?.data ?? response?.data?.data ?? response;
+  // 🎯 সার্ভার থেকে আসা অবজেক্ট সরাসরি হ্যান্ডেল করার জন্য
+  const data = response?.data ?? response;
   
-  const rawCount =
-    typeof resData === "number"
-      ? resData
-      : (resData?.pendingCount ??
-        resData?.count ??
-        resData?.data?.pendingCount ??
-        resData?.data?.count ??
-        (typeof resData === "number" ? resData : 0));
+  if (typeof data === "number") return data;
+  if (typeof data?.pendingCount === "number") return data.pendingCount;
+  if (typeof data?.count === "number") return data.count;
+  if (typeof data?.data === "number") return data.data;
+  if (typeof data?.data?.pendingCount === "number") return data.data.pendingCount;
 
-  return Number(rawCount) || 0;
+  return 0;
 }
 
 /** GET /api/orders/:id (ownership-checked server-side) */
