@@ -76,6 +76,8 @@ export const AdminLayout = () => {
   const fetchPendingOrders = async () => {
     try {
       const res = await getPendingOrderCount();
+      // 🐞 ডিবাগিং ১: পেজ লোড হলে ব্যাকএন্ড থেকে কী ডাটা আসছে
+      console.log("🔥 Fetch API Response:", res);
       const rawCount =
         typeof res === "number"
           ? res
@@ -84,6 +86,8 @@ export const AdminLayout = () => {
             res?.data?.pendingCount ??
             res?.data?.count ??
             (typeof res?.data === "number" ? res.data : 0));
+            // 🐞 ডিবাগিং ২: এক্সট্র্যাক্ট করা কাউন্ট
+      console.log("✅ Calculated Count (API):", rawCount);
 
       setPendingCount(Number(rawCount) || 0);
     } catch (err) {
@@ -111,6 +115,7 @@ export const AdminLayout = () => {
             data?.data?.pendingCount ??
             data?.data?.count ??
             (typeof data?.data === "number" ? data.data : 0));
+            console.log("✅ Calculated Count (Socket):", rawCount);
       setPendingCount(Number(rawCount) || 0);
     };
 
