@@ -19,10 +19,18 @@ export async function getAllOrders() {
 export async function getPendingOrderCount() {
   try {
     const response = await apiClient.get('/orders/pending-count');
-    // 🎯 ডাটা সরাসরি AdminLayout-এ পাঠিয়ে দিচ্ছি। AdminLayout নিজেই ফিল্টার করে নেবে।
-    return response?.data ?? response;
+    
+    // 🐞 ডিবাগিং: সার্ভিস লেয়ার ডাটা পাচ্ছে কি না তা দেখার জন্য
+    console.log("Service Layer Response:", response);
+    
+    // 🎯 ডাটা সঠিকভাবে রিটার্ন করা (Axios এর data অবজেক্ট থাকলে সেটি, না থাকলে পুরো রেসপন্স)
+    if (response && response.data) {
+      return response.data;
+    }
+    return response; 
+    
   } catch (error) {
-    console.error("Error fetching pending count:", error);
+    console.error("Error fetching pending count in service:", error);
     return { pendingCount: 0 };
   }
 }
