@@ -19,7 +19,20 @@ export async function getAllOrders() {
 export async function getPendingOrderCount() {
   try {
     const response = await apiClient.get('/orders/pending-count');
-    return response?.pendingCount !== undefined ? response : (response?.data ?? response);
+    
+    // ১. কোনো কারণে (যেমন: 304 status) রেসপন্স না আসলে সরাসরি ০ রিটার্ন করবে
+    if (!response) {
+      return { pendingCount: 0 };
+    }
+
+    // ২. যদি রেসপন্সটি Axios-এর ডিফল্ট ফরম্যাটে (response.data) থাকে
+    if (response.data) {
+      return response.data;
+    }
+
+    // ৩. যদি apiClient আগে থেকেই ডাটা এক্সট্রাক্ট করে থাকে, তবে সরাসরি রেসপন্সটিই রিটার্ন করবে
+    return response;
+    
   } catch (error) {
     console.error("Error fetching pending count:", error);
     return { pendingCount: 0 };
