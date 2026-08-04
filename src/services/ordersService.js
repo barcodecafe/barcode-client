@@ -19,16 +19,9 @@ export async function getAllOrders() {
 export async function getPendingOrderCount() {
   try {
     const response = await apiClient.get('/orders/pending-count');
-    
-    // 🐞 ডিবাগিং লগ
-    console.log("Direct API Response:", response);
-    
-    // 🎯 যেহেতু response নিজেই সরাসরি ডেটা অবজেক্ট (যেমন: {success: true, pendingCount: 2})
-    // তাই সরাসরি response অথবা response.data রিটার্ন করতে হবে
     return response?.pendingCount !== undefined ? response : (response?.data ?? response);
-    
   } catch (error) {
-    console.error("Error fetching pending count in service:", error);
+    console.error("Error fetching pending count:", error);
     return { pendingCount: 0 };
   }
 }
