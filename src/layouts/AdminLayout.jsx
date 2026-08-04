@@ -76,20 +76,17 @@ export const AdminLayout = () => {
   const fetchPendingOrders = async () => {
     try {
       const res = await getPendingOrderCount();
-      // 🐞 ডিবাগিং ১: পেজ লোড হলে ব্যাকএন্ড থেকে কী ডাটা আসছে
       console.log("🔥 Fetch API Response:", res);
-      const rawCount =
-        typeof res === "number"
-          ? res
-          : (res?.pendingCount ??
-            res?.count ??
-            res?.data?.pendingCount ??
-            res?.data?.count ??
-            (typeof res?.data === "number" ? res.data : 0));
-            // 🐞 ডিবাগিং ২: এক্সট্র্যাক্ট করা কাউন্ট
-      console.log("✅ Calculated Count (API):", rawCount);
+      
+      const countValue = 
+        res?.pendingCount ?? 
+        res?.count ?? 
+        res?.data?.pendingCount ?? 
+        res?.data?.count ?? 
+        (typeof res === "number" ? res : 0);
 
-      setPendingCount(Number(rawCount) || 0);
+      console.log("✅ Calculated Count (API):", countValue);
+      setPendingCount(Number(countValue) || 0);
     } catch (err) {
       console.error("Failed to fetch pending count from backend:", err);
     }
@@ -105,18 +102,17 @@ export const AdminLayout = () => {
       }
     }
 
-    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক (নিখুঁত ডাটা এক্সট্র্যাকশনসহ)
+    // ⚡ 1. রিয়েল-টাইম সকেট দিয়ে সরাসরি লাইভ কাউন্ট সিঙ্ক
     const handlePendingCountUpdated = (data) => {
-      const rawCount =
-        typeof data === "number"
-          ? data
-          : (data?.pendingCount ??
-            data?.count ??
-            data?.data?.pendingCount ??
-            data?.data?.count ??
-            (typeof data?.data === "number" ? data.data : 0));
-            console.log("✅ Calculated Count (Socket):", rawCount);
-      setPendingCount(Number(rawCount) || 0);
+      const countValue = 
+        data?.pendingCount ?? 
+        data?.count ?? 
+        data?.data?.pendingCount ?? 
+        data?.data?.count ?? 
+        (typeof data === "number" ? data : 0);
+
+      console.log("✅ Calculated Count (Socket):", countValue);
+      setPendingCount(Number(countValue) || 0);
     };
 
     // ⚡ 2. নতুন কাস্টমার অর্ডার ইভেন্ট
@@ -378,7 +374,6 @@ export const AdminLayout = () => {
           >
             <X className="w-5 h-5" />
           </button>
-          {/* 🎯 সঠিক JSX ট্যাগ হিসেবে রেন্ডার করা হলো */}
           <SidebarContent
             onNavigate={() => {
               if (typeof window !== "undefined" && window.innerWidth < 768) {
