@@ -56,8 +56,15 @@ export const DishDetail = () => {
   // Variations Tracking State
   const [selectedVariation, setSelectedVariation] = useState(null);
 
+  // 🎯 ইউআরএল অথবা লোকালস্টোরেজ থেকে ব্রাঞ্চ আইডি বের করার লজিক
   const branchIdParam = searchParams.get("branchId");
-  const branchId = branchIdParam ? Number(branchIdParam) : null;
+  const storedBranch = localStorage.getItem("selectedBranchId") || localStorage.getItem("branchId");
+  
+  const branchId = branchIdParam 
+    ? Number(branchIdParam) 
+    : storedBranch 
+    ? Number(storedBranch) 
+    : null;
 
   useEffect(() => {
     setLoading(true);
@@ -402,7 +409,7 @@ export const DishDetail = () => {
                       branchId={branchId}
                       favorited={favorited}
                       onToggleFavorite={toggleFavorite}
-                      onAddToCart={addToCart}
+                      onAddToCart={(foodItem) => addToCart(foodItem, branchId, null, 1)}
                     />
                   </SwiperSlide>
                 );
@@ -421,7 +428,7 @@ export const DishDetail = () => {
                   branchId={branchId}
                   favorited={favorited}
                   onToggleFavorite={toggleFavorite}
-                  onAddToCart={addToCart}
+                  onAddToCart={(foodItem) => addToCart(foodItem, branchId, null, 1)}
                 />
               );
             })}
