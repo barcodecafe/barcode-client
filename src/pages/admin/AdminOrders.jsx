@@ -1019,35 +1019,49 @@ useEffect(() => {
                       </tr>
                     </thead>
                     <tbody>
-                      {orderItems.map((item, idx) => {
+                     {orderItems.map((item, idx) => {
                         const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
                         const unitPrice = Number(item.price) || 0;
 
-                        // 🔍 ডিসকাউন্ট বা অফার ডেটেকশন লজিক
+                        // 🔍 চেকআউট পেজের সাথে মিলিয়ে অফার ও ডিসকাউন্ট ডেটেকশন
                         let detectedOfferType = item.offerType;
                         let origUnitPrice = Number(item.originalPrice) || unitPrice;
 
-                        if (!detectedOfferType && itemName.includes("fuchka platter") && qty >= 3) {
-                          detectedOfferType = "bogo_1g2";
-                          origUnitPrice = 340;
-                        } else if (!detectedOfferType && itemName.includes("borhani") && unitPrice === 76) {
-                          origUnitPrice = 80;
+                        // যদি অবজেক্টে originalPrice না থাকে কিন্তু অফার থাকে
+                        if (!origUnitPrice || origUnitPrice < unitPrice) {
+                          origUnitPrice = unitPrice;
                         }
 
-                        // যদি আইটেমে আলাদাভাবে discount বা discountAmount প্রপার্টি থাকে সেটিও চেক করা হবে
-                        const itemDiscount = Number(item.discount || item.discountAmount) || 0;
-                        const offerLabel = getOfferText(detectedOfferType) || (item.discountDescription || (itemDiscount > 0 ? "SPECIAL DISCOUNT" : "-"));
+                        // কিছু কমন অফার বা অটো-ডিটেক্ট লজিক
+                        if (!detectedOfferType) {
+                          if (itemName.includes("fuchka platter") && qty >= 3) {
+                            detectedOfferType = "bogo_1g2";
+                          } else if (item.isBogo || item.freeQty > 0) {
+                            detectedOfferType = "bogo_1g1";
+                          }
+                        }
 
+                        // অফার টেক্সট জেনারেট করা
+                        let offerLabel = getOfferText(detectedOfferType);
+                        if (!offerLabel && item.discountDescription) {
+                          offerLabel = item.discountDescription;
+                        } else if (!offerLabel && item.discount > 0) {
+                          offerLabel = "DISCOUNT";
+                        }
+
+                        // গ্রস এবং নেট ক্যালকুলেশন
                         const fullGross = origUnitPrice * qty;
-
                         let netPayable = unitPrice * qty;
+
                         if (detectedOfferType === "bogo_1g1") {
-                          netPayable = unitPrice * Math.ceil(qty / 2);
+                          const paidQuantity = Math.ceil(qty / 2);
+                          netPayable = unitPrice * paidQuantity;
                         } else if (detectedOfferType === "bogo_1g2") {
-                          netPayable = unitPrice * Math.ceil(qty / 3);
-                        } else if (itemDiscount > 0) {
-                          netPayable = Math.max(0, fullGross - itemDiscount);
+                          const paidQuantity = Math.ceil(qty / 3);
+                          netPayable = unitPrice * paidQuantity;
+                        } else if (item.discount > 0) {
+                          netPayable = Math.max(0, fullGross - item.discount);
                         }
 
                         const freeDiscount = Math.max(0, fullGross - netPayable);
@@ -1057,8 +1071,9 @@ useEffect(() => {
                             <td className="p-2.5 border-r border-neutral-300 font-bold">
                               {item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}
                             </td>
+                            {/* ডেসক্রিপশন কলামে এখন অফারের নাম বা ডিসকাউন্ট দেখাবে */}
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700 uppercase">
-                              {offerLabel}
+                              {offerLabel || "-"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{origUnitPrice.toFixed(2)}
@@ -1066,6 +1081,7 @@ useEffect(() => {
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
+                            {/* ডিসকাউন্ট অ্যামাউন্ট সঠিক হিসাব করে দেখাবে */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
                               {freeDiscount > 0 ? `-৳${freeDiscount.toFixed(2)}` : "0.00"}
                             </td>
