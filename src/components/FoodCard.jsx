@@ -9,20 +9,35 @@ import {
 } from "../services/foodsService";
 
 // ---------------------------------------------------------------------------
-// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ + BOGO Offer Badge + Dynamic Promo Code Support
+// FoodCard — সম্পূর্ণ ১০০% স্কয়ার (rounded-none) শেপ + BOGO Offer Badge + Dynamic Promo Code Support + Branch Price Adjustment Support
 // ---------------------------------------------------------------------------
 const FoodCard = ({
   food,
+  branchId,
   favorited,
   onToggleFavorite,
   onAddToCart,
   variants,
 }) => {
+  // 🎯 Branch-based Price Adjustment Logic
+  let effectiveBasePrice = Number(food.price) || 0;
+  if (branchId && food.branchPrices && food.branchPrices[String(branchId)] !== undefined) {
+    const adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
+    effectiveBasePrice = Math.max(0, effectiveBasePrice + adjustVal);
+  }
+
   const hasVariants =
     Array.isArray(food.variations) && food.variations.length > 0;
+  
   const basePrice = hasVariants
-    ? Math.min(...food.variations.map((v) => Number(v.price) || 0))
-    : food.price;
+    ? Math.min(...food.variations.map((v) => {
+        let vPrice = Number(v.price) || 0;
+        if (branchId && food.branchPrices && food.branchPrices[String(branchId)] !== undefined) {
+          vPrice += Number(food.branchPrices[String(branchId)]) || 0;
+        }
+        return Math.max(0, vPrice);
+      }))
+    : effectiveBasePrice;
 
   // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
@@ -39,7 +54,7 @@ const FoodCard = ({
     >
       {/* ── Image ─────────────────────────────────────────────── */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        <Link to={`/menu/${food.id}`} className="block h-full w-full">
+        <Link to={`/menu/${food.id || food._id}`} className="block h-full w-full">
           <img
             src={food.image}
             alt={food.name}
@@ -61,7 +76,7 @@ const FoodCard = ({
 
         {/* Favorite Button */}
         <button
-          onClick={() => onToggleFavorite(food.id)}
+          onClick={() => onToggleFavorite(food.id || food._id)}
           aria-label={
             favorited
               ? `Remove ${food.name} from favorites`
@@ -88,7 +103,7 @@ const FoodCard = ({
           </span>
         </div>
 
-        <Link to={`/menu/${food.id}`} className="block">
+        <Link to={`/menu/${food.id || food._id}`} className="block">
           <h3 className="line-clamp-1 text-sm font-semibold text-neutral-800 transition-colors group-hover:text-primary-500 dark:text-neutral-100 sm:text-base">
             {food.name}
           </h3>
@@ -123,7 +138,7 @@ const FoodCard = ({
           {/* Button Section */}
           {hasVariants ? (
             <Link
-              to={`/menu/${food.id}`}
+              to={`/menu/${food.id || food._id}`}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />

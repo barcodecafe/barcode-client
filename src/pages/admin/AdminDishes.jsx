@@ -331,7 +331,7 @@ export const AdminDishes = () => {
         delete updatedPrices[targetId];
       } else {
         updatedBranchIds = [...prev.branchIds, targetId];
-        if (updatedPrices[targetId] === undefined) updatedPrices[targetId] = 0;
+        // Don't auto-set to 0, let it be empty until they type
       }
 
       return {
@@ -348,7 +348,7 @@ export const AdminDishes = () => {
       ...prev,
       branchPrices: {
         ...prev.branchPrices,
-        [targetId]: parseFloat(value) || 0,
+        [targetId]: value, // Keep as string here so user can type "-"
       },
     }));
   };
@@ -401,12 +401,22 @@ export const AdminDishes = () => {
       const categoryOrder =
         existingCategoryIndex !== -1 ? existingCategoryIndex + 1 : 999;
 
+      // Clean up branch prices before sending
+      const parsedBranchPrices = {};
+      Object.entries(formData.branchPrices).forEach(([key, val]) => {
+        const parsedVal = parseFloat(val);
+        if (!isNaN(parsedVal)) {
+          parsedBranchPrices[key] = parsedVal;
+        }
+      });
+
       const cleanedFormData = {
         ...formData,
         category: categoryName,
         categoryOrder,
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
+        branchPrices: parsedBranchPrices,
         discountPct:
           formData.offerType !== "none" || formData.promoCode
             ? 0
