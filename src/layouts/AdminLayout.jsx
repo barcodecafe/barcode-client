@@ -45,6 +45,7 @@ const navItems = [
   { name: 'Regions', path: '/admin/regions', icon: Map },
   { name: 'Branches', path: '/admin/branches', icon: Building2 },
   { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
+  { name: 'Rider Fleet', path: '/admin/riders', icon: Bike },
   { name: 'Customers', path: '/admin/customers', icon: Users },
   { name: 'Coupons', path: '/admin/coupons', icon: Tag },
   { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
