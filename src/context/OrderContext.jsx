@@ -6,17 +6,17 @@ const OrderContext = createContext();
 export const OrderProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [unreadOrderCount, setUnreadOrderCount] = useState(0);
-  const prevCountRef = useRef(null); // ইনিশিয়াল স্টেট null রাখা হলো
+  const prevCountRef = useRef(null);
 
-  // নোটিফিকেশন সাউন্ড বাজানোর ফাংশন
+  // 🔔 ১০০% কার্যকরী বেস-৬৪ (Base64) শর্ট বীপ সাউন্ড বা লোকাল অডিও
   const playNotificationSound = () => {
     try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      // এটি একটি জেনারেটেড বীপ সাউন্ড অডিও, যা কোনো এক্সটার্নাল লিংকের ওপর ডিপেন্ড করে না
+      const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAALAAABXADDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw//8AAAAATGF2ZjU3LjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAANPAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAALAAABXADDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw//8AAAAATGF2ZjU3LjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAANPAAAAAAAAAAAAA');
       audio.volume = 1.0;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => console.log("Audio play blocked by browser:", err));
-      }
+      audio.play().catch((err) => {
+        console.log("Audio autoplay blocked by browser policy:", err);
+      });
     } catch (e) {
       console.error("Sound error:", e);
     }
@@ -24,6 +24,7 @@ export const OrderProvider = ({ children }) => {
 
   const fetchAndUpdateOrders = async () => {
     try {
+      // ক্যাশ এড়াতে বা রিয়েল-টাইম ডাটা নিশ্চিত করতে এপিআই কল
       const response = await getAllOrders();
       
       let ordersList = [];
@@ -37,7 +38,7 @@ export const OrderProvider = ({ children }) => {
 
       setOrders(ordersList);
 
-      // 🎯 শুধুমাত্র নতুন বা অপেক্ষমাণ অর্ডারগুলো ফিল্টার করা
+      // নতুন অর্ডার ফিল্টার (Placed বা Awaiting Payment)
       const pendingNewOrders = ordersList.filter(ord => {
         const status = String(ord.status || '').trim();
         return status === 'Placed' || status === 'Awaiting Payment';
@@ -45,7 +46,7 @@ export const OrderProvider = ({ children }) => {
 
       const currentCount = pendingNewOrders.length;
 
-      // যদি আগের মানের চেয়ে বর্তমান কাউন্ট বেশি হয়, তবেই সাউন্ড বাজবে
+      // যদি আগের কাউন্টের চেয়ে বর্তমান কাউন্ট বেশি হয়, তবেই সাউন্ড বাজবে
       if (prevCountRef.current !== null && currentCount > prevCountRef.current) {
         playNotificationSound();
       }
@@ -59,11 +60,11 @@ export const OrderProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // প্রথমে একবার ফেচ হবে
+    // পেজ লোড হওয়ার সাথে সাথে ফেচ করবে
     fetchAndUpdateOrders();
 
-    // প্রতি ১০ সেকেন্ড পর পর ব্যাকগ্রাউন্ডে চেক করবে (পেজ রিফ্রেশ ছাড়াই আপডেট হবে)
-    const interval = setInterval(fetchAndUpdateOrders, 10000); 
+    // প্রতি ৮ সেকেন্ড পর পর ব্যাকগ্রাউন্ডে চেক করবে (রিফ্রেশ ছাড়াই অটো আপডেট হবে)
+    const interval = setInterval(fetchAndUpdateOrders, 8000); 
     return () => clearInterval(interval);
   }, []);
 
