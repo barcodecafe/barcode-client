@@ -53,23 +53,37 @@ export const RiderOrders = () => {
   const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
-  // 🎯 FIX: আইডি টাইপ মিসম্যাচ দূর করতে বুলেটপ্রুফ ফিল্টার ফাংশন
-  const isAssignedToMe = useCallback((o) => {
-    if (!user) return false;
-    const currentUserId = String(user.id || user._id || "");
-    const orderRiderId = String(o.riderId || o.rider?._id || o.rider || "");
-    const currentUserName = String(user.name || "").toLowerCase();
-    const orderRiderName = String(o.riderName || o.rider?.name || "").toLowerCase();
+  // 🎯 FIX: অত্যন্ত শক্তিশালী ও ডিপ ফিল্টার ফাংশন (যেকোনো স্ট্রাকচার হ্যান্ডেল করবে)
+  const isAssignedToMe = useCallback((orderData) => {
+    if (!user || !orderData) return false;
+    
+    const uId = String(user.id || user._id || "").trim();
+    const uName = String(user.name || "").trim().toLowerCase();
 
-    return (orderRiderId === currentUserId && currentUserId !== "") || 
-           (orderRiderName === currentUserName && currentUserName !== "");
+    // অর্ডার অবজেক্টটি সরাসরি থাকতে পারে, অথবা order প্রপার্টির ভেতরে থাকতে পারে
+    const targetOrder = orderData.order || orderData;
+
+    const oId1 = String(targetOrder.riderId || "").trim();
+    const oId2 = String(targetOrder.rider?._id || "").trim();
+    const oId3 = String(targetOrder.rider?.id || "").trim();
+    const oId4 = String(targetOrder.rider || "").trim(); // যদি rider সরাসরি আইডি হিসেবে থাকে
+
+    const oName1 = String(targetOrder.riderName || "").trim().toLowerCase();
+    const oName2 = String(targetOrder.rider?.name || "").trim().toLowerCase();
+
+    const idMatch = uId !== "" && (uId === oId1 || uId === oId2 || uId === oId3 || uId === oId4);
+    const nameMatch = uName !== "" && (uName === oName1 || uName === oName2);
+
+    return idMatch || nameMatch;
   }, [user]);
 
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
     getAllOrders()
       .then((data) => {
-        const assigned = (data || []).filter((o) => isAssignedToMe(o));
+        const orderList = Array.isArray(data) ? data : data?.data || [];
+        // ডেলিভার্ড বা রিজেক্টেড অর্ডারগুলো মূল লিস্ট থেকে বাদ দেওয়া হচ্ছে
+        const assigned = orderList.filter((o) => isAssignedToMe(o) && o.status !== "Delivered" && o.status !== "Rejected");
         setOrders(assigned);
         setLoading(false);
       })
@@ -81,32 +95,33 @@ export const RiderOrders = () => {
 
   useEffect(() => {
     fetchRiderOrders();
-    // ব্যাকআপ সিঙ্ক হিসেবে ইন্টারভাল থাকছে
     const interval = setInterval(fetchRiderOrders, 4000);
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
-  // 🎯 FIX: রিয়েল-টাইম আপডেটের জন্য সকেট লিসেনার বসানো হলো
+  // 🎯 FIX: সকেট লিসেনার আপডেট
   useEffect(() => {
     const handleSocketUpdate = (data) => {
       const incomingOrder = data?.order || data;
       if (!incomingOrder) return;
       
-      // যদি অর্ডারটি এই রাইডারের হয়, তবে সাথে সাথে লোকাল স্টেট আপডেট হবে
-      if (isAssignedToMe(incomingOrder)) {
-        setOrders((prev) => {
-          const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id));
+      const isMyOrder = isAssignedToMe(incomingOrder);
+      const isCompleted = incomingOrder.status === "Delivered" || incomingOrder.status === "Rejected";
+
+      setOrders((prev) => {
+        const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id));
+
+        // যদি অর্ডারটি আমার হয় এবং এখনো ডেলিভারি বা রিজেক্ট না হয়ে থাকে
+        if (isMyOrder && !isCompleted) {
           if (exists) {
             return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id) ? { ...o, ...incomingOrder } : o);
           }
           return [incomingOrder, ...prev];
-        });
-      } else {
-         // যদি অন্য রাইডারকে অ্যাসাইন করা হয়ে থাকে, লিস্ট থেকে রিমুভ হবে
-         setOrders((prev) => prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id)));
-      }
-      
-      fetchRiderOrders(); // ব্যাকগ্রাউন্ড সিঙ্ক
+        } 
+        
+        // যদি অর্ডারটি আমার না হয় বা অলরেডি কমপ্লিট হয়ে যায়, তবে লিস্ট থেকে সরিয়ে ফেলবে
+        return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id));
+      });
     };
 
     socket.on("rider_order_assigned", handleSocketUpdate);
@@ -120,7 +135,7 @@ export const RiderOrders = () => {
       socket.off("order_updated", handleSocketUpdate);
       socket.off("order_status_updated", handleSocketUpdate);
     };
-  }, [fetchRiderOrders, isAssignedToMe]);
+  }, [isAssignedToMe]);
 
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
@@ -133,7 +148,7 @@ export const RiderOrders = () => {
 
   const handleAccept = async (orderId) => {
     try {
-      // 🎯 অপ্টিমিস্টিক আপডেট (ক্লিক করার সাথে সাথে UI পরিবর্তন হবে)
+      // 🎯 অপ্টিমিস্টিক আপডেট
       setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" } : o));
       
       await acceptRiderOrder(orderId);
@@ -160,7 +175,12 @@ export const RiderOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: newStatus } : o));
+      if (newStatus === "Delivered" || newStatus === "Rejected") {
+         setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
+      } else {
+         setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: newStatus } : o));
+      }
+      
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { id: orderId, status: newStatus });
       fetchRiderOrders();
