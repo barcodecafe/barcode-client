@@ -58,16 +58,16 @@ export const DishDetail = () => {
   // Variations Tracking State
   const [selectedVariation, setSelectedVariation] = useState(null);
 
-  // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য পারফেক্ট প্রায়োরিটি
-  const storedBranch = localStorage.getItem("selectedBranchId") || localStorage.getItem("branchId");
+  // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য সঠিক প্রায়োরিটি অর্ডার
   const branchIdParam = searchParams.get("branchId");
+  const storedBranch = localStorage.getItem("selectedBranchId") || localStorage.getItem("branchId");
   
-  const branchId = storedBranch 
-    ? Number(storedBranch) 
-    : branchIdParam 
+  const branchId = branchIdParam 
     ? Number(branchIdParam) 
     : selectedBranchId 
-    ? Number(selectedBranchId) 
+    ? Number(selectedBranchId)
+    : storedBranch 
+    ? Number(storedBranch) 
     : null;
 
   useEffect(() => {
