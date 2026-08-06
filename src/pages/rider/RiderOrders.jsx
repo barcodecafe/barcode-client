@@ -95,7 +95,7 @@ export const RiderOrders = () => {
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
-  // 🎯 FIX: সকেট লিসেনারে রেস কন্ডিশন (Race Condition) দূর করা হলো
+  // 🎯 FIX: ডেটাবেস রেস কন্ডিশন রোধ করতে অপ্টিমিস্টিক পুশ এবং ডিলে যুক্ত করা হলো
   useEffect(() => {
     const handleSocketUpdate = (data) => {
       const incomingOrder = data?.order || data;
@@ -107,25 +107,27 @@ export const RiderOrders = () => {
       let needsFullFetch = false;
 
       setOrders((prev) => {
-        const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id));
+        const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id || incomingOrder.orderId));
 
         if (isMyOrder && !isCompleted) {
           if (exists) {
-            // লিস্টে থাকলে শুধু ডেটা মার্জ করবে, ফেচ করবে না
-            return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id) ? { ...o, ...incomingOrder } : o);
+            // লিস্টে থাকলে শুধু ডেটা মার্জ করবে
+            return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id || incomingOrder.orderId) ? { ...o, ...incomingOrder } : o);
           }
-          // নতুন অর্ডার হলে ফুল ডেটা ফেচ করার জন্য ফ্ল্যাগ ট্রু করবে
+          // 🚀 FIX: অর্ডারটি লিস্টে না থাকলে সাথে সাথেই পুশ করে দেবে, যাতে Accept/Reject বাটন শো করে
           needsFullFetch = true;
-          return prev;
+          return [{ ...incomingOrder, id: incomingOrder.id || incomingOrder.orderId, createdAt: incomingOrder.createdAt || new Date().toISOString() }, ...prev];
         } 
         
         // আমার না হলে সরিয়ে ফেলবে
-        return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id));
+        return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id || incomingOrder.orderId));
       });
       
-      // শুধুমাত্র নতুন অর্ডারের ক্ষেত্রে ফেচ কল হবে
+      // 🚀 FIX: ব্যাকএন্ড ডেটাবেস সেভ হওয়ার জন্য ১.৫ সেকেন্ড সময় দিয়ে তারপর ফুল ডেটা কল করা হলো
       if (needsFullFetch) {
-        fetchRiderOrders();
+        setTimeout(() => {
+          fetchRiderOrders();
+        }, 1500); 
       }
     };
 
@@ -151,7 +153,6 @@ export const RiderOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
-  // 🎯 FIX: রেস কন্ডিশন রোধ করতে তাৎক্ষণিক fetchRiderOrders() সরিয়ে দেওয়া হলো
   const handleAccept = async (orderId) => {
     try {
       setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" } : o));
@@ -166,11 +167,10 @@ export const RiderOrders = () => {
       
     } catch (err) {
       alert("Failed to accept order: " + (err.response?.data?.message || err.message));
-      fetchRiderOrders(); // ফেইল করলে আগের অবস্থায় ফেরার জন্য ফেচ হবে
+      fetchRiderOrders();
     }
   };
 
-  // 🎯 FIX: Reject লজিক ফিক্স
   const handleReject = async (orderId) => {
     try {
       setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
@@ -267,7 +267,7 @@ export const RiderOrders = () => {
             ) : (
               <div className="space-y-4">
                 {orders.map((ord) => {
-                  const safeOrderId = ord._id || ord.id;
+                  const safeOrderId = ord._id || ord.id || ord.orderId;
 
                   return (
                     <div
@@ -277,7 +277,7 @@ export const RiderOrders = () => {
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div>
                           <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
-                            Order #{safeOrderId.slice(-6)}
+                            Order #{safeOrderId?.slice(-6)}
                           </span>
                           <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
                             Placed: {ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString() : "Just Now"}
@@ -326,7 +326,7 @@ export const RiderOrders = () => {
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-rose-500 mt-0.5 shrink-0" />
                             <span className="leading-tight">
-                              {ord.deliveryAddress || ord.user?.address || "Address not provided"} 
+                              {ord.deliveryAddress || ord.user?.address || "Address loading..."} 
                               {(ord.deliveryArea || ord.user?.pickArea) ? ` (${ord.deliveryArea || ord.user?.pickArea})` : ""}
                             </span>
                           </div>
@@ -410,7 +410,7 @@ export const RiderOrders = () => {
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-bold text-sm text-neutral-800 dark:text-white">
-                    Chat for #{(chatOrder._id || chatOrder.id)?.slice(-6)}
+                    Chat for #{(chatOrder._id || chatOrder.id || chatOrder.orderId)?.slice(-6)}
                   </h3>
                   <span className="block text-[9px] text-neutral-400">
                     Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
