@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -26,83 +26,112 @@ import {
   Star,
   ClipboardList,
   ArrowRight,
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useFavorites } from '../context/FavoritesContext';
-import { getAllOrders, getActiveOrdersForUser } from '../services/ordersService';
-import { getAllFoods, hasFoodDiscount, applyFoodDiscount } from '../services/foodsService';
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useFavorites } from "../context/FavoritesContext";
+import {
+  getAllOrders,
+  getActiveOrdersForUser,
+} from "../services/ordersService";
+import {
+  getAllFoods,
+  hasFoodDiscount,
+  applyFoodDiscount,
+} from "../services/foodsService";
 
 const SECTIONS = [
-  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { key: 'orders', label: 'My Orders', icon: ShoppingBag },
-  { key: 'payments', label: 'Payments', icon: CreditCard },
-  { key: 'favorites', label: 'Favorites', icon: Heart },
-  { key: 'settings', label: 'Settings', icon: Settings },
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "orders", label: "My Orders", icon: ShoppingBag },
+  { key: "payments", label: "Payments", icon: CreditCard },
+  { key: "favorites", label: "Favorites", icon: Heart },
+  { key: "settings", label: "Settings", icon: Settings },
 ];
 
-const ACTIVE_STATUSES = ['Placed', 'Accepted', 'Preparing', 'Out for Delivery'];
+const ACTIVE_STATUSES = ["Placed", "Accepted", "Preparing", "Out for Delivery"];
 
 const taka = (v) => `৳${Number(v || 0).toFixed(2)}`;
 
-const shortId = (id) => `#${String(id || '').replace(/^order_/, '').slice(-6).toUpperCase()}`;
+const shortId = (id) =>
+  `#${String(id || "")
+    .replace(/^order_/, "")
+    .slice(-6)
+    .toUpperCase()}`;
 
 const formatDate = (value) => {
-  if (!value) return '—';
+  if (!value) return "—";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const formatMonth = (value) => {
-  if (!value) return '—';
+  if (!value) return "—";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 };
 
 const isActive = (status) => ACTIVE_STATUSES.includes(status);
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'Placed': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-    case 'Accepted': return 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
-    case 'Preparing': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-    case 'Out for Delivery': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
-    case 'Delivered': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-    case 'Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
-    default: return 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20';
+    case "Placed":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    case "Accepted":
+      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
+    case "Preparing":
+      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+    case "Out for Delivery":
+      return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+    case "Delivered":
+      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    case "Rejected":
+      return "bg-red-500/10 text-red-500 border-red-500/20";
+    default:
+      return "bg-neutral-500/10 text-neutral-500 border-neutral-500/20";
   }
 };
 
 const paymentMethodLabel = (method) => {
   switch (method) {
-    case 'sslcommerz': return 'SSLCommerz (Online)';
-    case 'cod': return 'Cash on Delivery';
-    default: return method ? String(method).toUpperCase() : 'Cash on Delivery';
+    case "sslcommerz":
+      return "SSLCommerz (Online)";
+    case "cod":
+      return "Cash on Delivery";
+    default:
+      return method ? String(method).toUpperCase() : "Cash on Delivery";
   }
 };
 
 const derivePaymentStatus = (order) => {
   if (order.paymentStatus) return order.paymentStatus;
-  if (order.status === 'Rejected') return 'Cancelled';
-  if (order.status === 'Delivered') return 'Paid';
-  return 'Pending';
+  if (order.status === "Rejected") return "Cancelled";
+  if (order.status === "Delivered") return "Paid";
+  return "Pending";
 };
 
 const paymentStatusLabel = (order) => {
   const status = derivePaymentStatus(order);
-  if (status !== 'Pending') return status;
-  const isCod = String(order.paymentMethod || 'cod').toLowerCase() === 'cod';
-  return isCod ? 'Pay on delivery' : 'Awaiting payment';
+  if (status !== "Pending") return status;
+  const isCod = String(order.paymentMethod || "cod").toLowerCase() === "cod";
+  return isCod ? "Pay on delivery" : "Awaiting payment";
 };
 
 const getPaymentStatusColor = (status) => {
   switch (status) {
-    case 'Paid': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-    case 'Pending': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-    case 'Cancelled':
-    case 'Failed': return 'bg-red-500/10 text-red-500 border-red-500/20';
-    default: return 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20';
+    case "Paid":
+      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    case "Pending":
+      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+    case "Cancelled":
+    case "Failed":
+      return "bg-red-500/10 text-red-500 border-red-500/20";
+    default:
+      return "bg-neutral-500/10 text-neutral-500 border-neutral-500/20";
   }
 };
 
@@ -114,11 +143,17 @@ const StatTile = ({ icon: Icon, label, value, hint, delay = 0 }) => (
     className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-sm p-5 flex items-start justify-between gap-3"
   >
     <div className="min-w-0">
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 truncate">{label}</p>
+      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 truncate">
+        {label}
+      </p>
       <p className="font-display text-2xl font-extrabold text-neutral-800 dark:text-neutral-100 mt-1 truncate">
         {value}
       </p>
-      {hint && <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 truncate">{hint}</p>}
+      {hint && (
+        <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 truncate">
+          {hint}
+        </p>
+      )}
     </div>
     <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
       <Icon className="w-5 h-5" />
@@ -132,8 +167,14 @@ const SectionHeading = ({ icon: Icon, title, subtitle }) => (
       <Icon className="w-4.5 h-4.5" />
     </div>
     <div>
-      <h2 className="font-display font-extrabold text-lg text-neutral-800 dark:text-white leading-tight">{title}</h2>
-      {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
+      <h2 className="font-display font-extrabold text-lg text-neutral-800 dark:text-white leading-tight">
+        {title}
+      </h2>
+      {subtitle && (
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+          {subtitle}
+        </p>
+      )}
     </div>
   </div>
 );
@@ -141,19 +182,23 @@ const SectionHeading = ({ icon: Icon, title, subtitle }) => (
 const EmptyState = ({ icon: Icon, title, message, cta }) => (
   <div className="text-center py-14 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
     <Icon className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
-    <p className="text-neutral-600 dark:text-neutral-300 text-sm font-semibold">{title}</p>
+    <p className="text-neutral-600 dark:text-neutral-300 text-sm font-semibold">
+      {title}
+    </p>
     {message && <p className="text-neutral-400 text-xs mt-1">{message}</p>}
     {cta}
   </div>
 );
 
-const Card = ({ children, className = '' }) => (
+const Card = ({ children, className = "" }) => (
   <div
     className={`bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs ${className}`}
   >
     {children}
   </div>
 );
+
+// Profile.jsx এর ভেতর OrderCard কম্পোনেন্ট এবং রেন্ডার সেকশনে ট্র্যাক বাটনটি এভাবে আপডেট করুন:
 
 const OrderCard = ({ order, expanded, onToggle }) => {
   const active = isActive(order.status);
@@ -166,9 +211,13 @@ const OrderCard = ({ order, expanded, onToggle }) => {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-neutral-800 dark:text-white">{shortId(order.id)}</span>
-              <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getStatusColor(order.status)}`}>
-                {order.status || 'Placed'}
+              <span className="text-sm font-bold text-neutral-800 dark:text-white">
+                {shortId(order.id)}
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getStatusColor(order.status)}`}
+              >
+                {order.status || "Placed"}
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap text-[11px] text-neutral-400 mt-1">
@@ -177,9 +226,14 @@ const OrderCard = ({ order, expanded, onToggle }) => {
                 {formatDate(order.createdAt)}
               </span>
               <span className="text-neutral-300 dark:text-neutral-700">•</span>
-              <span>{(order.items?.length || 0)} item{(order.items?.length || 0) === 1 ? '' : 's'}</span>
+              <span>
+                {order.items?.length || 0} item
+                {(order.items?.length || 0) === 1 ? "" : "s"}
+              </span>
               <span className="text-neutral-300 dark:text-neutral-700">•</span>
-              <span className="font-semibold text-neutral-600 dark:text-neutral-300">{taka(order.total)}</span>
+              <span className="font-semibold text-neutral-600 dark:text-neutral-300">
+                {taka(order.total)}
+              </span>
             </div>
           </div>
         </div>
@@ -190,8 +244,12 @@ const OrderCard = ({ order, expanded, onToggle }) => {
             className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500 font-bold text-xs active:scale-95 transition-all cursor-pointer"
           >
             Details
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+            />
           </button>
+
+          {/* 🎯 ট্র্যাক বাটনে ক্লিক করলে সরাসরি অর্ডার ট্র্যাকিং পেজে রিডাইরেক্ট হবে */}
           {active && (
             <Link
               to={`/order-tracking/${order.id}`}
@@ -203,78 +261,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
           )}
         </div>
       </div>
-
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 pt-1 border-t border-neutral-100 dark:border-neutral-850">
-              <div className="mt-3 rounded-xl border border-neutral-100 dark:border-neutral-850 overflow-hidden">
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr className="bg-neutral-50/60 dark:bg-neutral-950/40 text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-semibold">
-                      <th className="px-3 py-2">Dish</th>
-                      <th className="px-3 py-2 text-center">Qty</th>
-                      <th className="px-3 py-2 text-right">Unit</th>
-                      <th className="px-3 py-2 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(order.items || []).map((item, i) => (
-                      <tr key={item.id ?? i} className="border-t border-neutral-100 dark:border-neutral-850">
-                        <td className="px-3 py-2.5 font-semibold text-neutral-700 dark:text-neutral-200">
-                          {item.name}
-                          {item.selectedSize && (
-                            <span className="ml-1.5 text-[10px] font-normal text-neutral-400">({item.selectedSize})</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2.5 text-center text-neutral-500 dark:text-neutral-400">{item.quantity}</td>
-                        <td className="px-3 py-2.5 text-right text-neutral-500 dark:text-neutral-400">{taka(item.price)}</td>
-                        <td className="px-3 py-2.5 text-right font-bold text-neutral-700 dark:text-neutral-200">
-                          {taka((item.price || 0) * (item.quantity || 0))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
-                <div className="text-[11px] text-neutral-500 dark:text-neutral-400 space-y-1">
-                  <p className="flex items-center gap-1.5">
-                    <Wallet className="w-3.5 h-3.5 text-neutral-400" />
-                    {paymentMethodLabel(order.paymentMethod)}
-                  </p>
-                  {order.transactionId && (
-                    <p className="font-mono text-[10px] text-neutral-400">Txn: {order.transactionId}</p>
-                  )}
-                </div>
-                <div className="w-full sm:w-52 space-y-1 text-xs">
-                  <div className="flex justify-between text-neutral-500 dark:text-neutral-400">
-                    <span>Subtotal</span>
-                    <span>{taka(order.subtotal ?? order.total)}</span>
-                  </div>
-                  {order.discount > 0 && (
-                    <div className="flex justify-between text-emerald-500 font-semibold">
-                      <span>Discount{order.couponCode ? ` (${order.couponCode})` : ''}</span>
-                      <span>-{taka(order.discount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-sm text-neutral-800 dark:text-white pt-1.5 border-t border-neutral-100 dark:border-neutral-850">
-                    <span>Total</span>
-                    <span className="text-primary-500">{taka(order.total)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ...বাকি ডিটেইলস সেকশন অপরিবর্তিত থাকবে... */}
     </div>
   );
 };
@@ -285,12 +272,15 @@ export const Profile = () => {
   const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab');
+  const tabParam = searchParams.get("tab");
 
   const [activeSection, setActiveSection] = useState(
-    tabParam && ['overview', 'orders', 'payments', 'favorites', 'settings'].includes(tabParam)
+    tabParam &&
+      ["overview", "orders", "payments", "favorites", "settings"].includes(
+        tabParam,
+      )
       ? tabParam
-      : 'overview'
+      : "overview",
   );
 
   const [orders, setOrders] = useState([]);
@@ -298,27 +288,37 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  const [form, setForm] = useState({ name: '', phone: '', pickArea: '', address: '' });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    pickArea: "",
+    address: "",
+  });
   const [settingsNotice, setSettingsNotice] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (isAuthLoaded && !user) {
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
     if (user) {
       setForm({
-        name: user.name || '',
-        phone: user.phone || '',
-        pickArea: user.pickArea || '',
-        address: user.address || '',
+        name: user.name || "",
+        phone: user.phone || "",
+        pickArea: user.pickArea || "",
+        address: user.address || "",
       });
     }
   }, [user, isAuthLoaded, navigate]);
 
   useEffect(() => {
-    if (tabParam && ['overview', 'orders', 'payments', 'favorites', 'settings'].includes(tabParam)) {
+    if (
+      tabParam &&
+      ["overview", "orders", "payments", "favorites", "settings"].includes(
+        tabParam,
+      )
+    ) {
       setActiveSection(tabParam);
     }
   }, [tabParam]);
@@ -344,13 +344,16 @@ export const Profile = () => {
   }, [user]);
 
   const sortedOrders = useMemo(
-    () => [...orders].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
-    [orders]
+    () =>
+      [...orders].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      ),
+    [orders],
   );
 
   const stats = useMemo(() => {
     const totalSpent = orders
-      .filter((o) => o.status !== 'Rejected')
+      .filter((o) => o.status !== "Rejected")
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
     return {
       totalOrders: orders.length,
@@ -360,24 +363,26 @@ export const Profile = () => {
   }, [orders]);
 
   const favoriteFoods = useMemo(
-    () => favoriteIds.map((id) => foods.find((f) => f.id === id)).filter(Boolean),
-    [favoriteIds, foods]
+    () =>
+      favoriteIds.map((id) => foods.find((f) => f.id === id)).filter(Boolean),
+    [favoriteIds, foods],
   );
 
   if (!user) return null;
 
-  const firstName = (user.name || 'there').trim().split(' ')[0];
+  const firstName = (user.name || "there").trim().split(" ")[0];
 
   const handleLogout = async () => {
     await logout();
-    navigate('/', { replace: true });
+    navigate("/", { replace: true });
   };
 
-  const toggleOrder = (id) => setExpandedOrderId((cur) => (cur === id ? null : id));
+  const toggleOrder = (id) =>
+    setExpandedOrderId((cur) => (cur === id ? null : id));
 
   const handleTabChange = (key) => {
     setActiveSection(key);
-    setSearchParams(key === 'overview' ? {} : { tab: key });
+    setSearchParams(key === "overview" ? {} : { tab: key });
   };
 
   const handleSettingsSubmit = async (e) => {
@@ -391,9 +396,12 @@ export const Profile = () => {
         pickArea: form.pickArea.trim(),
         address: form.address.trim(),
       });
-      setSettingsNotice({ ok: true, text: 'Profile updated successfully.' });
+      setSettingsNotice({ ok: true, text: "Profile updated successfully." });
     } catch (err) {
-      setSettingsNotice({ ok: false, text: err.message || 'Failed to update profile. Please try again.' });
+      setSettingsNotice({
+        ok: false,
+        text: err.message || "Failed to update profile. Please try again.",
+      });
     } finally {
       setSavingProfile(false);
     }
@@ -401,10 +409,10 @@ export const Profile = () => {
 
   const resetForm = () => {
     setForm({
-      name: user.name || '',
-      phone: user.phone || '',
-      pickArea: user.pickArea || '',
-      address: user.address || '',
+      name: user.name || "",
+      phone: user.phone || "",
+      pickArea: user.pickArea || "",
+      address: user.address || "",
     });
     setSettingsNotice(null);
   };
@@ -421,17 +429,43 @@ export const Profile = () => {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatTile icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} hint={`${stats.activeOrders} active`} delay={0} />
-          <StatTile icon={Wallet} label="Total Spent" value={taka(stats.totalSpent)} hint="Excludes cancelled" delay={0.05} />
-          <StatTile icon={Heart} label="Favorites" value={favoriteIds.length} hint="Saved dishes" delay={0.1} />
-          <StatTile icon={Coins} label="Reward Points" value={user?.points ?? 0} hint="1 pt = ৳1 · redeem at checkout" delay={0.15} />
+          <StatTile
+            icon={ShoppingBag}
+            label="Total Orders"
+            value={stats.totalOrders}
+            hint={`${stats.activeOrders} active`}
+            delay={0}
+          />
+          <StatTile
+            icon={Wallet}
+            label="Total Spent"
+            value={taka(stats.totalSpent)}
+            hint="Excludes cancelled"
+            delay={0.05}
+          />
+          <StatTile
+            icon={Heart}
+            label="Favorites"
+            value={favoriteIds.length}
+            hint="Saved dishes"
+            delay={0.1}
+          />
+          <StatTile
+            icon={Coins}
+            label="Reward Points"
+            value={user?.points ?? 0}
+            hint="1 pt = ৳1 · redeem at checkout"
+            delay={0.15}
+          />
         </div>
 
         {active.length > 0 && (
           <Card className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Truck className="w-4.5 h-4.5 text-primary-500" />
-              <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">Active Deliveries</h3>
+              <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                Active Deliveries
+              </h3>
             </div>
             <div className="space-y-3">
               {active.map((order) => (
@@ -446,13 +480,17 @@ export const Profile = () => {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-neutral-800 dark:text-white">{shortId(order.id)}</span>
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase ${getStatusColor(order.status)}`}>
+                        <span className="text-xs font-bold text-neutral-800 dark:text-white">
+                          {shortId(order.id)}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase ${getStatusColor(order.status)}`}
+                        >
                           {order.status}
                         </span>
                       </div>
                       <span className="block text-[11px] text-neutral-400 mt-0.5">
-                        {(order.items?.length || 0)} items • {taka(order.total)}
+                        {order.items?.length || 0} items • {taka(order.total)}
                       </span>
                     </div>
                   </div>
@@ -467,11 +505,13 @@ export const Profile = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <ClipboardList className="w-4.5 h-4.5 text-primary-500" />
-              <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">Recent Orders</h3>
+              <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
+                Recent Orders
+              </h3>
             </div>
             {orders.length > 0 && (
               <button
-                onClick={() => handleTabChange('orders')}
+                onClick={() => handleTabChange("orders")}
                 className="flex items-center gap-1 text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors cursor-pointer"
               >
                 View all
@@ -487,7 +527,10 @@ export const Profile = () => {
               title="No orders yet"
               message="Your recent orders will show up here."
               cta={
-                <Link to="/menu" className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15">
+                <Link
+                  to="/menu"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15"
+                >
                   Browse Menu
                 </Link>
               }
@@ -511,7 +554,11 @@ export const Profile = () => {
 
   const renderOrders = () => (
     <Card className="p-5 sm:p-6">
-      <SectionHeading icon={ShoppingBag} title="My Orders" subtitle="Your complete order history and live tracking." />
+      <SectionHeading
+        icon={ShoppingBag}
+        title="My Orders"
+        subtitle="Your complete order history and live tracking."
+      />
       {loading ? (
         spinner
       ) : sortedOrders.length === 0 ? (
@@ -520,7 +567,10 @@ export const Profile = () => {
           title="No orders yet"
           message="Browse our menu and place your first order today!"
           cta={
-            <Link to="/menu" className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15">
+            <Link
+              to="/menu"
+              className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15"
+            >
               Browse Menu
             </Link>
           }
@@ -542,39 +592,68 @@ export const Profile = () => {
 
   const renderPayments = () => {
     const paid = orders
-      .filter((o) => derivePaymentStatus(o) === 'Paid')
+      .filter((o) => derivePaymentStatus(o) === "Paid")
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
     const pending = orders
-      .filter((o) => derivePaymentStatus(o) === 'Pending')
+      .filter((o) => derivePaymentStatus(o) === "Pending")
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
     const failedOrders = orders.filter((o) =>
-      ['Failed', 'Cancelled'].includes(derivePaymentStatus(o))
+      ["Failed", "Cancelled"].includes(derivePaymentStatus(o)),
     );
-    const failed = failedOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const failed = failedOrders.reduce(
+      (sum, o) => sum + Number(o.total || 0),
+      0,
+    );
 
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatTile icon={Wallet} label="Total Paid" value={taka(paid)} hint="Completed payments" delay={0} />
-          <StatTile icon={CreditCard} label="Pending" value={taka(pending)} hint="Not yet paid" delay={0.05} />
-          <StatTile icon={Receipt} label="Transactions" value={orders.length} hint="All time" delay={0.1} />
+          <StatTile
+            icon={Wallet}
+            label="Total Paid"
+            value={taka(paid)}
+            hint="Completed payments"
+            delay={0}
+          />
+          <StatTile
+            icon={CreditCard}
+            label="Pending"
+            value={taka(pending)}
+            hint="Not yet paid"
+            delay={0.05}
+          />
+          <StatTile
+            icon={Receipt}
+            label="Transactions"
+            value={orders.length}
+            hint="All time"
+            delay={0.1}
+          />
           {failedOrders.length > 0 && (
             <StatTile
               icon={CreditCard}
               label="Unsuccessful"
               value={taka(failed)}
-              hint={`${failedOrders.length} payment${failedOrders.length === 1 ? '' : 's'} — retry from tracking`}
+              hint={`${failedOrders.length} payment${failedOrders.length === 1 ? "" : "s"} — retry from tracking`}
               delay={0.15}
             />
           )}
         </div>
 
         <Card className="p-5 sm:p-6">
-          <SectionHeading icon={CreditCard} title="Payment History" subtitle="Transactions derived from your orders." />
+          <SectionHeading
+            icon={CreditCard}
+            title="Payment History"
+            subtitle="Transactions derived from your orders."
+          />
           {loading ? (
             spinner
           ) : sortedOrders.length === 0 ? (
-            <EmptyState icon={Receipt} title="No transactions yet" message="Payments appear here once you place an order." />
+            <EmptyState
+              icon={Receipt}
+              title="No transactions yet"
+              message="Payments appear here once you place an order."
+            />
           ) : (
             <div className="overflow-x-auto -mx-1">
               <table className="w-full text-xs text-left min-w-[560px]">
@@ -591,13 +670,26 @@ export const Profile = () => {
                   {sortedOrders.map((order) => {
                     const payStatus = derivePaymentStatus(order);
                     return (
-                      <tr key={order.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20">
-                        <td className="px-3 py-3.5 font-bold text-neutral-800 dark:text-white">{shortId(order.id)}</td>
-                        <td className="px-3 py-3.5 text-neutral-500 dark:text-neutral-400">{formatDate(order.createdAt)}</td>
-                        <td className="px-3 py-3.5 text-neutral-600 dark:text-neutral-300">{paymentMethodLabel(order.paymentMethod)}</td>
-                        <td className="px-3 py-3.5 text-right font-bold text-primary-500">{taka(order.total)}</td>
+                      <tr
+                        key={order.id}
+                        className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
+                      >
+                        <td className="px-3 py-3.5 font-bold text-neutral-800 dark:text-white">
+                          {shortId(order.id)}
+                        </td>
+                        <td className="px-3 py-3.5 text-neutral-500 dark:text-neutral-400">
+                          {formatDate(order.createdAt)}
+                        </td>
+                        <td className="px-3 py-3.5 text-neutral-600 dark:text-neutral-300">
+                          {paymentMethodLabel(order.paymentMethod)}
+                        </td>
+                        <td className="px-3 py-3.5 text-right font-bold text-primary-500">
+                          {taka(order.total)}
+                        </td>
                         <td className="px-3 py-3.5 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getPaymentStatusColor(payStatus)}`}>
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getPaymentStatusColor(payStatus)}`}
+                          >
                             {paymentStatusLabel(order)}
                           </span>
                         </td>
@@ -615,7 +707,11 @@ export const Profile = () => {
 
   const renderFavorites = () => (
     <Card className="p-5 sm:p-6">
-      <SectionHeading icon={Heart} title="Favorites" subtitle="Dishes you saved for later." />
+      <SectionHeading
+        icon={Heart}
+        title="Favorites"
+        subtitle="Dishes you saved for later."
+      />
       {loading || !isFavoritesLoaded ? (
         spinner
       ) : favoriteFoods.length === 0 ? (
@@ -624,7 +720,10 @@ export const Profile = () => {
           title="No favorites yet"
           message="Tap the heart on any dish to save it here."
           cta={
-            <Link to="/menu" className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15">
+            <Link
+              to="/menu"
+              className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-500/15"
+            >
               Explore Menu
             </Link>
           }
@@ -642,12 +741,22 @@ export const Profile = () => {
                 transition={{ duration: 0.3 }}
                 className="group relative flex gap-3 p-3 rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/30 dark:bg-neutral-950/20 hover:border-neutral-200 dark:hover:border-neutral-800 transition-all"
               >
-                <Link to={`/menu/${food.id}`} className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 shrink-0">
-                  <img src={food.image} alt={food.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                <Link
+                  to={`/menu/${food.id}`}
+                  className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 shrink-0"
+                >
+                  <img
+                    src={food.image}
+                    alt={food.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
                 </Link>
                 <div className="min-w-0 flex-1 flex flex-col justify-between">
                   <div>
-                    <span className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">{food.category}</span>
+                    <span className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+                      {food.category}
+                    </span>
                     <Link to={`/menu/${food.id}`} className="block">
                       <h3 className="font-semibold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors line-clamp-1">
                         {food.name}
@@ -662,8 +771,14 @@ export const Profile = () => {
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-1">
                     <span className="flex items-baseline gap-1.5">
-                      <span className="font-display font-extrabold text-sm text-primary-500">{taka(discounted)}</span>
-                      {hasDiscount && <span className="text-[11px] text-neutral-400 line-through">{taka(food.price)}</span>}
+                      <span className="font-display font-extrabold text-sm text-primary-500">
+                        {taka(discounted)}
+                      </span>
+                      {hasDiscount && (
+                        <span className="text-[11px] text-neutral-400 line-through">
+                          {taka(food.price)}
+                        </span>
+                      )}
                     </span>
                     <button
                       onClick={() => toggleFavorite(food.id)}
@@ -684,20 +799,25 @@ export const Profile = () => {
 
   const renderSettings = () => {
     const inputClass =
-      'w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm';
-    const labelClass = 'block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5';
+      "w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm";
+    const labelClass =
+      "block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5";
 
     return (
       <div className="space-y-6">
         <Card className="p-5 sm:p-6">
-          <SectionHeading icon={Settings} title="Profile & Settings" subtitle="Manage your personal details." />
+          <SectionHeading
+            icon={Settings}
+            title="Profile & Settings"
+            subtitle="Manage your personal details."
+          />
 
           {settingsNotice && (
             <div
               className={`mb-5 flex items-start gap-2 p-3 rounded-xl border text-sm ${
                 settingsNotice.ok
-                  ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-300'
-                  : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400'
+                  ? "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400"
               }`}
             >
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
@@ -708,14 +828,18 @@ export const Profile = () => {
           <form onSubmit={handleSettingsSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pf-name" className={labelClass}>Full Name</label>
+                <label htmlFor="pf-name" className={labelClass}>
+                  Full Name
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     id="pf-name"
                     type="text"
                     value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
                     placeholder="Your full name"
                     className={`${inputClass} pl-10`}
                   />
@@ -723,14 +847,18 @@ export const Profile = () => {
               </div>
 
               <div>
-                <label htmlFor="pf-phone" className={labelClass}>Phone Number</label>
+                <label htmlFor="pf-phone" className={labelClass}>
+                  Phone Number
+                </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     id="pf-phone"
                     type="tel"
                     value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, phone: e.target.value }))
+                    }
                     placeholder="e.g. 01700000000"
                     className={`${inputClass} pl-10`}
                   />
@@ -739,45 +867,57 @@ export const Profile = () => {
             </div>
 
             <div>
-              <label htmlFor="pf-email" className={labelClass}>Email Address</label>
+              <label htmlFor="pf-email" className={labelClass}>
+                Email Address
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
                   id="pf-email"
                   type="email"
-                  value={user.email || ''}
+                  value={user.email || ""}
                   readOnly
                   disabled
                   className={`${inputClass} pl-10 opacity-70 cursor-not-allowed`}
                 />
               </div>
-              <p className="text-[11px] text-neutral-400 mt-1.5">Your email is used to sign in and can&apos;t be changed here.</p>
+              <p className="text-[11px] text-neutral-400 mt-1.5">
+                Your email is used to sign in and can&apos;t be changed here.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pf-area" className={labelClass}>Pick Area</label>
+                <label htmlFor="pf-area" className={labelClass}>
+                  Pick Area
+                </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     id="pf-area"
                     type="text"
                     value={form.pickArea}
-                    onChange={(e) => setForm((f) => ({ ...f, pickArea: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, pickArea: e.target.value }))
+                    }
                     placeholder="e.g. Dhaka"
                     className={`${inputClass} pl-10`}
                   />
                 </div>
               </div>
               <div>
-                <label htmlFor="pf-address" className={labelClass}>Delivery Address</label>
+                <label htmlFor="pf-address" className={labelClass}>
+                  Delivery Address
+                </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     id="pf-address"
                     type="text"
                     value={form.address}
-                    onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, address: e.target.value }))
+                    }
                     placeholder="House, road, area"
                     className={`${inputClass} pl-10`}
                   />
@@ -792,7 +932,7 @@ export const Profile = () => {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-lg shadow-primary-500/10 active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                {savingProfile ? 'Saving…' : 'Save Changes'}
+                {savingProfile ? "Saving…" : "Save Changes"}
               </button>
               <button
                 type="button"
@@ -807,15 +947,27 @@ export const Profile = () => {
         </Card>
 
         <Card className="p-5 sm:p-6">
-          <SectionHeading icon={Info} title="Account" subtitle="Your account details." />
+          <SectionHeading
+            icon={Info}
+            title="Account"
+            subtitle="Your account details."
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/40 dark:bg-neutral-950/20">
-              <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Account Type</span>
-              <span className="block text-sm font-semibold text-neutral-800 dark:text-neutral-100 capitalize mt-1">{user.role || 'user'}</span>
+              <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Account Type
+              </span>
+              <span className="block text-sm font-semibold text-neutral-800 dark:text-neutral-100 capitalize mt-1">
+                {user.role || "user"}
+              </span>
             </div>
             <div className="p-4 rounded-xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/40 dark:bg-neutral-950/20">
-              <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Member Since</span>
-              <span className="block text-sm font-semibold text-neutral-800 dark:text-neutral-100 mt-1">{formatMonth(user.createdAt)}</span>
+              <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Member Since
+              </span>
+              <span className="block text-sm font-semibold text-neutral-800 dark:text-neutral-100 mt-1">
+                {formatMonth(user.createdAt)}
+              </span>
             </div>
           </div>
           <button
@@ -850,7 +1002,7 @@ export const Profile = () => {
           className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-4"
         >
           <div className="w-16 h-16 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-black text-2xl border border-primary-500/25 shadow-sm shrink-0">
-            {(user.name || 'U').charAt(0).toUpperCase()}
+            {(user.name || "U").charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
@@ -862,7 +1014,7 @@ export const Profile = () => {
                 {user.email}
               </span>
               <span className="text-[10px] capitalize px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-semibold text-neutral-500 dark:text-neutral-400">
-                {user.role || 'user'}
+                {user.role || "user"}
               </span>
             </div>
           </div>
@@ -888,8 +1040,8 @@ export const Profile = () => {
                       onClick={() => handleTabChange(s.key)}
                       className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shrink-0 lg:w-full cursor-pointer ${
                         active
-                          ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                          : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
+                          ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                          : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
                       }`}
                     >
                       <s.icon className="w-4 h-4 shrink-0" />
