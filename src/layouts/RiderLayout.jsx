@@ -31,6 +31,28 @@ const navItems = [
   { name: "Daily Track Log", path: "/rider/settlement", icon: ClipboardList },
 ];
 
+// 🎯 FIX: অর্ডারটি এই রাইডারের কি না তা চেক করার জন্য বুলেটপ্রুফ গ্লোবাল ফাংশন
+const isAssignedToMe = (orderOrData, user) => {
+  if (!user || !orderOrData) return false;
+  
+  const uId = String(user.id || user._id || "").trim();
+  const uName = String(user.name || "").trim().toLowerCase();
+
+  const oId1 = String(orderOrData.riderId || "").trim();
+  const oId2 = String(orderOrData.rider?._id || "").trim();
+  const oId3 = String(orderOrData.rider || "").trim();
+  const oId4 = String(orderOrData.order?.riderId || "").trim();
+
+  const oName1 = String(orderOrData.riderName || "").trim().toLowerCase();
+  const oName2 = String(orderOrData.rider?.name || "").trim().toLowerCase();
+  const oName3 = String(orderOrData.order?.riderName || "").trim().toLowerCase();
+
+  const idMatch = uId !== "" && (uId === oId1 || uId === oId2 || uId === oId3 || uId === oId4);
+  const nameMatch = uName !== "" && (uName === oName1 || uName === oName2 || uName === oName3);
+
+  return idMatch || nameMatch;
+};
+
 export const RiderLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -48,16 +70,13 @@ export const RiderLayout = () => {
   }, [soundEnabled]);
 
   const audioCtxRef = useRef(null);
-  
-  // 🎯 FIX: রাইডারের বর্তমান অর্ডারগুলোর ট্র্যাক রাখার জন্য Ref
   const ordersRef = useRef([]);
 
   useEffect(() => {
     const unlockAudioContext = () => {
       try {
         if (!audioCtxRef.current) {
-          audioCtxRef.current = new (window.AudioContext ||
-            window.webkitAudioContext)();
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
         }
         if (audioCtxRef.current.state === "suspended") {
           audioCtxRef.current.resume();
@@ -116,22 +135,18 @@ export const RiderLayout = () => {
   };
 
   const fetchRiderPendingOrders = async () => {
+    if (!user) return;
     try {
       const ordersData = await getAllOrders();
       const ordersList = Array.isArray(ordersData) ? ordersData : ordersData?.data || [];
 
+      // 🎯 FIX: নতুন লজিক ব্যবহার করে ফিল্টার করা
       const assigned = ordersList.filter((o) => {
-        const isMyOrder =
-          o.riderId === user?.id ||
-          o.riderId === user?._id ||
-          o.rider?._id === user?.id ||
-          o.riderName?.toLowerCase() === user?.name?.toLowerCase();
-          
+        const isMyOrder = isAssignedToMe(o, user);
         const isActive = o.status !== "Delivered" && o.status !== "Rejected";
         return isMyOrder && isActive;
       });
 
-      // 🎯 অর্ডারের লিস্ট Ref-এ সেভ করে রাখছি
       ordersRef.current = assigned;
 
       const pendingAcceptance = assigned.filter((o) => {
@@ -153,34 +168,22 @@ export const RiderLayout = () => {
     }
 
     const handleRiderOrderUpdate = (data) => {
-      fetchRiderPendingOrders();
+      fetchRiderPendingOrders(); // ডাটাবেস থেকে নতুন ডেটা ফেচ করা
 
       const orderId = data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
       const existingOrder = ordersRef.current.find((o) => String(o._id || o.id) === String(orderId));
 
-      let isForMe = false;
-      const currentUserId = String(user?.id || user?._id || "");
-      const currentUserName = String(user?.name || "").toLowerCase();
-
-      // চেক করা হচ্ছে আপডেটটি এই রাইডারের কি না
-      if (existingOrder) {
-        isForMe = true;
-      } else {
-        const rId = data?.riderId || data?.order?.riderId || data?.rider?._id || data?.rider;
-        const rName = data?.riderName || data?.order?.riderName || data?.rider?.name;
-        if (rId && String(rId) === currentUserId) isForMe = true;
-        if (rName && String(rName).toLowerCase() === currentUserName) isForMe = true;
-      }
+      // 🎯 FIX: ইভেন্টটি এই রাইডারের কি না তা চেক করা
+      const isForMe = isAssignedToMe(data, user) || (existingOrder ? true : false);
 
       if (isForMe) {
-        // 🎯 FIX: ব্যাকএন্ড থেকে যদি ছোট ডাটা আসে, তবে লোকাল Ref থেকে পুরনো স্ট্যাটাস পড়ে নেবে
         const acceptStatus = data?.riderAcceptStatus || data?.order?.riderAcceptStatus || existingOrder?.riderAcceptStatus;
         const orderStatus = data?.status || data?.order?.status || existingOrder?.status;
         
         const isAlreadyProcessed = orderStatus === "Delivered" || orderStatus === "Out for Delivery" || orderStatus === "Rejected";
         const isAlreadyAccepted = acceptStatus === "accepted";
 
-        // শুধুমাত্র নতুন এবং এখনো Accept না করা অর্ডারের ক্ষেত্রেই পপআপ আসবে
+        // শুধুমাত্র নতুন অ্যাসাইন হওয়া অর্ডারের ক্ষেত্রে পপআপ আসবে
         if (!isAlreadyAccepted && !isAlreadyProcessed) {
           playLoudNotificationChime();
 
