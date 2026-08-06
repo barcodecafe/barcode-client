@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { socket } from '../services/socket'; // ⚡ আপনার সেন্ট্রাল socket.js ফাইল থেকে ইমপোর্ট করা হলো
 import { getAllOrders } from '../services/ordersService';
 
 const OrderContext = createContext();
@@ -8,16 +9,13 @@ export const OrderProvider = ({ children }) => {
   const [unreadOrderCount, setUnreadOrderCount] = useState(0);
   const prevCountRef = useRef(null);
 
-  // 🔔 পাবলিক ফোল্ডার থেকে লোকাল নোটিফিকেশন সাউন্ড বাজানোর ফাংশন
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/notification.mp3');
       audio.volume = 1.0;
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn("Browser blocked autoplay sound until user interacts:", err);
-        });
+        playPromise.catch((err) => console.warn("Audio blocked:", err));
       }
     } catch (e) {
       console.error("Sound error:", e);
@@ -27,71 +25,74 @@ export const OrderProvider = ({ children }) => {
   const fetchAndUpdateOrders = async () => {
     try {
       const response = await getAllOrders();
-      
-      let ordersList = [];
-      if (Array.isArray(response)) {
-        ordersList = response;
-      } else if (Array.isArray(response?.data)) {
-        ordersList = response.data;
-      } else if (Array.isArray(response?.data?.data)) {
-        ordersList = response.data.data;
-      }
+      let ordersList = Array.isArray(response) ? response 
+                       : Array.isArray(response?.data) ? response.data 
+                       : Array.isArray(response?.data?.data) ? response.data.data : [];
 
       setOrders(ordersList);
-
-      // নতুন বা চলমান অর্ডার ফিল্টার (Placed বা Awaiting Payment)
-      const pendingNewOrders = ordersList.filter(ord => {
-        const status = String(ord.status || '').trim();
-        return status === 'Placed' || status === 'Awaiting Payment';
-      });
-
-      const currentCount = pendingNewOrders.length;
-
-      // যদি আগের মানের চেয়ে বর্তমান কাউন্ট বেশি হয়, তবেই সাউন্ড বাজবে
-      if (prevCountRef.current !== null && currentCount > prevCountRef.current) {
-        playNotificationSound();
-      }
-
-      prevCountRef.current = currentCount;
-      setUnreadOrderCount(currentCount);
-
     } catch (err) {
       console.error("Background order sync failed:", err);
     }
   };
 
   useEffect(() => {
+    // ১. প্রথমবার কম্পোনেন্ট লোড হলে ডাটা ফেচ করবে[cite: 8]
     fetchAndUpdateOrders();
-    // প্রতি 1 সেকেন্ড পর পর ব্যাকগ্রাউন্ডে চেক করবে
-    const interval = setInterval(fetchAndUpdateOrders, 1000);
-    return () => clearInterval(interval);
+
+    // ২. সকেট কানেক্ট হলে ব্যাকএন্ড থেকে পেন্ডিং কাউন্ট চাইবে[cite: 8]
+    socket.on('connect', () => {
+      socket.emit('get_pending_count');
+    });
+
+    // ⚡ ৩. ব্যাকএন্ড থেকে রিয়েল-টাইম কাউন্ট আপডেট রিসিভ করা[cite: 8]
+    socket.on('pending_count_updated', (payload) => {
+      const newCount = payload.count || payload.pendingCount || 0;
+      
+      if (prevCountRef.current !== null && newCount > prevCountRef.current) {
+        playNotificationSound(); // নতুন অর্ডার আসলে সাউন্ড বাজবে[cite: 8]
+      }
+      
+      prevCountRef.current = newCount;
+      setUnreadOrderCount(newCount);
+    });
+
+    // 🛒 ৪. নতুন অর্ডার তৈরি হলে লিস্ট রিলোড করা[cite: 8]
+    socket.on('order_created', (newOrder) => {
+      fetchAndUpdateOrders();
+      // কাউন্ট আপডেট এবং সাউন্ড pending_count_updated ইভেন্ট থেকেই হবে[cite: 8]
+    });
+
+    // 🔄 ৫. অর্ডারের স্ট্যাটাস (Accept/Reject) পরিবর্তন হলে লিস্ট রিলোড করা[cite: 8]
+    socket.on('order_status_updated', (data) => {
+      fetchAndUpdateOrders();
+    });
+
+    // ক্লিনআপ (কম্পোনেন্ট আনমাউন্ট হলে লিসেনার রিমুভ করা)[cite: 8]
+    return () => {
+      socket.off('connect');
+      socket.off('pending_count_updated');
+      socket.off('order_created');
+      socket.off('order_status_updated');
+    };
   }, []);
 
-  // ⚡ গ্রাহক অর্ডার কনফার্ম করলে ইনস্ট্যান্ট কাউন্ট বাড়িয়ে দেওয়ার এবং সাউন্ড বাজানোর ফাংশন
-  const incrementOrderCount = () => {
-    setUnreadOrderCount((prev) => {
-      const newCount = prev + 1;
-      prevCountRef.current = newCount;
-      return newCount;
-    });
-    playNotificationSound();
-  };
-
-  // ⚡ অ্যাডমিন Accept/Reject করলে ইনস্ট্যান্ট কাউন্ট কমানোর ফাংশন
-  const decrementOrderCount = () => {
-    setUnreadOrderCount((prev) => {
-      const newCount = Math.max(0, prev - 1);
-      prevCountRef.current = newCount;
-      return newCount;
-    });
-  };
-
-  const markOrdersAsRead = () => {
-    // প্রয়োজন অনুযায়ী
+  // (ঐচ্ছিক) যদি ব্যাকএন্ডের মিলি-সেকেন্ড রেসপন্সের আগেও 0ms-এ ইউআই আপডেট করতে চান[cite: 8]
+  const updateLocalOrderStatus = (orderId, newStatus) => {
+    setOrders((prevOrders) => 
+      prevOrders.map((ord) => 
+        (ord.id === orderId || ord._id === orderId) ? { ...ord, status: newStatus } : ord
+      )
+    );
   };
 
   return (
-    <OrderContext.Provider value={{ orders, unreadOrderCount, markOrdersAsRead, fetchAndUpdateOrders, incrementOrderCount, decrementOrderCount }}>
+    <OrderContext.Provider value={{ 
+      orders, 
+      unreadOrderCount, 
+      fetchAndUpdateOrders, 
+      updateLocalOrderStatus,
+      socket // চাইলে অন্য কম্পোনেন্টে সকেট ব্যবহারের জন্য এক্সপোর্ট করে দিতে পারেন[cite: 8]
+    }}>
       {children}
     </OrderContext.Provider>
   );
