@@ -1024,26 +1024,21 @@ useEffect(() => {
                         const qty = Number(item.quantity) || 1;
                         const unitPrice = Number(item.price) || 0;
 
+                        // 🔍 ডিসকাউন্ট বা অফার ডেটেকশন লজিক
                         let detectedOfferType = item.offerType;
-                        let origUnitPrice =
-                          Number(item.originalPrice) || unitPrice;
+                        let origUnitPrice = Number(item.originalPrice) || unitPrice;
 
-                        if (
-                          !detectedOfferType &&
-                          itemName.includes("fuchka platter") &&
-                          qty >= 3
-                        ) {
+                        if (!detectedOfferType && itemName.includes("fuchka platter") && qty >= 3) {
                           detectedOfferType = "bogo_1g2";
                           origUnitPrice = 340;
-                        } else if (
-                          !detectedOfferType &&
-                          itemName.includes("borhani") &&
-                          unitPrice === 76
-                        ) {
+                        } else if (!detectedOfferType && itemName.includes("borhani") && unitPrice === 76) {
                           origUnitPrice = 80;
                         }
 
-                        const offerLabel = getOfferText(detectedOfferType);
+                        // যদি আইটেমে আলাদাভাবে discount বা discountAmount প্রপার্টি থাকে সেটিও চেক করা হবে
+                        const itemDiscount = Number(item.discount || item.discountAmount) || 0;
+                        const offerLabel = getOfferText(detectedOfferType) || (item.discountDescription || (itemDiscount > 0 ? "SPECIAL DISCOUNT" : "-"));
+
                         const fullGross = origUnitPrice * qty;
 
                         let netPayable = unitPrice * qty;
@@ -1051,26 +1046,19 @@ useEffect(() => {
                           netPayable = unitPrice * Math.ceil(qty / 2);
                         } else if (detectedOfferType === "bogo_1g2") {
                           netPayable = unitPrice * Math.ceil(qty / 3);
+                        } else if (itemDiscount > 0) {
+                          netPayable = Math.max(0, fullGross - itemDiscount);
                         }
 
-                        const freeDiscount = Math.max(
-                          0,
-                          fullGross - netPayable,
-                        );
+                        const freeDiscount = Math.max(0, fullGross - netPayable);
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
                             <td className="p-2.5 border-r border-neutral-300 font-bold">
-                              {item.name}{" "}
-                              {item.selectedSize
-                                ? `(${item.selectedSize})`
-                                : ""}
+                              {item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}
                             </td>
-                            <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700">
-                              {offerLabel ||
-                                (origUnitPrice > unitPrice
-                                  ? "REGULAR DISCOUNT"
-                                  : "-")}
+                            <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700 uppercase">
+                              {offerLabel}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{origUnitPrice.toFixed(2)}
@@ -1079,9 +1067,7 @@ useEffect(() => {
                               {qty}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
-                              {freeDiscount > 0
-                                ? `-৳${freeDiscount.toFixed(2)}`
-                                : "0.00"}
+                              {freeDiscount > 0 ? `-৳${freeDiscount.toFixed(2)}` : "0.00"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               0.00
