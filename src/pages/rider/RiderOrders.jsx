@@ -17,7 +17,6 @@ import {
   rejectRiderOrder,
 } from "../../services/ordersService";
 
-// 🎯 FIX: রিয়েল-টাইম আপডেটের জন্য সকেট ইমপোর্ট করা হলো
 import { socket } from "../../services/socket"; 
 
 const getStatusColor = (status) => {
@@ -53,20 +52,18 @@ export const RiderOrders = () => {
   const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
-  // 🎯 FIX: অত্যন্ত শক্তিশালী ও ডিপ ফিল্টার ফাংশন (যেকোনো স্ট্রাকচার হ্যান্ডেল করবে)
   const isAssignedToMe = useCallback((orderData) => {
     if (!user || !orderData) return false;
     
     const uId = String(user.id || user._id || "").trim();
     const uName = String(user.name || "").trim().toLowerCase();
 
-    // অর্ডার অবজেক্টটি সরাসরি থাকতে পারে, অথবা order প্রপার্টির ভেতরে থাকতে পারে
     const targetOrder = orderData.order || orderData;
 
     const oId1 = String(targetOrder.riderId || "").trim();
     const oId2 = String(targetOrder.rider?._id || "").trim();
     const oId3 = String(targetOrder.rider?.id || "").trim();
-    const oId4 = String(targetOrder.rider || "").trim(); // যদি rider সরাসরি আইডি হিসেবে থাকে
+    const oId4 = String(targetOrder.rider || "").trim(); 
 
     const oName1 = String(targetOrder.riderName || "").trim().toLowerCase();
     const oName2 = String(targetOrder.rider?.name || "").trim().toLowerCase();
@@ -82,7 +79,6 @@ export const RiderOrders = () => {
     getAllOrders()
       .then((data) => {
         const orderList = Array.isArray(data) ? data : data?.data || [];
-        // ডেলিভার্ড বা রিজেক্টেড অর্ডারগুলো মূল লিস্ট থেকে বাদ দেওয়া হচ্ছে
         const assigned = orderList.filter((o) => isAssignedToMe(o) && o.status !== "Delivered" && o.status !== "Rejected");
         setOrders(assigned);
         setLoading(false);
@@ -99,7 +95,7 @@ export const RiderOrders = () => {
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
-  // 🎯 FIX: সকেট লিসেনার আপডেট
+  // 🎯 FIX: সকেট লিসেনারে রেস কন্ডিশন (Race Condition) দূর করা হলো
   useEffect(() => {
     const handleSocketUpdate = (data) => {
       const incomingOrder = data?.order || data;
@@ -107,21 +103,30 @@ export const RiderOrders = () => {
       
       const isMyOrder = isAssignedToMe(incomingOrder);
       const isCompleted = incomingOrder.status === "Delivered" || incomingOrder.status === "Rejected";
+      
+      let needsFullFetch = false;
 
       setOrders((prev) => {
         const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id));
 
-        // যদি অর্ডারটি আমার হয় এবং এখনো ডেলিভারি বা রিজেক্ট না হয়ে থাকে
         if (isMyOrder && !isCompleted) {
           if (exists) {
+            // লিস্টে থাকলে শুধু ডেটা মার্জ করবে, ফেচ করবে না
             return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id) ? { ...o, ...incomingOrder } : o);
           }
-          return [incomingOrder, ...prev];
+          // নতুন অর্ডার হলে ফুল ডেটা ফেচ করার জন্য ফ্ল্যাগ ট্রু করবে
+          needsFullFetch = true;
+          return prev;
         } 
         
-        // যদি অর্ডারটি আমার না হয় বা অলরেডি কমপ্লিট হয়ে যায়, তবে লিস্ট থেকে সরিয়ে ফেলবে
+        // আমার না হলে সরিয়ে ফেলবে
         return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id));
       });
+      
+      // শুধুমাত্র নতুন অর্ডারের ক্ষেত্রে ফেচ কল হবে
+      if (needsFullFetch) {
+        fetchRiderOrders();
+      }
     };
 
     socket.on("rider_order_assigned", handleSocketUpdate);
@@ -135,7 +140,7 @@ export const RiderOrders = () => {
       socket.off("order_updated", handleSocketUpdate);
       socket.off("order_status_updated", handleSocketUpdate);
     };
-  }, [isAssignedToMe]);
+  }, [isAssignedToMe, fetchRiderOrders]);
 
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
@@ -146,27 +151,38 @@ export const RiderOrders = () => {
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
+  // 🎯 FIX: রেস কন্ডিশন রোধ করতে তাৎক্ষণিক fetchRiderOrders() সরিয়ে দেওয়া হলো
   const handleAccept = async (orderId) => {
     try {
-      // 🎯 অপ্টিমিস্টিক আপডেট
       setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" } : o));
       
-      await acceptRiderOrder(orderId);
+      if (typeof acceptRiderOrder === "function") {
+         await acceptRiderOrder(orderId);
+      }
       await updateOrderStatus(orderId, "Preparing");
+      
       socket.emit("order_updated", { id: orderId, riderAcceptStatus: "accepted", status: "Preparing" });
-      fetchRiderOrders();
+      socket.emit("order_status_updated", { id: orderId, status: "Preparing" });
+      
     } catch (err) {
       alert("Failed to accept order: " + (err.response?.data?.message || err.message));
-      fetchRiderOrders();
+      fetchRiderOrders(); // ফেইল করলে আগের অবস্থায় ফেরার জন্য ফেচ হবে
     }
   };
 
+  // 🎯 FIX: Reject লজিক ফিক্স
   const handleReject = async (orderId) => {
     try {
-      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId)); // ইনস্ট্যান্ট রিমুভ
-      await rejectRiderOrder(orderId);
-      socket.emit("order_updated", { id: orderId });
-      fetchRiderOrders();
+      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
+      
+      if (typeof rejectRiderOrder === "function") {
+         await rejectRiderOrder(orderId);
+      } else {
+         await updateOrderStatus(orderId, "Rejected");
+      }
+      
+      socket.emit("order_updated", { id: orderId, riderAcceptStatus: "rejected" });
+      
     } catch (err) {
       alert("Failed to reject order: " + (err.response?.data?.message || err.message));
       fetchRiderOrders();
@@ -183,7 +199,7 @@ export const RiderOrders = () => {
       
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { id: orderId, status: newStatus });
-      fetchRiderOrders();
+      
     } catch (err) {
       alert("Failed to update status: " + (err.response?.data?.message || err.message));
       fetchRiderOrders();
@@ -228,7 +244,6 @@ export const RiderOrders = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Active Orders List */}
         <div
           className={`${
             activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"
@@ -262,10 +277,10 @@ export const RiderOrders = () => {
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div>
                           <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
-                            Order #{safeOrderId}
+                            Order #{safeOrderId.slice(-6)}
                           </span>
                           <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
-                            Placed: {new Date(ord.createdAt).toLocaleTimeString()}
+                            Placed: {ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString() : "Just Now"}
                           </span>
                         </div>
                         <div className="flex gap-2 items-center">
@@ -274,7 +289,7 @@ export const RiderOrders = () => {
                               ord.status
                             )}`}
                           >
-                            {ord.status}
+                            {ord.status || "Pending"}
                           </span>
                           <span
                             className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase ${
@@ -296,11 +311,11 @@ export const RiderOrders = () => {
                             Customer
                           </span>
                           <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                            <span>{ord.deliveryPhone ? ord.deliveryPhone : ord.user?.name}</span>
+                            <span>{ord.deliveryPhone ? ord.deliveryPhone : (ord.user?.name || "Customer")}</span>
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-neutral-500">
                             <Phone className="w-3 h-3 text-rose-500" />
-                            <span>{ord.deliveryPhone || ord.user?.phone}</span>
+                            <span>{ord.deliveryPhone || ord.user?.phone || "N/A"}</span>
                           </div>
                         </div>
 
@@ -311,7 +326,8 @@ export const RiderOrders = () => {
                           <div className="flex items-start gap-1 text-[10px] text-neutral-500">
                             <MapPin className="w-3 h-3 text-rose-500 mt-0.5 shrink-0" />
                             <span className="leading-tight">
-                              {ord.deliveryAddress || ord.user?.address} ({ord.deliveryArea || ord.user?.pickArea})
+                              {ord.deliveryAddress || ord.user?.address || "Address not provided"} 
+                              {(ord.deliveryArea || ord.user?.pickArea) ? ` (${ord.deliveryArea || ord.user?.pickArea})` : ""}
                             </span>
                           </div>
                         </div>
@@ -321,7 +337,7 @@ export const RiderOrders = () => {
                         <div className="font-bold text-xs">
                           Total Invoice:{" "}
                           <span className="text-rose-500">
-                            ৳{ord.total?.toFixed(2)}
+                            ৳{Number(ord.total || 0).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -394,7 +410,7 @@ export const RiderOrders = () => {
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-bold text-sm text-neutral-800 dark:text-white">
-                    Chat for #{chatOrder._id || chatOrder.id}
+                    Chat for #{(chatOrder._id || chatOrder.id)?.slice(-6)}
                   </h3>
                   <span className="block text-[9px] text-neutral-400">
                     Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
