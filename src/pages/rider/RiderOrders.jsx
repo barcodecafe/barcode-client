@@ -17,6 +17,9 @@ import {
   rejectRiderOrder,
 } from "../../services/ordersService";
 
+// 🎯 FIX: রিয়েল-টাইম আপডেটের জন্য সকেট ইমপোর্ট করা হলো
+import { socket } from "../../services/socket"; 
+
 const getStatusColor = (status) => {
   switch (status) {
     case "Placed":
@@ -50,16 +53,23 @@ export const RiderOrders = () => {
   const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
 
+  // 🎯 FIX: আইডি টাইপ মিসম্যাচ দূর করতে বুলেটপ্রুফ ফিল্টার ফাংশন
+  const isAssignedToMe = useCallback((o) => {
+    if (!user) return false;
+    const currentUserId = String(user.id || user._id || "");
+    const orderRiderId = String(o.riderId || o.rider?._id || o.rider || "");
+    const currentUserName = String(user.name || "").toLowerCase();
+    const orderRiderName = String(o.riderName || o.rider?.name || "").toLowerCase();
+
+    return (orderRiderId === currentUserId && currentUserId !== "") || 
+           (orderRiderName === currentUserName && currentUserName !== "");
+  }, [user]);
+
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
     getAllOrders()
       .then((data) => {
-        const assigned = (data || []).filter(
-          (o) =>
-            o.riderId === user.id ||
-            o.riderId === user._id ||
-            o.riderName?.toLowerCase() === user.name?.toLowerCase()
-        );
+        const assigned = (data || []).filter((o) => isAssignedToMe(o));
         setOrders(assigned);
         setLoading(false);
       })
@@ -67,13 +77,50 @@ export const RiderOrders = () => {
         console.error("Failed to fetch orders:", err);
         setLoading(false);
       });
-  }, [user]);
+  }, [user, isAssignedToMe]);
 
   useEffect(() => {
     fetchRiderOrders();
+    // ব্যাকআপ সিঙ্ক হিসেবে ইন্টারভাল থাকছে
     const interval = setInterval(fetchRiderOrders, 4000);
     return () => clearInterval(interval);
   }, [fetchRiderOrders]);
+
+  // 🎯 FIX: রিয়েল-টাইম আপডেটের জন্য সকেট লিসেনার বসানো হলো
+  useEffect(() => {
+    const handleSocketUpdate = (data) => {
+      const incomingOrder = data?.order || data;
+      if (!incomingOrder) return;
+      
+      // যদি অর্ডারটি এই রাইডারের হয়, তবে সাথে সাথে লোকাল স্টেট আপডেট হবে
+      if (isAssignedToMe(incomingOrder)) {
+        setOrders((prev) => {
+          const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id));
+          if (exists) {
+            return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id) ? { ...o, ...incomingOrder } : o);
+          }
+          return [incomingOrder, ...prev];
+        });
+      } else {
+         // যদি অন্য রাইডারকে অ্যাসাইন করা হয়ে থাকে, লিস্ট থেকে রিমুভ হবে
+         setOrders((prev) => prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id)));
+      }
+      
+      fetchRiderOrders(); // ব্যাকগ্রাউন্ড সিঙ্ক
+    };
+
+    socket.on("rider_order_assigned", handleSocketUpdate);
+    socket.on("order_assigned", handleSocketUpdate);
+    socket.on("order_updated", handleSocketUpdate);
+    socket.on("order_status_updated", handleSocketUpdate);
+
+    return () => {
+      socket.off("rider_order_assigned", handleSocketUpdate);
+      socket.off("order_assigned", handleSocketUpdate);
+      socket.off("order_updated", handleSocketUpdate);
+      socket.off("order_status_updated", handleSocketUpdate);
+    };
+  }, [fetchRiderOrders, isAssignedToMe]);
 
   useEffect(() => {
     if (chatEndRef.current && activeChatOrderId) {
@@ -86,29 +133,40 @@ export const RiderOrders = () => {
 
   const handleAccept = async (orderId) => {
     try {
+      // 🎯 অপ্টিমিস্টিক আপডেট (ক্লিক করার সাথে সাথে UI পরিবর্তন হবে)
+      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" } : o));
+      
       await acceptRiderOrder(orderId);
       await updateOrderStatus(orderId, "Preparing");
+      socket.emit("order_updated", { id: orderId, riderAcceptStatus: "accepted", status: "Preparing" });
       fetchRiderOrders();
     } catch (err) {
       alert("Failed to accept order: " + (err.response?.data?.message || err.message));
+      fetchRiderOrders();
     }
   };
 
   const handleReject = async (orderId) => {
     try {
+      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId)); // ইনস্ট্যান্ট রিমুভ
       await rejectRiderOrder(orderId);
+      socket.emit("order_updated", { id: orderId });
       fetchRiderOrders();
     } catch (err) {
       alert("Failed to reject order: " + (err.response?.data?.message || err.message));
+      fetchRiderOrders();
     }
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
+      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: newStatus } : o));
       await updateOrderStatus(orderId, newStatus);
+      socket.emit("order_status_updated", { id: orderId, status: newStatus });
       fetchRiderOrders();
     } catch (err) {
       alert("Failed to update status: " + (err.response?.data?.message || err.message));
+      fetchRiderOrders();
     }
   };
 
@@ -121,8 +179,9 @@ export const RiderOrders = () => {
         text: riderChatMessage.trim(),
       });
       setOrders((prev) =>
-        prev.map((o) => ((o._id || o.id) === activeChatOrderId ? updated : o))
+        prev.map((o) => ((o._id || o.id) === activeChatOrderId ? { ...o, ...updated } : o))
       );
+      socket.emit("send_message", { orderId: activeChatOrderId, message: { text: riderChatMessage.trim() } });
       setRiderChatMessage("");
     } catch (err) {
       alert("Failed to send message: " + (err.response?.data?.message || err.message));
