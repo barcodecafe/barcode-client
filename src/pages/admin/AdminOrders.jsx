@@ -6,14 +6,9 @@ import {
   Send,
   X,
   Check,
-  MapPin,
-  User,
-  Phone,
-  Utensils,
   RefreshCw,
   BellRing,
   Printer,
-  Gift,
 } from "lucide-react";
 import {
   getAllOrders,
@@ -191,7 +186,6 @@ export const AdminOrders = () => {
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
-        // নতুন ডেটা আসার পর সাইলেন্টলি স্টেট আপডেট করবে, মেইন loading ট্রিগার করবে না
         setOrders(deduplicateOrders(ordersData || []));
         setRiders(ridersData || []);
         window.dispatchEvent(new CustomEvent("order_updated"));
@@ -218,16 +212,15 @@ export const AdminOrders = () => {
   }, []);
 
   useEffect(() => {
-    // ⚡ ডাবল ট্রিগার এড়ানোর জন্য সেফটি চেক
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
         if (!newId) return prev;
         const exists = prev.some((o) => (o.id || o._id) === newId);
 
-        // যদি অর্ডারটি অলরেডি স্টেট-এ থেকে থাকে, তবে ডাবল কাউন্ট বা সাউন্ড হতে দেব না
         if (exists) {
-          return prev.map((o) => ((o.id || o._id) === newId ? newOrder : o));
+          // 🎯 ফিক্স: পুরনো ডেটা অক্ষুণ্ণ রেখে নতুন ডেটা মার্জ করা
+          return prev.map((o) => ((o.id || o._id) === newId ? { ...o, ...newOrder } : o));
         }
         return [newOrder, ...prev];
       });
@@ -238,17 +231,22 @@ export const AdminOrders = () => {
       );
     };
 
-    // যেকোনো একটিভ সকেট ইভেন্ট ব্যবহার করুন অথবা একটিকে কমেন্ট করে দিন যাতে ডাবল ফায়ার না হয়
     socket.on("order_created", handleNewOrderIncoming);
-    // socket.on("admin_new_order", handleNewOrderIncoming); // 👈 ডাবল ট্রিগার রোধ করতে এটি অফ রাখতে পারেন
 
     socket.on("order_updated", (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
-        prev.map((o) => ((o.id || o._id) === updatedId ? updatedOrder : o)),
+        prev.map((o) => {
+          // 🎯 প্রধান ফিক্স: এখানে শুধু updatedOrder বসালে পুরনো ফিল্ডগুলো (user, total) গায়েব হয়ে যেত। 
+          // তাই আমরা {...o, ...updatedOrder} দিয়েছি যাতে আগের সব ডেটা সেভ থাকে।
+          if ((o.id || o._id) === updatedId) {
+             return { ...o, ...updatedOrder };
+          }
+          return o;
+        })
       );
       setSelectedOrderDetails((prev) =>
-        (prev?.id || prev?._id) === updatedId ? updatedOrder : prev,
+        (prev?.id || prev?._id) === updatedId ? { ...prev, ...updatedOrder } : prev
       );
       window.dispatchEvent(
         new CustomEvent("order_updated", {
@@ -297,7 +295,6 @@ export const AdminOrders = () => {
 
     return () => {
       socket.off("order_created", handleNewOrderIncoming);
-      socket.off("admin_new_order", handleNewOrderIncoming);
       socket.off("order_updated");
       socket.off("pending_count_updated");
       socket.off("rider_updated");
@@ -390,7 +387,7 @@ export const AdminOrders = () => {
         }),
       );
 
-      const updatedOrder = await updateOrderStatus(orderId, newStatus);
+      await updateOrderStatus(orderId, newStatus);
 
       socket.emit("order_status_updated", {
         orderId,
@@ -404,10 +401,7 @@ export const AdminOrders = () => {
       );
 
       // ব্যাকএন্ড থেকে লেটেস্ট ডেটা সাইলেন্টলি সিঙ্ক করা
-      const freshOrders = await getAllOrders();
-      if (Array.isArray(freshOrders)) {
-        setOrders(deduplicateOrders(freshOrders));
-      }
+      fetchOrdersAndFleet();
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
 
@@ -445,7 +439,7 @@ export const AdminOrders = () => {
     }
   };
 
- const handleAssignRider = async (orderId, riderId) => {
+  const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => r.id === riderId);
     if (!selectedRider) return;
     try {
@@ -455,7 +449,7 @@ export const AdminOrders = () => {
           const ordId = ord.id || ord._id;
           if (ordId === orderId) {
             return {
-              ...ord,
+              ...ord, // আগের সব ডেটা অক্ষুণ্ণ থাকবে
               riderId: riderId,
               riderName: selectedRider.name,
               riderPhone: selectedRider.phone || "",
@@ -483,10 +477,7 @@ export const AdminOrders = () => {
       toast.success(`Assigned to ${selectedRider.name}`);
       
       // ব্যাকগ্রাউন্ডে লেটেস্ট ডেটা সিঙ্ক করা
-      const freshOrders = await getAllOrders();
-      if (Array.isArray(freshOrders)) {
-        setOrders(deduplicateOrders(freshOrders));
-      }
+      fetchOrdersAndFleet();
     } catch (err) {
       toast.error("Failed to assign rider: " + err.message);
       fetchOrdersAndFleet();
