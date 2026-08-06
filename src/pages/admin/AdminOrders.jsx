@@ -445,10 +445,27 @@ export const AdminOrders = () => {
     }
   };
 
-  const handleAssignRider = async (orderId, riderId) => {
+ const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => r.id === riderId);
     if (!selectedRider) return;
     try {
+      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (যাতে রাইডার এসাইন করার সাথে সাথে স্টেট আপডেট হয়ে যায়)
+      setOrders((prevOrders) =>
+        prevOrders.map((ord) => {
+          const ordId = ord.id || ord._id;
+          if (ordId === orderId) {
+            return {
+              ...ord,
+              riderId: riderId,
+              riderName: selectedRider.name,
+              riderPhone: selectedRider.phone || "",
+              riderAcceptStatus: "pending", // রাইডার এসাইন হলে পেন্ডিং থাকবে যতক্ষণ না সে এক্সেপ্ট করে
+            };
+          }
+          return ord;
+        }),
+      );
+
       await assignRiderToOrder(orderId, riderId, selectedRider.name);
 
       const payload = {
@@ -456,6 +473,7 @@ export const AdminOrders = () => {
         orderId: orderId,
         riderId: riderId,
         riderName: selectedRider.name,
+        riderAcceptStatus: "pending",
       };
 
       socket.emit("rider_order_assigned", payload);
@@ -463,9 +481,15 @@ export const AdminOrders = () => {
       socket.emit("order_updated", payload);
 
       toast.success(`Assigned to ${selectedRider.name}`);
-      fetchOrdersAndFleet();
+      
+      // ব্যাকগ্রাউন্ডে লেটেস্ট ডেটা সিঙ্ক করা
+      const freshOrders = await getAllOrders();
+      if (Array.isArray(freshOrders)) {
+        setOrders(deduplicateOrders(freshOrders));
+      }
     } catch (err) {
       toast.error("Failed to assign rider: " + err.message);
+      fetchOrdersAndFleet();
     }
   };
 
