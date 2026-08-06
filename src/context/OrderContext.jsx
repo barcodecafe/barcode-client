@@ -62,17 +62,36 @@ export const OrderProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAndUpdateOrders();
-    // প্রতি ৮ সেকেন্ড পর পর ব্যাকগ্রাউন্ডে চেক করবে (রিফ্রেশ ছাড়াই কাউন্ট আপডেট হবে)
-    const interval = setInterval(fetchAndUpdateOrders, 8000); 
+    // প্রতি 1 সেকেন্ড পর পর ব্যাকগ্রাউন্ডে চেক করবে
+    const interval = setInterval(fetchAndUpdateOrders, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // ⚡ গ্রাহক অর্ডার কনফার্ম করলে ইনস্ট্যান্ট কাউন্ট বাড়িয়ে দেওয়ার এবং সাউন্ড বাজানোর ফাংশন
+  const incrementOrderCount = () => {
+    setUnreadOrderCount((prev) => {
+      const newCount = prev + 1;
+      prevCountRef.current = newCount;
+      return newCount;
+    });
+    playNotificationSound();
+  };
+
+  // ⚡ অ্যাডমিন Accept/Reject করলে ইনস্ট্যান্ট কাউন্ট কমানোর ফাংশন
+  const decrementOrderCount = () => {
+    setUnreadOrderCount((prev) => {
+      const newCount = Math.max(0, prev - 1);
+      prevCountRef.current = newCount;
+      return newCount;
+    });
+  };
 
   const markOrdersAsRead = () => {
     // প্রয়োজন অনুযায়ী
   };
 
   return (
-    <OrderContext.Provider value={{ orders, unreadOrderCount, markOrdersAsRead, fetchAndUpdateOrders }}>
+    <OrderContext.Provider value={{ orders, unreadOrderCount, markOrdersAsRead, fetchAndUpdateOrders, incrementOrderCount, decrementOrderCount }}>
       {children}
     </OrderContext.Provider>
   );
