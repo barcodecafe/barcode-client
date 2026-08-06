@@ -23,7 +23,7 @@ export const RiderSettlement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingCashDate, setSubmittingCashDate] = useState(null);
-  const [expandedDateKey, setExpandedDateKey] = useState(null); // 🎯 অ্যাকর্ডিয়ন টগল স্টেট
+  const [expandedDateKey, setExpandedDateKey] = useState(null);
 
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
@@ -50,7 +50,7 @@ export const RiderSettlement = () => {
   }, [fetchRiderOrders]);
 
   const handleSubmitCash = async (dateKey, e) => {
-    e.stopPropagation(); // বাটন ক্লিক করলে যেন অ্যাকর্ডিয়ন টগল না হয়
+    e.stopPropagation();
     const label = formatDateKey(dateKey);
     const confirmSubmit = window.confirm(
       `Are you sure you want to mark all collected cash as submitted for ${label}?`
@@ -117,10 +117,12 @@ export const RiderSettlement = () => {
         ) : (
           <div className="space-y-3">
             {dailyLog.map((log, index) => {
-              // ওই নির্দিষ্ট তারিখের অর্ডারগুলো ফিল্টার করা
+              // 🎯 আপডেট: ওই নির্দিষ্ট তারিখের ডেলিভারি এবং রিজেক্ট হওয়া সব অর্ডারই ফিল্টার করে নিয়ে আসা
               const dayOrders = orders.filter((o) => {
                 const orderDateKey = new Date(o.createdAt || o.updatedAt).toISOString().split("T")[0];
-                return orderDateKey === log.dateKey;
+                const isTargetDate = orderDateKey === log.dateKey;
+                const isRelevantStatus = o.riderAcceptStatus === "rejected" || o.status === "Delivered" || o.status === "Rejected";
+                return isTargetDate && isRelevantStatus;
               });
 
               const isExpanded = expandedDateKey === log.dateKey;
@@ -208,12 +210,12 @@ export const RiderSettlement = () => {
                     </div>
                   </div>
 
-                  {/* ড্রপডাউন ডিটেইলস: নির্দিষ্ট অর্ডার ও লোকেশন লিস্ট */}
+                  {/* ড্রপডাউন ডিটেইলস: সফল ডেলিভারি এবং রিজেক্ট হওয়া অর্ডার লিস্ট */}
                   {isExpanded && (
                     <div className="border-t border-neutral-200 dark:border-neutral-800 p-4 bg-white dark:bg-neutral-900 space-y-3 animate-fadeIn">
                       <h4 className="text-[11px] font-extrabold uppercase text-neutral-400 tracking-wider flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-rose-500" />
-                        Delivered Orders & Locations Breakdown ({dayOrders.length}):
+                        Delivered & Rejected Orders Breakdown ({dayOrders.length}):
                       </h4>
 
                       {dayOrders.length === 0 ? (
@@ -233,9 +235,7 @@ export const RiderSettlement = () => {
                                   className={`px-2 py-0.5 rounded text-[8px] font-extrabold ${
                                     ord.status === "Delivered"
                                       ? "bg-emerald-500/10 text-emerald-500"
-                                      : ord.status === "Rejected"
-                                      ? "bg-red-500/10 text-red-500"
-                                      : "bg-amber-500/10 text-amber-500"
+                                      : "bg-red-500/10 text-red-500"
                                   }`}
                                 >
                                   {ord.status.toUpperCase()}
@@ -258,8 +258,8 @@ export const RiderSettlement = () => {
                                 <span className="text-neutral-600 dark:text-neutral-400">
                                   Total: ৳{ord.total?.toFixed(2) || 0}
                                 </span>
-                                <span className="text-emerald-600">
-                                  Commission: ৳{ord.riderCommission?.toFixed(2) || 50}
+                                <span className={ord.status === "Delivered" ? "text-emerald-600" : "text-red-500"}>
+                                  {ord.status === "Delivered" ? `Commission: ৳${ord.riderCommission?.toFixed(2) || 50}` : "Rejected Order"}
                                 </span>
                               </div>
                             </div>
