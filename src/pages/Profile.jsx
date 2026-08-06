@@ -202,6 +202,7 @@ const Card = ({ children, className = "" }) => (
 
 const OrderCard = ({ order, expanded, onToggle }) => {
   const active = isActive(order.status);
+  const orderId = order.id || order._id; // 🎯 সঠিক আইডি পিক করার জন্য
   return (
     <div className="rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/30 dark:bg-neutral-950/20 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
@@ -212,7 +213,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-neutral-800 dark:text-white">
-                {shortId(order.id)}
+                {shortId(orderId)}
               </span>
               <span
                 className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getStatusColor(order.status)}`}
@@ -249,10 +250,10 @@ const OrderCard = ({ order, expanded, onToggle }) => {
             />
           </button>
 
-          {/* 🎯 ট্র্যাক বাটনে ক্লিক করলে সরাসরি অর্ডার ট্র্যাকিং পেজে রিডাইরেক্ট হবে */}
-          {active && (
+          {/* 🎯 ট্র্যাক বাটনে সঠিক `orderId` পাস করা হলো */}
+          {active && orderId && (
             <Link
-              to={`/order-tracking/${order.id}`}
+              to={`/order-tracking/${orderId}`}
               className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs shadow-md shadow-primary-500/10 active:scale-95 transition-all"
             >
               <Truck className="w-3.5 h-3.5" />
@@ -261,7 +262,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
           )}
         </div>
       </div>
-      {/* ...বাকি ডিটেইলস সেকশন অপরিবর্তিত থাকবে... */}
+      {/* ...বাকি কোড... */}
     </div>
   );
 };
@@ -468,35 +469,38 @@ export const Profile = () => {
               </h3>
             </div>
             <div className="space-y-3">
-              {active.map((order) => (
-                <Link
-                  key={order.id}
-                  to={`/order-tracking/${order.id}`}
-                  className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/40 dark:bg-neutral-950/20 hover:border-primary-500/40 transition-all group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-neutral-800 dark:text-white">
-                          {shortId(order.id)}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase ${getStatusColor(order.status)}`}
-                        >
-                          {order.status}
+              {active.map((order) => {
+                const orderId = order.id || order._id;
+                return (
+                  <Link
+                    key={orderId}
+                    to={`/order-tracking/${orderId}`}
+                    className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/40 dark:bg-neutral-950/20 hover:border-primary-500/40 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-neutral-800 dark:text-white">
+                            {shortId(orderId)}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase ${getStatusColor(order.status)}`}
+                          >
+                            {order.status}
+                          </span>
+                        </div>
+                        <span className="block text-[11px] text-neutral-400 mt-0.5">
+                          {order.items?.length || 0} items • {taka(order.total)}
                         </span>
                       </div>
-                      <span className="block text-[11px] text-neutral-400 mt-0.5">
-                        {order.items?.length || 0} items • {taka(order.total)}
-                      </span>
                     </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-primary-500 shrink-0" />
-                </Link>
-              ))}
+                    <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-primary-500 shrink-0" />
+                  </Link>
+                );
+              })}
             </div>
           </Card>
         )}
