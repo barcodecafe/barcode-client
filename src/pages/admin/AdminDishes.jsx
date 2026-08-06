@@ -892,6 +892,42 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
+                {/* 🎯 Branch Availability Section Added Here */}
+                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
+                  <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
+                    Available Branches (Leave empty for all branches)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {branches.map((b) => {
+                      const bId = String(b._id || b.id);
+                      const isSelected = formData.branchIds.includes(bId);
+                      return (
+                        <div key={bId} className="flex flex-col gap-1.5 p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                          <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleBranchToggle(bId)}
+                              className="rounded text-primary-500 cursor-pointer"
+                            />
+                            <span className="truncate">{b.name}</span>
+                          </label>
+                          {isSelected && (
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder={`Price in ${b.name} (Optional)`}
+                              value={formData.branchPrices[bId] ?? ""}
+                              onChange={(e) => handleBranchPriceChange(bId, e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-[11px] focus:outline-none"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Variants Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
