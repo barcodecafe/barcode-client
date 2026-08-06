@@ -32,7 +32,7 @@ import {
 } from "../services/foodsService";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useBranch } from "../context/BranchContext"; // 🎯 গ্লোবাল ব্রাঞ্চ হুক ইমপোর্ট করা হলো
+import { useBranch } from "../context/BranchContext";
 
 // 💡 Shared Global FoodCard Component
 import FoodCard from "../components/FoodCard";
@@ -47,7 +47,7 @@ export const DishDetail = () => {
   const [searchParams] = useSearchParams();
   const { cart, addToCart, updateCartQuantity, openCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { selectedBranchId } = useBranch(); // 🎯 গ্লোবাল ব্রাঞ্চ আইডি ফেচ করা হলো
+  const { selectedBranchId } = useBranch();
 
   const [food, setFood] = useState(null);
   const [featuredMenu, setFeaturedMenu] = useState([]);
@@ -58,16 +58,16 @@ export const DishDetail = () => {
   // Variations Tracking State
   const [selectedVariation, setSelectedVariation] = useState(null);
 
-  // 🎯 প্রায়োরিটি: ১. ইউআরএল-এর branchId, ২. গ্লোবাল selectedBranchId, ৩. ফলব্যাক localStorage
-  const branchIdParam = searchParams.get("branchId");
+  // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য পারফেক্ট প্রায়োরিটি
   const storedBranch = localStorage.getItem("selectedBranchId") || localStorage.getItem("branchId");
+  const branchIdParam = searchParams.get("branchId");
   
-  const branchId = branchIdParam 
+  const branchId = storedBranch 
+    ? Number(storedBranch) 
+    : branchIdParam 
     ? Number(branchIdParam) 
     : selectedBranchId 
-    ? Number(selectedBranchId)
-    : storedBranch 
-    ? Number(storedBranch) 
+    ? Number(selectedBranchId) 
     : null;
 
   useEffect(() => {
@@ -413,7 +413,7 @@ export const DishDetail = () => {
                       branchId={branchId}
                       favorited={favorited}
                       onToggleFavorite={toggleFavorite}
-                      onAddToCart={(foodItem) => addToCart(foodItem, branchId, null, 1)}
+                      onAddToCart={addToCart}
                     />
                   </SwiperSlide>
                 );
@@ -432,7 +432,7 @@ export const DishDetail = () => {
                   branchId={branchId}
                   favorited={favorited}
                   onToggleFavorite={toggleFavorite}
-                  onAddToCart={(foodItem) => addToCart(foodItem, branchId, null, 1)}
+                  onAddToCart={addToCart}
                 />
               );
             })}
