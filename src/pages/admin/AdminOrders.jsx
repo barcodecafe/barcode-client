@@ -375,14 +375,22 @@ export const AdminOrders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (যাতে ফ্লিকারিং বা ডেটা গায়েব না হয়)
+      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (সম্পূর্ণ অর্ডার অবজেক্ট অক্ষুণ্ণ রেখে শুধু স্ট্যাটাস আপডেট হবে)
       setOrders((prevOrders) =>
-        prevOrders.map((ord) =>
-          (ord.id || ord._id) === orderId ? { ...ord, status: newStatus } : ord,
-        ),
+        prevOrders.map((ord) => {
+          const ordId = ord.id || ord._id;
+          if (ordId === orderId) {
+            return {
+              ...ord,
+              status: newStatus,
+              deliveryStatus: newStatus,
+            };
+          }
+          return ord;
+        }),
       );
 
-      await updateOrderStatus(orderId, newStatus);
+      const updatedOrder = await updateOrderStatus(orderId, newStatus);
 
       socket.emit("order_status_updated", {
         orderId,
@@ -395,8 +403,11 @@ export const AdminOrders = () => {
         }),
       );
 
-      // ব্যাকগ্রাউন্ডে সিঙ্ক করার জন্য
-      fetchOrdersAndFleet();
+      // ব্যাকএন্ড থেকে লেটেস্ট ডেটা সাইলেন্টলি সিঙ্ক করা
+      const freshOrders = await getAllOrders();
+      if (Array.isArray(freshOrders)) {
+        setOrders(deduplicateOrders(freshOrders));
+      }
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
 
@@ -430,7 +441,7 @@ export const AdminOrders = () => {
       }
     } catch (err) {
       toast.error("Failed to update status: " + err.message);
-      fetchOrdersAndFleet(); // এরর হলে রিভার্স করতে রিফেচ করবে
+      fetchOrdersAndFleet();
     }
   };
 
