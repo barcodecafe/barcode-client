@@ -21,11 +21,12 @@ import {
   Image,
   Bike,
   Settings,
+  Bell,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { useOrders } from '../context/OrderContext'; // 👈 ১. অর্ডার কনটেক্সট ইম্পোর্ট করা হলো
+import { useOrders } from '../context/OrderContext';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
@@ -56,7 +57,7 @@ export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
-  const { unreadOrderCount, markOrdersAsRead } = useOrders(); // 👈 ২. কনটেক্সট থেকে কাউন্ট ও ফাংশন কল করা হলো
+  const { unreadOrderCount, markOrdersAsRead } = useOrders();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -82,9 +83,6 @@ export const AdminLayout = () => {
             className="h-6 w-auto object-contain"
           />
         </div>
-        {/* <span className="font-display text-sm font-bold text-neutral-400 dark:text-neutral-600 tracking-wide uppercase">
-          Admin
-        </span> */}
       </Link>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
@@ -96,7 +94,7 @@ export const AdminLayout = () => {
               to={item.path}
               end={item.end}
               onClick={() => {
-                if (isOrdersRoute) markOrdersAsRead(); // 👈 ৩. Orders পেজে গেলে কাউন্ট রিসেট হয়ে যাবে
+                if (isOrdersRoute) markOrdersAsRead();
                 onNavigate();
               }}
               className={({ isActive }) =>
@@ -112,7 +110,7 @@ export const AdminLayout = () => {
                 {item.name}
               </div>
 
-              {/* 👈 ৪. Orders মেনুর পাশে লাইভ কাউন্ট ব্যাজ যুক্ত করা হলো */}
+              {/* সাইডবারের Orders মেনুর পাশে কাউন্ট ব্যাজ */}
               {isOrdersRoute && unreadOrderCount > 0 && (
                 <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
                   {unreadOrderCount}
@@ -175,7 +173,6 @@ export const AdminLayout = () => {
             <X className="w-5 h-5" />
           </button>
           <SidebarContent onNavigate={() => {
-            // Auto close drawer on navigation click ONLY on mobile screens
             if (typeof window !== 'undefined' && window.innerWidth < 768) {
               setIsDrawerOpen(false);
             }
@@ -188,7 +185,6 @@ export const AdminLayout = () => {
         {/* Topbar */}
         <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            {/* Persistent Hamburger Button toggles sidebar on all screens */}
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all"
@@ -206,6 +202,19 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* 🔔 টপবারের নোটিফিকেশন বেল আইকন ও লাইভ কাউন্ট ব্যাজ */}
+            <Link
+              to="/admin/orders"
+              onClick={markOrdersAsRead}
+              className="relative p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 transition-all duration-300 flex items-center gap-1.5"
+              aria-label="Order Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-primary-500 text-white min-w-5 text-center">
+                {unreadOrderCount}
+              </span>
+            </Link>
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
@@ -237,5 +246,3 @@ export const AdminLayout = () => {
 };
 
 export default AdminLayout;
-
-// test purpose
