@@ -191,6 +191,7 @@ export const AdminOrders = () => {
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
+        // নতুন ডেটা আসার পর সাইলেন্টলি স্টেট আপডেট করবে, মেইন loading ট্রিগার করবে না
         setOrders(deduplicateOrders(ordersData || []));
         setRiders(ridersData || []);
         window.dispatchEvent(new CustomEvent("order_updated"));
@@ -216,14 +217,14 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     // ⚡ ডাবল ট্রিগার এড়ানোর জন্য সেফটি চেক
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
         if (!newId) return prev;
         const exists = prev.some((o) => (o.id || o._id) === newId);
-        
+
         // যদি অর্ডারটি অলরেডি স্টেট-এ থেকে থাকে, তবে ডাবল কাউন্ট বা সাউন্ড হতে দেব না
         if (exists) {
           return prev.map((o) => ((o.id || o._id) === newId ? newOrder : o));
@@ -374,6 +375,13 @@ useEffect(() => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
+      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (যাতে ফ্লিকারিং বা ডেটা গায়েব না হয়)
+      setOrders((prevOrders) =>
+        prevOrders.map((ord) =>
+          (ord.id || ord._id) === orderId ? { ...ord, status: newStatus } : ord,
+        ),
+      );
+
       await updateOrderStatus(orderId, newStatus);
 
       socket.emit("order_status_updated", {
@@ -387,6 +395,7 @@ useEffect(() => {
         }),
       );
 
+      // ব্যাকগ্রাউন্ডে সিঙ্ক করার জন্য
       fetchOrdersAndFleet();
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
@@ -421,6 +430,7 @@ useEffect(() => {
       }
     } catch (err) {
       toast.error("Failed to update status: " + err.message);
+      fetchOrdersAndFleet(); // এরর হলে রিভার্স করতে রিফেচ করবে
     }
   };
 
@@ -501,7 +511,8 @@ useEffect(() => {
             Orders & Live Chat
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Monitor incoming food deliveries, update delivery stages, and chat with customers/riders.
+            Monitor incoming food deliveries, update delivery stages, and chat
+            with customers/riders.
           </p>
         </div>
       </div>
@@ -1019,21 +1030,27 @@ useEffect(() => {
                       </tr>
                     </thead>
                     <tbody>
-                    {orderItems.map((item, idx) => {
+                      {orderItems.map((item, idx) => {
                         const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
                         const unitPrice = Number(item.price) || 0;
 
                         // 🔍 চেকআউট পেজের সাথে হুবহু মিলিয়ে অফার ও ডিসকাউন্ট ডেটেকশন
                         let detectedOfferType = item.offerType;
-                        let origUnitPrice = Number(item.originalPrice) || Number(item.basePrice) || unitPrice;
+                        let origUnitPrice =
+                          Number(item.originalPrice) ||
+                          Number(item.basePrice) ||
+                          unitPrice;
 
                         if (origUnitPrice < unitPrice) {
                           origUnitPrice = unitPrice;
                         }
 
                         // ফুচকা বা অন্যান্য অফার অটো-ডিটেক্ট
-                        if (!detectedOfferType || detectedOfferType === "none") {
+                        if (
+                          !detectedOfferType ||
+                          detectedOfferType === "none"
+                        ) {
                           if (itemName.includes("fuchka platter") && qty >= 3) {
                             detectedOfferType = "bogo_1g2";
                           } else if (item.isBogo || item.freeQty > 0) {
@@ -1044,7 +1061,8 @@ useEffect(() => {
                         // অফার লেবেল বা ডিসকাউন্ট ডেসক্রিপশন তৈরি
                         let offerLabel = getOfferText(detectedOfferType);
                         const itemDiscountPct = Number(item.discountPct) || 0;
-                        const itemDiscountAmount = Number(item.discountAmount) || 0;
+                        const itemDiscountAmount =
+                          Number(item.discountAmount) || 0;
                         const directDiscount = Number(item.discount) || 0;
 
                         if (!offerLabel) {
@@ -1074,19 +1092,29 @@ useEffect(() => {
                           const paidQuantity = Math.ceil(qty / 3);
                           netPayable = unitPrice * paidQuantity;
                         } else if (itemDiscountPct > 0) {
-                          netPayable = fullGross - (fullGross * itemDiscountPct) / 100;
+                          netPayable =
+                            fullGross - (fullGross * itemDiscountPct) / 100;
                         } else if (itemDiscountAmount > 0) {
-                          netPayable = Math.max(0, fullGross - (itemDiscountAmount * qty));
+                          netPayable = Math.max(
+                            0,
+                            fullGross - itemDiscountAmount * qty,
+                          );
                         } else if (directDiscount > 0) {
                           netPayable = Math.max(0, fullGross - directDiscount);
                         }
 
-                        const freeDiscount = Math.max(0, fullGross - netPayable);
+                        const freeDiscount = Math.max(
+                          0,
+                          fullGross - netPayable,
+                        );
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
                             <td className="p-2.5 border-r border-neutral-300 font-bold">
-                              {item.name} {item.selectedSize ? `(${item.selectedSize})` : ""}
+                              {item.name}{" "}
+                              {item.selectedSize
+                                ? `(${item.selectedSize})`
+                                : ""}
                             </td>
                             {/* ডেসক্রিপশন কলামে অফার বা ডিসকাউন্টের নাম শো করবে */}
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700 uppercase">
@@ -1100,7 +1128,9 @@ useEffect(() => {
                             </td>
                             {/* ডিসকাউন্ট অ্যামাউন্ট সঠিকভাবে এখানে রেন্ডার হবে */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
-                              {freeDiscount > 0 ? `-৳${freeDiscount.toFixed(2)}` : "0.00"}
+                              {freeDiscount > 0
+                                ? `-৳${freeDiscount.toFixed(2)}`
+                                : "0.00"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               0.00
@@ -1264,6 +1294,3 @@ useEffect(() => {
 };
 
 export default AdminOrders;
-
-
-// // sajib back to previousbbb
