@@ -892,10 +892,13 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* 🎯 Branch Availability Section Added Here */}
+                {/* 🎯 Branch Availability Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
-                  <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
-                    Available Branches (Leave empty for all branches)
+                  <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+                    Available Branches 
+                    <span className="normal-case text-amber-600 dark:text-amber-400 ml-2 font-semibold">
+                      (কোনো ব্রাঞ্চ সিলেক্ট না করলে বাই-ডিফল্ট সব ব্রাঞ্চে শো করবে)
+                    </span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {branches.map((b) => {
@@ -916,7 +919,7 @@ export const AdminDishes = () => {
                             <input
                               type="number"
                               step="0.01"
-                              placeholder={`Price in ${b.name} (Optional)`}
+                              placeholder={`Price in ${b.name}`}
                               value={formData.branchPrices[bId] ?? ""}
                               onChange={(e) => handleBranchPriceChange(bId, e.target.value)}
                               className="w-full px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-[11px] focus:outline-none"
