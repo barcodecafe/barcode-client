@@ -216,12 +216,15 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
+    // ⚡ ডাবল ট্রিগার এড়ানোর জন্য সেফটি চেক
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
         if (!newId) return prev;
         const exists = prev.some((o) => (o.id || o._id) === newId);
+        
+        // যদি অর্ডারটি অলরেডি স্টেট-এ থেকে থাকে, তবে ডাবল কাউন্ট বা সাউন্ড হতে দেব না
         if (exists) {
           return prev.map((o) => ((o.id || o._id) === newId ? newOrder : o));
         }
@@ -234,8 +237,9 @@ export const AdminOrders = () => {
       );
     };
 
+    // যেকোনো একটিভ সকেট ইভেন্ট ব্যবহার করুন অথবা একটিকে কমেন্ট করে দিন যাতে ডাবল ফায়ার না হয়
     socket.on("order_created", handleNewOrderIncoming);
-    socket.on("admin_new_order", handleNewOrderIncoming);
+    // socket.on("admin_new_order", handleNewOrderIncoming); // 👈 ডাবল ট্রিগার রোধ করতে এটি অফ রাখতে পারেন
 
     socket.on("order_updated", (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
