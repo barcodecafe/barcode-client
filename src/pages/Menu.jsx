@@ -124,6 +124,7 @@ export const Menu = () => {
     }
   };
 
+  // 🎯 Clean and accurate price calculation logic
   const getEffectivePrice = (food) => {
     if (!food) return 0;
 
@@ -148,24 +149,14 @@ export const Menu = () => {
       }
     }
 
-    if (typeof applyFoodDiscount === "function") {
+    // 🎯 Apply discount accurately without double application
+    const hasDiscount = hasFoodDiscount(food) && (!food.offerType || food.offerType === "none");
+    if (hasDiscount && typeof applyFoodDiscount === "function") {
       const discounted = applyFoodDiscount(basePrice, food);
       if (!isNaN(discounted) && discounted >= 0) return Number(discounted);
     }
 
-    let finalPrice = basePrice;
-    if (hasFoodDiscount(food)) {
-      if (food.discountType === "flat" && Number(food.discountAmount) > 0) {
-        finalPrice = Math.max(0, basePrice - Number(food.discountAmount));
-      } else if (food.discountType === "percent" && Number(food.discountPct) > 0) {
-        finalPrice = Math.max(
-          0,
-          basePrice - (basePrice * Number(food.discountPct)) / 100
-        );
-      }
-    }
-
-    return finalPrice;
+    return basePrice;
   };
 
   const filteredFoods = useMemo(() => {
@@ -204,7 +195,6 @@ export const Menu = () => {
   };
 
   return (
-    /* 🎯 Global site-container class applied */
     <div className="site-container relative py-8">
       {/* 💡 Standard Coupon Alert Banner (QR Code Scan Toast) */}
       {showPromoBanner && appliedPromo && (
