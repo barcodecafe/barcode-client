@@ -9,18 +9,15 @@ export const getCartItemLineTotal = (item) => {
   const qty = Number(item.quantity) || 0;
 
   if (item.offerType === 'bogo_1g1') {
-    // ২টির জায়গায় ১টির দাম আসবে (যেমন: Qty 1->1, Qty 2->1, Qty 3->2, Qty 4->2)
     const paidQuantity = Math.ceil(qty / 2);
     return price * paidQuantity;
   }
 
   if (item.offerType === 'bogo_1g2') {
-    // ৩টির জায়গায় ১টির দাম আসবে (যেমন: Qty 1->1, Qty 2->1, Qty 3->1, Qty 4->2)
     const paidQuantity = Math.ceil(qty / 3);
     return price * paidQuantity;
   }
 
-  // নরমাল আইটেমের জন্য
   return price * qty;
 };
 
@@ -74,14 +71,11 @@ export const CartProvider = ({ children }) => {
       
       const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
 
-      // 🎯 ১০০% নির্ভুল লজিক: মেনু কার্ড বা ডিশ ডিটেইলস থেকে যে `food.price` পাঠানো হচ্ছে (যেমন: 23.75 বা 306), 
-      // সেটাই যদি বেস প্রাইস থেকে কম হয় (অর্থাৎ ডিসকাউন্টেড হয়), তবে সেটাই ফাইনাল প্রাইস হিসেবে ফিক্সড থাকবে।
-      let purchasePrice = Number(food.price) > 0 ? Number(food.price) : rawBasePrice;
-
-      // যদি ফালতু রি-ক্যালকুলেশন এড়াতে হয়, তবে food.price যদি বেস প্রাইসের সমান বা জিরো হয় কেবল তখনই ডিসকাউন্ট বসবে
-      if (purchasePrice === rawBasePrice && Number(food.price) === 0) {
-        purchasePrice = applyFoodDiscount(rawBasePrice, food);
-      }
+      // 🎯 যদি ফ্রন্টএন্ড বা বাটনে ডিসকাউন্টেড প্রাইস পাস করা থাকে, সেটাই নিবে।
+      // অন্যথায় কার্ট নিজেই rawBasePrice থেকে ডিসকাউন্ট ক্যালকুলেট করে সঠিক দাম বের করবে।
+      let purchasePrice = Number(food.price) > 0 && Number(food.price) < rawBasePrice
+        ? Number(food.price)
+        : applyFoodDiscount(rawBasePrice, food);
 
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
       const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
@@ -103,7 +97,7 @@ export const CartProvider = ({ children }) => {
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice, // 🎯 এখন মেনু পেজের অর্ডার বাটনে ক্লিক করলেও হুবহু সঠিক ডিসকাউন্টেড দামই থাকবে
+        price: purchasePrice, // 🎯 এখন হুবহু সঠিক ডিসকাউন্টেড দামই থাকবে
         offerType: food.offerType || 'none',
       }];
     });
