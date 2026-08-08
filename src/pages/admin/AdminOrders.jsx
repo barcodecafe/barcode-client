@@ -53,10 +53,11 @@ const getOfferText = (offerType) => {
   return null;
 };
 
-// 🎯 BOGO এবং নরমাল ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেলপার
+// 🎯 BOGO এবং ব্রাঞ্চ/নরমাল প্রাইস বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 const getItemPayableTotal = (item) => {
   const name = String(item.name || "").toLowerCase();
-  const price = Number(item.price) || 0;
+  // কার্টে সেভ করা চূড়ান্ত প্রাইস (যা ব্রাঞ্চ বা মেনু অনুযায়ী সেট হয়েছে)
+  const price = Number(item.price) || 0; 
   const qty = Number(item.quantity) || 0;
 
   let oType = item.offerType;
@@ -1059,10 +1060,11 @@ export const AdminOrders = () => {
                       {orderItems.map((item, idx) => {
                         const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
-                        const unitPrice = Number(item.price) || 0;
+                        
+                        // 🎯 কার্ট থেকে আসা সঠিক ইউনিট প্রাইস (ব্রাঞ্চ প্রাইস বা বেস প্রাইস যাই হোক না কেন)
+                        const unitPrice = Number(item.price) || 0; 
 
-                        // 🔍 চেকআউট পেজের সাথে হুবহু মিলিয়ে অফার ও ডিসকাউন্ট ডেটেকশন
-                        let detectedOfferType = item.offerType;
+                        // অরিজিনাল বা বেস প্রাইস নির্ধারণ
                         let origUnitPrice =
                           Number(item.originalPrice) ||
                           Number(item.basePrice) ||
@@ -1072,7 +1074,7 @@ export const AdminOrders = () => {
                           origUnitPrice = unitPrice;
                         }
 
-                        // ফুচকা বা অন্যান্য অফার অটো-ডিটেক্ট
+                        let detectedOfferType = item.offerType;
                         if (
                           !detectedOfferType ||
                           detectedOfferType === "none"
@@ -1084,7 +1086,6 @@ export const AdminOrders = () => {
                           }
                         }
 
-                        // অফার লেবেল বা ডিসকাউন্ট ডেসক্রিপশন তৈরি
                         let offerLabel = getOfferText(detectedOfferType);
                         const itemDiscountPct = Number(item.discountPct) || 0;
                         const itemDiscountAmount =
@@ -1100,17 +1101,14 @@ export const AdminOrders = () => {
                             offerLabel = `${itemDiscountPct}% OFF`;
                           } else if (itemDiscountAmount > 0) {
                             offerLabel = `৳${itemDiscountAmount} OFF`;
-                          } else if (origUnitPrice > unitPrice) {
-                            offerLabel = "SPECIAL DISCOUNT";
                           } else {
                             offerLabel = "-";
                           }
                         }
 
-                        const fullGross = origUnitPrice * qty;
+                        const fullGross = unitPrice * qty;
                         let netPayable = unitPrice * qty;
 
-                        // সঠিক নেট পেবল এবং ডিসকাউন্ট ক্যালকুলেশন
                         if (detectedOfferType === "bogo_1g1") {
                           const paidQuantity = Math.ceil(qty / 2);
                           netPayable = unitPrice * paidQuantity;
@@ -1142,17 +1140,15 @@ export const AdminOrders = () => {
                                 ? `(${item.selectedSize})`
                                 : ""}
                             </td>
-                            {/* ডেসক্রিপশন কলামে অফার বা ডিসকাউন্টের নাম শো করবে */}
                             <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700 uppercase">
                               {offerLabel}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
-                              ৳{origUnitPrice.toFixed(2)}
+                              ৳{unitPrice.toFixed(2)}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
-                            {/* ডিসকাউন্ট অ্যামাউন্ট সঠিকভাবে এখানে রেন্ডার হবে */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
                               {freeDiscount > 0
                                 ? `-৳${freeDiscount.toFixed(2)}`
