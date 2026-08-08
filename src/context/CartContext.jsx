@@ -58,7 +58,7 @@ export const CartProvider = ({ children }) => {
     }, 3000);
   }, []);
 
- const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
+  const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
     const sizeName = (selectedSize && (selectedSize.name || selectedSize)) || food.selectedSize || null;
     const variationObj = selectedSize && typeof selectedSize === 'object' ? selectedSize : null;
     
@@ -69,35 +69,33 @@ export const CartProvider = ({ children }) => {
     }
 
     setCart((prevCart) => {
-      // 🎯 ফিক্স: মেনু পেজ থেকে আসলে branchId হবে null/undefined, তাই এখানে জোর করে লোকালস্টোরেজ চেক করা যাবে না। 
-      // শুধুমাত্র explicit ভাবে branchId পাঠানো হলেই কেবল ব্রাঞ্চ প্রাইস ধরবে, নতুবা শুধু মেনুর বেস প্রাইস ধরবে।
-      const activeBranchId = branchId !== undefined ? branchId : null;
+      const activeBranchId = branchId !== undefined && branchId !== null ? branchId : null;
+      const foodId = food.id || food._id;
       
       const basePrice = getActivePrice(food, activeBranchId, sizeName);
       const purchasePrice = applyFoodDiscount(basePrice, food);
 
-      // 🎯 কার্ট আইডি ইউনিক করার জন্য ব্রাঞ্চ প্রিফিক্স যুক্ত করা হলো
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
-      const cartId = food.cartId || (sizeName ? `${branchPrefix}-${food.id}-${sizeName}` : `${branchPrefix}-${food.id}`);
+      const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
 
-      const existing = prevCart.find((item) => (item.cartId || item.id) === cartId);
+      const existing = prevCart.find((item) => (item.cartId || item.id || item._id) === cartId);
       if (existing) {
         return prevCart.map((item) =>
-          (item.cartId || item.id) === cartId
+          (item.cartId || item.id || item._id) === cartId
             ? { ...item, quantity: item.quantity + targetQty, price: purchasePrice }
             : item
         );
       }
+
       return [...prevCart, {
         ...food,
+        id: foodId, // অ্যাডমিন প্যানেল ও ইনভয়েসের জন্য id নিশ্চিত করা হলো
         cartId,
         branchId: activeBranchId,
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice,
-        originalPrice: basePrice,
-        basePrice: food.price,
+        price: purchasePrice, // চূড়ান্ত ডিসকাউন্টেড বা ব্রাঞ্চ-অ্যাডজাস্টেড দাম
         offerType: food.offerType || 'none',
       }];
     });
@@ -111,7 +109,7 @@ export const CartProvider = ({ children }) => {
     setCart((prevCart) =>
       prevCart
         .map((item) => {
-          const itemKey = item.cartId || item.id;
+          const itemKey = item.cartId || item.id || item._id;
           if (itemKey === targetId) {
             return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
           }
