@@ -64,8 +64,14 @@ export async function createOrder(orderData) {
       id: i.id,
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
+      // 🎯 ফিক্স: ব্রাঞ্চের ফাইনাল অ্যাডজাস্টেড প্রাইস এখানে যুক্ত করা হলো
+      price: i.price,
+      originalPrice: i.originalPrice || i.price,
+      offerType: i.offerType || null,
     })),
     regionId: orderData.regionId,
+    // 🎯 ফিক্স: ব্রাঞ্চ আইডি এখানে যুক্ত করা হলো
+    branchId: orderData.branchId || Number(localStorage.getItem('selected_branch_id')) || null,
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
     deliveryArea: orderData.deliveryArea || '',
