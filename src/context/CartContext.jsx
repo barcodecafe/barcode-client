@@ -74,13 +74,12 @@ export const CartProvider = ({ children }) => {
       
       const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
 
-      // 🎯 ডাবল ডিসকাউন্ট রোধ: 
-      // যদি food.price ফ্রন্টএন্ড বা কার্ড থেকে অলরেডি ডিসকাউন্টেড বা ব্রাঞ্চ-অ্যাডজাস্টেড অবস্থায় আসে, 
-      // তবে সেটাই সরাসরি পারচেজ প্রাইস হবে।
+      // 🎯 ১০০% নির্ভুল লজিক: মেনু কার্ড বা ডিশ ডিটেইলস থেকে যে `food.price` পাঠানো হচ্ছে (যেমন: 23.75 বা 306), 
+      // সেটাই যদি বেস প্রাইস থেকে কম হয় (অর্থাৎ ডিসকাউন্টেড হয়), তবে সেটাই ফাইনাল প্রাইস হিসেবে ফিক্সড থাকবে।
       let purchasePrice = Number(food.price) > 0 ? Number(food.price) : rawBasePrice;
 
-      // যদি প্রাইস এবং বেস প্রাইস হুবহু এক হয়, কেবল তখনই কার্ট নিজে ডিসকাউন্ট ক্যালকুলেট করবে
-      if (purchasePrice === rawBasePrice) {
+      // যদি ফালতু রি-ক্যালকুলেশন এড়াতে হয়, তবে food.price যদি বেস প্রাইসের সমান বা জিরো হয় কেবল তখনই ডিসকাউন্ট বসবে
+      if (purchasePrice === rawBasePrice && Number(food.price) === 0) {
         purchasePrice = applyFoodDiscount(rawBasePrice, food);
       }
 
@@ -104,7 +103,7 @@ export const CartProvider = ({ children }) => {
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice, // 🎯 এখন হুবহু ৳23.75 টাকাই থাকবে
+        price: purchasePrice, // 🎯 এখন মেনু পেজের অর্ডার বাটনে ক্লিক করলেও হুবহু সঠিক ডিসকাউন্টেড দামই থাকবে
         offerType: food.offerType || 'none',
       }];
     });
