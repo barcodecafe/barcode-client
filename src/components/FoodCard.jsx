@@ -161,7 +161,7 @@ const FoodCard = ({
             )}
           </div>
 
-          {/* Button Section */}
+        {/* Button Section */}
           {hasVariants ? (
             <Link
               to={foodDetailLink}
@@ -173,8 +173,17 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 food অবজেক্টের price ফিল্ডে হিসাব করা চূড়ান্ত প্রাইস সেভ করে পাঠানো হচ্ছে
-                onAddToCart({ ...food, price: discountedPrice }, branchId);
+                // 🎯 কার্ট যেন কোনোভাবেই বেস প্রাইসে ফিরে না যায়, তাই ফাইনাল প্রাইসটি আলাদা প্রপার্টি ও ওভাররাইড করে পাঠানো হচ্ছে
+                onAddToCart(
+                  {
+                    ...food,
+                    price: discountedPrice,         // কার্টের প্রাইস হিসেবে ফাইনাল দাম বসবে
+                    basePrice: discountedPrice,     // যাতে কার্ট সার্ভিস বেस প্রাইসে রিভার্ট না করে
+                    originalPrice: basePrice,
+                    branchId: branchId ? Number(branchId) : null,
+                  },
+                  branchId
+                );
               }}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
