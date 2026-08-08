@@ -154,8 +154,7 @@ const FoodCard = ({
               </span>
             )}
           </div>
-
-          {/* Button Section */}
+{/* Button Section */}
           {hasVariants ? (
             <Link
               to={foodDetailLink}
@@ -167,11 +166,16 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 ব্যাকএন্ডের স্কিমা অক্ষুণ্ণ রেখে কেবল প্রস্তুতকৃত সঠিক প্রাইসটি পাস করা হচ্ছে
+                // 🎯 কার্ট যেন নতুন করে আবার অ্যাডজাস্টমেন্ট যোগ করে ডাবল না বানায়,
+                // তাই আমরা food.price-কে ফাইনাল discountedPrice দিয়ে ওভাররাইড করে দিচ্ছি
+                // এবং originalPrice-এ বেস প্রাইসটি সেট করে দিচ্ছি।
                 onAddToCart(
                   {
                     ...food,
-                    price: discountedPrice,
+                    price: discountedPrice,       // এটি হবে ফাইনাল দাম (যেমন: 470)
+                    originalPrice: basePrice,     // বেস প্রাইস (যেমন: 450)
+                    branchPrices: null,           // যাতে কার্ট পরবর্তীতে আর রি-ক্যালকুলেট না করে ডাবল না বাড়ায়
+                    branchId: branchId ? Number(branchId) : null,
                   },
                   branchId
                 );
