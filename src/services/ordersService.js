@@ -1,9 +1,5 @@
 // ---------------------------------------------------------------------------
 // ordersService.js — LIVE BACKEND
-//
-// Orders now live on the server. The backend RE-COMPUTES price/discount/points
-// and owns the canonical status vocabulary, so the client only sends item ids,
-// quantities, branch, coupon, points-to-redeem and payment method — never money.
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
@@ -11,12 +7,13 @@ import apiClient from './apiClient';
 export async function getAllOrders() {
   try {
     const res = await apiClient.get('/orders');
-    // 🎯 সেফটি পার্সিং: রেসপন্স অবজেক্টের সব ধরণের নেস্টেড ফরম্যাট হ্যান্ডেল করে সরাসরি অ্যারে রিটার্ন করবে
+    
+    // 🎯 ব্যাকএন্ড res.data.data অথবা res.data হিসেবে ডাটা পাঠাচ্ছে, তা নিখুঁতভাবে আনপ্যাক করা হচ্ছে:
     if (Array.isArray(res)) return res;
     if (res && Array.isArray(res.data)) return res.data;
-    if (res && Array.isArray(res.orders)) return res.orders;
-    if (res && res.data && Array.isArray(res.data.orders)) return res.data.orders;
     if (res && res.data && Array.isArray(res.data.data)) return res.data.data;
+    if (res && Array.isArray(res.orders)) return res.orders;
+    
     return [];
   } catch (error) {
     console.error("Error fetching all orders:", error);
@@ -26,7 +23,6 @@ export async function getAllOrders() {
 
 /** 
  * ⚡ GET /api/orders/pending-count (admin) 
- * ফাস্ট ও লাইটওয়েট পেন্ডিং অর্ডারের সংখ্যা (Count) নিয়ে আসার জন্য
  */
 export async function getPendingOrderCount() {
   try {
@@ -36,7 +32,6 @@ export async function getPendingOrderCount() {
       return { pendingCount: 0 };
     }
 
-    // 🎯 ডিবাগিং ও সেফ এক্সট্রাকশন
     const count = 
       response.pendingCount ?? 
       response.count ?? 
@@ -52,38 +47,31 @@ export async function getPendingOrderCount() {
   }
 }
 
-/** GET /api/orders/:id (ownership-checked server-side) */
+/** GET /api/orders/:id */
 export async function getOrderById(id) {
-  return apiClient.get(`/orders/${id}`);
+  const res = await apiClient.get(`/orders/${id}`);
+  return res?.data || res;
 }
 
-/**
- * GET /api/orders?active=true — the logged-in user's active orders.
- * The server scopes results to the token's user, so the userId argument is
- * only kept for signature compatibility (admins can still pass it).
- * BACKEND excludes Delivered + Rejected from "active" (audit N4 fix).
- */
+/** GET /api/orders?active=true */
 export async function getActiveOrdersForUser(userId) {
   const q = userId ? `?userId=${userId}&active=true` : '?active=true';
-  return apiClient.get(`/orders${q}`);
+  const res = await apiClient.get(`/orders${q}`);
+  return res?.data || res;
 }
 
-/**
- * POST /api/orders — sends only what the server needs; it computes the rest.
- */
+/** POST /api/orders */
 export async function createOrder(orderData) {
   const payload = {
     items: (orderData.items || []).map((i) => ({
       id: i.id,
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
-      // 🎯 ফিক্স: ব্রাঞ্চের ফাইনাল অ্যাডজাস্টেড প্রাইস এখানে যুক্ত করা হলো
       price: i.price,
       originalPrice: i.originalPrice || i.price,
       offerType: i.offerType || null,
     })),
     regionId: orderData.regionId,
-    // 🎯 ফিক্স: ব্রাঞ্চ আইডি এখানে যুক্ত করা হলো
     branchId: orderData.branchId || Number(localStorage.getItem('selected_branch_id')) || null,
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
@@ -99,38 +87,42 @@ export async function createOrder(orderData) {
 
 /** PATCH /api/orders/:id/status (admin/rider) */
 export async function updateOrderStatus(id, newStatus) {
-  return apiClient.patch(`/orders/${id}/status`, { status: newStatus });
+  const res = await apiClient.patch(`/orders/${id}/status`, { status: newStatus });
+  return res?.data || res;
 }
 
 /** POST /api/orders/:id/assign-rider (admin) */
 export async function assignRiderToOrder(orderId, riderId) {
-  return apiClient.post(`/orders/${orderId}/assign-rider`, { riderId });
+  const res = await apiClient.post(`/orders/${orderId}/assign-rider`, { riderId });
+  return res?.data || res;
 }
 
 /** POST /api/orders/:id/accept-rider (rider) */
 export async function acceptRiderOrder(orderId) {
-  return apiClient.post(`/orders/${orderId}/accept-rider`, {});
+  const res = await apiClient.post(`/orders/${orderId}/accept-rider`, {});
+  return res?.data || res;
 }
 
-/** POST /api/orders/:id/reject-rider (rider) — auto-reassigns server-side */
+/** POST /api/orders/:id/reject-rider (rider) */
 export async function rejectRiderOrder(orderId) {
-  return apiClient.post(`/orders/${orderId}/reject-rider`, {});
+  const res = await apiClient.post(`/orders/${orderId}/reject-rider`, {});
+  return res?.data || res;
 }
 
-/** POST /api/orders/:id/messages — sender/senderName derived server-side */
+/** POST /api/orders/:id/messages */
 export async function addChatMessage(id, message) {
-  return apiClient.post(`/orders/${id}/messages`, { text: message.text });
+  const res = await apiClient.post(`/orders/${id}/messages`, { text: message.text });
+  return res?.data || res;
 }
 
-/**
- * POST /api/orders/submit-daily-cash (rider)
- * Sends a request to the backend to deposit the cash collected for a specific date added by Sajib khan
- */
+/** POST /api/orders/submit-daily-cash (rider) */
 export async function submitRiderDailyCash(dateString) {
-  return apiClient.post('/orders/submit-daily-cash', { date: dateString });
+  const res = await apiClient.post('/orders/submit-daily-cash', { date: dateString });
+  return res?.data || res;
 }
 
-/** POST /api/orders/confirm-cash-settlement (admin) added by Sajib khan */
+/** POST /api/orders/confirm-cash-settlement (admin) */
 export async function confirmRiderCashSettlement(riderId, dateString) {
-  return apiClient.post('/orders/confirm-cash-settlement', { riderId, date: dateString });
+  const res = await apiClient.post('/orders/confirm-cash-settlement', { riderId, date: dateString });
+  return res?.data || res;
 }
