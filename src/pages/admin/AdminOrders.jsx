@@ -212,7 +212,7 @@ export const AdminOrders = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
@@ -220,7 +220,6 @@ export const AdminOrders = () => {
         const exists = prev.some((o) => (o.id || o._id) === newId);
 
         if (exists) {
-          // 🎯 ফিক্স: পুরনো ডেটা অক্ষুণ্ণ রেখে নতুন ডেটা মার্জ করা
           return prev.map((o) => ((o.id || o._id) === newId ? { ...o, ...newOrder } : o));
         }
         return [newOrder, ...prev];
@@ -238,8 +237,6 @@ export const AdminOrders = () => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
         prev.map((o) => {
-          // 🎯 প্রধান ফিক্স: এখানে শুধু updatedOrder বসালে পুরনো ফিল্ডগুলো (user, total) গায়েব হয়ে যেত। 
-          // তাই আমরা {...o, ...updatedOrder} দিয়েছি যাতে আগের সব ডেটা সেভ থাকে।
           if ((o.id || o._id) === updatedId) {
              return { ...o, ...updatedOrder };
           }

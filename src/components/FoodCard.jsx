@@ -161,7 +161,7 @@ const FoodCard = ({
             )}
           </div>
 
-          {/* Button Section */}
+         {/* Button Section */}
           {hasVariants ? (
             <Link
               to={foodDetailLink}
@@ -172,17 +172,7 @@ const FoodCard = ({
             </Link>
           ) : (
             <button
-              onClick={() =>
-                onAddToCart(
-                  {
-                    ...food,
-                    price: discountedPrice, // 👈 ব্রাঞ্চ ও ডিসকাউন্ট সহ ফাইনাল অ্যাডজাস্টেড প্রাইস
-                    originalPrice: basePrice,
-                    branchId: branchId || null,
-                  },
-                  branchId,
-                )
-              }
+              onClick={() => onAddToCart(food, branchId)}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
