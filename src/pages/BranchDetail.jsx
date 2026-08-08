@@ -479,14 +479,30 @@ export const BranchDetail = () => {
                         branchId={branch.id}
                         favorited={favorited}
                         onToggleFavorite={toggleFavorite}
-                        onAddToCart={(itemToAdd) => {
-                          // 🎯 ফিক্স: ব্রাঞ্চের নির্দিষ্ট অ্যাডজাস্টেড প্রাইস ও ব্রাঞ্চ আইডি সহ কার্টে পাঠানো হচ্ছে
+                        onAddToCart={(foodItem, bId) => {
+                          // 🎯 FoodCard-এর ভেতরের লজিক অনুযায়ী ব্রাঞ্চের সঠিক প্রাইস বের করে কার্টে পাঠানো হচ্ছে
+                          let effPrice = Number(foodItem.price) || 0;
+                          if (
+                            bId &&
+                            foodItem.branchPrices &&
+                            foodItem.branchPrices[String(bId)] !== undefined
+                          ) {
+                            effPrice = Math.max(
+                              0,
+                              effPrice +
+                                (Number(foodItem.branchPrices[String(bId)]) ||
+                                  0),
+                            );
+                          }
+
                           addToCart({
-                            ...itemToAdd,
-                            price: food.price, // ব্রাঞ্চের নিজস্ব অ্যাডজাস্টেড প্রাইস
+                            ...foodItem,
+                            price: effPrice,
                             originalPrice:
-                              food.originalPrice || food.oldPrice || food.price,
-                            branchId: branch.id,
+                              foodItem.originalPrice ||
+                              foodItem.oldPrice ||
+                              effPrice,
+                            branchId: bId,
                           });
                         }}
                         variants={cardVariants}
@@ -509,18 +525,33 @@ export const BranchDetail = () => {
                 const favorited = isFavorite(food.id);
                 return (
                   <FoodCard
-                    key={food.id}
                     food={food}
                     branchId={branch.id}
                     favorited={favorited}
                     onToggleFavorite={toggleFavorite}
-                    onAddToCart={(itemToAdd) => {
-                      // 🎯 ফিক্স: ব্রাঞ্চের নির্দিষ্ট অ্যাডজাস্টেড প্রাইস ও ব্রাঞ্চ আইডি সহ কার্টে পাঠানো হচ্ছে
+                    onAddToCart={(itemFood) => {
+                      // 🎯 FoodCard-এর নিজস্ব ব্রাঞ্চ প্রাইস ক্যালকুলেশন লজিক ব্যবহার করে কার্টে পাঠানো হচ্ছে
+                      let effectivePrice = Number(itemFood.price) || 0;
+                      if (
+                        branch.id &&
+                        itemFood.branchPrices &&
+                        itemFood.branchPrices[String(branch.id)] !== undefined
+                      ) {
+                        const adjustVal =
+                          Number(itemFood.branchPrices[String(branch.id)]) || 0;
+                        effectivePrice = Math.max(
+                          0,
+                          effectivePrice + adjustVal,
+                        );
+                      }
+
                       addToCart({
-                        ...itemToAdd,
-                        price: food.price, // ব্রাঞ্চের নিজস্ব অ্যাডজাস্টেড প্রাইস
+                        ...itemFood,
+                        price: effectivePrice,
                         originalPrice:
-                          food.originalPrice || food.oldPrice || food.price,
+                          itemFood.originalPrice ||
+                          itemFood.oldPrice ||
+                          effectivePrice,
                         branchId: branch.id,
                       });
                     }}

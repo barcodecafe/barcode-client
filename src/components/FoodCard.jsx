@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Heart, ShoppingBag, SlidersHorizontal, Gift, Tag } from "lucide-react";
+import {
+  Star,
+  Heart,
+  ShoppingBag,
+  SlidersHorizontal,
+  Gift,
+  Tag,
+} from "lucide-react";
 import {
   hasFoodDiscount,
   applyFoodDiscount,
@@ -21,30 +28,42 @@ const FoodCard = ({
 }) => {
   // 🎯 Branch-based Price Adjustment Logic
   let effectiveBasePrice = Number(food.price) || 0;
-  if (branchId && food.branchPrices && food.branchPrices[String(branchId)] !== undefined) {
+  if (
+    branchId &&
+    food.branchPrices &&
+    food.branchPrices[String(branchId)] !== undefined
+  ) {
     const adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
     effectiveBasePrice = Math.max(0, effectiveBasePrice + adjustVal);
   }
 
   const hasVariants =
     Array.isArray(food.variations) && food.variations.length > 0;
-  
+
   const basePrice = hasVariants
-    ? Math.min(...food.variations.map((v) => {
-        let vPrice = Number(v.price) || 0;
-        if (branchId && food.branchPrices && food.branchPrices[String(branchId)] !== undefined) {
-          vPrice += Number(food.branchPrices[String(branchId)]) || 0;
-        }
-        return Math.max(0, vPrice);
-      }))
+    ? Math.min(
+        ...food.variations.map((v) => {
+          let vPrice = Number(v.price) || 0;
+          if (
+            branchId &&
+            food.branchPrices &&
+            food.branchPrices[String(branchId)] !== undefined
+          ) {
+            vPrice += Number(food.branchPrices[String(branchId)]) || 0;
+          }
+          return Math.max(0, vPrice);
+        }),
+      )
     : effectiveBasePrice;
 
   // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
-  
+
   // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে
   const hasDiscount = !offerLabel && hasFoodDiscount(food);
-  const discountedPrice = hasDiscount ? applyFoodDiscount(basePrice, food) : basePrice;
+  const discountedPrice = hasDiscount
+    ? applyFoodDiscount(basePrice, food)
+    : basePrice;
 
   // 🎯 Dynamic Link Path with Branch ID Query Parameter Support
   const foodDetailLink = `/menu/${food.id || food._id}${branchId ? `?branchId=${branchId}` : ""}`;
@@ -120,7 +139,11 @@ const FoodCard = ({
         {food.promoCode && (
           <div className="mt-2.5 flex items-center gap-1.5 rounded-none bg-primary-50 dark:bg-primary-950/30 px-2 py-1 border border-primary-200/60 dark:border-primary-900/40 text-[10px] text-primary-700 dark:text-primary-300 font-medium">
             <Tag className="h-3 w-3 shrink-0 text-primary-500" />
-            <span>Use <strong className="font-mono font-bold">{food.promoCode}</strong> on payment!</span>
+            <span>
+              Use{" "}
+              <strong className="font-mono font-bold">{food.promoCode}</strong>{" "}
+              on payment!
+            </span>
           </div>
         )}
 
@@ -149,7 +172,17 @@ const FoodCard = ({
             </Link>
           ) : (
             <button
-              onClick={() => onAddToCart(food, branchId)}
+              onClick={() =>
+                onAddToCart(
+                  {
+                    ...food,
+                    price: discountedPrice, // 👈 ব্রাঞ্চ ও ডিসকাউন্ট সহ ফাইনাল অ্যাডজাস্টেড প্রাইস
+                    originalPrice: basePrice,
+                    branchId: branchId || null,
+                  },
+                  branchId,
+                )
+              }
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
