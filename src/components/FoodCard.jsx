@@ -26,35 +26,29 @@ const FoodCard = ({
   onAddToCart,
   variants,
 }) => {
-  // 🎯 Branch-based Price Adjustment Logic
-  let effectiveBasePrice = Number(food.price) || 0;
+  // 🎯 Branch-based Price Adjustment Logic (সঠিক ও একবারই অ্যাডজাস্টমেন্ট যোগ করার জন্য)
+  let rawBasePrice = Number(food.price) || 0;
+  let adjustVal = 0;
   if (
     branchId &&
     food.branchPrices &&
     food.branchPrices[String(branchId)] !== undefined
   ) {
-    const adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
-    effectiveBasePrice = Math.max(0, effectiveBasePrice + adjustVal);
+    adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
   }
 
   const hasVariants =
     Array.isArray(food.variations) && food.variations.length > 0;
 
+  // ভ্যারিয়েশন বা বেস প্রাইসের সাথে ব্রাঞ্চ অ্যাডজাস্টমেন্ট একবারই যুক্ত হবে
   const basePrice = hasVariants
     ? Math.min(
         ...food.variations.map((v) => {
           let vPrice = Number(v.price) || 0;
-          if (
-            branchId &&
-            food.branchPrices &&
-            food.branchPrices[String(branchId)] !== undefined
-          ) {
-            vPrice += Number(food.branchPrices[String(branchId)]) || 0;
-          }
-          return Math.max(0, vPrice);
+          return Math.max(0, vPrice + adjustVal);
         }),
       )
-    : effectiveBasePrice;
+    : Math.max(0, rawBasePrice + adjustVal);
 
   // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
@@ -161,7 +155,7 @@ const FoodCard = ({
             )}
           </div>
 
-        {/* Button Section */}
+          {/* Button Section */}
           {hasVariants ? (
             <Link
               to={foodDetailLink}
@@ -173,14 +167,11 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 কার্ট যেন কোনোভাবেই বেস প্রাইসে ফিরে না যায়, তাই ফাইনাল প্রাইসটি আলাদা প্রপার্টি ও ওভাররাইড করে পাঠানো হচ্ছে
+                // 🎯 ব্যাকএন্ডের স্কিমা অক্ষুণ্ণ রেখে কেবল প্রস্তুতকৃত সঠিক প্রাইসটি পাস করা হচ্ছে
                 onAddToCart(
                   {
                     ...food,
-                    price: discountedPrice,         // কার্টের প্রাইস হিসেবে ফাইনাল দাম বসবে
-                    basePrice: discountedPrice,     // যাতে কার্ট সার্ভিস বেस প্রাইসে রিভার্ট না করে
-                    originalPrice: basePrice,
-                    branchId: branchId ? Number(branchId) : null,
+                    price: discountedPrice,
                   },
                   branchId
                 );
