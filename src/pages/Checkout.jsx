@@ -460,9 +460,14 @@ export const Checkout = () => {
           id: item.id,
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
-          // 🎯 ব্রাঞ্চ প্রাইস বা বেস প্রাইস ব্যাকএন্ডে পাঠানোর জন্য
+          // 🎯 ফিক্স: ব্রাঞ্চের ফাইনাল অ্যাডজাস্টেড প্রাইস এবং ব্রাঞ্চ আইডি সঠিকভাবে ব্যাকএন্ডে পাঠানো হচ্ছে
           price: item.price,
-          branchId: item.branchId || null,
+          originalPrice: item.originalPrice || item.price,
+          offerType: item.offerType || null,
+          branchId:
+            item.branchId ||
+            Number(localStorage.getItem("selected_branch_id")) ||
+            null,
         })),
         regionId,
         couponCode: appliedCoupon?.code || "",
@@ -1375,4 +1380,3 @@ export const Checkout = () => {
 };
 
 export default Checkout;
-// sajib back to previous

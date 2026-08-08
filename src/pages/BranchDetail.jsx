@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination } from 'swiper/modules';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Phone,
@@ -15,19 +15,19 @@ import {
   ChevronRight,
   Sparkles,
   UtensilsCrossed,
-} from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useFavorites } from '../context/FavoritesContext';
-import { getFoodsByBranch } from '../services/foodsService';
-import { getBranchById } from '../services/branchesService';
-import LeafletMap from '../components/LeafletMap';
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { getFoodsByBranch } from "../services/foodsService";
+import { getBranchById } from "../services/branchesService";
+import LeafletMap from "../components/LeafletMap";
 
 // 💡 Shared Global FoodCard Component
-import FoodCard from '../components/FoodCard';
+import FoodCard from "../components/FoodCard";
 
 // Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/pagination';
+import "swiper/css";
+import "swiper/css/pagination";
 
 // ---------------------------------------------------------------------------
 // HeroImageCarousel — handles banner photo transitions, drag & autoplay
@@ -46,7 +46,7 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
       setDirection(dir);
       setIndex(wrapped);
     },
-    [slides.length]
+    [slides.length],
   );
 
   const goNext = useCallback(() => goTo(index + 1, 1), [goTo, index]);
@@ -61,9 +61,9 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
   }, [index, hasMultiple, autoplayInterval, goTo]);
 
   const slideVariants = {
-    enter: (dir) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+    enter: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (dir) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+    exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
   };
 
   const stop = (e) => e.stopPropagation();
@@ -82,8 +82,11 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ x: { type: 'tween', duration: 0.5, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
-          drag={hasMultiple ? 'x' : false}
+          transition={{
+            x: { type: "tween", duration: 0.5, ease: "easeInOut" },
+            opacity: { duration: 0.3 },
+          }}
+          drag={hasMultiple ? "x" : false}
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.6}
           onDragEnd={(e, info) => {
@@ -98,7 +101,10 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
         <>
           <button
             type="button"
-            onClick={(e) => { stop(e); goPrev(); }}
+            onClick={(e) => {
+              stop(e);
+              goPrev();
+            }}
             aria-label="Previous image"
             className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all duration-200 active:scale-90 cursor-pointer"
           >
@@ -106,7 +112,10 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
           </button>
           <button
             type="button"
-            onClick={(e) => { stop(e); goNext(); }}
+            onClick={(e) => {
+              stop(e);
+              goNext();
+            }}
             aria-label="Next image"
             className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all duration-200 active:scale-90 cursor-pointer"
           >
@@ -118,10 +127,15 @@ const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
               <button
                 key={i}
                 type="button"
-                onClick={(e) => { stop(e); goTo(i, i > index ? 1 : -1); }}
+                onClick={(e) => {
+                  stop(e);
+                  goTo(i, i > index ? 1 : -1);
+                }}
                 aria-label={`Go to slide ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  i === index ? 'w-5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                  i === index
+                    ? "w-5 bg-white"
+                    : "w-1.5 bg-white/50 hover:bg-white/80"
                 }`}
               />
             ))}
@@ -146,15 +160,19 @@ const InfoCard = ({ icon, label, value, delay = 0, href }) => {
       viewport={{ once: true }}
       transition={{ duration: 0.4, delay }}
       className={`group flex gap-4 items-start p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
-        href ? 'cursor-pointer hover:border-primary-500/50' : ''
+        href ? "cursor-pointer hover:border-primary-500/50" : ""
       }`}
     >
       <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shrink-0 group-hover:scale-105 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-        <p className="text-neutral-800 dark:text-neutral-100 font-semibold mt-0.5 leading-snug">{value}</p>
+        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-neutral-800 dark:text-neutral-100 font-semibold mt-0.5 leading-snug">
+          {value}
+        </p>
       </div>
     </CardWrapper>
   );
@@ -173,17 +191,17 @@ export const BranchDetail = () => {
   const [branch, setBranch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [branchMenu, setBranchMenu] = useState([]);
-  
-  const rawCategory = searchParams.get('category') || 'All';
+
+  const rawCategory = searchParams.get("category") || "All";
 
   const handleCategoryChange = (catName) => {
-    if (!catName || catName === 'All') {
+    if (!catName || catName === "All") {
       setSearchParams({}, { replace: true });
     } else {
       setSearchParams({ category: catName }, { replace: true });
     }
   };
-  
+
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
@@ -202,15 +220,16 @@ export const BranchDetail = () => {
   }, [id]);
 
   const categories = useMemo(() => {
-    if (!branchMenu || branchMenu.length === 0) return ['All'];
-    
+    if (!branchMenu || branchMenu.length === 0) return ["All"];
+
     const categoryMap = new Map();
 
     branchMenu.forEach((item) => {
       if (item.category?.trim()) {
         const catName = item.category.trim();
         const lowerName = catName.toLowerCase();
-        const orderVal = typeof item.categoryOrder === 'number' ? item.categoryOrder : 999;
+        const orderVal =
+          typeof item.categoryOrder === "number" ? item.categoryOrder : 999;
 
         if (!categoryMap.has(lowerName)) {
           categoryMap.set(lowerName, { name: catName, order: orderVal });
@@ -226,21 +245,23 @@ export const BranchDetail = () => {
       .sort((a, b) => a.order - b.order)
       .map((item) => item.name);
 
-    return ['All', ...sortedCats];
+    return ["All", ...sortedCats];
   }, [branchMenu]);
 
   const activeCategory = useMemo(() => {
-    if (rawCategory === 'All') return 'All';
+    if (rawCategory === "All") return "All";
     const match = categories.find(
-      (c) => c.trim().toLowerCase() === rawCategory.trim().toLowerCase()
+      (c) => c.trim().toLowerCase() === rawCategory.trim().toLowerCase(),
     );
-    return match || 'All';
+    return match || "All";
   }, [rawCategory, categories]);
 
   const filteredMenu = useMemo(() => {
-    if (activeCategory === 'All') return branchMenu;
+    if (activeCategory === "All") return branchMenu;
     return branchMenu.filter(
-      (food) => food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
+      (food) =>
+        food.category?.trim().toLowerCase() ===
+        activeCategory.trim().toLowerCase(),
     );
   }, [branchMenu, activeCategory]);
 
@@ -255,10 +276,14 @@ export const BranchDetail = () => {
   if (!branch) {
     return (
       <div className="site-container py-16 text-center">
-        <h2 className="text-2xl font-bold mb-4 text-neutral-800 dark:text-neutral-200">Venue Not Found</h2>
-        <p className="text-neutral-500 mb-6">The branch you are looking for doesn't exist or has moved.</p>
+        <h2 className="text-2xl font-bold mb-4 text-neutral-800 dark:text-neutral-200">
+          Venue Not Found
+        </h2>
+        <p className="text-neutral-500 mb-6">
+          The branch you are looking for doesn't exist or has moved.
+        </p>
         <button
-          onClick={() => navigate('/branches')}
+          onClick={() => navigate("/branches")}
           className="text-primary-500 font-semibold inline-flex items-center gap-2 hover:underline cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to all branches
@@ -270,27 +295,39 @@ export const BranchDetail = () => {
   const activeDetails = {
     manager: branch.manager || "Branch Manager",
     capacity: branch.capacity || 150,
-    features: branch.features || ["Premium Seating", "AC Venue", "Wi-Fi Access", "Parking Available"]
+    features: branch.features || [
+      "Premium Seating",
+      "AC Venue",
+      "Wi-Fi Access",
+      "Parking Available",
+    ],
   };
 
   const hasCoords =
-    typeof branch.lat === 'number' &&
-    typeof branch.lng === 'number' &&
+    typeof branch.lat === "number" &&
+    typeof branch.lng === "number" &&
     !(branch.lat === 0 && branch.lng === 0);
-  const telHref = `tel:${branch.contact ? branch.contact.replace(/[^\d+]/g, '') : ''}`;
+  const telHref = `tel:${branch.contact ? branch.contact.replace(/[^\d+]/g, "") : ""}`;
   const directionsUrl = hasCoords
     ? `https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.location || branch.name)}`;
 
   const getRegion = (location) => {
-    if (!location) return 'Chattogram';
+    if (!location) return "Chattogram";
     const lowerLoc = location.toLowerCase();
-    if (lowerLoc.includes("cox") || lowerLoc.includes("bazar")) return "Cox's Bazar";
-    if (lowerLoc.includes("dhaka") || lowerLoc.includes("banani") || lowerLoc.includes("gulshan")) return "Dhaka";
-    return 'Chattogram';
+    if (lowerLoc.includes("cox") || lowerLoc.includes("bazar"))
+      return "Cox's Bazar";
+    if (
+      lowerLoc.includes("dhaka") ||
+      lowerLoc.includes("banani") ||
+      lowerLoc.includes("gulshan")
+    )
+      return "Dhaka";
+    return "Chattogram";
   };
 
-  const slides = branch.images && branch.images.length > 0 ? branch.images : [branch.image];
+  const slides =
+    branch.images && branch.images.length > 0 ? branch.images : [branch.image];
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20, scale: 0.97 },
@@ -305,8 +342,11 @@ export const BranchDetail = () => {
   const handleCategoryScroll = (direction) => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const scrollAmount = direction === 'left' ? -container.offsetWidth / 2 : container.offsetWidth / 2;
-      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      const scrollAmount =
+        direction === "left"
+          ? -container.offsetWidth / 2
+          : container.offsetWidth / 2;
+      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -320,7 +360,7 @@ export const BranchDetail = () => {
 
         <div className="absolute top-5 left-4 sm:top-8 sm:left-8 z-30">
           <button
-            onClick={() => navigate('/branches')}
+            onClick={() => navigate("/branches")}
             className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -361,7 +401,7 @@ export const BranchDetail = () => {
             {categories.length > 5 && (
               <button
                 type="button"
-                onClick={() => handleCategoryScroll('left')}
+                onClick={() => handleCategoryScroll("left")}
                 className="absolute left-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
                 aria-label="Scroll categories left"
               >
@@ -372,7 +412,7 @@ export const BranchDetail = () => {
             <div
               ref={scrollContainerRef}
               className={`flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none snap-x w-full transition-all ${
-                categories.length > 5 ? 'px-8' : ''
+                categories.length > 5 ? "px-8" : ""
               }`}
             >
               {categories.map((cat) => (
@@ -381,9 +421,10 @@ export const BranchDetail = () => {
                   type="button"
                   onClick={() => handleCategoryChange(cat)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center cursor-pointer ${
-                    activeCategory?.trim().toLowerCase() === cat?.trim().toLowerCase()
-                      ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                      : 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/30 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800'
+                    activeCategory?.trim().toLowerCase() ===
+                    cat?.trim().toLowerCase()
+                      ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                      : "bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/30 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800"
                   }`}
                 >
                   {cat}
@@ -394,7 +435,7 @@ export const BranchDetail = () => {
             {categories.length > 5 && (
               <button
                 type="button"
-                onClick={() => handleCategoryScroll('right')}
+                onClick={() => handleCategoryScroll("right")}
                 className="absolute right-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
                 aria-label="Scroll categories right"
               >
@@ -438,7 +479,16 @@ export const BranchDetail = () => {
                         branchId={branch.id}
                         favorited={favorited}
                         onToggleFavorite={toggleFavorite}
-                        onAddToCart={addToCart}
+                        onAddToCart={(itemToAdd) => {
+                          // 🎯 ফিক্স: ব্রাঞ্চের নির্দিষ্ট অ্যাডজাস্টেড প্রাইস ও ব্রাঞ্চ আইডি সহ কার্টে পাঠানো হচ্ছে
+                          addToCart({
+                            ...itemToAdd,
+                            price: food.price, // ব্রাঞ্চের নিজস্ব অ্যাডজাস্টেড প্রাইস
+                            originalPrice:
+                              food.originalPrice || food.oldPrice || food.price,
+                            branchId: branch.id,
+                          });
+                        }}
                         variants={cardVariants}
                       />
                     </SwiperSlide>
@@ -464,7 +514,16 @@ export const BranchDetail = () => {
                     branchId={branch.id}
                     favorited={favorited}
                     onToggleFavorite={toggleFavorite}
-                    onAddToCart={addToCart}
+                    onAddToCart={(itemToAdd) => {
+                      // 🎯 ফিক্স: ব্রাঞ্চের নির্দিষ্ট অ্যাডজাস্টেড প্রাইস ও ব্রাঞ্চ আইডি সহ কার্টে পাঠানো হচ্ছে
+                      addToCart({
+                        ...itemToAdd,
+                        price: food.price, // ব্রাঞ্চের নিজস্ব অ্যাডজাস্টেড প্রাইস
+                        originalPrice:
+                          food.originalPrice || food.oldPrice || food.price,
+                        branchId: branch.id,
+                      });
+                    }}
                     variants={cardVariants}
                   />
                 );
@@ -477,16 +536,31 @@ export const BranchDetail = () => {
       {/* 3. BRANCH INFORMATION — CARD GRID */}
       <section className="site-container -mt-10 sm:-mt-14 relative z-10 pb-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <InfoCard icon={<Clock className="w-5 h-5" />} label="Opening Hours" value={branch.hours} delay={0} />
-          <InfoCard icon={<MapPin className="w-5 h-5" />} label="Full Address" value={branch.location} delay={0.05} />
-          <InfoCard 
-            icon={<Phone className="w-5 h-5" />} 
-            label="Contact Number" 
-            value={branch.contact} 
-            delay={0.1} 
-            href={telHref} 
+          <InfoCard
+            icon={<Clock className="w-5 h-5" />}
+            label="Opening Hours"
+            value={branch.hours}
+            delay={0}
           />
-          <InfoCard icon={<Users className="w-5 h-5" />} label="Seating Capacity" value={`${activeDetails.capacity} Guests`} delay={0.15} />
+          <InfoCard
+            icon={<MapPin className="w-5 h-5" />}
+            label="Full Address"
+            value={branch.location}
+            delay={0.05}
+          />
+          <InfoCard
+            icon={<Phone className="w-5 h-5" />}
+            label="Contact Number"
+            value={branch.contact}
+            delay={0.1}
+            href={telHref}
+          />
+          <InfoCard
+            icon={<Users className="w-5 h-5" />}
+            label="Seating Capacity"
+            value={`${activeDetails.capacity} Guests`}
+            delay={0.15}
+          />
         </div>
       </section>
 
@@ -521,8 +595,12 @@ export const BranchDetail = () => {
                 <UtensilsCrossed className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">General Manager</p>
-                <p className="font-semibold text-neutral-800 dark:text-neutral-200 text-sm mt-0.5">{activeDetails.manager}</p>
+                <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                  General Manager
+                </p>
+                <p className="font-semibold text-neutral-800 dark:text-neutral-200 text-sm mt-0.5">
+                  {activeDetails.manager}
+                </p>
               </div>
             </div>
           </motion.div>
