@@ -40,11 +40,50 @@ export const AuthProvider = ({ children }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Hydrate session on mount (page refresh, new tab, etc).
+  //
+  // getCurrentUser() now rethrows transient failures (rate limit, timeout,
+  // network) instead of treating them as "logged out", so this retries a few
+  // times before giving up. `isLoaded` is set in every outcome — leaving it
+  // false is what pinned ProtectedRoute's spinner on screen indefinitely.
   useEffect(() => {
-    authService.getCurrentUser().then((current) => {
-      setUser(current);
-      setIsLoaded(true);
+    let cancelled = false;
+    const RETRY_DELAYS_MS = [800, 2500, 6000];
+
+    const hydrate = async () => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const current = await authService.getCurrentUser();
+          if (!cancelled) setUser(current);
+          return;
+        } catch (err) {
+          if (cancelled) return;
+          if (attempt >= RETRY_DELAYS_MS.length) {
+            // Out of retries. The token is deliberately left in place: the
+            // server never rejected it, we just could not reach it, so a
+            // reload once the network recovers restores the session.
+            console.error('Could not verify session:', err?.message || err);
+            setUser(null);
+            return;
+          }
+          await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        }
+      }
+    };
+
+    hydrate().finally(() => {
+      if (!cancelled) setIsLoaded(true);
     });
+
+    // apiClient fires this the moment the server actually rejects the token, so
+    // the whole app drops to logged-out at once instead of each page finding
+    // out separately on its next request.
+    const onSessionExpired = () => setUser(null);
+    window.addEventListener('auth:session-expired', onSessionExpired);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('auth:session-expired', onSessionExpired);
+    };
   }, []);
 
   const markRegistered = () => {
@@ -101,7 +140,12 @@ export const AuthProvider = ({ children }) => {
     user,
     isAuthenticated: Boolean(user),
     isRegistered,
-    isAdmin: user?.role === 'admin',
+    // Matches the server's admin role set (auth.ts ADMIN_ROLES). A strict
+    // === 'admin' check locked a super_admin out of /admin entirely, even
+    // though the API would have authorised every request they made.
+    isAdmin: ['admin', 'super_admin', 'superadmin'].includes(
+      String(user?.role || '').toLowerCase(),
+    ),
     isAuthLoaded: isLoaded,
     login,
     register,

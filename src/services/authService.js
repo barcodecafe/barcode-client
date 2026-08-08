@@ -29,7 +29,14 @@ export async function getCurrentUser() {
   if (!token) return null;
   try {
     return await apiClient.get('/auth/me');
-  } catch {
+  } catch (err) {
+    // Only an actual auth rejection ends the session. This used to catch
+    // everything, so one rate-limited (429) or timed-out call silently deleted
+    // a perfectly valid token and logged the admin out mid-session — apiClient
+    // already clears the token itself when the server really rejects it.
+    if (err?.isRateLimited || err?.isTimeout || err?.isNetwork) {
+      throw err;
+    }
     localStorage.removeItem(TOKEN_KEY);
     return null;
   }

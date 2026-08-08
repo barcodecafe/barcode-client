@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
   Settings,
   Bell,
 } from 'lucide-react';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -60,14 +61,16 @@ export const AdminLayout = () => {
   const { settings } = useSettings();
   const { unreadOrderCount, markOrdersAsRead } = useOrders();
   const navigate = useNavigate();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const location = useLocation();
 
-  // Auto-open on desktop, auto-close on mobile initially
-  useState(() => {
-    // Run on initial load
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    setIsDrawerOpen(isDesktop);
-  });
+  // Auto-open on desktop, auto-close on mobile initially.
+  // This was a useState(fn) whose initializer called a setter during render —
+  // the returned value was discarded and the "state" was never actually the
+  // drawer's. A lazy initial value does the same job correctly, with no render
+  // side effect and no extra pass.
+  const [isDrawerOpen, setIsDrawerOpen] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 768,
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -239,7 +242,13 @@ export const AdminLayout = () => {
         </header>
 
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
-          <Outlet />
+          {/* Keyed on the path so navigating away from a page that crashed
+              clears the boundary and the next page renders normally. Placed
+              INSIDE the shell so a broken page keeps the sidebar and nav
+              usable instead of blanking the whole admin. */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

@@ -28,10 +28,12 @@ export const AdminCoupons = () => {
   const printCardRef = useRef();
 
   const fetchCoupons = () => {
-    getAllCoupons().then((data) => {
-      setCoupons(data || []);
-      setLoading(false);
-    });
+    // .catch/.finally: without them a failed request left `loading` true and
+    // the page spun forever instead of showing the (empty) list.
+    getAllCoupons()
+      .then((data) => setCoupons(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Failed to load coupons:', err))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {

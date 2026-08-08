@@ -10,6 +10,7 @@ import {
   BellRing,
   Printer,
 } from "lucide-react";
+import { ErrorBanner } from "../../components/ErrorBanner";
 import {
   getAllOrders,
   updateOrderStatus,
@@ -183,6 +184,10 @@ export const AdminOrders = () => {
   const [, setBranches] = useState([]);
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Non-null when the ORDER fetch itself failed. Keeps "we could not load your
+  // orders" visually distinct from "there are no orders", which the table
+  // previously conflated.
+  const [loadError, setLoadError] = useState(null);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
   const [adminChatMessage, setAdminChatMessage] = useState("");
@@ -194,33 +199,63 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  const fetchOrdersAndFleet = () =>
-    Promise.all([getAllOrders(), getAllRiders()])
-      .then(([ordersData, ridersData]) => {
-        const cleanOrders = deduplicateOrders(ordersData);
-        setOrders(cleanOrders);
-        setRiders(extractArray(ridersData));
-        window.dispatchEvent(new CustomEvent("order_updated"));
-        return cleanOrders;
-      })
-      .catch((err) => console.error("Orders/fleet sync failed:", err));
+  // ⚠️ Promise.allSettled, not Promise.all.
+  //
+  // This page loads four independent resources. With Promise.all, ONE of them
+  // rejecting skipped the entire .then — so a failing riders/branches/regions
+  // call threw away a perfectly good order list that had already arrived, and
+  // the table rendered "No orders found." over a database full of orders. That
+  // was the reported bug: only orders arriving later over the socket showed up.
+  // Each resource now lands on its own.
+  const applyResult = (result, setter, transform, label) => {
+    if (result.status === "fulfilled") {
+      setter(transform(result.value));
+      return null;
+    }
+    console.error(`Failed to load ${label}:`, result.reason);
+    return result.reason;
+  };
 
-  useEffect(() => {
-    Promise.all([
+  const fetchOrdersAndFleet = async () => {
+    const [ordersRes, ridersRes] = await Promise.allSettled([
       getAllOrders(),
       getAllRiders(),
-      getAllBranches(),
-      getAllRegions(),
-    ])
-      .then(([ordersData, ridersData, branchesData, regionsData]) => {
-        setOrders(deduplicateOrders(ordersData));
-        setRiders(extractArray(ridersData));
-        setBranches(extractArray(branchesData));
-        setRegions(extractArray(regionsData));
-        window.dispatchEvent(new CustomEvent("order_updated"));
-      })
-      .catch((err) => console.error("Error loading admin orders data:", err))
-      .finally(() => setLoading(false));
+    ]);
+
+    const ordersErr = applyResult(ordersRes, setOrders, deduplicateOrders, "orders");
+    applyResult(ridersRes, setRiders, extractArray, "riders");
+
+    setLoadError(ordersErr);
+    if (!ordersErr) window.dispatchEvent(new CustomEvent("order_updated"));
+
+    return ordersRes.status === "fulfilled" ? deduplicateOrders(ordersRes.value) : null;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const [ordersRes, ridersRes, branchesRes, regionsRes] = await Promise.allSettled([
+        getAllOrders(),
+        getAllRiders(),
+        getAllBranches(),
+        getAllRegions(),
+      ]);
+      if (cancelled) return;
+
+      const ordersErr = applyResult(ordersRes, setOrders, deduplicateOrders, "orders");
+      applyResult(ridersRes, setRiders, extractArray, "riders");
+      applyResult(branchesRes, setBranches, extractArray, "branches");
+      applyResult(regionsRes, setRegions, extractArray, "regions");
+
+      setLoadError(ordersErr);
+      if (!ordersErr) window.dispatchEvent(new CustomEvent("order_updated"));
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -242,9 +277,13 @@ export const AdminOrders = () => {
       );
     };
 
-    socket.on("order_created", handleNewOrderIncoming);
-
-    socket.on("order_updated", (updatedOrder) => {
+    // ⚠️ Every handler below is a NAMED function that gets passed back to
+    // socket.off in the cleanup. socket.off('event') without a handler removes
+    // EVERY listener for that event across the whole app, not just this
+    // component's — leaving this page once used to kill OrderContext's
+    // 'pending_count_updated' listener, silently disabling the new-order badge
+    // in the sidebar and topbar for the rest of the session.
+    const handleOrderUpdated = (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
         prev.map((o) => {
@@ -262,19 +301,21 @@ export const AdminOrders = () => {
           detail: { orderId: updatedId, id: updatedId },
         }),
       );
-    });
+    };
 
-    socket.on("pending_count_updated", () => {
+    const handlePendingCount = () => {
       window.dispatchEvent(new CustomEvent("order_updated"));
-    });
+    };
 
-    socket.on("rider_updated", (updatedRider) => {
+    const handleRiderUpdated = (updatedRider) => {
+      const updatedId = updatedRider?.id || updatedRider?._id;
+      if (!updatedId) return;
       setRiders((prev) =>
-        prev.map((r) => (r.id === updatedRider.id ? updatedRider : r)),
+        prev.map((r) => ((r.id || r._id) === updatedId ? { ...r, ...updatedRider } : r)),
       );
-    });
+    };
 
-    socket.on("new_chat_message", ({ orderId, message }) => {
+    const handleChatMessage = ({ orderId, message }) => {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           if ((ord.id || ord._id) === orderId) {
@@ -300,14 +341,20 @@ export const AdminOrders = () => {
           return ord;
         }),
       );
-    });
+    };
+
+    socket.on("order_created", handleNewOrderIncoming);
+    socket.on("order_updated", handleOrderUpdated);
+    socket.on("pending_count_updated", handlePendingCount);
+    socket.on("rider_updated", handleRiderUpdated);
+    socket.on("new_chat_message", handleChatMessage);
 
     return () => {
       socket.off("order_created", handleNewOrderIncoming);
-      socket.off("order_updated");
-      socket.off("pending_count_updated");
-      socket.off("rider_updated");
-      socket.off("new_chat_message");
+      socket.off("order_updated", handleOrderUpdated);
+      socket.off("pending_count_updated", handlePendingCount);
+      socket.off("rider_updated", handleRiderUpdated);
+      socket.off("new_chat_message", handleChatMessage);
     };
   }, []);
 
@@ -548,6 +595,12 @@ export const AdminOrders = () => {
         </div>
       </div>
 
+      <ErrorBanner
+        title="Could not load orders"
+        error={loadError}
+        onRetry={fetchOrdersAndFleet}
+      />
+
       <div className="w-full flex flex-col gap-6">
         {/* Table List Container */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
@@ -569,7 +622,9 @@ export const AdminOrders = () => {
                 {orders.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="text-center py-12 text-neutral-400 font-medium">
-                      No orders found.
+                      {loadError
+                        ? "Orders could not be loaded — see the message above."
+                        : "No orders found."}
                     </td>
                   </tr>
                 ) : (

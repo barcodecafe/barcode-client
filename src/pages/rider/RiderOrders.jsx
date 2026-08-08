@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import {
   getAllOrders,
   updateOrderStatus,
@@ -91,9 +92,16 @@ export const RiderOrders = () => {
 
   useEffect(() => {
     fetchRiderOrders();
-    const interval = setInterval(fetchRiderOrders, 4000);
-    return () => clearInterval(interval);
   }, [fetchRiderOrders]);
+
+  // This screen is driven by the socket handlers below; the poll is only a
+  // safety net for a dropped connection, so it does not need to run every four
+  // seconds — and it must not run at all in a hidden tab, which is where the
+  // old interval quietly burned through the server's request budget.
+  useVisiblePolling(fetchRiderOrders, {
+    intervalMs: 20000,
+    enabled: Boolean(user),
+  });
 
   // 🎯 FIX: ডেটাবেস রেস কন্ডিশন রোধ করতে অপ্টিমিস্টিক পুশ এবং ডিলে যুক্ত করা হলো
   useEffect(() => {
@@ -120,6 +128,20 @@ export const RiderOrders = () => {
         } 
         
         // আমার না হলে সরিয়ে ফেলবে
+        // ⚠️ Only drop the order when the payload actually says who the rider
+        // is. Several emitters — including this page's own accept/reject
+        // handlers — broadcast a STUB carrying just { id, status,
+        // riderAcceptStatus } with no riderId/riderName, and isAssignedToMe()
+        // cannot call that "mine". So accepting a job used to delete it from the
+        // rider's own list until the next poll put it back: the "order vanishes
+        // and reappears" report.
+        const payloadKnowsRider =
+          incomingOrder.riderId !== undefined ||
+          incomingOrder.riderName !== undefined ||
+          incomingOrder.rider !== undefined;
+
+        if (!payloadKnowsRider && !isCompleted) return prev;
+
         return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id || incomingOrder.orderId));
       });
       

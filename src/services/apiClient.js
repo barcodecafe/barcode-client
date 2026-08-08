@@ -27,26 +27,86 @@ if (
   BASE_URL = BASE_URL.replace(/^http:\/\//i, 'https://');
 }
 
-// Standard request wrapper — centralizes headers, auth token injection,
-// and error normalization so every service gets the same behavior.
-async function request(path, { method = 'GET', body, headers = {} } = {}) {
-  const token = localStorage.getItem('authToken'); // placeholder auth flow
+export const TOKEN_KEY = 'authToken';
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+// Every request carries a deadline. Without one, a request that never settles
+// leaves the caller's `loading` flag true forever — which is exactly how the
+// Rider Fleet page ended up showing a spinner that never resolved.
+//
+// Sized to be a backstop, not a performance budget. It has to clear the slowest
+// legitimate request — a cold container plus a first query while MongoDB is
+// still building the new indexes — because aborting one of those would turn a
+// slow page into a broken one. 30s is comfortably past that and still far short
+// of "user assumes it is hung".
+const DEFAULT_TIMEOUT_MS = 30000;
 
+/**
+ * Error thrown by every apiClient call. Carrying `status` lets callers tell a
+ * rate limit (429, retry later) apart from a genuine "no rows" — previously
+ * both arrived as a bare Error and services turned them into an empty array.
+ */
+export class ApiError extends Error {
+  constructor(message, { status = 0, path = '', isTimeout = false } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.path = path;
+    this.isTimeout = isTimeout;
+    this.isRateLimited = status === 429;
+    this.isNetwork = status === 0;
+  }
+}
+
+// Only an authentication failure may clear the session.
+//
+// The server answers 401 when the Authorization header is missing/malformed and
+// 403 "Invalid or expired token" when the JWT itself fails verification — so the
+// old `status === 401` check never fired for the case it was written for, while
+// a 429 or a dropped connection could still wipe the token through
+// authService.getCurrentUser()'s catch-all. That was the "logged out at random /
+// everything blank" report.
+const isAuthFailure = (status, message) =>
+  status === 401 || (status === 403 && /invalid or expired token/i.test(message || ''));
+
+const clearSessionIfAuthFailure = (status, message, hadToken) => {
+  if (hadToken && isAuthFailure(status, message)) {
+    localStorage.removeItem(TOKEN_KEY);
+    // Let the app react (drop to logged-out) instead of leaving each page to
+    // discover the dead session on its own.
+    window.dispatchEvent(new CustomEvent('auth:session-expired'));
+  }
+};
+
+// Runs fetch with a timeout and normalizes failures into ApiError.
+async function fetchWithTimeout(path, init, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(`${BASE_URL}${path}`, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new ApiError(`Request timed out after ${timeoutMs / 1000}s`, {
+        path,
+        isTimeout: true,
+      });
+    }
+    throw new ApiError(err?.message || 'Network error', { path });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Shared response handling: unwrap the server envelope, or raise an ApiError.
+async function handleResponse(response, path, hadToken) {
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    // handle expired/invalid token → clear it so the app drops to logged-out
-    if (response.status === 401) localStorage.removeItem('authToken');
-    throw new Error(errorBody.message || `Request failed: ${response.status}`);
+    const message =
+      errorBody.message ||
+      (response.status === 429
+        ? 'Server is busy right now. Please try again in a moment.'
+        : `Request failed: ${response.status}`);
+    clearSessionIfAuthFailure(response.status, message, hadToken);
+    throw new ApiError(message, { status: response.status, path });
   }
 
   // Handle 204 No Content
@@ -56,44 +116,72 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
   // barcode_server wraps everything in { success, message, data } — unwrap `data`
   // so each service gets the payload directly (matches the old mock return shapes).
   if (payload && typeof payload === 'object' && 'success' in payload) {
-    if (!payload.success) throw new Error(payload.message || 'Request failed');
+    if (!payload.success) {
+      throw new ApiError(payload.message || 'Request failed', {
+        status: response.status,
+        path,
+      });
+    }
     return payload.data;
   }
   return payload;
+}
+
+// Standard request wrapper — centralizes headers, auth token injection,
+// and error normalization so every service gets the same behavior.
+async function request(path, { method = 'GET', body, headers = {}, timeoutMs } = {}) {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  const response = await fetchWithTimeout(
+    path,
+    {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
+    timeoutMs,
+  );
+
+  return handleResponse(response, path, Boolean(token));
 }
 
 // Multipart/form-data POST (file uploads). Do NOT set Content-Type — the
 // browser adds the multipart boundary. Same auth + unwrap behavior as request().
 async function requestForm(path, formData) {
-  const token = localStorage.getItem('authToken');
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: formData,
-  });
+  const token = localStorage.getItem(TOKEN_KEY);
+  const response = await fetchWithTimeout(
+    path,
+    {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    },
+    // Uploads carry a photo and a licence PDF over mobile connections, so they
+    // get a longer deadline than a plain JSON call.
+    60000,
+  );
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    if (response.status === 401) localStorage.removeItem('authToken');
-    throw new Error(errorBody.message || `Request failed: ${response.status}`);
-  }
-  if (response.status === 204) return null;
-  const payload = await response.json();
-  if (payload && typeof payload === 'object' && 'success' in payload) {
-    if (!payload.success) throw new Error(payload.message || 'Request failed');
-    return payload.data;
-  }
-  return payload;
+  return handleResponse(response, path, Boolean(token));
 }
 
 // GET an auth-gated binary (image/PDF) and return an object URL for display.
 // Caller should URL.revokeObjectURL() when done.
 async function requestBlobUrl(path) {
-  const token = localStorage.getItem('authToken');
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const response = await fetchWithTimeout(path, {
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
-  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  if (!response.ok) {
+    clearSessionIfAuthFailure(response.status, '', Boolean(token));
+    throw new ApiError(`Request failed: ${response.status}`, {
+      status: response.status,
+      path,
+    });
+  }
   const blob = await response.blob();
   return URL.createObjectURL(blob);
 }

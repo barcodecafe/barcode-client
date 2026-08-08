@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getAllOrders } from "../../services/ordersService";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const RiderOverview = () => {
   const { user } = useAuth();
@@ -43,9 +44,17 @@ export const RiderOverview = () => {
 
   useEffect(() => {
     fetchRiderOrders();
-    const interval = setInterval(fetchRiderOrders, 4000);
-    return () => clearInterval(interval);
   }, [fetchRiderOrders]);
+
+  // Was setInterval(…, 4000), which kept running in hidden tabs: one rider
+  // sitting on this page spent 225 requests per 15 minutes — 45% of the whole
+  // server budget — on an earnings summary that changes a few times a day.
+  // useVisiblePolling pauses while the tab is hidden and refetches immediately
+  // when it comes back, so the numbers are still fresh when anyone is looking.
+  useVisiblePolling(fetchRiderOrders, {
+    intervalMs: 30000,
+    enabled: Boolean(user),
+  });
 
   // Filtered Stats Calculation
   const getFilteredStats = () => {

@@ -467,11 +467,24 @@ export const AdminHero = () => {
 
   const fetchSlides = () => {
     setLoading(true);
-    Promise.all([getAllSlides(), getAllFoods()]).then(([slidesData, foodsData]) => {
-      setSlides(slidesData);
-      setFoods(foodsData);
-      setLoading(false);
-    });
+    // allSettled + finally: slides and foods are independent, and with
+    // Promise.all().then() a single rejection left the spinner up permanently.
+    // The array guards matter too — a non-array reaching .map during render
+    // takes down the whole app, since there is no ErrorBoundary above this.
+    Promise.allSettled([getAllSlides(), getAllFoods()])
+      .then(([slidesRes, foodsRes]) => {
+        if (slidesRes.status === 'fulfilled') {
+          setSlides(Array.isArray(slidesRes.value) ? slidesRes.value : []);
+        } else {
+          console.error('Failed to load hero slides:', slidesRes.reason);
+        }
+        if (foodsRes.status === 'fulfilled') {
+          setFoods(Array.isArray(foodsRes.value) ? foodsRes.value : []);
+        } else {
+          console.error('Failed to load foods:', foodsRes.reason);
+        }
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getAllOrders } from "../services/ordersService";
-import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -58,6 +59,7 @@ export const RiderLayout = () => {
   const { user, logout } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [pendingCount, setPendingCount] = useState(0);
@@ -167,8 +169,20 @@ export const RiderLayout = () => {
       Notification.requestPermission();
     }
 
+    // The server broadcasts every order event to every client, and one admin
+    // action emits several in a row (assign-rider sends three). Refetching
+    // inside the handler meant three or four `GET /orders` per click, in every
+    // rider's browser at once. The refetch is now coalesced into one call per
+    // burst; the notification logic below still runs per event, since it reads
+    // the payload rather than the server.
+    let refetchTimer = null;
+    const scheduleRefetch = () => {
+      clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(fetchRiderPendingOrders, 600);
+    };
+
     const handleRiderOrderUpdate = (data) => {
-      fetchRiderPendingOrders(); // ডাটাবেস থেকে নতুন ডেটা ফেচ করা
+      scheduleRefetch();
 
       const orderId = data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
       const existingOrder = ordersRef.current.find((o) => String(o._id || o.id) === String(orderId));
@@ -230,6 +244,7 @@ export const RiderLayout = () => {
     window.addEventListener("order_updated", handleRiderOrderUpdate);
 
     return () => {
+      clearTimeout(refetchTimer);
       socket.off("rider_order_assigned", handleRiderOrderUpdate);
       socket.off("order_assigned", handleRiderOrderUpdate);
       socket.off("order_updated", handleRiderOrderUpdate);
@@ -480,7 +495,12 @@ export const RiderLayout = () => {
         </header>
 
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
-          <Outlet />
+          {/* Keyed on the path so leaving a page that crashed clears the
+              boundary. Inside the shell, so a broken page keeps the rider's
+              navigation usable instead of blanking the portal. */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

@@ -168,7 +168,11 @@ export const AdminDashboard = () => {
                 </div>
                 <div className="flex items-center gap-1 text-primary-500 font-semibold text-sm shrink-0">
                   <Flame className="w-3.5 h-3.5" />
-                  {dish.mockOrders}
+                  {/* The API field is `orders` (analytics/top-dishes). `mockOrders`
+                      was left over from the seeded-data era and has not existed
+                      on the response since, so this counter always rendered
+                      empty next to every dish. */}
+                  {dish.orders ?? 0}
                 </div>
               </div>
             ))}
@@ -196,7 +200,10 @@ export const AdminDashboard = () => {
                     {customer.name || customer.fullName || 'Customer'}
                   </p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {customer.totalOrders || customer.ordersCount || 0} Orders
+                    {/* analytics/top-customers returns `orderCount`; neither of
+                        the two names checked here has ever been on the payload,
+                        so every top customer read "0 Orders". */}
+                    {customer.orderCount ?? customer.totalOrders ?? 0} Orders
                   </p>
                 </div>
                 <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm shrink-0">

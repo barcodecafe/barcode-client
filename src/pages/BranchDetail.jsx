@@ -206,17 +206,32 @@ export const BranchDetail = () => {
 
   useEffect(() => {
     setLoading(true);
-    getBranchById(id).then((data) => {
-      setBranch(data);
-      if (data) {
-        getFoodsByBranch(data.id || id, 100).then((menuData) => {
-          setBranchMenu(menuData || []);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
+    let cancelled = false;
+
+    // Every path now clears `loading`. Previously neither request had a
+    // .catch/.finally, so a failed branch or menu fetch left this public page
+    // spinning forever with no way out but a reload.
+    (async () => {
+      try {
+        const data = await getBranchById(id);
+        if (cancelled) return;
+        setBranch(data);
+
+        if (data) {
+          const menuData = await getFoodsByBranch(data.id || id, 100);
+          if (cancelled) return;
+          setBranchMenu(Array.isArray(menuData) ? menuData : []);
+        }
+      } catch (err) {
+        console.error('Failed to load branch:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const categories = useMemo(() => {

@@ -11,6 +11,7 @@ import {
   Package,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import { buildDailySettlementLog, formatDateKey } from "../../utils/settlement";
 import {
   getAllOrders,
@@ -45,9 +46,15 @@ export const RiderSettlement = () => {
 
   useEffect(() => {
     fetchRiderOrders();
-    const interval = setInterval(fetchRiderOrders, 4000);
-    return () => clearInterval(interval);
   }, [fetchRiderOrders]);
+
+  // Cash settlement figures change when a delivery completes or the admin
+  // confirms a handover — not every four seconds. See RiderOverview for why the
+  // old interval was a problem; the same reasoning applies here.
+  useVisiblePolling(fetchRiderOrders, {
+    intervalMs: 30000,
+    enabled: Boolean(user),
+  });
 
   const handleSubmitCash = async (dateKey, e) => {
     e.stopPropagation();

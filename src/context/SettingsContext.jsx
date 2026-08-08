@@ -12,10 +12,13 @@ export const SettingsProvider = ({ children }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    settingsService.getSettings().then((s) => {
-      setSettingsState(s || DEFAULT_SETTINGS);
-      setIsLoaded(true);
-    });
+    // .catch/.finally: without them a failed settings request left
+    // isSettingsLoaded false forever, and anything gated on it never rendered.
+    settingsService
+      .getSettings()
+      .then((s) => setSettingsState(s || DEFAULT_SETTINGS))
+      .catch((err) => console.error('Failed to load site settings:', err))
+      .finally(() => setIsLoaded(true));
   }, []);
 
   const updateSettings = useCallback(async (newSettings) => {

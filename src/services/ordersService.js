@@ -3,22 +3,29 @@
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
-/** GET /api/orders (admin: all) */
-export async function getAllOrders() {
-  try {
-    const res = await apiClient.get('/orders');
-    
-    // 🎯 ব্যাকএন্ড res.data.data অথবা res.data হিসেবে ডাটা পাঠাচ্ছে, তা নিখুঁতভাবে আনপ্যাক করা হচ্ছে:
-    if (Array.isArray(res)) return res;
-    if (res && Array.isArray(res.data)) return res.data;
-    if (res && res.data && Array.isArray(res.data.data)) return res.data.data;
-    if (res && Array.isArray(res.orders)) return res.orders;
-    
-    return [];
-  } catch (error) {
-    console.error("Error fetching all orders:", error);
-    return [];
-  }
+/**
+ * GET /api/orders (admin: all)
+ *
+ * Throws on failure — deliberately. This used to swallow every error and return
+ * `[]`, which made a rate limit, a timeout or a 500 indistinguishable from
+ * "this restaurant has no orders": the admin table rendered a confident
+ * "No orders found." over a database full of orders. Callers must now decide
+ * whether to show an error or an empty state.
+ */
+export async function getAllOrders(params = {}) {
+  const qs = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+  ).toString();
+
+  const res = await apiClient.get(`/orders${qs ? `?${qs}` : ''}`);
+
+  // 🎯 ব্যাকএন্ড res.data.data অথবা res.data হিসেবে ডাটা পাঠাচ্ছে, তা নিখুঁতভাবে আনপ্যাক করা হচ্ছে:
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.data)) return res.data;
+  if (res && res.data && Array.isArray(res.data.data)) return res.data.data;
+  if (res && Array.isArray(res.orders)) return res.orders;
+
+  return [];
 }
 
 /** 

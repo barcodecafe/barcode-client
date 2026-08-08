@@ -16,10 +16,13 @@ export const About = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getAboutData().then((data) => {
-      setAboutData(data);
-      setIsLoading(false);
-    });
+    // .catch/.finally: without them a failed request never clears isLoading and
+    // the public About page shows a spinner forever. Same class of bug as the
+    // admin pages — this one just sits on the customer-facing site.
+    getAboutData()
+      .then((data) => setAboutData(data))
+      .catch((err) => console.error('Failed to load about page:', err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {

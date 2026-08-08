@@ -35,9 +35,18 @@ export const SearchBar = ({ variant = 'desktop', onClose }) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
-      const data = await globalSearch(query);
-      setResults(data);
-      setIsLoading(false);
+      // try/finally: an unhandled rejection here left the search spinner
+      // running forever and produced no results and no error — the user just
+      // saw a dropdown that never resolved.
+      try {
+        const data = await globalSearch(query);
+        setResults(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
     }, 250);
 
     return () => clearTimeout(debounceRef.current);

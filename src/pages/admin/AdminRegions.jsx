@@ -21,10 +21,21 @@ export const AdminRegions = () => {
 
   const fetchData = () => {
     setLoading(true);
-    Promise.all([getAllRegions(), getAllBranches()])
-      .then(([r, b]) => {
-        setRegions(Array.isArray(r) ? r : []);
-        setBranches(Array.isArray(b) ? b : []);
+    // allSettled: regions and branches are independent, so one failing must not
+    // wipe out the other. Promise.all skipped .then entirely on any rejection,
+    // leaving BOTH lists empty and producing an unhandled promise rejection.
+    Promise.allSettled([getAllRegions(), getAllBranches()])
+      .then(([regionsRes, branchesRes]) => {
+        if (regionsRes.status === 'fulfilled') {
+          setRegions(Array.isArray(regionsRes.value) ? regionsRes.value : []);
+        } else {
+          console.error('Failed to load regions:', regionsRes.reason);
+        }
+        if (branchesRes.status === 'fulfilled') {
+          setBranches(Array.isArray(branchesRes.value) ? branchesRes.value : []);
+        } else {
+          console.error('Failed to load branches:', branchesRes.reason);
+        }
       })
       .finally(() => setLoading(false));
   };

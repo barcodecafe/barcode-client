@@ -32,6 +32,7 @@ import { getOrderById, addChatMessage } from "../services/ordersService";
 import { initPayment } from "../services/paymentsService"; // 👈 API_BASE_URL এর বদলে সার্ভিস ইমপোর্ট করা হলো
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useVisiblePolling } from "../hooks/useVisiblePolling";
 
 export const OrderTracking = () => {
   const { id } = useParams();
@@ -49,8 +50,11 @@ export const OrderTracking = () => {
   const [activeTab, setActiveTab] = useState("map");
 
   const chatEndRef = useRef(null);
+  // Holds the current fetcher so the polling hook below always calls the one
+  // bound to the order id currently on screen, without re-phasing the interval.
+  const fetchOrderRef = useRef(null);
 
-  // Poll order every 3 seconds to get instant updates
+  // Load the order, then keep it fresh while the tab is visible.
   useEffect(() => {
     let active = true;
 
@@ -71,13 +75,22 @@ export const OrderTracking = () => {
     };
 
     fetchOrder();
-    const interval = setInterval(fetchOrder, 3000);
+    fetchOrderRef.current = fetchOrder;
 
     return () => {
       active = false;
-      clearInterval(interval);
+      fetchOrderRef.current = null;
     };
   }, [id, navigate]);
+
+  // Was a flat 3s interval that kept firing in hidden tabs: a single customer
+  // leaving this page open spent 300 requests per 15 minutes, more than half
+  // the server's entire budget, and background tabs kept spending forever.
+  // Polling now pauses when the tab is hidden and catches up on return.
+  useVisiblePolling(() => fetchOrderRef.current?.(), {
+    intervalMs: 12000,
+    enabled: Boolean(id),
+  });
 
   // Auto-scroll chat to bottom when chatHistory updates
   useEffect(() => {

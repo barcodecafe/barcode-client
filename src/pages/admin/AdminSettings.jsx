@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Settings,
@@ -19,7 +19,7 @@ import {
 import { useSettings } from "../../context/SettingsContext";
 
 export const AdminSettings = () => {
-  const { settings, updateSettings, resetSettings } = useSettings();
+  const { settings, isSettingsLoaded, updateSettings, resetSettings } = useSettings();
 
   // Form states
   const [footerDescription, setFooterDescription] = useState(
@@ -50,6 +50,27 @@ export const AdminSettings = () => {
   // UI States
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  // ⚠️ Every useState above reads `settings` ONCE, on first render. The context
+  // starts at DEFAULT_SETTINGS and hydrates from the API a moment later, so
+  // without this the form showed defaults/blanks forever — and saving it wrote
+  // those blanks over the real site settings. Re-sync when the real values land.
+  //
+  // Keyed on the settings object identity, which only changes on hydrate,
+  // save or reset — so this never fights the admin's own typing.
+  useEffect(() => {
+    if (!isSettingsLoaded) return;
+    setFooterDescription(settings.footerDescription || "");
+    setFooterAddress(settings.footerAddress || "");
+    setFooterPhone(settings.footerPhone || "");
+    setFooterEmail(settings.footerEmail || "");
+    setFooterFacebook(settings.footerFacebook || "");
+    setFooterInstagram(settings.footerInstagram || "");
+    setFooterTwitter(settings.footerTwitter || "");
+    setLogoLight(settings.logoLight || "");
+    setLogoDark(settings.logoDark || "");
+    setPaymentBanner(settings.paymentBanner || "");
+  }, [isSettingsLoaded, settings]);
 
   const handleLogoLightUpload = (e) => {
     const file = e.target.files[0];

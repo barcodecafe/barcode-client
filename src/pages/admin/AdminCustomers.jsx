@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { getAllUsers } from '../../services/authService';
 import { getTopCustomers } from '../../services/analyticsService';
 import { CreditCard, Download, X, QrCode, Crown } from 'lucide-react';
+import { ErrorBanner } from '../../components/ErrorBanner';
 // html2canvas-pro (not the original html2canvas) — the original can't parse the
 // oklch() colors Tailwind v4 emits and throws mid-capture, so the card never
 // downloaded. The pro fork supports oklch/lab/lch and is otherwise API-compatible.
@@ -19,6 +20,7 @@ export const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
   const [spendByUser, setSpendByUser] = useState({}); // userId → { totalSpent, orderCount, lastOrderAt }
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
  // State and reference for the Card Maker modal and download functionality
   const [activeCardUser, setActiveCardUser] = useState(null);
@@ -26,13 +28,31 @@ export const AdminCustomers = () => {
   const cardRef = useRef(null);
 
   useEffect(() => {
-    Promise.all([getAllUsers(), getTopCustomers()]).then(([users, spending]) => {
-      setCustomers(users.filter((u) => u.role === 'user'));
-      const map = {};
-      (spending || []).forEach((s) => { map[s.userId] = s; });
-      setSpendByUser(map);
-      setLoading(false);
-    });
+    // allSettled + finally: with Promise.all().then() and no .catch/.finally,
+    // either request failing (or `users` arriving as a non-array, which made
+    // .filter throw inside the .then) left `loading` true forever and the page
+    // showed a spinner that never resolved.
+    Promise.allSettled([getAllUsers(), getTopCustomers()])
+      .then(([usersRes, spendingRes]) => {
+        if (usersRes.status === 'fulfilled') {
+          const users = Array.isArray(usersRes.value) ? usersRes.value : [];
+          setCustomers(users.filter((u) => u.role === 'user'));
+        } else {
+          console.error('Failed to load customers:', usersRes.reason);
+          setLoadError(usersRes.reason);
+        }
+
+        if (spendingRes.status === 'fulfilled') {
+          const map = {};
+          (Array.isArray(spendingRes.value) ? spendingRes.value : []).forEach((s) => {
+            map[s.userId] = s;
+          });
+          setSpendByUser(map);
+        } else {
+          console.error('Failed to load customer spending:', spendingRes.reason);
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const spendOf = (c) => spendByUser[c.id] || { totalSpent: 0, orderCount: 0 };
@@ -88,6 +108,8 @@ export const AdminCustomers = () => {
           Registered customer accounts with their lifetime purchase record, ranked by total spend.
         </p>
       </div>
+
+      <ErrorBanner title="Could not load customers" error={loadError} />
 
       {/* Top customers highlight — the biggest spenders (Rejected orders excluded) */}
       {topThree.length > 0 && (
