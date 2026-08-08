@@ -58,12 +58,10 @@ export const CartProvider = ({ children }) => {
     }, 3000);
   }, []);
 
-  const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
+ const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
     const sizeName = (selectedSize && (selectedSize.name || selectedSize)) || food.selectedSize || null;
     const variationObj = selectedSize && typeof selectedSize === 'object' ? selectedSize : null;
     
-    // 🎯 BOGO অটো-কোয়ান্টিটি লজিক: 
-    // ১টি ক্লিক করলে BOGO 1G1 হলে কার্টে ২ যুক্ত হবে, BOGO 1G2 হলে ৩ যুক্ত হবে
     let targetQty = Number(quantity) > 0 ? Number(quantity) : 1;
     if (quantity === 1) {
       if (food.offerType === 'bogo_1g1') targetQty = 2;
@@ -71,11 +69,16 @@ export const CartProvider = ({ children }) => {
     }
 
     setCart((prevCart) => {
-      const activeBranchId = branchId || Number(localStorage.getItem('selectedBranchId')) || null;
+      // 🎯 ফিক্স: মেনু পেজ থেকে আসলে branchId হবে null/undefined, তাই এখানে জোর করে লোকালস্টোরেজ চেক করা যাবে না। 
+      // শুধুমাত্র explicit ভাবে branchId পাঠানো হলেই কেবল ব্রাঞ্চ প্রাইস ধরবে, নতুবা শুধু মেনুর বেস প্রাইস ধরবে।
+      const activeBranchId = branchId !== undefined ? branchId : null;
+      
       const basePrice = getActivePrice(food, activeBranchId, sizeName);
       const purchasePrice = applyFoodDiscount(basePrice, food);
 
-      const cartId = food.cartId || (sizeName ? `${food.id}-${sizeName}` : food.id);
+      // 🎯 কার্ট আইডি ইউনিক করার জন্য ব্রাঞ্চ প্রিফিক্স যুক্ত করা হলো
+      const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
+      const cartId = food.cartId || (sizeName ? `${branchPrefix}-${food.id}-${sizeName}` : `${branchPrefix}-${food.id}`);
 
       const existing = prevCart.find((item) => (item.cartId || item.id) === cartId);
       if (existing) {
@@ -88,6 +91,7 @@ export const CartProvider = ({ children }) => {
       return [...prevCart, {
         ...food,
         cartId,
+        branchId: activeBranchId,
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
