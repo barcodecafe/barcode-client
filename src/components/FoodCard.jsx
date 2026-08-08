@@ -173,17 +173,8 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 ব্রাঞ্চ ডিটেইলস পেজ থেকে আসলে ব্রাঞ্চের অ্যাডজাস্টেড প্রাইস যাবে,
-                // আর নরমাল মেনু পেজ থেকে আসলে ডিশের বেস প্রাইস যাবে।
-                onAddToCart(
-                  {
-                    ...food,
-                    price: discountedPrice,
-                    originalPrice: basePrice,
-                    branchId: branchId ? Number(branchId) : null,
-                  },
-                  branchId
-                );
+                // 🎯 food অবজেক্টের price ফিল্ডে হিসাব করা চূড়ান্ত প্রাইস সেভ করে পাঠানো হচ্ছে
+                onAddToCart({ ...food, price: discountedPrice }, branchId);
               }}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
