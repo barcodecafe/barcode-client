@@ -73,7 +73,12 @@ export const CartProvider = ({ children }) => {
       const foodId = food.id || food._id;
       
       const basePrice = getActivePrice(food, activeBranchId, sizeName);
-      const purchasePrice = applyFoodDiscount(basePrice, food);
+      
+      // 🎯 ডাবল ডিসকাউন্ট রোধ: food.price যদি অলরেডি ক্যালকুলেটেড হয়ে থাকে তবে সেটাই বসবে, নতুবা কার্ট নতুন করে হিসাব করবে
+      const purchasePrice =
+        Number(food.price) > 0 && Number(food.price) !== Number(basePrice)
+          ? Number(food.price)
+          : applyFoodDiscount(basePrice, food);
 
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
       const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
