@@ -3,7 +3,6 @@ import { getActivePrice, applyFoodDiscount } from '../services/foodsService';
 
 const CartContext = createContext(null);
 
-// 🎯 BOGO (Buy 1 Get 1 / Buy 1 Get 2) বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 export const getCartItemLineTotal = (item) => {
   const price = Number(item.price) || 0;
   const qty = Number(item.quantity) || 0;
@@ -69,14 +68,11 @@ export const CartProvider = ({ children }) => {
       const activeBranchId = branchId !== undefined && branchId !== null ? branchId : null;
       const foodId = food.id || food._id;
       
+      // 🎯 অরিজিনাল বেস প্রাইস নেওয়া হচ্ছে
       const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
 
-      // 🎯 ১০০% নির্ভুল পারচেজ প্রাইস লজিক:
-      // ১. যদি ফ্রন্টএন্ড থেকে ফিক্সড ডিসকাউন্টেড প্রাইস পাঠানো হয়ে থাকে (যা basePrice থেকে কম), তবে সেটাই নিবে।
-      // ২. তা না হলে সরাসরি rawBasePrice এর ওপর ডিসকাউন্ট ক্যালকুলেট করে বসাবে।
-      const purchasePrice = (Number(food.price) > 0 && Number(food.price) < rawBasePrice)
-        ? Number(food.price)
-        : applyFoodDiscount(rawBasePrice, food);
+      // 🎯 অরিজিনাল বেস প্রাইসের ওপর ঠিক একবারই ডিসকাউন্ট অ্যাপ্লাই হবে (যেমন: ৳340 -> ৳306)
+      const purchasePrice = applyFoodDiscount(rawBasePrice, food);
 
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
       const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
@@ -98,7 +94,7 @@ export const CartProvider = ({ children }) => {
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice, // 🎯 সবসময় সঠিক ডিসকাউন্টেড প্রাইস
+        price: purchasePrice, // 🎯 হুবহু সঠিক ডিসকাউন্টেড প্রাইস (৳306.00) থাকবে
         offerType: food.offerType || 'none',
       }];
     });

@@ -26,7 +26,7 @@ const FoodCard = ({
   onAddToCart,
   variants,
 }) => {
-  // 🎯 Branch-based Price Adjustment Logic (সঠিক ও একবারই অ্যাডজাস্টমেন্ট যোগ করার জন্য)
+  // 🎯 Branch-based Price Adjustment Logic
   let rawBasePrice = Number(food.price) || 0;
   let adjustVal = 0;
   if (
@@ -40,7 +40,6 @@ const FoodCard = ({
   const hasVariants =
     Array.isArray(food.variations) && food.variations.length > 0;
 
-  // ভ্যারিয়েশন বা বেস প্রাইসের সাথে ব্রাঞ্চ অ্যাডজাস্টমেন্ট একবারই যুক্ত হবে
   const basePrice = hasVariants
     ? Math.min(
         ...food.variations.map((v) => {
@@ -53,13 +52,11 @@ const FoodCard = ({
   // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
 
-  // BOGO অফার থাকলে সাধারণ পার্সেন্টেজ/টাকা ছাড়ের ক্যালকুলেশন বন্ধ থাকবে
   const hasDiscount = !offerLabel && hasFoodDiscount(food);
   const discountedPrice = hasDiscount
     ? applyFoodDiscount(basePrice, food)
     : basePrice;
 
-  // 🎯 Dynamic Link Path with Branch ID Query Parameter Support
   const foodDetailLink = `/menu/${food.id || food._id}${branchId ? `?branchId=${branchId}` : ""}`;
 
   return (
@@ -79,7 +76,7 @@ const FoodCard = ({
           />
         </Link>
 
-        {/* 🎯 Badge: Priority -> Offer Badge (BOGO) > Discount Badge */}
+        {/* 🎯 Badge */}
         {offerLabel ? (
           <span className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1 rounded-none bg-primary-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
             <Gift className="h-3 w-3" /> {offerLabel}
@@ -129,7 +126,6 @@ const FoodCard = ({
           {food.description}
         </p>
 
-        {/* 🎯 Dynamic Promotional Code Highlight */}
         {food.promoCode && (
           <div className="mt-2.5 flex items-center gap-1.5 rounded-none bg-primary-50 dark:bg-primary-950/30 px-2 py-1 border border-primary-200/60 dark:border-primary-900/40 text-[10px] text-primary-700 dark:text-primary-300 font-medium">
             <Tag className="h-3 w-3 shrink-0 text-primary-500" />
@@ -167,14 +163,8 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 কার্ডে যে ফাইনাল ডিসকাউন্টেড প্রাইসটি দেখাচ্ছে, হুবহু সেটাই কার্টে পাঠানো হচ্ছে
-                onAddToCart(
-                  {
-                    ...food,
-                    price: discountedPrice,
-                  },
-                  branchId,
-                );
+                // 🎯 মূল ফুড অবজেক্ট পাঠানো হচ্ছে, ডাবল ডিসকাউন্ট রোধের জন্য কার্ট নিজে বেস প্রাইস থেকে হিসাব করবে
+                onAddToCart(food, branchId);
               }}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >
