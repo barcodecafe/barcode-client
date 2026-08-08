@@ -72,13 +72,17 @@ export const CartProvider = ({ children }) => {
       const activeBranchId = branchId !== undefined && branchId !== null ? branchId : null;
       const foodId = food.id || food._id;
       
-      const basePrice = getActivePrice(food, activeBranchId, sizeName);
-      
-      // 🎯 ডাবল ডিসকাউন্ট রোধ: food.price যদি অলরেডি ক্যালকুলেটেড হয়ে থাকে তবে সেটাই বসবে, নতুবা কার্ট নতুন করে হিসাব করবে
-      const purchasePrice =
-        Number(food.price) > 0 && Number(food.price) !== Number(basePrice)
-          ? Number(food.price)
-          : applyFoodDiscount(basePrice, food);
+      const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
+
+      // 🎯 ডাবল ডিসকাউন্ট রোধ: 
+      // যদি food.price ফ্রন্টএন্ড বা কার্ড থেকে অলরেডি ডিসকাউন্টেড বা ব্রাঞ্চ-অ্যাডজাস্টেড অবস্থায় আসে, 
+      // তবে সেটাই সরাসরি পারচেজ প্রাইস হবে।
+      let purchasePrice = Number(food.price) > 0 ? Number(food.price) : rawBasePrice;
+
+      // যদি প্রাইস এবং বেস প্রাইস হুবহু এক হয়, কেবল তখনই কার্ট নিজে ডিসকাউন্ট ক্যালকুলেট করবে
+      if (purchasePrice === rawBasePrice) {
+        purchasePrice = applyFoodDiscount(rawBasePrice, food);
+      }
 
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
       const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
@@ -94,13 +98,13 @@ export const CartProvider = ({ children }) => {
 
       return [...prevCart, {
         ...food,
-        id: foodId, // অ্যাডমিন প্যানেল ও ইনভয়েসের জন্য id নিশ্চিত করা হলো
+        id: foodId,
         cartId,
         branchId: activeBranchId,
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice, // চূড়ান্ত ডিসকাউন্টেড বা ব্রাঞ্চ-অ্যাডজাস্টেড দাম
+        price: purchasePrice, // 🎯 এখন হুবহু ৳23.75 টাকাই থাকবে
         offerType: food.offerType || 'none',
       }];
     });
