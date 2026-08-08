@@ -24,11 +24,22 @@ import { getAllRegions } from "../../services/regionsService";
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
-// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার হেলপার
+// 🎯 ব্যাকএন্ডের যেকোনো নেস্টেড রেসপন্স থেকে সেফলি অ্যারে এক্সট্র্যাক্ট করার হেল্পার
+const extractArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.orders)) return data.orders;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.result)) return data.result;
+  return [];
+};
+
+// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার সেফ হেলপার
 const deduplicateOrders = (orderList) => {
-  if (!Array.isArray(orderList)) return [];
+  const cleanList = extractArray(orderList);
+  if (cleanList.length === 0) return [];
+  
   const seen = new Set();
-  return orderList.filter((item) => {
+  return cleanList.filter((item) => {
     const id = item?.id || item?._id;
     if (!id) return true;
     if (seen.has(id)) return false;
@@ -56,7 +67,6 @@ const getOfferText = (offerType) => {
 // 🎯 BOGO এবং ব্রাঞ্চ/নরমাল প্রাইস বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 const getItemPayableTotal = (item) => {
   const name = String(item.name || "").toLowerCase();
-  // কার্টে সেভ করা চূড়ান্ত প্রাইস (যা ব্রাঞ্চ বা মেনু অনুযায়ী সেট হয়েছে)
   const price = Number(item.price) || 0; 
   const qty = Number(item.quantity) || 0;
 
@@ -187,10 +197,11 @@ export const AdminOrders = () => {
   const fetchOrdersAndFleet = () =>
     Promise.all([getAllOrders(), getAllRiders()])
       .then(([ordersData, ridersData]) => {
-        setOrders(deduplicateOrders(ordersData || []));
-        setRiders(ridersData || []);
+        const cleanOrders = deduplicateOrders(ordersData);
+        setOrders(cleanOrders);
+        setRiders(extractArray(ridersData));
         window.dispatchEvent(new CustomEvent("order_updated"));
-        return ordersData || [];
+        return cleanOrders;
       })
       .catch((err) => console.error("Orders/fleet sync failed:", err));
 
@@ -202,17 +213,17 @@ export const AdminOrders = () => {
       getAllRegions(),
     ])
       .then(([ordersData, ridersData, branchesData, regionsData]) => {
-        setOrders(deduplicateOrders(ordersData || []));
-        setRiders(ridersData || []);
-        setBranches(branchesData || []);
-        setRegions(Array.isArray(regionsData) ? regionsData : []);
+        setOrders(deduplicateOrders(ordersData));
+        setRiders(extractArray(ridersData));
+        setBranches(extractArray(branchesData));
+        setRegions(extractArray(regionsData));
         window.dispatchEvent(new CustomEvent("order_updated"));
       })
       .catch((err) => console.error("Error loading admin orders data:", err))
       .finally(() => setLoading(false));
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     const handleNewOrderIncoming = (newOrder) => {
       setOrders((prev) => {
         const newId = newOrder?.id || newOrder?._id;
@@ -370,7 +381,6 @@ useEffect(() => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (সম্পূর্ণ অর্ডার অবজেক্ট অক্ষুণ্ণ রেখে শুধু স্ট্যাটাস আপডেট হবে)
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           const ordId = ord.id || ord._id;
@@ -398,7 +408,6 @@ useEffect(() => {
         }),
       );
 
-      // ব্যাকএন্ড থেকে লেটেস্ট ডেটা সাইলেন্টলি সিঙ্ক করা
       fetchOrdersAndFleet();
 
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "";
@@ -438,20 +447,19 @@ useEffect(() => {
   };
 
   const handleAssignRider = async (orderId, riderId) => {
-    const selectedRider = riders.find((r) => r.id === riderId);
+    const selectedRider = riders.find((r) => (r.id || r._id) === riderId);
     if (!selectedRider) return;
     try {
-      // 🎯 ইনস্ট্যান্ট লোকাল আপডেট (যাতে রাইডার এসাইন করার সাথে সাথে স্টেট আপডেট হয়ে যায়)
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           const ordId = ord.id || ord._id;
           if (ordId === orderId) {
             return {
-              ...ord, // আগের সব ডেটা অক্ষুণ্ণ থাকবে
+              ...ord,
               riderId: riderId,
               riderName: selectedRider.name,
               riderPhone: selectedRider.phone || "",
-              riderAcceptStatus: "pending", // রাইডার এসাইন হলে পেন্ডিং থাকবে যতক্ষণ না সে এক্সেপ্ট করে
+              riderAcceptStatus: "pending",
             };
           }
           return ord;
@@ -474,7 +482,6 @@ useEffect(() => {
 
       toast.success(`Assigned to ${selectedRider.name}`);
       
-      // ব্যাকগ্রাউন্ডে লেটেস্ট ডেটা সিঙ্ক করা
       fetchOrdersAndFleet();
     } catch (err) {
       toast.error("Failed to assign rider: " + err.message);
@@ -559,214 +566,214 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((ord) => {
-                  const ordId = ord.id || ord._id;
-                  const currentStatus = String(ord.status || "").toUpperCase();
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-12 text-neutral-400 font-medium">
+                      No orders found.
+                    </td>
+                  </tr>
+                ) : (
+                  orders.map((ord) => {
+                    const ordId = ord.id || ord._id;
+                    const currentStatus = String(ord.status || "").toUpperCase();
 
-                  const isPendingUnhandled =
-                    currentStatus === "PLACED" ||
-                    currentStatus === "PENDING" ||
-                    currentStatus === "AWAITING PAYMENT" ||
-                    currentStatus === "AWAITING_PAYMENT" ||
-                    !ord.status;
+                    const isPendingUnhandled =
+                      currentStatus === "PLACED" ||
+                      currentStatus === "PENDING" ||
+                      currentStatus === "AWAITING PAYMENT" ||
+                      currentStatus === "AWAITING_PAYMENT" ||
+                      !ord.status;
 
-                  const isRejected = currentStatus === "REJECTED";
-                  const badge = getPaymentBadge(ord);
+                    const isRejected = currentStatus === "REJECTED";
+                    const badge = getPaymentBadge(ord);
 
-                  return (
-                    <tr
-                      key={ordId}
-                      className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
-                    >
-                      {/* 🎯 Order ID Column — ট্রাঙ্কেট ফর্মে দেখাবে (যেমন: 6A6D...C7F90) */}
-                      <td
-                        onClick={() => setSelectedOrderDetails(ord)}
-                        className="px-2.5 py-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
-                        title={ordId}
+                    return (
+                      <tr
+                        key={ordId}
+                        className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
                       >
-                        {formatShortOrderId(ordId)}
-                        {badge && (
-                          <span
-                            className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
-                          >
-                            {badge.label}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Customer Column */}
-                      <td className="px-2.5 py-3">
-                        <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px]">
-                          {ord.user?.name}
-                        </span>
-                        <span className="block text-[10px] text-neutral-400 mt-0.5">
-                          {ord.user?.phone}
-                        </span>
-                      </td>
-
-                      {/* Address Column — নির্দিষ্ট উইডথ শেষে ... চলে আসবে */}
-                      <td className="px-2.5 py-3">
-                        <span
-                          className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[120px]"
-                          title={ord.user?.address}
+                        <td
+                          onClick={() => setSelectedOrderDetails(ord)}
+                          className="px-2.5 py-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                          title={ordId}
                         >
-                          {ord.user?.address}
-                        </span>
-                        <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[120px]">
-                          {ord.user?.pickArea}
-                        </span>
-                      </td>
-
-                      {/* Total Amount Column */}
-                      <td className="px-2.5 py-3 font-bold text-primary-500 whitespace-nowrap">
-                        ৳{ord.total?.toFixed(2)}
-                      </td>
-
-                      {/* Order Action Column */}
-                      <td className="px-2.5 py-3 whitespace-nowrap">
-                        {isPendingUnhandled ? (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Accepted")
-                              }
-                              className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
-                              title="Accept Order"
+                          {formatShortOrderId(ordId)}
+                          {badge && (
+                            <span
+                              className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide ${badge.tone}`}
                             >
-                              <Check className="w-3 h-3 stroke-[3]" /> Accept
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleStatusChange(ordId, "Rejected")
-                              }
-                              className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
-                              title="Reject Order"
-                            >
-                              <X className="w-3 h-3 stroke-[3]" /> Reject
-                            </button>
-                          </div>
-                        ) : isRejected ? (
-                          <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
-                            Rejected
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
-                            Accepted
-                          </span>
-                        )}
-                      </td>
+                              {badge.label}
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Delivery Status Column */}
-                      <td className="px-2.5 py-3 whitespace-nowrap">
-                        {isPendingUnhandled ? (
-                          <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
-                            Pending
+                        <td className="px-2.5 py-3">
+                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px]">
+                            {ord.user?.name || ord.customerName || "Guest"}
                           </span>
-                        ) : isRejected ? (
-                          <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
-                            Cancelled
+                          <span className="block text-[10px] text-neutral-400 mt-0.5">
+                            {ord.user?.phone || ord.customerPhone || "-"}
                           </span>
-                        ) : (
-                          <div>
+                        </td>
+
+                        <td className="px-2.5 py-3">
+                          <span
+                            className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[120px]"
+                            title={ord.user?.address || ord.deliveryAddress}
+                          >
+                            {ord.user?.address || ord.deliveryAddress || "-"}
+                          </span>
+                          <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[120px]">
+                            {ord.user?.pickArea || ord.area || ""}
+                          </span>
+                        </td>
+
+                        <td className="px-2.5 py-3 font-bold text-primary-500 whitespace-nowrap">
+                          ৳{Number(ord.total || ord.grandTotal || 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-2.5 py-3 whitespace-nowrap">
+                          {isPendingUnhandled ? (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() =>
+                                  handleStatusChange(ordId, "Accepted")
+                                }
+                                className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                title="Accept Order"
+                              >
+                                <Check className="w-3 h-3 stroke-[3]" /> Accept
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleStatusChange(ordId, "Rejected")
+                                }
+                                className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                title="Reject Order"
+                              >
+                                <X className="w-3 h-3 stroke-[3]" /> Reject
+                              </button>
+                            </div>
+                          ) : isRejected ? (
+                            <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
+                              Rejected
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
+                              Accepted
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-2.5 py-3 whitespace-nowrap">
+                          {isPendingUnhandled ? (
+                            <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                              Pending
+                            </span>
+                          ) : isRejected ? (
+                            <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                              Cancelled
+                            </span>
+                          ) : (
+                            <div>
+                              <select
+                                value={
+                                  ord.riderAcceptStatus === "accepted" &&
+                                  (ord.status === "Accepted" ||
+                                    ord.status === "ACCEPTED")
+                                    ? "Preparing"
+                                    : ord.status
+                                }
+                                disabled={
+                                  !ord.riderId ||
+                                  ord.riderAcceptStatus !== "accepted"
+                                }
+                                onChange={(e) =>
+                                  handleStatusChange(ordId, e.target.value)
+                                }
+                                className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                                  !ord.riderId ||
+                                  ord.riderAcceptStatus !== "accepted"
+                                    ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
+                                    : `${getStatusColor(
+                                        ord.riderAcceptStatus === "accepted" &&
+                                          (ord.status === "Accepted" ||
+                                            ord.status === "ACCEPTED")
+                                          ? "Preparing"
+                                          : ord.status,
+                                      )} cursor-pointer`
+                                }`}
+                              >
+                                <option value="Accepted">Accepted</option>
+                                <option value="Preparing">Preparing</option>
+                                <option value="Ready to Pick">
+                                  Ready to Pick
+                                </option>
+                                <option value="Out for Delivery">
+                                  Out for Delivery
+                                </option>
+                                <option value="Delivered">Delivered</option>
+                              </select>
+
+                              {(!ord.riderId ||
+                                ord.riderAcceptStatus !== "accepted") && (
+                                <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
+                                  {!ord.riderId
+                                    ? "Assign Rider First"
+                                    : "Awaiting Rider Accept"}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-2.5 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1">
                             <select
-                              value={
-                                ord.riderAcceptStatus === "accepted" &&
-                                (ord.status === "Accepted" ||
-                                  ord.status === "ACCEPTED")
-                                  ? "Preparing"
-                                  : ord.status
-                              }
+                              value={ord.riderId || ""}
                               disabled={
-                                !ord.riderId ||
-                                ord.riderAcceptStatus !== "accepted"
+                                isPendingUnhandled ||
+                                isRejected ||
+                                ord.status === "Delivered"
                               }
                               onChange={(e) =>
-                                handleStatusChange(ordId, e.target.value)
+                                handleAssignRider(ordId, e.target.value)
                               }
-                              className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                !ord.riderId ||
-                                ord.riderAcceptStatus !== "accepted"
-                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
-                                  : `${getStatusColor(
-                                      ord.riderAcceptStatus === "accepted" &&
-                                        (ord.status === "Accepted" ||
-                                          ord.status === "ACCEPTED")
-                                        ? "Preparing"
-                                        : ord.status,
-                                    )} cursor-pointer`
+                              className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] ${
+                                isPendingUnhandled ||
+                                isRejected ||
+                                ord.status === "Delivered"
+                                  ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
+                                  : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"
                               }`}
                             >
-                              <option value="Accepted">Accepted</option>
-                              <option value="Preparing">Preparing</option>
-                              <option value="Ready to Pick">
-                                Ready to Pick
-                              </option>
-                              <option value="Out for Delivery">
-                                Out for Delivery
-                              </option>
-                              <option value="Delivered">Delivered</option>
+                              <option value="">-- Assign Rider --</option>
+                              {riders.map((r) => (
+                                <option key={r.id || r._id} value={r.id || r._id}>
+                                  {r.name} ({r.vehicle || "Rider"})
+                                </option>
+                              ))}
                             </select>
-
-                            {(!ord.riderId ||
-                              ord.riderAcceptStatus !== "accepted") && (
-                              <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
-                                {!ord.riderId
-                                  ? "Assign Rider First"
-                                  : "Awaiting Rider Accept"}
-                              </span>
-                            )}
                           </div>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Assigned Rider Column */}
-                      <td className="px-2.5 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <select
-                            value={ord.riderId || ""}
-                            disabled={
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
-                            }
-                            onChange={(e) =>
-                              handleAssignRider(ordId, e.target.value)
-                            }
-                            className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] ${
-                              isPendingUnhandled ||
-                              isRejected ||
-                              ord.status === "Delivered"
-                                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
-                                : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"
+                        <td className="px-2.5 py-3 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => setActiveChatOrderId(ordId)}
+                            className={`p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                              activeChatOrderId === ordId
+                                ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
+                                : ""
                             }`}
+                            title="Open Live Chat Console"
                           >
-                            <option value="">-- Assign Rider --</option>
-                            {riders.map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {r.name} ({r.vehicle})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </td>
-
-                      {/* Actions Column */}
-                      <td className="px-2.5 py-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setActiveChatOrderId(ordId)}
-                          className={`p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
-                            activeChatOrderId === ordId
-                              ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
-                              : ""
-                          }`}
-                          title="Open Live Chat Console"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -783,7 +790,6 @@ useEffect(() => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="w-full max-w-lg flex flex-col h-[580px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-2xl"
             >
-              {/* Chat Header */}
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-white">
@@ -791,8 +797,8 @@ useEffect(() => {
                     {(currentChat.id || currentChat._id)?.toUpperCase()}
                   </h3>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    Customer: {currentChat.user?.name || "Guest"} (
-                    {currentChat.user?.phone})
+                    Customer: {currentChat.user?.name || currentChat.customerName || "Guest"} (
+                    {currentChat.user?.phone || currentChat.customerPhone || "N/A"})
                   </p>
                 </div>
                 <button
@@ -803,7 +809,6 @@ useEffect(() => {
                 </button>
               </div>
 
-              {/* Quick Kitchen Alert */}
               <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between shrink-0">
                 <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                   <BellRing className="w-3.5 h-3.5" /> Quick Kitchen Alert:
@@ -826,7 +831,6 @@ useEffect(() => {
                 </button>
               </div>
 
-              {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-950/20">
                 {(currentChat.chatHistory || []).length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-neutral-400 text-xs gap-1">
@@ -859,7 +863,6 @@ useEffect(() => {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input Form */}
               <form
                 onSubmit={(e) => handleSendAdminMessage(e, null)}
                 className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex gap-2 shrink-0"
@@ -893,7 +896,6 @@ useEffect(() => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6"
             >
-              {/* Modal Top Action Bar */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
                 <div>
                   <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
@@ -927,12 +929,10 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* 🧾 অফিশিয়াল ইনভয়েস প্রিন্ট লেআউট */}
               <div
                 ref={invoiceRef}
                 className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans"
               >
-                {/* ১. হেডার সেশন */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-neutral-800 gap-4">
                   <div>
                     <h1 className="text-2xl font-black tracking-wider text-rose-900 uppercase">
@@ -959,12 +959,10 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* ইনভয়েস টাইটেল */}
                 <div className="text-center font-bold text-sm tracking-widest uppercase text-neutral-700 py-1">
                   Invoice
                 </div>
 
-                {/* ২. বিল টু ও ইনভয়েস ইনফো */}
                 <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                   <div className="space-y-1.5 flex-1">
                     <p className="font-bold text-neutral-900 uppercase text-[11px] border-b pb-1 mb-2">
@@ -975,7 +973,7 @@ useEffect(() => {
                         Customer Name
                       </span>
                       <span className="col-span-2 font-bold text-neutral-800">
-                        : {selectedOrderDetails.user?.name || "N/A"}
+                        : {selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "N/A"}
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
@@ -983,7 +981,7 @@ useEffect(() => {
                         Mobile
                       </span>
                       <span className="col-span-2 font-semibold text-neutral-800">
-                        : {selectedOrderDetails.user?.phone || "N/A"}
+                        : {selectedOrderDetails.user?.phone || selectedOrderDetails.customerPhone || "N/A"}
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
@@ -991,7 +989,7 @@ useEffect(() => {
                         Address
                       </span>
                       <span className="col-span-2 text-neutral-800">
-                        : {selectedOrderDetails.user?.address || "N/A"}{" "}
+                        : {selectedOrderDetails.user?.address || selectedOrderDetails.deliveryAddress || "N/A"}{" "}
                         {selectedOrderDetails.user?.pickArea
                           ? `(${selectedOrderDetails.user?.pickArea})`
                           : ""}
@@ -1027,7 +1025,6 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* ৩. লজিক্যাল আইটেম টেবিল */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -1057,11 +1054,8 @@ useEffect(() => {
                       {orderItems.map((item, idx) => {
                         const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
-                        
-                        // 🎯 কার্ট থেকে আসা সঠিক ইউনিট প্রাইস (ব্রাঞ্চ প্রাইস বা বেস প্রাইস যাই হোক না কেন)
                         const unitPrice = Number(item.price) || 0; 
 
-                        // অরিজিনাল বা বেস প্রাইস নির্ধারণ
                         let origUnitPrice =
                           Number(item.originalPrice) ||
                           Number(item.basePrice) ||
@@ -1164,7 +1158,6 @@ useEffect(() => {
                   </table>
                 </div>
 
-                {/* ৪. হিসাব-নিকাশ সেকশন */}
                 <div className="flex justify-end pt-2">
                   <div className="w-full sm:w-80 space-y-1.5 text-xs">
                     <div className="flex justify-between py-1 border-b border-neutral-200">
@@ -1232,7 +1225,6 @@ useEffect(() => {
                   </span>
                 </div>
 
-                {/* ৫. ফুটার ব্র্যান্ড লিস্ট */}
                 <div className="pt-8 mt-6 border-t border-neutral-200 text-center space-y-3">
                   <p className="text-[10px] text-neutral-400 italic">
                     This is a system-generated document and does not require any
@@ -1274,7 +1266,6 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Gateway Re-check option */}
               {String(
                 selectedOrderDetails.paymentMethod || "cod",
               ).toLowerCase() !== "cod" &&
@@ -1313,4 +1304,3 @@ useEffect(() => {
 };
 
 export default AdminOrders;
-// 1315
