@@ -71,9 +71,10 @@ export const CartProvider = ({ children }) => {
       
       const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
 
-      // 🎯 যদি ফ্রন্টএন্ড বা বাটনে ডিসকাউন্টেড প্রাইস পাস করা থাকে, সেটাই নিবে।
-      // অন্যথায় কার্ট নিজেই rawBasePrice থেকে ডিসকাউন্ট ক্যালকুলেট করে সঠিক দাম বের করবে।
-      let purchasePrice = Number(food.price) > 0 && Number(food.price) < rawBasePrice
+      // 🎯 ১০০% নিশ্চিত ও সাধারণ লজিক:
+      // ফুড অবজেক্টে যদি অলরেডি কোনো ফাইনাল ডিসকাউন্টেড প্রাইস পাঠানো হয়ে থাকে এবং সেটি র বেস প্রাইসের চেয়ে কম হয়, 
+      // তবে সেটাই সরাসরি ফাইনাল প্রাইস হিসেবে বসে যাবে। অন্যথায় কার্ট ডিসকাউন্ট ক্যালকুলেট করবে।
+      let purchasePrice = (Number(food.price) > 0 && Number(food.price) < rawBasePrice)
         ? Number(food.price)
         : applyFoodDiscount(rawBasePrice, food);
 
@@ -97,7 +98,7 @@ export const CartProvider = ({ children }) => {
         selectedSize: sizeName,
         selectedVariation: variationObj,
         quantity: targetQty,
-        price: purchasePrice, // 🎯 এখন হুবহু সঠিক ডিসকাউন্টেড দামই থাকবে
+        price: purchasePrice, // 🎯 এখন Add to Cart বা Order যেটাই ক্লিক করুন না কেন, দুই জায়গায় হুবহু একই সঠিক দাম কাজ করবে
         offerType: food.offerType || 'none',
       }];
     });
