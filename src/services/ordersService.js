@@ -9,7 +9,19 @@ import apiClient from './apiClient';
 
 /** GET /api/orders (admin: all) */
 export async function getAllOrders() {
-  return apiClient.get('/orders');
+  try {
+    const res = await apiClient.get('/orders');
+    // 🎯 সেফটি পার্সিং: রেসপন্স অবজেক্টের সব ধরণের নেস্টেড ফরম্যাট হ্যান্ডেল করে সরাসরি অ্যারে রিটার্ন করবে
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.data)) return res.data;
+    if (res && Array.isArray(res.orders)) return res.orders;
+    if (res && res.data && Array.isArray(res.data.orders)) return res.data.orders;
+    if (res && res.data && Array.isArray(res.data.data)) return res.data.data;
+    return [];
+  } catch (error) {
+    console.error("Error fetching all orders:", error);
+    return [];
+  }
 }
 
 /** 
@@ -39,6 +51,7 @@ export async function getPendingOrderCount() {
     return { pendingCount: 0 };
   }
 }
+
 /** GET /api/orders/:id (ownership-checked server-side) */
 export async function getOrderById(id) {
   return apiClient.get(`/orders/${id}`);
