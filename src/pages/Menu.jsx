@@ -180,16 +180,16 @@ export const Menu = () => {
   });
 
   return [...matched].sort((a, b) => {
-    const priceA = getEffectivePrice(a);[cite: 4]
-    const priceB = getEffectivePrice(b);[cite: 4]
-    const ratingA = Number(a?.rating) || 0;[cite: 4]
-    const ratingB = Number(b?.rating) || 0;[cite: 4]
+    const priceA = getEffectivePrice(a);
+    const priceB = getEffectivePrice(b);
+    const ratingA = Number(a?.rating) || 0;
+    const ratingB = Number(b?.rating) || 0;
 
-    if (sortBy === "price-low") return priceA - priceB;[cite: 4]
-    if (sortBy === "price-high") return priceB - priceA;[cite: 4]
-    if (sortBy === "rating") return ratingB - ratingA;[cite: 4]
+    if (sortBy === "price-low") return priceA - priceB;
+    if (sortBy === "price-high") return priceB - priceA;
+    if (sortBy === "rating") return ratingB - ratingA;
 
-    return 0;[cite: 4]
+    return 0;
   });
 }, [foods, activeCategory, searchQuery, sortBy]); // 👈 dependency তে searchQuery যোগ করতে ভুলবেন না
 
