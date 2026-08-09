@@ -25,6 +25,7 @@ export const Menu = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "All";
+  const searchQuery = searchParams.get("search") || "";
 
   const activeFilter = searchParams.get("filter");
   const popularOnly = activeFilter === "popular";
@@ -159,26 +160,38 @@ export const Menu = () => {
     return basePrice;
   };
 
-  const filteredFoods = useMemo(() => {
-    const matched = foods.filter(
-      (food) =>
-        activeCategory.trim().toLowerCase() === "all" ||
-        food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
-    );
+ const filteredFoods = useMemo(() => {
+  const query = searchQuery.trim().toLowerCase();
 
-    return [...matched].sort((a, b) => {
-      const priceA = getEffectivePrice(a);
-      const priceB = getEffectivePrice(b);
-      const ratingA = Number(a?.rating) || 0;
-      const ratingB = Number(b?.rating) || 0;
+  const matched = foods.filter((food) => {
+    // ১. ক্যাটাগরি ফিল্টার
+    const matchesCategory =
+      activeCategory.trim().toLowerCase() === "all" ||
+      food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase();
 
-      if (sortBy === "price-low") return priceA - priceB;
-      if (sortBy === "price-high") return priceB - priceA;
-      if (sortBy === "rating") return ratingB - ratingA;
+    // ২. সার্চ কোয়েরি ফিল্টার (খাবারের নাম, বিবরণ বা ক্যাটাগরির সাথে মেলাবে)
+    const matchesSearch =
+      !query ||
+      food.name?.toLowerCase().includes(query) ||
+      food.description?.toLowerCase().includes(query) ||
+      food.category?.toLowerCase().includes(query);
 
-      return 0;
-    });
-  }, [foods, activeCategory, sortBy]);
+    return matchesCategory && matchesSearch;
+  });
+
+  return [...matched].sort((a, b) => {
+    const priceA = getEffectivePrice(a);[cite: 4]
+    const priceB = getEffectivePrice(b);[cite: 4]
+    const ratingA = Number(a?.rating) || 0;[cite: 4]
+    const ratingB = Number(b?.rating) || 0;[cite: 4]
+
+    if (sortBy === "price-low") return priceA - priceB;[cite: 4]
+    if (sortBy === "price-high") return priceB - priceA;[cite: 4]
+    if (sortBy === "rating") return ratingB - ratingA;[cite: 4]
+
+    return 0;[cite: 4]
+  });
+}, [foods, activeCategory, searchQuery, sortBy]); // 👈 dependency তে searchQuery যোগ করতে ভুলবেন না
 
   const containerVariants = {
     hidden: {},
