@@ -384,6 +384,7 @@ export const AdminOrders = () => {
     }
   };
 
+  // 🎯 প্রিন্ট হেলপার ফাংশন (A4/A5 পেজে পারফেক্ট ফিট এবং হেডার-ফুটার রিমুভাল সহ)
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -392,20 +393,44 @@ export const AdminOrders = () => {
     const WindowPrt = window.open(
       "",
       "_blank",
-      "left=0,top=0,width=800,height=900",
+      "left=0,top=0,width=850,height=950",
     );
     if (!WindowPrt) {
       toast.error("Please allow popups for this website to print.");
       return;
     }
-    WindowPrt.document.write("<html><head><title>Barcode Invoice</title>");
+
+    WindowPrt.document.write("<html><head><title></title>");
     WindowPrt.document.write(
       '<script src="https://cdn.tailwindcss.com"></script>',
     );
-    WindowPrt.document.write(
-      "<style>body { font-family: Arial, sans-serif; background: #fff; color: #111; }</style>",
-    );
-    WindowPrt.document.write('</head><body class="p-8">');
+    WindowPrt.document.write(`
+      <style>
+        @page {
+          size: auto;
+          margin: 10mm;
+        }
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: #fff;
+          color: #111;
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact;
+        }
+        /* A4 & A5 Auto-Fit Styles */
+        @media print {
+          html, body {
+            width: 100%;
+            height: auto;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      </style>
+    `);
+    WindowPrt.document.write('</head><body>');
     WindowPrt.document.write(printContent.innerHTML);
     WindowPrt.document.write("</body></html>");
     WindowPrt.document.close();
@@ -574,7 +599,7 @@ export const AdminOrders = () => {
     0,
   );
 
-  // 🎯 ডায়নামিক কুপন ডিসকাউন্ট ও কোড এক্সট্র্যাক্ট করা
+  // 🎯 ডায়নামিক কুপন বা প্রোমো ডিসকাউন্ট এক্সট্র্যাক্ট করা
   const couponDiscount = Number(
     selectedOrderDetails?.couponDiscount || 
     selectedOrderDetails?.discountAmount || 
@@ -588,7 +613,6 @@ export const AdminOrders = () => {
     null;
 
   const deliveryCharge = Number(selectedOrderDetails?.deliveryCharge) || 0;
-  // 🎯 কুপন ডিসকাউন্ট বিয়োগ করে গ্র্যান্ড টোটাল
   const grandTotal = Math.max(0, subTotal + deliveryCharge + currentAdjustment - couponDiscount);
 
   return (
@@ -1014,7 +1038,7 @@ export const AdminOrders = () => {
                   Invoice
                 </div>
 
-                {/* Aligned Bill To & Invoice Info Container */}
+                {/* Aligned Customer Details Container */}
                 <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                   <div className="space-y-1.5 flex-1">
                     <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
@@ -1077,15 +1101,13 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
+                {/* 🎯 DESCRIPTION কলাম পুরোপুরি রিমুভ করা হয়েছে */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
                       <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
                         <th className="p-2.5 border-r border-neutral-300">
                           Items
-                        </th>
-                        <th className="p-2.5 border-r border-neutral-300">
-                          Description
                         </th>
                         <th className="p-2.5 border-r border-neutral-300 text-right">
                           Unit Price
@@ -1111,26 +1133,9 @@ export const AdminOrders = () => {
                         const isBogo1g1 = detectedOfferType === "bogo_1g1" || item.isBogo;
                         const isBogo1g2 = detectedOfferType === "bogo_1g2";
 
-                        let offerLabel = getOfferText(detectedOfferType);
                         const itemDiscountPct = Number(item.discountPct) || 0;
                         const itemDiscountAmount = Number(item.discountAmount) || 0;
                         const directDiscount = Number(item.discount) || 0;
-
-                        if (!offerLabel) {
-                          if (item.discountDescription) {
-                            offerLabel = item.discountDescription;
-                          } else if (item.promoCode) {
-                            offerLabel = `PROMO: ${item.promoCode}`;
-                          } else if (itemDiscountPct > 0) {
-                            offerLabel = `${itemDiscountPct}% OFF`;
-                          } else if (itemDiscountAmount > 0) {
-                            offerLabel = `৳${itemDiscountAmount} OFF`;
-                          } else if (directDiscount > 0) {
-                            offerLabel = `৳${directDiscount} OFF`;
-                          } else {
-                            offerLabel = "-";
-                          }
-                        }
 
                         const fullGross = unitPrice * qty;
                         let netPayable = fullGross;
@@ -1159,15 +1164,13 @@ export const AdminOrders = () => {
                                 ? `(${item.selectedSize})`
                                 : ""}
                             </td>
-                            <td className="p-2.5 border-r border-neutral-300 font-semibold text-purple-700 uppercase">
-                              {offerLabel}
-                            </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{unitPrice.toFixed(2)}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
+                            {/* 🎯 DISCOUNT / FREE কলামে আইটেম ডিসকাউন্ট সুন্দরভাবে প্রদর্শিত */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
                               {freeDiscount > 0
                                 ? `-৳${freeDiscount.toFixed(2)}`
@@ -1211,11 +1214,11 @@ export const AdminOrders = () => {
                       </span>
                     </div>
 
-                    {/* 🎯 কুপন ডিসকাউন্ট রো */}
+                    {/* 🎯 কুপন ডিসকাউন্ট রো (যদি কুপন থাকে তবেই দেখাবে) */}
                     {couponDiscount > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
                         <span>
-                          Coupon Discount {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
+                          Discount {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
                         </span>
                         <span>-৳{couponDiscount.toFixed(2)}</span>
                       </div>
