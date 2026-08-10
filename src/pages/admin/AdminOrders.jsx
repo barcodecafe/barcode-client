@@ -379,7 +379,7 @@ export const AdminOrders = () => {
       toast.error(
         "Re-check failed: " + (err.response?.data?.message || err.message),
       );
-    } fontally {
+    } finally {
       setRecheckingOrderId(null);
     }
   };
