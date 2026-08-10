@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ShieldCheck, Lock, Eye, FileText } from "lucide-react";
+import { Lock, Eye, FileText } from "lucide-react";
 
 export const PrivacyPolicy = () => {
   useEffect(() => {
@@ -7,25 +7,22 @@ export const PrivacyPolicy = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 py-10 sm:py-14 transition-colors duration-300">
-      {/* 🎯 Exact full-width site-container aligning directly with Navbar logo & profile */}
-      <div className="site-container space-y-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 pt-5 pb-12 transition-colors duration-300">
+      {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
+      <div className="site-container space-y-4">
         
-        {/* Header */}
-        <div className="text-center space-y-3 pb-6 border-b border-neutral-200 dark:border-neutral-800">
-          <div className="inline-flex items-center justify-center p-3 bg-primary-500/10 text-primary-500 rounded-2xl mb-2">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
+        {/* Compact Header without Icon */}
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
             Privacy Policy
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
             Last updated: August 2026
           </p>
         </div>
 
         {/* Content Card */}
-        <div className="bg-white dark:bg-neutral-900 p-6 sm:p-10 rounded-3xl border border-neutral-200/80 dark:border-neutral-800/80 shadow-xs space-y-6 text-sm sm:text-base leading-relaxed">
+        <div className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl border border-neutral-200/80 dark:border-neutral-800/80 shadow-xs space-y-6 text-sm sm:text-base leading-relaxed">
           
           <section className="space-y-2">
             <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
