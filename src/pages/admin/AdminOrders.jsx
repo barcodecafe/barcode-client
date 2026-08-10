@@ -69,28 +69,39 @@ const getOfferText = (offerType) => {
   return null;
 };
 
-// 🎯 BOGO এবং ব্রাঞ্চ/নরমাল প্রাইস বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
+// 🎯 ডায়নামিক BOGO এবং ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 const getItemPayableTotal = (item) => {
-  const name = String(item.name || "").toLowerCase();
   const price = Number(item.price) || 0; 
   const qty = Number(item.quantity) || 0;
+  const fullGross = price * qty;
 
-  let oType = item.offerType;
-  if (!oType) {
-    if (name.includes("fuchka platter") && qty >= 3) oType = "bogo_1g2";
-  }
+  const oType = item.offerType;
+  const isBogo1g1 = oType === "bogo_1g1" || item.isBogo;
+  const isBogo1g2 = oType === "bogo_1g2";
 
-  if (oType === "bogo_1g1") {
+  if (isBogo1g1) {
     const paidQuantity = Math.ceil(qty / 2);
     return price * paidQuantity;
   }
 
-  if (oType === "bogo_1g2") {
+  if (isBogo1g2) {
     const paidQuantity = Math.ceil(qty / 3);
     return price * paidQuantity;
   }
 
-  return price * qty;
+  // পার্সেন্টেজ ডিসকাউন্ট
+  const itemDiscountPct = Number(item.discountPct) || 0;
+  if (itemDiscountPct > 0) {
+    return fullGross - (fullGross * itemDiscountPct) / 100;
+  }
+
+  // ফিক্সড অ্যামাউন্ট ডিসকাউন্ট
+  const itemDiscountAmount = Number(item.discountAmount) || Number(item.discount) || 0;
+  if (itemDiscountAmount > 0) {
+    return Math.max(0, fullGross - itemDiscountAmount);
+  }
+
+  return fullGross;
 };
 
 // 🎯 পেমেন্ট ব্যাজ লজিক
@@ -387,7 +398,7 @@ export const AdminOrders = () => {
       toast.error("Please allow popups for this website to print.");
       return;
     }
-    // WindowPrt.document.write("<html><head><title>Barcode Invoice</title>");
+    WindowPrt.document.write("<html><head><title>Barcode Invoice</title>");
     WindowPrt.document.write(
       '<script src="https://cdn.tailwindcss.com"></script>',
     );
@@ -563,8 +574,22 @@ export const AdminOrders = () => {
     0,
   );
 
-  const deliveryCharge = selectedOrderDetails?.deliveryCharge || 0;
-  const grandTotal = subTotal + deliveryCharge + currentAdjustment;
+  // 🎯 ডায়নামিক কুপন ডিসকাউন্ট ও কোড এক্সট্র্যাক্ট করা
+  const couponDiscount = Number(
+    selectedOrderDetails?.couponDiscount || 
+    selectedOrderDetails?.discountAmount || 
+    selectedOrderDetails?.discount || 
+    0
+  );
+
+  const couponCodeApplied = 
+    selectedOrderDetails?.couponCode || 
+    selectedOrderDetails?.promoCode || 
+    null;
+
+  const deliveryCharge = Number(selectedOrderDetails?.deliveryCharge) || 0;
+  // 🎯 কুপন ডিসকাউন্ট বিয়োগ করে গ্র্যান্ড টোটাল
+  const grandTotal = Math.max(0, subTotal + deliveryCharge + currentAdjustment - couponDiscount);
 
   return (
     <div className="w-full space-y-6">
@@ -1079,35 +1104,16 @@ export const AdminOrders = () => {
                     </thead>
                     <tbody>
                       {orderItems.map((item, idx) => {
-                        const itemName = String(item.name || "").toLowerCase();
                         const qty = Number(item.quantity) || 1;
                         const unitPrice = Number(item.price) || 0; 
 
-                        let origUnitPrice =
-                          Number(item.originalPrice) ||
-                          Number(item.basePrice) ||
-                          unitPrice;
-
-                        if (origUnitPrice < unitPrice) {
-                          origUnitPrice = unitPrice;
-                        }
-
-                        let detectedOfferType = item.offerType;
-                        if (
-                          !detectedOfferType ||
-                          detectedOfferType === "none"
-                        ) {
-                          if (itemName.includes("fuchka platter") && qty >= 3) {
-                            detectedOfferType = "bogo_1g2";
-                          } else if (item.isBogo || item.freeQty > 0) {
-                            detectedOfferType = "bogo_1g1";
-                          }
-                        }
+                        const detectedOfferType = item.offerType;
+                        const isBogo1g1 = detectedOfferType === "bogo_1g1" || item.isBogo;
+                        const isBogo1g2 = detectedOfferType === "bogo_1g2";
 
                         let offerLabel = getOfferText(detectedOfferType);
                         const itemDiscountPct = Number(item.discountPct) || 0;
-                        const itemDiscountAmount =
-                          Number(item.discountAmount) || 0;
+                        const itemDiscountAmount = Number(item.discountAmount) || 0;
                         const directDiscount = Number(item.discount) || 0;
 
                         if (!offerLabel) {
@@ -1119,36 +1125,31 @@ export const AdminOrders = () => {
                             offerLabel = `${itemDiscountPct}% OFF`;
                           } else if (itemDiscountAmount > 0) {
                             offerLabel = `৳${itemDiscountAmount} OFF`;
+                          } else if (directDiscount > 0) {
+                            offerLabel = `৳${directDiscount} OFF`;
                           } else {
                             offerLabel = "-";
                           }
                         }
 
                         const fullGross = unitPrice * qty;
-                        let netPayable = unitPrice * qty;
+                        let netPayable = fullGross;
 
-                        if (detectedOfferType === "bogo_1g1") {
+                        if (isBogo1g1) {
                           const paidQuantity = Math.ceil(qty / 2);
                           netPayable = unitPrice * paidQuantity;
-                        } else if (detectedOfferType === "bogo_1g2") {
+                        } else if (isBogo1g2) {
                           const paidQuantity = Math.ceil(qty / 3);
                           netPayable = unitPrice * paidQuantity;
                         } else if (itemDiscountPct > 0) {
-                          netPayable =
-                            fullGross - (fullGross * itemDiscountPct) / 100;
+                          netPayable = fullGross - (fullGross * itemDiscountPct) / 100;
                         } else if (itemDiscountAmount > 0) {
-                          netPayable = Math.max(
-                            0,
-                            fullGross - itemDiscountAmount * qty,
-                          );
+                          netPayable = Math.max(0, fullGross - itemDiscountAmount * qty);
                         } else if (directDiscount > 0) {
                           netPayable = Math.max(0, fullGross - directDiscount);
                         }
 
-                        const freeDiscount = Math.max(
-                          0,
-                          fullGross - netPayable,
-                        );
+                        const freeDiscount = Math.max(0, fullGross - netPayable);
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
@@ -1209,6 +1210,16 @@ export const AdminOrders = () => {
                         ৳{deliveryCharge.toFixed(2)}
                       </span>
                     </div>
+
+                    {/* 🎯 কুপন ডিসকাউন্ট রো */}
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
+                        <span>
+                          Coupon Discount {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
+                        </span>
+                        <span>-৳{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Adjustment:</span>
