@@ -379,7 +379,7 @@ export const AdminOrders = () => {
       toast.error(
         "Re-check failed: " + (err.response?.data?.message || err.message),
       );
-    } finally {
+    } fontally {
       setRecheckingOrderId(null);
     }
   };
@@ -560,9 +560,10 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 Admin Control for Rider Accept/Reject Status Override
+  // 🎯 Admin Control for Rider Accept/Reject Status Override (Backend Sync Fixed)
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
+      // ১. অপটিমিস্টিক স্টেট আপডেট (UI সাথে সাথে আপডেট হবে)
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           const ordId = ord.id || ord._id;
@@ -579,6 +580,14 @@ export const AdminOrders = () => {
         })
       );
 
+      // ২. ব্যাকএন্ড ডাটাবেজে আপডেট পাঠানোর জন্য API কল
+      await updateOrderStatus(orderId, {
+        riderAcceptStatus: newAcceptStatus,
+        ...(newAcceptStatus === "rejected" && { riderId: null, riderName: "" }),
+        ...(newAcceptStatus === "accepted" && { status: "ACCEPTED" }),
+      });
+
+      // ৩. রিয়েলটাইম সকেট ইমিটেশন
       const payload = {
         id: orderId,
         orderId: orderId,
@@ -587,10 +596,13 @@ export const AdminOrders = () => {
       };
 
       socket.emit("order_updated", payload);
+      socket.emit("rider_order_updated", payload);
 
       toast.success(
         `Rider acceptance status updated to ${newAcceptStatus.toUpperCase()}`
       );
+      
+      // ৪. ডাটা সিঙ্ক করার জন্য পুনরায় ফেচ
       fetchOrdersAndFleet();
     } catch (err) {
       toast.error("Failed to update rider status: " + err.message);
@@ -859,7 +871,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        {/* 🎯 ASSIGNED RIDER Column (Fixes Applied) */}
+                        {/* 🎯 ASSIGNED RIDER Column */}
                         <td className="px-2.5 py-3 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
                             <select
