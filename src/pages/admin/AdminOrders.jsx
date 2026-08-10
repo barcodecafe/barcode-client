@@ -184,9 +184,6 @@ export const AdminOrders = () => {
   const [, setBranches] = useState([]);
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Non-null when the ORDER fetch itself failed. Keeps "we could not load your
-  // orders" visually distinct from "there are no orders", which the table
-  // previously conflated.
   const [loadError, setLoadError] = useState(null);
   const [recheckingOrderId, setRecheckingOrderId] = useState(null);
   const [activeChatOrderId, setActiveChatOrderId] = useState(null);
@@ -199,14 +196,6 @@ export const AdminOrders = () => {
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
-  // ⚠️ Promise.allSettled, not Promise.all.
-  //
-  // This page loads four independent resources. With Promise.all, ONE of them
-  // rejecting skipped the entire .then — so a failing riders/branches/regions
-  // call threw away a perfectly good order list that had already arrived, and
-  // the table rendered "No orders found." over a database full of orders. That
-  // was the reported bug: only orders arriving later over the socket showed up.
-  // Each resource now lands on its own.
   const applyResult = (result, setter, transform, label) => {
     if (result.status === "fulfilled") {
       setter(transform(result.value));
@@ -277,12 +266,6 @@ export const AdminOrders = () => {
       );
     };
 
-    // ⚠️ Every handler below is a NAMED function that gets passed back to
-    // socket.off in the cleanup. socket.off('event') without a handler removes
-    // EVERY listener for that event across the whole app, not just this
-    // component's — leaving this page once used to kill OrderContext's
-    // 'pending_count_updated' listener, silently disabling the new-order badge
-    // in the sidebar and topbar for the rest of the session.
     const handleOrderUpdated = (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
       setOrders((prev) =>
@@ -1014,36 +997,38 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                <div className="text-center font-bold text-sm tracking-widest uppercase text-neutral-700 py-1">
+                {/* Invoice Title Header */}
+                <div className="text-center font-bold text-base tracking-widest uppercase text-neutral-800 py-1">
                   Invoice
                 </div>
 
+                {/* Updated Perfectly Aligned Bill To & Invoice Info Container */}
                 <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                   <div className="space-y-1.5 flex-1">
-                    <p className="font-bold text-neutral-900 uppercase text-[11px] border-b pb-1 mb-2">
+                    <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
                       Bill To:
                     </p>
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
                       <span className="text-neutral-500 font-medium">
                         Customer Name
                       </span>
-                      <span className="col-span-2 font-bold text-neutral-800">
+                      <span className="font-bold text-neutral-800">
                         : {selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "N/A"}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
                       <span className="text-neutral-500 font-medium">
                         Mobile
                       </span>
-                      <span className="col-span-2 font-semibold text-neutral-800">
+                      <span className="font-semibold text-neutral-800">
                         : {selectedOrderDetails.user?.phone || selectedOrderDetails.customerPhone || "N/A"}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
                       <span className="text-neutral-500 font-medium">
                         Address
                       </span>
-                      <span className="col-span-2 text-neutral-800">
+                      <span className="text-neutral-800">
                         : {selectedOrderDetails.user?.address || selectedOrderDetails.deliveryAddress || "N/A"}{" "}
                         {selectedOrderDetails.user?.pickArea
                           ? `(${selectedOrderDetails.user?.pickArea})`
@@ -1052,8 +1037,8 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 w-full sm:w-72">
-                    <div className="grid grid-cols-2 gap-1">
+                  <div className="space-y-1.5 w-full sm:w-64 pt-6 sm:pt-0">
+                    <div className="grid grid-cols-[100px_1fr] gap-x-2 text-xs">
                       <span className="text-neutral-500 font-medium">
                         Invoice Date
                       </span>
@@ -1066,7 +1051,7 @@ export const AdminOrders = () => {
                         }
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-[100px_1fr] gap-x-2 text-xs">
                       <span className="text-neutral-500 font-medium">
                         Invoice #
                       </span>
