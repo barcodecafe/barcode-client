@@ -516,6 +516,7 @@ export const AdminOrders = () => {
     }
   };
 
+  // 🎯 রাইডার অ্যাসাইন হ্যান্ডলার
   const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => (r.id || r._id) === riderId);
     if (!selectedRider) return;
@@ -571,6 +572,7 @@ export const AdminOrders = () => {
               riderAcceptStatus: newAcceptStatus,
               riderId: newAcceptStatus === "rejected" ? null : ord.riderId,
               riderName: newAcceptStatus === "rejected" ? "" : ord.riderName,
+              status: newAcceptStatus === "accepted" ? "ACCEPTED" : ord.status,
             };
           }
           return ord;
@@ -581,6 +583,7 @@ export const AdminOrders = () => {
         id: orderId,
         orderId: orderId,
         riderAcceptStatus: newAcceptStatus,
+        status: newAcceptStatus === "accepted" ? "ACCEPTED" : undefined,
       };
 
       socket.emit("order_updated", payload);
@@ -714,6 +717,8 @@ export const AdminOrders = () => {
                     const isRejected = currentStatus === "REJECTED";
                     const badge = getPaymentBadge(ord);
 
+                    const assignedRiderId = ord.riderId || ord.rider?._id || ord.rider?.id || "";
+
                     return (
                       <tr
                         key={ordId}
@@ -812,14 +817,14 @@ export const AdminOrders = () => {
                                     : ord.status
                                 }
                                 disabled={
-                                  !ord.riderId ||
+                                  !assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted"
                                 }
                                 onChange={(e) =>
                                   handleStatusChange(ordId, e.target.value)
                                 }
                                 className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                  !ord.riderId ||
+                                  !assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted"
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                     : `${getStatusColor(
@@ -842,10 +847,10 @@ export const AdminOrders = () => {
                                 <option value="Delivered">Delivered</option>
                               </select>
 
-                              {(!ord.riderId ||
+                              {(!assignedRiderId ||
                                 ord.riderAcceptStatus !== "accepted") && (
                                 <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
-                                  {!ord.riderId
+                                  {!assignedRiderId
                                     ? "Assign Rider First"
                                     : "Awaiting Rider Accept"}
                                 </span>
@@ -854,10 +859,11 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
+                        {/* 🎯 ASSIGNED RIDER Column (Fixes Applied) */}
                         <td className="px-2.5 py-3 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
                             <select
-                              value={ord.riderId || ""}
+                              value={assignedRiderId}
                               disabled={
                                 isPendingUnhandled ||
                                 isRejected ||
@@ -866,7 +872,7 @@ export const AdminOrders = () => {
                               onChange={(e) =>
                                 handleAssignRider(ordId, e.target.value)
                               }
-                              className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] ${
+                              className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[130px] ${
                                 isPendingUnhandled ||
                                 isRejected ||
                                 ord.status === "Delivered"
@@ -874,23 +880,31 @@ export const AdminOrders = () => {
                                   : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"
                               }`}
                             >
-                              <option value="">-- Assign Rider --</option>
+                              <option value="">-- ASSIGN RIDER --</option>
                               {riders.map((r) => (
                                 <option key={r.id || r._id} value={r.id || r._id}>
-                                  {r.name} ({r.vehicle || "Rider"})
+                                  {r.name} ({r.vehicle || r.vehicleType || "RIDER"})
                                 </option>
                               ))}
                             </select>
 
-                            {/* Admin Rider Override Buttons */}
-                            {ord.riderId && !isPendingUnhandled && !isRejected && ord.status !== "Delivered" && (
+                            {/* Admin Rider Override Buttons & Status Badge */}
+                            {assignedRiderId && !isPendingUnhandled && !isRejected && ord.status !== "Delivered" && (
                               <div className="flex items-center gap-1 mt-0.5">
-                                {ord.riderAcceptStatus === "pending" ? (
+                                {ord.riderAcceptStatus === "accepted" ? (
+                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                    ✓ Accepted
+                                  </span>
+                                ) : ord.riderAcceptStatus === "rejected" ? (
+                                  <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800">
+                                    ✕ Rejected
+                                  </span>
+                                ) : (
                                   <>
                                     <button
                                       type="button"
                                       onClick={() => handleAdminRiderAcceptStatus(ordId, "accepted")}
-                                      className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
+                                      className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                       title="Force Accept Rider Status"
                                     >
                                       ✓ Accept
@@ -898,20 +912,12 @@ export const AdminOrders = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleAdminRiderAcceptStatus(ordId, "rejected")}
-                                      className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[8px] font-bold hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                                      className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                       title="Reject and Unassign Rider"
                                     >
                                       ✕ Reject
                                     </button>
                                   </>
-                                ) : ord.riderAcceptStatus === "accepted" ? (
-                                  <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                                    ● Rider Accepted
-                                  </span>
-                                ) : (
-                                  <span className="text-[8px] font-bold text-rose-500 uppercase">
-                                    ● Rider Rejected
-                                  </span>
                                 )}
                               </div>
                             )}
