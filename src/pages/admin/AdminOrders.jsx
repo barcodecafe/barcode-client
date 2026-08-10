@@ -22,6 +22,10 @@ import { getAllRiders } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
 
+// Image Imports for Invoice Header & Footer
+import invoiceHeaderImg from "../../assets/invoiceheader.png";
+import invoiceFooterImg from "../../assets/invoicefooter.png";
+
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
@@ -971,30 +975,13 @@ export const AdminOrders = () => {
                 ref={invoiceRef}
                 className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans"
               >
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-neutral-800 gap-4">
-                  <div>
-                    <h1 className="text-2xl font-black tracking-wider text-rose-900 uppercase">
-                      BARCODE
-                    </h1>
-                    <h2 className="text-sm font-bold tracking-widest text-neutral-800 uppercase">
-                      RESTAURANT GROUP
-                    </h2>
-                    <p className="text-[9px] text-neutral-500 tracking-wider mt-0.5">
-                      concern of N. MOHAMMAD GROUP
-                    </p>
-                  </div>
-                  <div className="text-left sm:text-right border-l-2 sm:border-l-2 border-neutral-300 pl-3 sm:pl-4">
-                    <p className="font-bold text-[11px] text-neutral-800">
-                      Head Office: N. Mohammad Engineering Industries Ltd.
-                    </p>
-                    <p className="text-[10px] text-neutral-600">
-                      222/250, Paschim Sholasahar, C.D.A Avenue, Muradpur,
-                      Chittagong.
-                    </p>
-                    <p className="text-[10px] text-neutral-600">
-                      Phone: +88 031 6553558
-                    </p>
-                  </div>
+                {/* Full Width Invoice Header Image */}
+                <div className="w-full pb-2">
+                  <img
+                    src={invoiceHeaderImg}
+                    alt="Barcode Restaurant Group Header"
+                    className="w-full h-auto object-contain block"
+                  />
                 </div>
 
                 {/* Invoice Title Header */}
@@ -1002,7 +989,7 @@ export const AdminOrders = () => {
                   Invoice
                 </div>
 
-                {/* Updated Perfectly Aligned Bill To & Invoice Info Container */}
+                {/* Aligned Bill To & Invoice Info Container */}
                 <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                   <div className="space-y-1.5 flex-1">
                     <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
@@ -1265,44 +1252,13 @@ export const AdminOrders = () => {
                   </span>
                 </div>
 
-                <div className="pt-8 mt-6 border-t border-neutral-200 text-center space-y-3">
-                  <p className="text-[10px] text-neutral-400 italic">
-                    This is a system-generated document and does not require any
-                    signature.
-                  </p>
-
-                  <div className="flex flex-wrap justify-center items-center gap-2 opacity-75 pt-1 text-[9px] font-bold uppercase tracking-wider">
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Barcode Café
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Burgwich Fusion
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Premium Kabab
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Mezzan Haile Ayun
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Outdoor Catering
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Bakery & Pastry
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Paner Botta
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Premium Burgers
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Food Junction
-                    </span>
-                    <span className="px-2 py-1 bg-neutral-100 rounded">
-                      Goram Cha
-                    </span>
-                  </div>
+                {/* Full Width Invoice Footer Image */}
+                <div className="pt-4 w-full">
+                  <img
+                    src={invoiceFooterImg}
+                    alt="Barcode Restaurant Group Footer"
+                    className="w-full h-auto object-contain block"
+                  />
                 </div>
               </div>
 
