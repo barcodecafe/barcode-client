@@ -29,6 +29,7 @@ import invoiceFooterImg from "../../assets/invoicefooter.png";
 // Socket Client Connection Import
 import { socket } from "../../services/socket";
 
+// 🎯 ব্যাকএন্ডের যেকোনো নেস্টেড রেসপন্স থেকে সেফলি অ্যারে এক্সট্র্যাক্ট করার হেল্পার
 const extractArray = (data) => {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.orders)) return data.orders;
@@ -37,6 +38,7 @@ const extractArray = (data) => {
   return [];
 };
 
+// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার সেফ হেলপার
 const deduplicateOrders = (orderList) => {
   const cleanList = extractArray(orderList);
   if (cleanList.length === 0) return [];
@@ -51,6 +53,7 @@ const deduplicateOrders = (orderList) => {
   });
 };
 
+// 🎯 Order ID সংক্ষেপ করার হেলপার ফাংশন (যেমন: 6A6D...C7F90)
 const formatShortOrderId = (id) => {
   if (!id) return "";
   const strId = String(id).toUpperCase();
@@ -58,7 +61,15 @@ const formatShortOrderId = (id) => {
   return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
 };
 
-// 🎯 BOGO (Special Offer) এবং Direct Item Discount হিসাবের হেলপার
+// 🎯 BOGO Offer Text Helper Function
+const getOfferText = (offerType) => {
+  if (offerType === "bogo_1g1") return "BUY 1 GET 1 FREE";
+  if (offerType === "bogo_1g2") return "BUY 1 GET 2 FREE";
+  if (offerType === "combo") return "SPECIAL COMBO DEAL";
+  return null;
+};
+
+// 🎯 ডায়নামিক BOGO এবং ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 const getItemPayableTotal = (item) => {
   const price = Number(item.price) || 0; 
   const qty = Number(item.quantity) || 0;
@@ -78,11 +89,13 @@ const getItemPayableTotal = (item) => {
     return price * paidQuantity;
   }
 
+  // পার্সেন্টেজ ডিসকাউন্ট
   const itemDiscountPct = Number(item.discountPct) || 0;
   if (itemDiscountPct > 0) {
     return fullGross - (fullGross * itemDiscountPct) / 100;
   }
 
+  // ফিক্সড অ্যামাউন্ট ডিসকাউন্ট
   const itemDiscountAmount = Number(item.discountAmount) || Number(item.discount) || 0;
   if (itemDiscountAmount > 0) {
     return Math.max(0, fullGross - itemDiscountAmount);
@@ -91,6 +104,7 @@ const getItemPayableTotal = (item) => {
   return fullGross;
 };
 
+// 🎯 পেমেন্ট ব্যাজ লজিক
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
@@ -150,6 +164,7 @@ const getPaymentBadge = (ord) => {
   };
 };
 
+// 🟡 Delivery Status Color Handler
 const getStatusColor = (status) => {
   switch (status?.toString().toUpperCase()) {
     case "PENDING":
@@ -369,6 +384,7 @@ export const AdminOrders = () => {
     }
   };
 
+  // 🎯 প্রিন্ট হেলপার ফাংশন
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -582,7 +598,7 @@ export const AdminOrders = () => {
     0,
   );
 
-  // 🎯 কুপন ডিসকাউন্ট
+  // 🎯 ডায়নামিক কুপন বা প্রোমো ডিসকাউন্ট এক্সট্র্যাক্ট করা
   const couponDiscount = Number(
     selectedOrderDetails?.couponDiscount || 
     selectedOrderDetails?.discountAmount || 
@@ -1079,7 +1095,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* Items Table */}
+                {/* DESCRIPTION কলাম ছাড়া টেবিল */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -1132,13 +1148,7 @@ export const AdminOrders = () => {
                           netPayable = Math.max(0, fullGross - directDiscount);
                         }
 
-                        // আইটেম লেভেল ডিসকাউন্ট অ্যামাউন্ট
-                        let itemFreeDiscount = Math.max(0, fullGross - netPayable);
-
-                        // 🎯 যদি পুরো আইটেমগুলোতে কুপন ছাড়ও দেখাতে চান
-                        if (itemFreeDiscount === 0 && couponDiscount > 0 && idx === 0) {
-                          itemFreeDiscount = couponDiscount;
-                        }
+                        const freeDiscount = Math.max(0, fullGross - netPayable);
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
@@ -1154,10 +1164,9 @@ export const AdminOrders = () => {
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
-                            {/* 🎯 DISCOUNT / FREE কলামে মাইনাস ডিসকাউন্ট দেখানো হচ্ছে */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
-                              {itemFreeDiscount > 0
-                                ? `-৳${itemFreeDiscount.toFixed(2)}`
+                              {freeDiscount > 0
+                                ? `-৳${freeDiscount.toFixed(2)}`
                                 : "0.00"}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
@@ -1198,7 +1207,7 @@ export const AdminOrders = () => {
                       </span>
                     </div>
 
-                    {/* 🎯 Assign Promo Coupon (সামারিতে কুপন ডিসকাউন্ট) */}
+                    {/* 🎯 কুপন ডিসকাউন্ট রো (বন্ধনীর কুপন কোড ছাড়া) */}
                     {couponDiscount > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
                         <span>Discount:</span>
@@ -1296,3 +1305,5 @@ export const AdminOrders = () => {
 };
 
 export default AdminOrders;
+
+// fixed 
