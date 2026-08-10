@@ -22,14 +22,10 @@ import { getAllRiders } from "../../services/ridersService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllRegions } from "../../services/regionsService";
 
-// Image Imports for Invoice Header & Footer
 import invoiceHeaderImg from "../../assets/invoiceheader.png";
 import invoiceFooterImg from "../../assets/invoicefooter.png";
-
-// Socket Client Connection Import
 import { socket } from "../../services/socket";
 
-// 🎯 ব্যাকএন্ডের যেকোনো নেস্টেড রেসপন্স থেকে সেফলি অ্যারে এক্সট্র্যাক্ট করার হেল্পার
 const extractArray = (data) => {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.orders)) return data.orders;
@@ -38,7 +34,6 @@ const extractArray = (data) => {
   return [];
 };
 
-// ⚡ ডুপ্লিকেট অর্ডার রিমুভ করার সেফ হেলপার
 const deduplicateOrders = (orderList) => {
   const cleanList = extractArray(orderList);
   if (cleanList.length === 0) return [];
@@ -53,7 +48,6 @@ const deduplicateOrders = (orderList) => {
   });
 };
 
-// 🎯 Order ID সংক্ষেপ করার হেলপার ফাংশন (যেমন: 6A6D...C7F90)
 const formatShortOrderId = (id) => {
   if (!id) return "";
   const strId = String(id).toUpperCase();
@@ -61,15 +55,6 @@ const formatShortOrderId = (id) => {
   return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
 };
 
-// 🎯 BOGO Offer Text Helper Function
-const getOfferText = (offerType) => {
-  if (offerType === "bogo_1g1") return "BUY 1 GET 1 FREE";
-  if (offerType === "bogo_1g2") return "BUY 1 GET 2 FREE";
-  if (offerType === "combo") return "SPECIAL COMBO DEAL";
-  return null;
-};
-
-// 🎯 ডায়নামিক BOGO এবং ডিসকাউন্ট বিবেচনা করে প্রতিটি আইটেমের লাইন টোটাল হিসেব করার হেল্পার
 const getItemPayableTotal = (item) => {
   const price = Number(item.price) || 0; 
   const qty = Number(item.quantity) || 0;
@@ -89,13 +74,11 @@ const getItemPayableTotal = (item) => {
     return price * paidQuantity;
   }
 
-  // পার্সেন্টেজ ডিসকাউন্ট
   const itemDiscountPct = Number(item.discountPct) || 0;
   if (itemDiscountPct > 0) {
     return fullGross - (fullGross * itemDiscountPct) / 100;
   }
 
-  // ফিক্সড অ্যামাউন্ট ডিসকাউন্ট
   const itemDiscountAmount = Number(item.discountAmount) || Number(item.discount) || 0;
   if (itemDiscountAmount > 0) {
     return Math.max(0, fullGross - itemDiscountAmount);
@@ -104,7 +87,6 @@ const getItemPayableTotal = (item) => {
   return fullGross;
 };
 
-// 🎯 পেমেন্ট ব্যাজ লজিক
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
@@ -164,7 +146,6 @@ const getPaymentBadge = (ord) => {
   };
 };
 
-// 🟡 Delivery Status Color Handler
 const getStatusColor = (status) => {
   switch (status?.toString().toUpperCase()) {
     case "PENDING":
@@ -384,7 +365,6 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 প্রিন্ট হেলপার ফাংশন (A4/A5 পেজে পারফেক্ট ফিট এবং হেডার-ফুটার রিমুভাল সহ)
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -418,7 +398,6 @@ export const AdminOrders = () => {
           padding: 0;
           -webkit-print-color-adjust: exact;
         }
-        /* A4 & A5 Auto-Fit Styles */
         @media print {
           html, body {
             width: 100%;
@@ -516,7 +495,6 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 রাইডার অ্যাসাইন হ্যান্ডলার
   const handleAssignRider = async (orderId, riderId) => {
     const selectedRider = riders.find((r) => (r.id || r._id) === riderId);
     if (!selectedRider) return;
@@ -563,43 +541,68 @@ export const AdminOrders = () => {
   // 🎯 Admin Control for Rider Accept/Reject Status Override
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
-      // ১. অপটিমিস্টিক স্টেট আপডেট
-      setOrders((prevOrders) =>
-        prevOrders.map((ord) => {
-          const ordId = ord.id || ord._id;
-          if (ordId === orderId) {
-            return {
-              ...ord,
-              riderAcceptStatus: newAcceptStatus,
-              riderId: newAcceptStatus === "rejected" ? null : ord.riderId,
-              riderName: newAcceptStatus === "rejected" ? "" : ord.riderName,
-              status: newAcceptStatus === "accepted" ? "ACCEPTED" : ord.status,
-            };
-          }
-          return ord;
-        })
-      );
+      if (newAcceptStatus === "accepted") {
+        // ১. রাইডার এক্সেপ্ট করলে riderAcceptStatus='accepted' এবং Order ACCEPTED হবে
+        setOrders((prevOrders) =>
+          prevOrders.map((ord) => {
+            const ordId = ord.id || ord._id;
+            if (ordId === orderId) {
+              return {
+                ...ord,
+                riderAcceptStatus: "accepted",
+                status: ord.status === "PENDING" || ord.status === "PLACED" ? "ACCEPTED" : ord.status,
+              };
+            }
+            return ord;
+          })
+        );
 
-      // ২. ব্যাকএন্ড ডাটাবেজে আপডেট পাঠানোর জন্য API কল
-      const statusToSend = newAcceptStatus === "accepted" ? "ACCEPTED" : "REJECTED";
-      await updateOrderStatus(orderId, statusToSend);
+        await updateOrderStatus(orderId, "ACCEPTED");
 
-      // ৩. রিয়েলটাইম সকেট ইমিটেশন
-      const payload = {
-        id: orderId,
-        orderId: orderId,
-        riderAcceptStatus: newAcceptStatus,
-        status: newAcceptStatus === "accepted" ? "ACCEPTED" : undefined,
-      };
+        const payload = {
+          id: orderId,
+          orderId: orderId,
+          riderAcceptStatus: "accepted",
+          status: "ACCEPTED",
+        };
 
-      socket.emit("order_updated", payload);
-      socket.emit("rider_order_updated", payload);
+        socket.emit("order_updated", payload);
+        socket.emit("rider_order_updated", payload);
 
-      toast.success(
-        `Rider acceptance status updated to ${newAcceptStatus.toUpperCase()}`
-      );
-      
-      // ৪. ডাটা সিঙ্ক করার জন্য পুনরায় ফেচ
+        toast.success("Rider acceptance confirmed by Admin!");
+      } else if (newAcceptStatus === "rejected") {
+        // ২. রাইডার রিজেক্ট করলে রাইডার আন-অ্যাসাইন হবে (পুরো অর্ডার ক্যানসেল হবে না)
+        setOrders((prevOrders) =>
+          prevOrders.map((ord) => {
+            const ordId = ord.id || ord._id;
+            if (ordId === orderId) {
+              return {
+                ...ord,
+                riderId: null,
+                riderName: "",
+                riderAcceptStatus: "rejected",
+              };
+            }
+            return ord;
+          })
+        );
+
+        await assignRiderToOrder(orderId, "", "");
+
+        const payload = {
+          id: orderId,
+          orderId: orderId,
+          riderId: null,
+          riderName: "",
+          riderAcceptStatus: "rejected",
+        };
+
+        socket.emit("order_updated", payload);
+        socket.emit("rider_order_updated", payload);
+
+        toast.error("Rider unassigned. You can now assign another rider.");
+      }
+
       fetchOrdersAndFleet();
     } catch (err) {
       toast.error("Failed to update rider status: " + (err.response?.data?.message || err.message));
@@ -647,7 +650,6 @@ export const AdminOrders = () => {
     0,
   );
 
-  // 🎯 ডায়নামিক কুপন বা প্রোমো ডিসকাউন্ট এক্সট্র্যাক্ট করা
   const couponDiscount = Number(
     selectedOrderDetails?.couponDiscount || 
     selectedOrderDetails?.discountAmount || 
@@ -686,7 +688,6 @@ export const AdminOrders = () => {
       />
 
       <div className="w-full flex flex-col gap-6">
-        {/* Table List Container */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
           <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-xs text-left border-collapse table-auto">
@@ -868,7 +869,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        {/* 🎯 ASSIGNED RIDER Column */}
+                        {/* ASSIGNED RIDER Column */}
                         <td className="px-2.5 py-3 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
                             <select
@@ -897,16 +898,12 @@ export const AdminOrders = () => {
                               ))}
                             </select>
 
-                            {/* Admin Rider Override Buttons & Status Badge */}
+                            {/* Admin Rider Override Buttons */}
                             {assignedRiderId && !isPendingUnhandled && !isRejected && ord.status !== "Delivered" && (
                               <div className="flex items-center gap-1 mt-0.5">
                                 {ord.riderAcceptStatus === "accepted" ? (
                                   <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                                     ✓ Accepted
-                                  </span>
-                                ) : ord.riderAcceptStatus === "rejected" ? (
-                                  <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800">
-                                    ✕ Rejected
                                   </span>
                                 ) : (
                                   <>
@@ -956,7 +953,7 @@ export const AdminOrders = () => {
         </div>
       </div>
 
-      {/* 💬 Live Chat Modal Popup */}
+      {/* Live Chat Modal */}
       <AnimatePresence>
         {activeChatOrderId && currentChat && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
@@ -1062,7 +1059,7 @@ export const AdminOrders = () => {
         )}
       </AnimatePresence>
 
-      {/* Order Details & Official Barcode Invoice Modal */}
+      {/* Invoice Modal */}
       <AnimatePresence>
         {selectedOrderDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
@@ -1109,7 +1106,6 @@ export const AdminOrders = () => {
                 ref={invoiceRef}
                 className="bg-white text-neutral-800 p-6 space-y-6 text-xs font-sans"
               >
-                {/* Full Width Invoice Header Image */}
                 <div className="w-full pb-2">
                   <img
                     src={invoiceHeaderImg}
@@ -1118,12 +1114,10 @@ export const AdminOrders = () => {
                   />
                 </div>
 
-                {/* Invoice Title Header */}
                 <div className="text-center font-bold text-base tracking-widest uppercase text-neutral-800 py-1">
                   Invoice
                 </div>
 
-                {/* Aligned Customer Details Container */}
                 <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                   <div className="space-y-1.5 flex-1">
                     <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
@@ -1348,7 +1342,6 @@ export const AdminOrders = () => {
                   </span>
                 </div>
 
-                {/* Full Width Invoice Footer Image */}
                 <div className="pt-4 w-full">
                   <img
                     src={invoiceFooterImg}
