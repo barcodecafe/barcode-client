@@ -384,7 +384,7 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 প্রিন্ট হেলপার ফাংশন
+  // 🎯 প্রিন্ট হেলপার ফাংশন (A4/A5 পেজে পারফেক্ট ফিট এবং হেডার-ফুটার রিমুভাল সহ)
   const handlePrint = (e) => {
     if (e) e.preventDefault();
     const printContent = invoiceRef.current;
@@ -418,6 +418,7 @@ export const AdminOrders = () => {
           padding: 0;
           -webkit-print-color-adjust: exact;
         }
+        /* A4 & A5 Auto-Fit Styles */
         @media print {
           html, body {
             width: 100%;
@@ -605,6 +606,11 @@ export const AdminOrders = () => {
     selectedOrderDetails?.discount || 
     0
   );
+
+  const couponCodeApplied = 
+    selectedOrderDetails?.couponCode || 
+    selectedOrderDetails?.promoCode || 
+    null;
 
   const deliveryCharge = Number(selectedOrderDetails?.deliveryCharge) || 0;
   const grandTotal = Math.max(0, subTotal + deliveryCharge + currentAdjustment - couponDiscount);
@@ -1095,7 +1101,7 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* DESCRIPTION কলাম ছাড়া টেবিল */}
+                {/* 🎯 DESCRIPTION কলাম পুরোপুরি রিমুভ করা হয়েছে */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -1164,6 +1170,7 @@ export const AdminOrders = () => {
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
+                            {/* 🎯 DISCOUNT / FREE কলামে আইটেম ডিসকাউন্ট সুন্দরভাবে প্রদর্শিত */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
                               {freeDiscount > 0
                                 ? `-৳${freeDiscount.toFixed(2)}`
@@ -1207,10 +1214,12 @@ export const AdminOrders = () => {
                       </span>
                     </div>
 
-                    {/* 🎯 কুপন ডিসকাউন্ট রো (বন্ধনীর কুপন কোড ছাড়া) */}
+                    {/* 🎯 কুপন ডিসকাউন্ট রো (যদি কুপন থাকে তবেই দেখাবে) */}
                     {couponDiscount > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
-                        <span>Discount:</span>
+                        <span>
+                          Discount {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
+                        </span>
                         <span>-৳{couponDiscount.toFixed(2)}</span>
                       </div>
                     )}
@@ -1305,5 +1314,3 @@ export const AdminOrders = () => {
 };
 
 export default AdminOrders;
-
-// fixed 
