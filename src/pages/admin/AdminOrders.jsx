@@ -560,10 +560,10 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 Admin Control for Rider Accept/Reject Status Override (Backend Sync Fixed)
+  // 🎯 Admin Control for Rider Accept/Reject Status Override
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
-      // ১. অপটিমিস্টিক স্টেট আপডেট (UI সাথে সাথে আপডেট হবে)
+      // ১. অপটিমিস্টিক স্টেট আপডেট
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
           const ordId = ord.id || ord._id;
@@ -581,11 +581,8 @@ export const AdminOrders = () => {
       );
 
       // ২. ব্যাকএন্ড ডাটাবেজে আপডেট পাঠানোর জন্য API কল
-      await updateOrderStatus(orderId, {
-        riderAcceptStatus: newAcceptStatus,
-        ...(newAcceptStatus === "rejected" && { riderId: null, riderName: "" }),
-        ...(newAcceptStatus === "accepted" && { status: "ACCEPTED" }),
-      });
+      const statusToSend = newAcceptStatus === "accepted" ? "ACCEPTED" : "REJECTED";
+      await updateOrderStatus(orderId, statusToSend);
 
       // ৩. রিয়েলটাইম সকেট ইমিটেশন
       const payload = {
@@ -605,7 +602,7 @@ export const AdminOrders = () => {
       // ৪. ডাটা সিঙ্ক করার জন্য পুনরায় ফেচ
       fetchOrdersAndFleet();
     } catch (err) {
-      toast.error("Failed to update rider status: " + err.message);
+      toast.error("Failed to update rider status: " + (err.response?.data?.message || err.message));
       fetchOrdersAndFleet();
     }
   };
