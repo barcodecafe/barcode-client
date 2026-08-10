@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Lock, Eye, FileText } from "lucide-react";
+import { Lock, Eye, FileText, Mail } from "lucide-react";
 
 export const PrivacyPolicy = () => {
   useEffect(() => {
@@ -11,7 +11,7 @@ export const PrivacyPolicy = () => {
       {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
       <div className="site-container space-y-4">
         
-        {/* Compact Header without Icon */}
+        {/* Compact Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
             Privacy Policy
@@ -55,8 +55,9 @@ export const PrivacyPolicy = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white font-display">
-              4. Contact Us About Your Privacy
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
+              <Mail className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>4. Contact Us About Your Privacy</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
               If you have any questions or concerns about our privacy practices, please reach out to our team at{" "}
