@@ -559,6 +559,42 @@ export const AdminOrders = () => {
     }
   };
 
+  // 🎯 Admin Control for Rider Accept/Reject Status Override
+  const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
+    try {
+      setOrders((prevOrders) =>
+        prevOrders.map((ord) => {
+          const ordId = ord.id || ord._id;
+          if (ordId === orderId) {
+            return {
+              ...ord,
+              riderAcceptStatus: newAcceptStatus,
+              riderId: newAcceptStatus === "rejected" ? null : ord.riderId,
+              riderName: newAcceptStatus === "rejected" ? "" : ord.riderName,
+            };
+          }
+          return ord;
+        })
+      );
+
+      const payload = {
+        id: orderId,
+        orderId: orderId,
+        riderAcceptStatus: newAcceptStatus,
+      };
+
+      socket.emit("order_updated", payload);
+
+      toast.success(
+        `Rider acceptance status updated to ${newAcceptStatus.toUpperCase()}`
+      );
+      fetchOrdersAndFleet();
+    } catch (err) {
+      toast.error("Failed to update rider status: " + err.message);
+      fetchOrdersAndFleet();
+    }
+  };
+
   const handleSendAdminMessage = async (e, customText = null) => {
     if (e) e.preventDefault();
     const textToSend = customText || adminChatMessage;
@@ -819,7 +855,7 @@ export const AdminOrders = () => {
                         </td>
 
                         <td className="px-2.5 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
+                          <div className="flex flex-col gap-1">
                             <select
                               value={ord.riderId || ""}
                               disabled={
@@ -845,6 +881,40 @@ export const AdminOrders = () => {
                                 </option>
                               ))}
                             </select>
+
+                            {/* Admin Rider Override Buttons */}
+                            {ord.riderId && !isPendingUnhandled && !isRejected && ord.status !== "Delivered" && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                {ord.riderAcceptStatus === "pending" ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAdminRiderAcceptStatus(ordId, "accepted")}
+                                      className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
+                                      title="Force Accept Rider Status"
+                                    >
+                                      ✓ Accept
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAdminRiderAcceptStatus(ordId, "rejected")}
+                                      className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[8px] font-bold hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                                      title="Reject and Unassign Rider"
+                                    >
+                                      ✕ Reject
+                                    </button>
+                                  </>
+                                ) : ord.riderAcceptStatus === "accepted" ? (
+                                  <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                                    ● Rider Accepted
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] font-bold text-rose-500 uppercase">
+                                    ● Rider Rejected
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -1101,7 +1171,6 @@ export const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* 🎯 DESCRIPTION কলাম পুরোপুরি রিমুভ করা হয়েছে */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                     <thead>
@@ -1170,7 +1239,6 @@ export const AdminOrders = () => {
                             <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                               {qty}
                             </td>
-                            {/* 🎯 DISCOUNT / FREE কলামে আইটেম ডিসকাউন্ট সুন্দরভাবে প্রদর্শিত */}
                             <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
                               {freeDiscount > 0
                                 ? `-৳${freeDiscount.toFixed(2)}`
@@ -1214,7 +1282,6 @@ export const AdminOrders = () => {
                       </span>
                     </div>
 
-                    {/* 🎯 কুপন ডিসকাউন্ট রো (যদি কুপন থাকে তবেই দেখাবে) */}
                     {couponDiscount > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
                         <span>
