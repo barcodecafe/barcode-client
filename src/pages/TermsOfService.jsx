@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ShoppingBag, Truck, RefreshCw } from "lucide-react";
+import { ShoppingBag, Truck, RefreshCw, Globe } from "lucide-react";
 
 export const TermsOfService = () => {
   useEffect(() => {
@@ -11,7 +11,7 @@ export const TermsOfService = () => {
       {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
       <div className="site-container space-y-4">
         
-        {/* Compact Header without Icon */}
+        {/* Compact Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
             Terms of Service
@@ -55,8 +55,9 @@ export const TermsOfService = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white font-display">
-              4. Service Availability
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
+              <Globe className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>4. Service Availability</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
               Barcode Restaurant Group reserves the right to modify or discontinue any dish, offer, or service area at any time.
