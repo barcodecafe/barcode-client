@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { ShoppingBag, Truck, RefreshCw } from "lucide-react";
+import { Lock, Eye, FileText, Mail } from "lucide-react";
 
-export const TermsOfService = () => {
+export const PrivacyPolicy = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -11,55 +11,62 @@ export const TermsOfService = () => {
       {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
       <div className="site-container space-y-4">
         
-        {/* Compact Header without Icon */}
+        {/* Compact Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
-            Terms of Service
+            Privacy Policy
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+          {/* <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
             Last updated: August 2026
-          </p>
+          </p> */}
         </div>
 
-        {/* Content Section */}
+        {/* Content Card */}
         <div className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl border border-neutral-200/80 dark:border-neutral-800/80 shadow-xs space-y-6 text-sm sm:text-base leading-relaxed">
           
           <section className="space-y-2">
             <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
-              <ShoppingBag className="w-5 h-5 text-primary-500 shrink-0" />
-              <span>1. Order Acceptance & Pricing</span>
+              <Eye className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>1. Information We Collect</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              By placing an order on Barcode Restaurant Group, you agree to provide accurate delivery and contact information. Prices listed on the platform are subject to change without prior notice, and special promotion rules apply as advertised.
+              When you place an order or create an account with Barcode Restaurant Group, we collect details such as your name, phone number, email address, and delivery location to ensure a seamless food ordering experience.
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
-              <Truck className="w-5 h-5 text-primary-500 shrink-0" />
-              <span>2. Delivery & Fulfillment</span>
+              <FileText className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>2. How We Use Your Data</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Estimated delivery times are provided for reference only and may vary due to weather, traffic, or kitchen rush. Customers are expected to receive the order at the provided address when the rider arrives.
+              Your personal information is strictly used for order fulfillment, rider assignment, delivery status updates, and customer support. We do not sell or rent your personal data to any third-party marketing services.
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
-              <RefreshCw className="w-5 h-5 text-primary-500 shrink-0" />
-              <span>3. Cancellations & Refunds</span>
+              <Lock className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>3. Payment Security</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Orders can only be cancelled before they are accepted or prepared by the kitchen. If an order is cancelled after preparation has begun, full charges may apply. Refunds for paid online orders will be processed according to payment gateway timelines.
+              All digital transactions are processed securely through certified SSL payment gateways (bKash, Nagad, Cards, etc.). We do not store your credit card or PIN information on our servers.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white font-display">
-              4. Service Availability
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2 font-display">
+              <Mail className="w-5 h-5 text-primary-500 shrink-0" />
+              <span>4. Contact Us About Your Privacy</span>
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Barcode Restaurant Group reserves the right to modify or discontinue any dish, offer, or service area at any time.
+              If you have any questions or concerns about our privacy practices, please reach out to our team at{" "}
+              <a
+                href="mailto:info@barcoderestaurantgroup.com"
+                className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 hover:underline font-semibold transition-colors"
+              >
+                info@barcoderestaurantgroup.com
+              </a>.
             </p>
           </section>
 
@@ -69,4 +76,4 @@ export const TermsOfService = () => {
   );
 };
 
-export default TermsOfService;
+export default PrivacyPolicy;
