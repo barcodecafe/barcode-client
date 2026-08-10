@@ -34,6 +34,9 @@ import resW from '../assets/Barcode_restaurant_groupW.png';
 
 // ---------------------------------------------------------------------------
 // AdminLayout.jsx
+//
+// Admin layout shell: sidebar behaves as an inline panel on desktop screens
+// and overlay on mobile sizes.
 // ---------------------------------------------------------------------------
 
 const navItems = [
@@ -56,10 +59,15 @@ export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
-  const { unreadOrderCount } = useOrders(); // 🎯 markOrdersAsRead আর দরকার নেই
+  const { unreadOrderCount, markOrdersAsRead } = useOrders();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Auto-open on desktop, auto-close on mobile initially.
+  // This was a useState(fn) whose initializer called a setter during render —
+  // the returned value was discarded and the "state" was never actually the
+  // drawer's. A lazy initial value does the same job correctly, with no render
+  // side effect and no extra pass.
   const [isDrawerOpen, setIsDrawerOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768,
   );
@@ -89,7 +97,10 @@ export const AdminLayout = () => {
               key={item.path}
               to={item.path}
               end={item.end}
-              onClick={onNavigate}
+              onClick={() => {
+                if (isOrdersRoute) markOrdersAsRead();
+                onNavigate();
+              }}
               className={({ isActive }) =>
                 `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
@@ -149,7 +160,7 @@ export const AdminLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Panel */}
+      {/* Sidebar Panel - Inline on desktop, absolute overlay drawer on mobile */}
       <motion.aside
         animate={{ 
           width: isDrawerOpen ? 256 : 0,
@@ -198,16 +209,14 @@ export const AdminLayout = () => {
             {/* 🔔 টপবারের নোটিফিকেশন বেল আইকন ও লাইভ কাউন্ট ব্যাজ */}
             <Link
               to="/admin/orders"
+              onClick={markOrdersAsRead}
               className="relative p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 transition-all duration-300 flex items-center gap-1.5"
               aria-label="Order Notifications"
             >
               <Bell className="w-4 h-4" />
-              {/* 🎯 unreadOrderCount > 0 থাকলেই কেবল ব্যাজ দেখাবে */}
-              {unreadOrderCount > 0 && (
-                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-primary-500 text-white min-w-5 text-center">
-                  {unreadOrderCount}
-                </span>
-              )}
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-primary-500 text-white min-w-5 text-center">
+                {unreadOrderCount}
+              </span>
             </Link>
 
             <button
@@ -233,6 +242,10 @@ export const AdminLayout = () => {
         </header>
 
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
+          {/* Keyed on the path so navigating away from a page that crashed
+              clears the boundary and the next page renders normally. Placed
+              INSIDE the shell so a broken page keeps the sidebar and nav
+              usable instead of blanking the whole admin. */}
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>
@@ -243,3 +256,4 @@ export const AdminLayout = () => {
 };
 
 export default AdminLayout;
+// before counting logic fix 258
