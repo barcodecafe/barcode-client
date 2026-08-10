@@ -92,9 +92,13 @@ export async function createOrder(orderData) {
   return response?.data?.data || response?.data || response;
 }
 
-/** PATCH /api/orders/:id/status (admin/rider) */
-export async function updateOrderStatus(id, newStatus) {
-  const res = await apiClient.patch(`/orders/${id}/status`, { status: newStatus });
+/** 🎯 FIX: PATCH /api/orders/:id/status (admin/rider) — riderAcceptStatus সাপোর্ট যোগ করা হলো */
+export async function updateOrderStatus(id, newStatus, riderAcceptStatus = null) {
+  const payload = { status: newStatus };
+  if (riderAcceptStatus) {
+    payload.riderAcceptStatus = riderAcceptStatus;
+  }
+  const res = await apiClient.patch(`/orders/${id}/status`, payload);
   return res?.data || res;
 }
 

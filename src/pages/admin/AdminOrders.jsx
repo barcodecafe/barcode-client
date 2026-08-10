@@ -542,6 +542,7 @@ export const AdminOrders = () => {
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
       if (newAcceptStatus === "accepted") {
+        // ১. অপটিমিস্টিক লোকাল স্টেট আপডেট
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
             const ordId = ord.id || ord._id;
@@ -549,15 +550,16 @@ export const AdminOrders = () => {
               return {
                 ...ord,
                 riderAcceptStatus: "accepted",
-                status: ord.status === "PENDING" || ord.status === "PLACED" ? "ACCEPTED" : ord.status,
+                status: "Preparing",
+                deliveryStatus: "Preparing",
               };
             }
             return ord;
           })
         );
 
-        // API call to update order status and rider accept status
-        await updateOrderStatus(orderId, "ACCEPTED", { riderAcceptStatus: "accepted" });
+        // ২. ব্যাকএন্ডে status এবং riderAcceptStatus পারফেক্টলি পাস করা
+        await updateOrderStatus(orderId, "ACCEPTED", "accepted");
 
         const payload = {
           id: orderId,
