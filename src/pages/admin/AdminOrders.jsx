@@ -37,7 +37,7 @@ const extractArray = (data) => {
 const deduplicateOrders = (orderList) => {
   const cleanList = extractArray(orderList);
   if (cleanList.length === 0) return [];
-  
+
   const seen = new Set();
   return cleanList.filter((item) => {
     const id = item?.id || item?._id;
@@ -56,7 +56,7 @@ const formatShortOrderId = (id) => {
 };
 
 const getItemPayableTotal = (item) => {
-  const price = Number(item.price) || 0; 
+  const price = Number(item.price) || 0;
   const qty = Number(item.quantity) || 0;
   const fullGross = price * qty;
 
@@ -79,7 +79,8 @@ const getItemPayableTotal = (item) => {
     return fullGross - (fullGross * itemDiscountPct) / 100;
   }
 
-  const itemDiscountAmount = Number(item.discountAmount) || Number(item.discount) || 0;
+  const itemDiscountAmount =
+    Number(item.discountAmount) || Number(item.discount) || 0;
   if (itemDiscountAmount > 0) {
     return Math.max(0, fullGross - itemDiscountAmount);
   }
@@ -207,28 +208,41 @@ export const AdminOrders = () => {
       getAllRiders(),
     ]);
 
-    const ordersErr = applyResult(ordersRes, setOrders, deduplicateOrders, "orders");
+    const ordersErr = applyResult(
+      ordersRes,
+      setOrders,
+      deduplicateOrders,
+      "orders",
+    );
     applyResult(ridersRes, setRiders, extractArray, "riders");
 
     setLoadError(ordersErr);
     if (!ordersErr) window.dispatchEvent(new CustomEvent("order_updated"));
 
-    return ordersRes.status === "fulfilled" ? deduplicateOrders(ordersRes.value) : null;
+    return ordersRes.status === "fulfilled"
+      ? deduplicateOrders(ordersRes.value)
+      : null;
   };
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const [ordersRes, ridersRes, branchesRes, regionsRes] = await Promise.allSettled([
-        getAllOrders(),
-        getAllRiders(),
-        getAllBranches(),
-        getAllRegions(),
-      ]);
+      const [ordersRes, ridersRes, branchesRes, regionsRes] =
+        await Promise.allSettled([
+          getAllOrders(),
+          getAllRiders(),
+          getAllBranches(),
+          getAllRegions(),
+        ]);
       if (cancelled) return;
 
-      const ordersErr = applyResult(ordersRes, setOrders, deduplicateOrders, "orders");
+      const ordersErr = applyResult(
+        ordersRes,
+        setOrders,
+        deduplicateOrders,
+        "orders",
+      );
       applyResult(ridersRes, setRiders, extractArray, "riders");
       applyResult(branchesRes, setBranches, extractArray, "branches");
       applyResult(regionsRes, setRegions, extractArray, "regions");
@@ -251,7 +265,9 @@ export const AdminOrders = () => {
         const exists = prev.some((o) => (o.id || o._id) === newId);
 
         if (exists) {
-          return prev.map((o) => ((o.id || o._id) === newId ? { ...o, ...newOrder } : o));
+          return prev.map((o) =>
+            (o.id || o._id) === newId ? { ...o, ...newOrder } : o,
+          );
         }
         return [newOrder, ...prev];
       });
@@ -267,13 +283,15 @@ export const AdminOrders = () => {
       setOrders((prev) =>
         prev.map((o) => {
           if ((o.id || o._id) === updatedId) {
-             return { ...o, ...updatedOrder };
+            return { ...o, ...updatedOrder };
           }
           return o;
-        })
+        }),
       );
       setSelectedOrderDetails((prev) =>
-        (prev?.id || prev?._id) === updatedId ? { ...prev, ...updatedOrder } : prev
+        (prev?.id || prev?._id) === updatedId
+          ? { ...prev, ...updatedOrder }
+          : prev,
       );
       window.dispatchEvent(
         new CustomEvent("order_updated", {
@@ -290,7 +308,9 @@ export const AdminOrders = () => {
       const updatedId = updatedRider?.id || updatedRider?._id;
       if (!updatedId) return;
       setRiders((prev) =>
-        prev.map((r) => ((r.id || r._id) === updatedId ? { ...r, ...updatedRider } : r)),
+        prev.map((r) =>
+          (r.id || r._id) === updatedId ? { ...r, ...updatedRider } : r,
+        ),
       );
     };
 
@@ -409,7 +429,7 @@ export const AdminOrders = () => {
         }
       </style>
     `);
-    WindowPrt.document.write('</head><body>');
+    WindowPrt.document.write("</head><body>");
     WindowPrt.document.write(printContent.innerHTML);
     WindowPrt.document.write("</body></html>");
     WindowPrt.document.close();
@@ -530,7 +550,7 @@ export const AdminOrders = () => {
       socket.emit("order_updated", payload);
 
       toast.success(`Assigned to ${selectedRider.name}`);
-      
+
       fetchOrdersAndFleet();
     } catch (err) {
       toast.error("Failed to assign rider: " + err.message);
@@ -542,7 +562,7 @@ export const AdminOrders = () => {
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
       if (newAcceptStatus === "accepted") {
-        // ১. অপটিমিস্টিক লোকাল স্টেট আপডেট
+        // ১. অপটিমিস্টিক লোকাল স্টেট আপডেট (Preparing সেট করা)
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
             const ordId = ord.id || ord._id;
@@ -555,23 +575,25 @@ export const AdminOrders = () => {
               };
             }
             return ord;
-          })
+          }),
         );
 
-        // ২. ব্যাকএন্ডে status এবং riderAcceptStatus পারফেক্টলি পাস করা
-        await updateOrderStatus(orderId, "ACCEPTED", "accepted");
+        // ২. ব্যাকএন্ডে status হিসেবে "Preparing" এবং riderAcceptStatus হিসেবে "accepted" পাঠানো
+        await updateOrderStatus(orderId, "Preparing", "accepted");
 
         const payload = {
           id: orderId,
           orderId: orderId,
           riderAcceptStatus: "accepted",
-          status: "ACCEPTED",
+          status: "Preparing",
         };
 
         socket.emit("order_updated", payload);
         socket.emit("rider_order_updated", payload);
 
-        toast.success("Rider acceptance confirmed by Admin!");
+        toast.success(
+          "Rider acceptance confirmed and status updated to Preparing!",
+        );
       } else if (newAcceptStatus === "rejected") {
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
@@ -585,7 +607,7 @@ export const AdminOrders = () => {
               };
             }
             return ord;
-          })
+          }),
         );
 
         await assignRiderToOrder(orderId, "", "");
@@ -606,7 +628,10 @@ export const AdminOrders = () => {
 
       fetchOrdersAndFleet();
     } catch (err) {
-      toast.error("Failed to update rider status: " + (err.response?.data?.message || err.message));
+      toast.error(
+        "Failed to update rider status: " +
+          (err.response?.data?.message || err.message),
+      );
       fetchOrdersAndFleet();
     }
   };
@@ -652,19 +677,20 @@ export const AdminOrders = () => {
   );
 
   const couponDiscount = Number(
-    selectedOrderDetails?.couponDiscount || 
-    selectedOrderDetails?.discountAmount || 
-    selectedOrderDetails?.discount || 
-    0
+    selectedOrderDetails?.couponDiscount ||
+      selectedOrderDetails?.discountAmount ||
+      selectedOrderDetails?.discount ||
+      0,
   );
 
-  const couponCodeApplied = 
-    selectedOrderDetails?.couponCode || 
-    selectedOrderDetails?.promoCode || 
-    null;
+  const couponCodeApplied =
+    selectedOrderDetails?.couponCode || selectedOrderDetails?.promoCode || null;
 
   const deliveryCharge = Number(selectedOrderDetails?.deliveryCharge) || 0;
-  const grandTotal = Math.max(0, subTotal + deliveryCharge + currentAdjustment - couponDiscount);
+  const grandTotal = Math.max(
+    0,
+    subTotal + deliveryCharge + currentAdjustment - couponDiscount,
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -707,7 +733,10 @@ export const AdminOrders = () => {
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-12 text-neutral-400 font-medium">
+                    <td
+                      colSpan="8"
+                      className="text-center py-12 text-neutral-400 font-medium"
+                    >
                       {loadError
                         ? "Orders could not be loaded — see the message above."
                         : "No orders found."}
@@ -716,7 +745,9 @@ export const AdminOrders = () => {
                 ) : (
                   orders.map((ord) => {
                     const ordId = ord.id || ord._id;
-                    const currentStatus = String(ord.status || "").toUpperCase();
+                    const currentStatus = String(
+                      ord.status || "",
+                    ).toUpperCase();
 
                     const isPendingUnhandled =
                       currentStatus === "PLACED" ||
@@ -728,7 +759,8 @@ export const AdminOrders = () => {
                     const isRejected = currentStatus === "REJECTED";
                     const badge = getPaymentBadge(ord);
 
-                    const assignedRiderId = ord.riderId || ord.rider?._id || ord.rider?.id || "";
+                    const assignedRiderId =
+                      ord.riderId || ord.rider?._id || ord.rider?.id || "";
 
                     return (
                       <tr
@@ -820,13 +852,7 @@ export const AdminOrders = () => {
                           ) : (
                             <div>
                               <select
-                                value={
-                                  ord.riderAcceptStatus === "accepted" &&
-                                  (ord.status === "Accepted" ||
-                                    ord.status === "ACCEPTED")
-                                    ? "Preparing"
-                                    : ord.status
-                                }
+                                value={ord.status}
                                 disabled={
                                   !assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted"
@@ -838,13 +864,7 @@ export const AdminOrders = () => {
                                   !assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted"
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
-                                    : `${getStatusColor(
-                                        ord.riderAcceptStatus === "accepted" &&
-                                          (ord.status === "Accepted" ||
-                                            ord.status === "ACCEPTED")
-                                          ? "Preparing"
-                                          : ord.status,
-                                      )} cursor-pointer`
+                                    : `${getStatusColor(ord.status)} cursor-pointer`
                                 }`}
                               >
                                 <option value="Accepted">Accepted</option>
@@ -893,41 +913,58 @@ export const AdminOrders = () => {
                             >
                               <option value="">-- ASSIGN RIDER --</option>
                               {riders.map((r) => (
-                                <option key={r.id || r._id} value={r.id || r._id}>
-                                  {r.name} ({r.vehicle || r.vehicleType || "RIDER"})
+                                <option
+                                  key={r.id || r._id}
+                                  value={r.id || r._id}
+                                >
+                                  {r.name} (
+                                  {r.vehicle || r.vehicleType || "RIDER"})
                                 </option>
                               ))}
                             </select>
 
                             {/* Admin Rider Override Buttons */}
-                            {assignedRiderId && !isPendingUnhandled && !isRejected && ord.status !== "Delivered" && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {ord.riderAcceptStatus === "accepted" ? (
-                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                                    ✓ Accepted
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAdminRiderAcceptStatus(ordId, "accepted")}
-                                      className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
-                                      title="Force Accept Rider Status"
-                                    >
-                                      ✓ Accept
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAdminRiderAcceptStatus(ordId, "rejected")}
-                                      className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
-                                      title="Reject and Unassign Rider"
-                                    >
-                                      ✕ Reject
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
+                            {assignedRiderId &&
+                              !isPendingUnhandled &&
+                              !isRejected &&
+                              ord.status !== "Delivered" && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {ord.riderAcceptStatus === "accepted" ? (
+                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                      ✓ Accepted
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAdminRiderAcceptStatus(
+                                            ordId,
+                                            "accepted",
+                                          )
+                                        }
+                                        className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        title="Force Accept Rider Status"
+                                      >
+                                        ✓ Accept
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAdminRiderAcceptStatus(
+                                            ordId,
+                                            "rejected",
+                                          )
+                                        }
+                                        className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        title="Reject and Unassign Rider"
+                                      >
+                                        ✕ Reject
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                           </div>
                         </td>
 
@@ -971,8 +1008,15 @@ export const AdminOrders = () => {
                     {(currentChat.id || currentChat._id)?.toUpperCase()}
                   </h3>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    Customer: {currentChat.user?.name || currentChat.customerName || "Guest"} (
-                    {currentChat.user?.phone || currentChat.customerPhone || "N/A"})
+                    Customer:{" "}
+                    {currentChat.user?.name ||
+                      currentChat.customerName ||
+                      "Guest"}{" "}
+                    (
+                    {currentChat.user?.phone ||
+                      currentChat.customerPhone ||
+                      "N/A"}
+                    )
                   </p>
                 </div>
                 <button
@@ -1129,7 +1173,10 @@ export const AdminOrders = () => {
                         Customer Name
                       </span>
                       <span className="font-bold text-neutral-800">
-                        : {selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "N/A"}
+                        :{" "}
+                        {selectedOrderDetails.user?.name ||
+                          selectedOrderDetails.customerName ||
+                          "N/A"}
                       </span>
                     </div>
                     <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
@@ -1137,7 +1184,10 @@ export const AdminOrders = () => {
                         Mobile
                       </span>
                       <span className="font-semibold text-neutral-800">
-                        : {selectedOrderDetails.user?.phone || selectedOrderDetails.customerPhone || "N/A"}
+                        :{" "}
+                        {selectedOrderDetails.user?.phone ||
+                          selectedOrderDetails.customerPhone ||
+                          "N/A"}
                       </span>
                     </div>
                     <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
@@ -1145,7 +1195,10 @@ export const AdminOrders = () => {
                         Address
                       </span>
                       <span className="text-neutral-800">
-                        : {selectedOrderDetails.user?.address || selectedOrderDetails.deliveryAddress || "N/A"}{" "}
+                        :{" "}
+                        {selectedOrderDetails.user?.address ||
+                          selectedOrderDetails.deliveryAddress ||
+                          "N/A"}{" "}
                         {selectedOrderDetails.user?.pickArea
                           ? `(${selectedOrderDetails.user?.pickArea})`
                           : ""}
@@ -1206,14 +1259,16 @@ export const AdminOrders = () => {
                     <tbody>
                       {orderItems.map((item, idx) => {
                         const qty = Number(item.quantity) || 1;
-                        const unitPrice = Number(item.price) || 0; 
+                        const unitPrice = Number(item.price) || 0;
 
                         const detectedOfferType = item.offerType;
-                        const isBogo1g1 = detectedOfferType === "bogo_1g1" || item.isBogo;
+                        const isBogo1g1 =
+                          detectedOfferType === "bogo_1g1" || item.isBogo;
                         const isBogo1g2 = detectedOfferType === "bogo_1g2";
 
                         const itemDiscountPct = Number(item.discountPct) || 0;
-                        const itemDiscountAmount = Number(item.discountAmount) || 0;
+                        const itemDiscountAmount =
+                          Number(item.discountAmount) || 0;
                         const directDiscount = Number(item.discount) || 0;
 
                         const fullGross = unitPrice * qty;
@@ -1226,14 +1281,21 @@ export const AdminOrders = () => {
                           const paidQuantity = Math.ceil(qty / 3);
                           netPayable = unitPrice * paidQuantity;
                         } else if (itemDiscountPct > 0) {
-                          netPayable = fullGross - (fullGross * itemDiscountPct) / 100;
+                          netPayable =
+                            fullGross - (fullGross * itemDiscountPct) / 100;
                         } else if (itemDiscountAmount > 0) {
-                          netPayable = Math.max(0, fullGross - itemDiscountAmount * qty);
+                          netPayable = Math.max(
+                            0,
+                            fullGross - itemDiscountAmount * qty,
+                          );
                         } else if (directDiscount > 0) {
                           netPayable = Math.max(0, fullGross - directDiscount);
                         }
 
-                        const freeDiscount = Math.max(0, fullGross - netPayable);
+                        const freeDiscount = Math.max(
+                          0,
+                          fullGross - netPayable,
+                        );
 
                         return (
                           <tr key={idx} className="border-b border-neutral-200">
@@ -1295,7 +1357,8 @@ export const AdminOrders = () => {
                     {couponDiscount > 0 && (
                       <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
                         <span>
-                          Discount {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
+                          Discount{" "}
+                          {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
                         </span>
                         <span>-৳{couponDiscount.toFixed(2)}</span>
                       </div>
