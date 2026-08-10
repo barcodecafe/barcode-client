@@ -387,7 +387,7 @@ export const AdminOrders = () => {
       toast.error("Please allow popups for this website to print.");
       return;
     }
-    WindowPrt.document.write("<html><head><title>Barcode Invoice</title>");
+    // WindowPrt.document.write("<html><head><title>Barcode Invoice</title>");
     WindowPrt.document.write(
       '<script src="https://cdn.tailwindcss.com"></script>',
     );
@@ -1057,7 +1057,7 @@ export const AdminOrders = () => {
                     <thead>
                       <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
                         <th className="p-2.5 border-r border-neutral-300">
-                          Custom Item
+                          Items
                         </th>
                         <th className="p-2.5 border-r border-neutral-300">
                           Description
@@ -1072,7 +1072,7 @@ export const AdminOrders = () => {
                           Discount / Free
                         </th>
                         <th className="p-2.5 border-r border-neutral-300 text-right">
-                          TAX
+                          Vat
                         </th>
                         <th className="p-2.5 text-right">Total</th>
                       </tr>
@@ -1192,7 +1192,7 @@ export const AdminOrders = () => {
                       <span className="font-medium">0.00</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">
-                      <span className="text-neutral-500">Total Tax:</span>
+                      <span className="text-neutral-500">Total Vat:</span>
                       <span className="font-medium">0.00</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
