@@ -542,7 +542,6 @@ export const AdminOrders = () => {
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
       if (newAcceptStatus === "accepted") {
-        // ১. রাইডার এক্সেপ্ট করলে riderAcceptStatus='accepted' এবং Order ACCEPTED হবে
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
             const ordId = ord.id || ord._id;
@@ -557,7 +556,8 @@ export const AdminOrders = () => {
           })
         );
 
-        await updateOrderStatus(orderId, "ACCEPTED");
+        // API call to update order status and rider accept status
+        await updateOrderStatus(orderId, "ACCEPTED", { riderAcceptStatus: "accepted" });
 
         const payload = {
           id: orderId,
@@ -571,7 +571,6 @@ export const AdminOrders = () => {
 
         toast.success("Rider acceptance confirmed by Admin!");
       } else if (newAcceptStatus === "rejected") {
-        // ২. রাইডার রিজেক্ট করলে রাইডার আন-অ্যাসাইন হবে (পুরো অর্ডার ক্যানসেল হবে না)
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
             const ordId = ord.id || ord._id;
