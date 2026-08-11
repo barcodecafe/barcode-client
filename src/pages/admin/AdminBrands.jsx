@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
 import {
@@ -26,14 +26,22 @@ export const AdminBrands = () => {
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
+  // 🎯 Fast Async Sync to Backend
+  const syncOrderToServer = useCallback(async (orderedIds) => {
+    try {
+      if (typeof updateBrandOrder === "function") {
+        await updateBrandOrder(orderedIds);
+      }
+    } catch (err) {
+      console.error("Failed to sync brand order on server:", err);
+    }
+  }, []);
+
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
-        // 🎯 backend response structure: { success: true, data: [...] } or direct array
         const rawList = res?.data || res;
         const list = Array.isArray(rawList) ? rawList : [];
-        
-        // 🎯 order ফিল্ড অনুযায়ী সোর্ট নিশ্চিত করা
         const sorted = list.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
         setBrands(sorted);
       })
@@ -43,26 +51,22 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 ড্র্যাগ অ্যান্ড ড্রপের পর ব্যাকএন্ডে সঠিক ID সহ সেভ ও order ভ্যালু আপডেট
-  const handleBrandReorder = async (reorderedBrands) => {
-    // ১. সাথে সাথে UI তে নতুন order মান বসিয়ে স্টেট আপডেট
+  // 🎯 Instant Optimistic UI Update (কোনো রিসেট/অপেক্ষা ছাড়াই ফাস্ট সেভ)
+  const handleBrandReorder = (reorderedBrands) => {
+    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Super Fast Response)
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. Numeric ID (id) থাকলে সেটি অগ্রাধিকার পাবে, না থাকলে MongoDB _id
+    // ২. ব্যাকগ্রাউন্ডে অ্যাসিনক্রোনাসভাবে সেভ (Non-blocking call)
     const orderedIds = updatedWithOrder
       .map((b) => b.id ?? b._id)
       .filter((id) => id !== undefined && id !== null);
 
-    if (typeof updateBrandOrder === "function" && orderedIds.length > 0) {
-      try {
-        await updateBrandOrder(orderedIds);
-      } catch (err) {
-        console.error("Failed to sync brand order on server:", err);
-      }
+    if (orderedIds.length > 0) {
+      syncOrderToServer(orderedIds);
     }
   };
 
@@ -157,6 +161,8 @@ export const AdminBrands = () => {
             <Reorder.Item
               key={b.id ?? b._id}
               value={b}
+              layout="position"
+              transition={{ type: "spring", stiffness: 500, damping: 35 }}
               className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
