@@ -8,8 +8,8 @@ export const PrivacyPolicy = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 pt-5 pb-12 transition-colors duration-300">
-      {/* 🎯 w-full ও max-w-screen-2xl ব্যবহার করায় ল্যাপটপে আগের মতোই থাকবে এবং লার্জ স্ক্রিনে ব্যালেন্সড হয়ে ছড়িয়ে যাবে */}
-      <div className="w-full max-w-7xl 2xl:max-w-screen-2xl mx-auto space-y-4 px-4 sm:px-6 lg:px-8">
+      {/* 🎯 Global site-container ব্যবহার করা হয়েছে যা index.css থেকে অটোমেটিক ২xl, ৩xl, ৪xl স্ক্রিনে স্কেল হবে */}
+      <div className="site-container space-y-4">
         
         {/* Compact Header */}
         <div className="text-center space-y-1">
