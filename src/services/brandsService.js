@@ -91,10 +91,18 @@ export async function updateBrand(id, updatedFields) {
 /** PUT /api/brands/reorder (admin) — Live Server-এ ব্র্যান্ড অর্ডার সেভ করার জন্য */
 export async function updateBrandOrder(orderedBrandIds) {
   try {
+    // 🎯 নিশ্চিত করুন শুধুমাত্র Pure ID (Number/String) অ্যারে পাঠানো হচ্ছে
+    const cleanIds = (orderedBrandIds || []).map((item) => {
+      if (typeof item === "object" && item !== null) return item.id ?? item._id;
+      return item;
+    }).filter(Boolean);
+
     const response = await apiClient.put('/brands/reorder', { 
-      brandIds: orderedBrandIds,
-      orderedIds: orderedBrandIds 
+      brandIds: cleanIds,
+      orderedIds: cleanIds,
+      ids: cleanIds
     });
+    
     return response?.data ?? response;
   } catch (error) {
     console.error("Error updating brand order:", error);
