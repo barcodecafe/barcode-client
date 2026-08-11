@@ -63,11 +63,6 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Auto-open on desktop, auto-close on mobile initially.
-  // This was a useState(fn) whose initializer called a setter during render —
-  // the returned value was discarded and the "state" was never actually the
-  // drawer's. A lazy initial value does the same job correctly, with no render
-  // side effect and no extra pass.
   const [isDrawerOpen, setIsDrawerOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768,
   );
@@ -114,7 +109,6 @@ export const AdminLayout = () => {
                 {item.name}
               </div>
 
-              {/* সাইডবারের Orders মেনুর পাশে কাউন্ট ব্যাজ */}
               {isOrdersRoute && unreadOrderCount > 0 && (
                 <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
                   {unreadOrderCount}
@@ -160,7 +154,7 @@ export const AdminLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Panel - Inline on desktop, absolute overlay drawer on mobile */}
+      {/* Sidebar Panel */}
       <motion.aside
         animate={{ 
           width: isDrawerOpen ? 256 : 0,
@@ -206,7 +200,6 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* 🔔 টপবারের নোটিফিকেশন বেল আইকন ও লাইভ কাউন্ট ব্যাজ */}
             <Link
               to="/admin/orders"
               onClick={markOrdersAsRead}
@@ -241,14 +234,13 @@ export const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
-          {/* Keyed on the path so navigating away from a page that crashed
-              clears the boundary and the next page renders normally. Placed
-              INSIDE the shell so a broken page keeps the sidebar and nav
-              usable instead of blanking the whole admin. */}
-          <ErrorBoundary key={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
+        {/* 🎯 dynamic responsive container */}
+        <main className="flex-grow py-4 sm:py-6 lg:py-8 w-full">
+          <div className="site-container">
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
     </div>
@@ -256,4 +248,3 @@ export const AdminLayout = () => {
 };
 
 export default AdminLayout;
-// before counting logic fix 258
