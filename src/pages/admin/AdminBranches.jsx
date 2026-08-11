@@ -71,7 +71,6 @@ export const AdminBranches = () => {
   const [formError, setFormError] = useState("");
   const [mapLinkInput, setMapLinkInput] = useState("");
 
-  // 🚀 ১. একসাথে প্যারালালি ডাটা ফেচ করা (Superfast Parallel Loading)
   const fetchBranchesData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -114,14 +113,11 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  // 🚀 ২. ইনস্ট্যান্ট অপটিমিস্টিক ড্র্যাগ অ্যান্ড ড্রপ (Instant Drag & Drop Reorder)
   const handleBranchReorder = (reorderedBranches) => {
-    // ১. সাথে সাথে ইউআই আপডেট (0ms Lag)
     setBranches(reorderedBranches);
 
     const orderedIds = reorderedBranches.map((b) => String(b.id || b._id));
 
-    // ২. ব্যাকগ্রাউন্ডে নিভৃত এপিআই রিকোয়েস্ট
     if (typeof updateBranchOrder === "function") {
       updateBranchOrder(orderedIds).catch((err) => {
         console.error("Background sync error for branch order:", err);
@@ -325,7 +321,7 @@ export const AdminBranches = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 sm:w-64 lg:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input
               type="text"
@@ -346,7 +342,7 @@ export const AdminBranches = () => {
         </div>
       </motion.div>
 
-      {/* 🎯 Vertical Drag & Drop List */}
+      {/* 🎯 Ultra-wide responsive container */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -356,7 +352,7 @@ export const AdminBranches = () => {
           axis="y"
           values={filtered}
           onReorder={handleBranchReorder}
-          className="flex flex-col gap-3 max-w-4xl"
+          className="flex flex-col gap-3.5 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl"
         >
           {filtered.map((branch) => {
             const rev = revenueMap[branch.id];
@@ -368,7 +364,7 @@ export const AdminBranches = () => {
               >
                 <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
                   {/* Image & Grip */}
-                  <div className="relative w-full sm:w-44 h-28 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
+                  <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
                     <img
                       src={branch.image}
                       alt={branch.name}
@@ -388,23 +384,23 @@ export const AdminBranches = () => {
                   </div>
 
                   {/* Branch Main Details */}
-                  <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center space-y-1">
-                    <h3 className="font-display font-bold text-base text-neutral-800 dark:text-neutral-100 truncate">
+                  <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
+                    <h3 className="font-display font-bold text-base sm:text-lg text-neutral-800 dark:text-neutral-100 truncate">
                       {branch.name}
                     </h3>
 
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
                       <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500" />
                       <span className="truncate">{branch.location}</span>
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
                       <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-primary-500" />
+                        <Phone className="w-3.5 h-3.5 text-primary-500" />
                         {branch.contact}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-primary-500" />
+                        <Clock className="w-3.5 h-3.5 text-primary-500" />
                         {branch.hours}
                       </span>
                     </div>
@@ -412,11 +408,11 @@ export const AdminBranches = () => {
                 </div>
 
                 {/* Revenue & Action Buttons */}
-                <div className="p-3.5 sm:p-4 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
+                <div className="p-4 sm:p-5 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
                   {rev && (
                     <div className="text-left sm:text-right">
                       <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
-                      <span className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">
+                      <span className="text-sm sm:text-base font-extrabold text-neutral-800 dark:text-neutral-100">
                         ৳{rev.revenue?.toLocaleString() || 0}
                       </span>
                     </div>
@@ -425,14 +421,14 @@ export const AdminBranches = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(branch)}
-                      className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+                      className="p-2 sm:p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
                       title="Edit Branch"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteClick(branch.id, branch.name)}
-                      className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
+                      className="p-2 sm:p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
                       title="Delete Branch"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -454,7 +450,7 @@ export const AdminBranches = () => {
       {/* Modal Section */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -467,7 +463,7 @@ export const AdminBranches = () => {
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-10 p-6 overflow-hidden"
+              className="relative w-full max-w-lg 2xl:max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-10 p-6 overflow-hidden"
             >
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <h3 className="text-lg font-bold font-display text-neutral-800 dark:text-white">
@@ -517,7 +513,7 @@ export const AdminBranches = () => {
                       value={formData.location}
                       onChange={handleInputChange}
                       placeholder="e.g. Mezzan Haile Ayun Lalkhan Bazar, Chattogram"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       required
                     />
                   </div>
@@ -540,7 +536,7 @@ export const AdminBranches = () => {
                         value={mapLinkInput}
                         onChange={(e) => setMapLinkInput(e.target.value)}
                         placeholder="…or paste a Google Maps link"
-                        className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-xs"
+                        className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-xs"
                       />
                       <button
                         type="button"
@@ -579,7 +575,7 @@ export const AdminBranches = () => {
                         value={formData.contact}
                         onChange={handleInputChange}
                         placeholder="e.g. +880 1888-000000"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                         required
                       />
                     </div>
@@ -594,7 +590,7 @@ export const AdminBranches = () => {
                         value={formData.hours}
                         onChange={handleInputChange}
                         placeholder="e.g. 11:00 AM - 11:00 PM"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -612,7 +608,7 @@ export const AdminBranches = () => {
                         step="0.1"
                         value={formData.rating}
                         onChange={handleInputChange}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
 
@@ -624,7 +620,7 @@ export const AdminBranches = () => {
                         type="file"
                         accept="image/png, image/jpeg, image/jpg"
                         onChange={handleFileChange}
-                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                       />
 
                       {formData.image && (
@@ -659,7 +655,7 @@ export const AdminBranches = () => {
                         value={formData.manager}
                         onChange={handleInputChange}
                         placeholder="e.g. Sofia Vergara"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
 
@@ -673,7 +669,7 @@ export const AdminBranches = () => {
                         value={formData.capacity}
                         onChange={handleInputChange}
                         placeholder="e.g. 150"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -691,7 +687,7 @@ export const AdminBranches = () => {
                             brandId: e.target.value ? Number(e.target.value) : null,
                           }))
                         }
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
                       >
                         <option value="">— No brand —</option>
                         {brands.map((b) => (
@@ -714,7 +710,7 @@ export const AdminBranches = () => {
                             regionId: e.target.value ? Number(e.target.value) : null,
                           }))
                         }
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm cursor-pointer"
                       >
                         <option value="">— No region —</option>
                         {regions.map((r) => (
@@ -735,12 +731,12 @@ export const AdminBranches = () => {
                         value={formData.features}
                         onChange={handleInputChange}
                         placeholder="e.g. Waterfront View, Outdoor Terrace"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                       />
                     </div>
                   </div>
 
-                  <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
+                  <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-955/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">🚚 Delivery Zones</label>
                       <button type="button" onClick={handleAddZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg cursor-pointer">+ Add Zone</button>
@@ -750,16 +746,16 @@ export const AdminBranches = () => {
                       <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">Default charge</span>
                       <div className="relative w-28">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                        <input type="number" min="0" step="1" value={formData.defaultDeliveryCharge} onChange={(e) => setFormData((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none" />
+                        <input type="number" min="0" step="1" value={formData.defaultDeliveryCharge} onChange={(e) => setFormData((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none" />
                       </div>
                     </div>
 
                     {formData.deliveryZones.map((z, index) => (
                       <div key={index} className="flex gap-2 items-center">
-                        <input type="text" placeholder="Area name" value={z.name} onChange={(e) => handleZoneChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+                        <input type="text" placeholder="Area name" value={z.name} onChange={(e) => handleZoneChange(index, "name", e.target.value)} className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-xs focus:outline-none" required />
                         <div className="relative w-28 shrink-0">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
-                          <input type="number" min="0" step="1" placeholder="Charge" value={z.charge} onChange={(e) => handleZoneChange(index, "charge", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none" required />
+                          <input type="number" min="0" step="1" placeholder="Charge" value={z.charge} onChange={(e) => handleZoneChange(index, "charge", e.target.value)} className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-xs focus:outline-none" required />
                         </div>
                         <button type="button" onClick={() => handleRemoveZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg cursor-pointer">✕</button>
                       </div>

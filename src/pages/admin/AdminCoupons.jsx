@@ -28,8 +28,6 @@ export const AdminCoupons = () => {
   const printCardRef = useRef();
 
   const fetchCoupons = () => {
-    // .catch/.finally: without them a failed request left `loading` true and
-    // the page spun forever instead of showing the (empty) list.
     getAllCoupons()
       .then((data) => setCoupons(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Failed to load coupons:', err))
@@ -57,22 +55,21 @@ export const AdminCoupons = () => {
     setCreating(true);
     try {
       const payload = {
-        code: couponCode.trim(), // blank => server generates unique code
-        category: couponCategory, // 'standard' or 'printable'
+        code: couponCode.trim(),
+        category: couponCategory,
         discountType: couponType,
         discountPct: couponType === 'percent' ? parseInt(couponDiscount, 10) : 0,
         discountAmount: couponType === 'flat' ? parseFloat(couponDiscount) || 0 : 0,
         minSpend: parseFloat(couponMinSpend) || 0,
         customerName: couponCategory === 'printable' ? customerName.trim() : '',
         customerPhone: couponCategory === 'printable' ? customerPhone.trim() : '',
-        isOneTime: true, // Force One-Time Usable
-        isUsed: false,   // Initial Usage State
+        isOneTime: true,
+        isUsed: false,
         isActive: true,
       };
 
       const created = await createCoupon(payload);
 
-      // Clear fields
       setCouponCode('');
       setCouponDiscount('');
       setCouponMinSpend('');
@@ -80,7 +77,6 @@ export const AdminCoupons = () => {
       setCustomerPhone('');
       fetchCoupons();
 
-      // If printable, open print modal directly
       if (couponCategory === 'printable' && created) {
         setPrintModal(created);
       }
@@ -131,9 +127,10 @@ export const AdminCoupons = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 🎯 Ultra-wide Layout: 2xl, 3xl, 4xl স্ক্রিনে ৪ কলাম ও কন্টেইনার স্কেলিং */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
         {/* Create Form */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs h-fit">
+        <div className="lg:col-span-1 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs h-fit">
           <h3 className="font-display font-extrabold text-base text-neutral-850 dark:text-white mb-4">
             Create Discount Coupon
           </h3>
@@ -145,7 +142,6 @@ export const AdminCoupons = () => {
           )}
 
           <form onSubmit={handleCreateCoupon} className="space-y-4">
-            {/* Coupon Category Selection */}
             <div>
               <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
                 Coupon Category
@@ -178,7 +174,6 @@ export const AdminCoupons = () => {
               </div>
             </div>
 
-            {/* Customer Details for Printable Coupons */}
             {couponCategory === 'printable' && (
               <div className="p-3 bg-neutral-50 dark:bg-neutral-950/60 rounded-xl border border-neutral-200/80 dark:border-neutral-800 space-y-3">
                 <p className="text-[11px] font-bold text-primary-500 uppercase tracking-wider flex items-center gap-1">
@@ -216,11 +211,10 @@ export const AdminCoupons = () => {
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 placeholder="e.g. VIP200 — blank = auto-generate"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-xs uppercase focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-white text-xs uppercase focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
 
-            {/* Discount type toggle */}
             <div>
               <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
                 Discount Type
@@ -237,7 +231,7 @@ export const AdminCoupons = () => {
                     className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
                       couponType === opt.key
                         ? 'bg-primary-500 text-white border-primary-500'
-                        : 'bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
+                        : 'bg-white dark:bg-neutral-955 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
                     }`}
                   >
                     {opt.label}
@@ -259,7 +253,7 @@ export const AdminCoupons = () => {
                   value={couponDiscount}
                   onChange={(e) => setCouponDiscount(e.target.value)}
                   placeholder={couponType === 'flat' ? '৳100' : '30'}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
 
@@ -273,7 +267,7 @@ export const AdminCoupons = () => {
                   value={couponMinSpend}
                   onChange={(e) => setCouponMinSpend(e.target.value)}
                   placeholder="৳500"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -290,7 +284,7 @@ export const AdminCoupons = () => {
         </div>
 
         {/* Coupons List Table */}
-        <div className="lg:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
+        <div className="lg:col-span-2 2xl:col-span-3 bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
           <h3 className="font-display font-extrabold text-base text-neutral-850 dark:text-white mb-4">
             Coupons List
           </h3>
@@ -298,7 +292,7 @@ export const AdminCoupons = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40">
                   <th className="px-4 py-3">Code / Type</th>
                   <th className="px-4 py-3">Customer (If Printed)</th>
                   <th className="px-4 py-3">Unique ID / QR</th>
@@ -309,7 +303,7 @@ export const AdminCoupons = () => {
               </thead>
               <tbody>
                 {coupons.map((cp) => (
-                  <tr key={cp.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20">
+                  <tr key={cp.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20">
                     <td className="px-4 py-3.5 font-bold text-primary-500 tracking-wider">
                       <div>{cp.code}</div>
                       <span className="text-[10px] font-normal text-neutral-400 capitalize">
@@ -359,7 +353,6 @@ export const AdminCoupons = () => {
                       {couponDiscountLabel(cp)}
                     </td>
                     <td className="px-4 py-3.5">
-                      {/* One-Time Used vs Active Status */}
                       {cp.isUsed ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-neutral-200 dark:bg-neutral-800 text-neutral-500">
                           USED (Expired)
@@ -475,7 +468,6 @@ export const AdminCoupons = () => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Print Voucher Card Template */}
             <div ref={printCardRef} className="border-2 border-dashed border-primary-500 rounded-2xl p-5 bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 text-neutral-800">
               <div className="flex justify-between items-start border-b border-neutral-200 pb-3 mb-3">
                 <div>

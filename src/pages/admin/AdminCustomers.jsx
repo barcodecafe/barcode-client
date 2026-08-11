@@ -3,35 +3,25 @@ import { getAllUsers } from '../../services/authService';
 import { getTopCustomers } from '../../services/analyticsService';
 import { CreditCard, Download, X, QrCode, Crown } from 'lucide-react';
 import { ErrorBanner } from '../../components/ErrorBanner';
-// html2canvas-pro (not the original html2canvas) — the original can't parse the
-// oklch() colors Tailwind v4 emits and throws mid-capture, so the card never
-// downloaded. The pro fork supports oklch/lab/lch and is otherwise API-compatible.
 import html2canvas from 'html2canvas-pro';
 
 const taka = (n) => `৳${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-// The membership id + QR are generated and stored on the server (stable, unique).
-// Prefer the backend value; fall back to a derived id only if it's somehow missing.
 const membershipIdOf = (c) =>
   c?.membershipId || `BRG-${String(c?.id || "").slice(-6).toUpperCase() || "000"}`;
 
 export const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
-  const [spendByUser, setSpendByUser] = useState({}); // userId → { totalSpent, orderCount, lastOrderAt }
+  const [spendByUser, setSpendByUser] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
- // State and reference for the Card Maker modal and download functionality
   const [activeCardUser, setActiveCardUser] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef(null);
 
   useEffect(() => {
-    // allSettled + finally: with Promise.all().then() and no .catch/.finally,
-    // either request failing (or `users` arriving as a non-array, which made
-    // .filter throw inside the .then) left `loading` true forever and the page
-    // showed a spinner that never resolved.
     Promise.allSettled([getAllUsers(), getTopCustomers()])
       .then(([usersRes, spendingRes]) => {
         if (usersRes.status === 'fulfilled') {
@@ -57,7 +47,6 @@ export const AdminCustomers = () => {
 
   const spendOf = (c) => spendByUser[c.id] || { totalSpent: 0, orderCount: 0 };
 
-  // Rank the registry by lifetime spend so top customers surface first.
   const rankedCustomers = useMemo(
     () => [...customers].sort((a, b) => (spendByUser[b.id]?.totalSpent || 0) - (spendByUser[a.id]?.totalSpent || 0)),
     [customers, spendByUser]
@@ -67,15 +56,14 @@ export const AdminCustomers = () => {
     [rankedCustomers, spendByUser]
   );
 
-  // Function to download the card as a PNG image
   const handleDownloadCard = async () => {
     if (!cardRef.current || !activeCardUser || downloading) return;
     setDownloading(true);
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 3, // Use a higher scale for high-quality (HD) image output
+        scale: 3,
         useCORS: true,
-        backgroundColor: null, // Keep the background transparent
+        backgroundColor: null,
       });
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
@@ -111,23 +99,23 @@ export const AdminCustomers = () => {
 
       <ErrorBanner title="Could not load customers" error={loadError} />
 
-      {/* Top customers highlight — the biggest spenders (Rejected orders excluded) */}
+      {/* 🎯 Ultra-wide layout grid optimization for Top Customers */}
       {topThree.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 2xl:grid-cols-3 gap-4 lg:gap-6">
           {topThree.map((c, i) => {
             const s = spendOf(c);
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 p-4 shadow-xs"
+                className="flex items-center gap-3.5 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 p-4 sm:p-5 shadow-xs"
               >
-                <span className="text-2xl leading-none shrink-0" aria-hidden>{MEDAL[i]}</span>
+                <span className="text-2xl sm:text-3xl leading-none shrink-0" aria-hidden>{MEDAL[i]}</span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary-500 flex items-center gap-1">
-                    <Crown className="w-3 h-3" /> Top Customer #{i + 1}
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-primary-500 flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5" /> Top Customer #{i + 1}
                   </p>
-                  <p className="font-bold text-sm text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="font-bold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
+                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                     <span className="font-extrabold text-neutral-700 dark:text-neutral-200">{taka(s.totalSpent)}</span>
                     {' · '}{s.orderCount} order{s.orderCount === 1 ? '' : 's'}
                   </p>
@@ -138,11 +126,12 @@ export const AdminCustomers = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 shadow-xs">
+      {/* 🎯 Ultra-wide responsive container */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 sm:p-6 shadow-xs w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-xs sm:text-sm text-left">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-950/40">
+              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40">
                 <th className="px-4 py-3">Membership ID</th>
                 <th className="px-4 py-3">Full Name</th>
                 <th className="px-4 py-3 text-right">Total Spent</th>
@@ -159,7 +148,7 @@ export const AdminCustomers = () => {
                 const s = spendOf(c);
                 const isTop = idx < 3 && s.totalSpent > 0;
                 return (
-                <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20">
+                <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors">
                   <td className="px-4 py-3.5 font-bold text-primary-600 dark:text-primary-400 font-mono">
                     {membershipIdOf(c)}
                   </td>
@@ -189,11 +178,11 @@ export const AdminCustomers = () => {
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     <button
-                      onClick={() => setActiveCardUser(c)} // Click here to open the modal
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
+                      onClick={() => setActiveCardUser(c)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
                       title="Generate & View Membership Card"
                     >
-                      <CreditCard className="w-3 h-3" /> Card
+                      <CreditCard className="w-3.5 h-3.5" /> Card
                     </button>
                   </td>
                 </tr>
@@ -204,12 +193,11 @@ export const AdminCustomers = () => {
         </div>
       </div>
 
-      {/* ================= MEMBERSHIP CARD GENERATOR MODAL ================= */}
+      {/* MEMBERSHIP CARD GENERATOR MODAL */}
       {activeCardUser && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-md w-full border border-neutral-200 dark:border-neutral-800 space-y-6">
             
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
               <h3 className="font-display font-bold text-neutral-800 dark:text-white text-sm uppercase tracking-wide">
                 Membership Card Preview
@@ -222,7 +210,6 @@ export const AdminCustomers = () => {
               </button>
             </div>
 
-            {/* Printable Card Area — click the card itself to download it. */}
             <div className="flex flex-col items-center p-2">
               <div
                 ref={cardRef}
@@ -232,13 +219,11 @@ export const AdminCustomers = () => {
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDownloadCard(); } }}
                 title="Click to download this card as an image"
                 className={`group w-96 h-56 rounded-2xl p-5 bg-gradient-to-br from-neutral-900 via-neutral-850 to-neutral-950 text-white relative shadow-xl overflow-hidden border border-neutral-800 flex flex-col justify-between font-sans select-none transition-transform hover:scale-[1.02] ${downloading ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
-                style={{ width: '384px', height: '224px' }} // Standard Credit Card Size Ratio
+                style={{ width: '384px', height: '224px' }}
               >
-                {/* Decorative background glow */}
                 <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl pointer-events-none" />
                 <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
-                {/* Card Top Header */}
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="block font-display font-black text-xs tracking-wider text-primary-400 uppercase">
@@ -253,12 +238,9 @@ export const AdminCustomers = () => {
                   </div>
                 </div>
 
-                {/* Card Center: Chip & real scannable QR */}
                 <div className="flex justify-between items-center my-2">
-                  {/* Smart Card Chip Simulation */}
                   <div className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-300 via-amber-400 to-amber-200 opacity-80 border border-amber-500/30 shadow-inner" />
 
-                  {/* Real membership QR (encodes the membership id) — scan at POS */}
                   <div className="p-1 bg-white rounded-md">
                     {activeCardUser.membershipQr ? (
                       <img
@@ -272,7 +254,6 @@ export const AdminCustomers = () => {
                   </div>
                 </div>
 
-                {/* Card Bottom: User Details */}
                 <div className="flex justify-between items-end border-t border-neutral-800/60 pt-2">
                   <div className="space-y-0.5">
                     <span className="block text-[8px] text-neutral-500 uppercase font-semibold tracking-wider">
@@ -301,7 +282,6 @@ export const AdminCustomers = () => {
               </p>
             </div>
 
-            {/* Modal Actions */}
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setActiveCardUser(null)}

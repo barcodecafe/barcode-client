@@ -23,10 +23,6 @@ import {
 } from '../../services/aboutService';
 
 export const AdminAbout = () => {
-  /* 
-    CHANGES 1: Initial state-e empty object/array define kora hoyeche, 
-    jate component load hobar shomoy data map short-circuit ba blank error na dey.
-  */
   const [aboutData, setAboutData] = useState({ timeline: [], leadership: [], stats: {} });
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +38,6 @@ export const AdminAbout = () => {
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [isLeaderModalOpen, setIsLeaderModalOpen] = useState(false);
   
-  /* 
-    CHANGES 2: (CRITICAL FIX) 
-    Apnar ager code-e shudhu 'editingIndex' chilo, jeta problem korchilo. 
-    Ekhon amra 'selectedItem' state niyechi. Eta index er bodole direct database object 
-    hold korbe, jate dynamic unique ID track kora jay.
-  */
   const [selectedItem, setSelectedItem] = useState(null); 
 
   // Timeline Form State
@@ -94,21 +84,14 @@ export const AdminAbout = () => {
     }
   };
 
-  // ==========================================
   // Timeline Handlers
-  // ==========================================
   const openAddTimeline = () => {
-    setSelectedItem(null); // Add korar shomoy selected tracking null kore dewa hoyeche
+    setSelectedItem(null);
     setTimelineForm({ year: new Date().getFullYear().toString(), title: '', desc: '' });
     setIsTimelineModalOpen(true);
   };
 
   const openEditTimeline = (item, index) => {
-    /* 
-      CHANGES 3: Edit mode open korar shomoy item er property layout text check korbe.
-      Jodi backend data table-e specific '_id' ba 'id' key thake, sheta target korbe, 
-      na thakle safer side fallback hisebe 'targetIndex' store korbe.
-    */
     setSelectedItem({ ...item, targetIndex: index });
     setTimelineForm({ year: item.year || '', title: item.title || '', desc: item.desc || '' });
     setIsTimelineModalOpen(true);
@@ -118,18 +101,12 @@ export const AdminAbout = () => {
     e.preventDefault();
     try {
       if (selectedItem) {
-        /* 
-          CHANGES 4: (UPDATE FIX) 
-          Direct database _id ba id check korche. Backend validation standard 
-          onujayi absolute query parameter pathiye row targeted route trigger korbe.
-        */
         const targetId = selectedItem._id || selectedItem.id || selectedItem.targetIndex;
         await updateTimelineItem(targetId, timelineForm);
       } else {
         await addTimelineItem(timelineForm);
       }
       
-      /* CHANGES 5: Action submit shesh hole Modal close, state reset logic cleanup kora hoyeche */
       setIsTimelineModalOpen(false);
       setSelectedItem(null);
       fetchAboutData();
@@ -142,11 +119,6 @@ export const AdminAbout = () => {
   const handleDeleteTimeline = async (item, index) => {
     if (window.confirm('Are you sure you want to delete this timeline milestone?')) {
       try {
-        /* 
-          CHANGES 6: (DELETE FIX) 
-          Ager code-e shudhu array index pass hoto, jeta dynamic state render breakdown korto.
-          Ekhon proper DB dynamic unique target identifier search kore service-e execution dibe.
-        */
         const targetId = item._id || item.id || index;
         await deleteTimelineItem(targetId);
         fetchAboutData();
@@ -157,9 +129,7 @@ export const AdminAbout = () => {
     }
   };
 
-  // ==========================================
   // Leadership Handlers
-  // ==========================================
   const openAddLeader = () => {
     setSelectedItem(null);
     setLeaderForm({
@@ -172,7 +142,6 @@ export const AdminAbout = () => {
   };
 
   const openEditLeader = (member, index) => {
-    /* CHANGES 7: Leadership component tracking system updated matching data identifiers */
     setSelectedItem({ ...member, targetIndex: index });
     setLeaderForm({ 
       name: member.name || '', 
@@ -204,7 +173,6 @@ export const AdminAbout = () => {
     e.preventDefault();
     try {
       if (selectedItem) {
-        /* CHANGES 8: Team member update target query selector implementation */
         const targetId = selectedItem._id || selectedItem.id || selectedItem.targetIndex;
         await updateLeadershipMember(targetId, leaderForm);
       } else {
@@ -222,7 +190,6 @@ export const AdminAbout = () => {
   const handleDeleteLeader = async (member, index) => {
     if (window.confirm('Are you sure you want to delete this team member?')) {
       try {
-        /* CHANGES 9: Leadership dynamic index/ID absolute targeting for safe database operations */
         const targetId = member._id || member.id || index;
         await deleteLeadershipMember(targetId);
         fetchAboutData();
@@ -297,7 +264,7 @@ export const AdminAbout = () => {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm"
+            className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 sm:p-8 shadow-sm"
           >
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -335,7 +302,8 @@ export const AdminAbout = () => {
                   Quick Business Statistics
                 </span>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* 🎯 Quick Business Statistics Grid: 2xl, 3xl, 4xl ultra-wide support */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 2xl:grid-cols-3 gap-4 lg:gap-6">
                   {['founded', 'branchesCount', 'standard'].map((field) => (
                     <div key={field}>
                       <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1.5 capitalize">
@@ -396,17 +364,13 @@ export const AdminAbout = () => {
                   </thead>
                   <tbody>
                     {aboutData.timeline && aboutData.timeline.map((item, index) => (
-                      /* 
-                        CHANGES 10: JSX Table render key calculation algorithm 
-                        index map change kore explicit runtime dynamic key-e transform kora hoyeche.
-                      */
                       <tr
                         key={item._id || item.id || index}
                         className="border-b border-neutral-100 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
                       >
                         <td className="px-5 py-3.5 font-display font-bold text-primary-500">{item.year}</td>
                         <td className="px-5 py-3.5 font-semibold text-neutral-800 dark:text-neutral-100">{item.title}</td>
-                        <td className="px-5 py-3.5 text-neutral-500 dark:text-neutral-400 font-light max-w-md truncate">{item.desc}</td>
+                        <td className="px-5 py-3.5 text-neutral-500 dark:text-neutral-400 font-light max-w-md 2xl:max-w-xl truncate">{item.desc}</td>
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
@@ -448,7 +412,8 @@ export const AdminAbout = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 🎯 Leadership Grid: 2xl, 3xl, 4xl-এ ৫ ও ৬ কলাম বিশিষ্ট কন্টেইনার রেসপন্সিভ করা হয়েছে */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-4 sm:gap-6">
               {aboutData.leadership && aboutData.leadership.map((member, index) => (
                 <div
                   key={member._id || member.id || index}
@@ -494,7 +459,6 @@ export const AdminAbout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              /* CHANGES 11: Outside modal space click/cancel korle state mapping default empty resetting handle korbe */
               onClick={() => { setIsTimelineModalOpen(false); setSelectedItem(null); }}
               className="absolute inset-0 bg-neutral-950/50 backdrop-blur-sm"
             />

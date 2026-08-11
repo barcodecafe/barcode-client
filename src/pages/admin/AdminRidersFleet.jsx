@@ -6,12 +6,8 @@ import { getAllOrders, confirmRiderCashSettlement } from "../../services/ordersS
 import { getAllRiders } from "../../services/ridersService";
 import { formatDateKey } from "../../utils/settlement";
 import { socket } from "../../services/socket";
-import RidersFleetOverview from "./RidersFleetOverview"; // 👈 আপনার তৈরি করা নতুন কম্পোনেন্ট
+import RidersFleetOverview from "./RidersFleetOverview";
 
-// The API is supposed to answer with arrays, but a single non-array slipping
-// through used to reach `.map` during render — and with no ErrorBoundary in the
-// app that unmounts the entire React tree to a white page rather than breaking
-// one card.
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
 export const AdminRidersFleet = () => {
@@ -21,9 +17,6 @@ export const AdminRidersFleet = () => {
   const [loadError, setLoadError] = useState(null);
   const [confirmingRiderId, setConfirmingRiderId] = useState(null);
 
-  // allSettled: orders and riders are independent, so one failing must not
-  // discard the other. Previously either rejection left both lists empty and
-  // the page looked like a fleet with no riders and no deliveries.
   const fetchOrdersAndFleet = async () => {
     const [ordersRes, ridersRes] = await Promise.allSettled([
       getAllOrders(),
@@ -48,21 +41,10 @@ export const AdminRidersFleet = () => {
   useEffect(() => {
     let cancelled = false;
 
-    // .finally is what guarantees the spinner clears. apiClient now also
-    // enforces a request timeout, so a request that never answers can no longer
-    // pin this page on a loading spinner indefinitely.
     fetchOrdersAndFleet().finally(() => {
       if (!cancelled) setLoading(false);
     });
 
-    // Named handler passed to BOTH on and off — socket.off('order_updated')
-    // with no handler removed every other component's listener for that event
-    // too, which silently broke realtime updates elsewhere in the app.
-    //
-    // Coalesced, because the server broadcasts to every client and a single
-    // admin action emits several events back to back (assign-rider alone sends
-    // three). Refetching per event meant six requests for one click; this
-    // collapses a burst into one refresh.
     let burstTimer = null;
     const handleFleetChanged = () => {
       clearTimeout(burstTimer);
@@ -109,7 +91,7 @@ export const AdminRidersFleet = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
       <Toaster />
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
@@ -129,7 +111,6 @@ export const AdminRidersFleet = () => {
         onRetry={fetchOrdersAndFleet}
       />
 
-      {/* আপনার তৈরি করা কম্পোনেন্ট */}
       <RidersFleetOverview
         riders={riders}
         orders={orders}

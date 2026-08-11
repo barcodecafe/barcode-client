@@ -14,7 +14,7 @@ import {
   getOrdersByCategory,
   getRevenueTrend,
   getTopDishes,
-  getTopCustomers, // getTopCustomers সার্ভিস যুক্ত করা হয়েছে
+  getTopCustomers,
   getTopRiders,
 } from '../../services/analyticsService';
 
@@ -32,7 +32,7 @@ export const AdminDashboard = () => {
   const [ordersByCategory, setOrdersByCategory] = useState([]);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [topDishes, setTopDishes] = useState([]);
-  const [topCustomers, setTopCustomers] = useState([]); // টপ কাস্টমারের স্টেট
+  const [topCustomers, setTopCustomers] = useState([]);
   const [topRiders, setTopRiders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +43,7 @@ export const AdminDashboard = () => {
       getOrdersByCategory().catch(() => []),
       getRevenueTrend(12).catch(() => []),
       getTopDishes(5).catch(() => []),
-      getTopCustomers(5).catch(() => []), // ৫ জন টপ কাস্টমার ডাটা ফেচ করা হচ্ছে
+      getTopCustomers(5).catch(() => []),
       getTopRiders(5).catch(() => []),
     ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
       setSummary(summaryData);
@@ -74,7 +74,7 @@ export const AdminDashboard = () => {
   const lineData = revenueTrend.map((t) => ({ label: t.month, value: t.revenue }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
       {/* Header */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
@@ -85,8 +85,8 @@ export const AdminDashboard = () => {
         </p>
       </motion.div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {/* 🎯 Stat Cards: 2xl, 3xl, 4xl ultra-wide support */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 3xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           icon={DollarSign}
           label="Total Revenue" 
@@ -116,7 +116,7 @@ export const AdminDashboard = () => {
       </div>
 
       {/* Charts Row 1: Bar + Pie */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6">
         <ChartCard
           title="Revenue by Branch"
           subtitle="Top 8 branches this period"
@@ -135,7 +135,7 @@ export const AdminDashboard = () => {
       </div>
 
       {/* Charts Row 2: Line + Top Dishes */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6">
         <ChartCard
           title="Revenue Trend"
           subtitle="Last 12 months, all branches combined"
@@ -168,10 +168,6 @@ export const AdminDashboard = () => {
                 </div>
                 <div className="flex items-center gap-1 text-primary-500 font-semibold text-sm shrink-0">
                   <Flame className="w-3.5 h-3.5" />
-                  {/* The API field is `orders` (analytics/top-dishes). `mockOrders`
-                      was left over from the seeded-data era and has not existed
-                      on the response since, so this counter always rendered
-                      empty next to every dish. */}
                   {dish.orders ?? 0}
                 </div>
               </div>
@@ -180,17 +176,17 @@ export const AdminDashboard = () => {
         </ChartCard>
       </div>
 
-      {/* Row 3: Top Customers Section */}
+      {/* 🎯 Row 3: Top Customers Section (2xl & 3xl Layout grid expanded) */}
       <ChartCard
         title="Top Customers"
         subtitle="Ranked by total spend & orders"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-4 gap-4">
           {topCustomers.length > 0 ? (
             topCustomers.slice(0, 6).map((customer, i) => (
               <div
                 key={customer._id || customer.id || i}
-                className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50"
               >
                 <span className="w-8 h-8 rounded-lg bg-primary-500/10 text-primary-500 text-sm font-bold flex items-center justify-center shrink-0">
                   #{i + 1}
@@ -200,9 +196,6 @@ export const AdminDashboard = () => {
                     {customer.name || customer.fullName || 'Customer'}
                   </p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {/* analytics/top-customers returns `orderCount`; neither of
-                        the two names checked here has ever been on the payload,
-                        so every top customer read "0 Orders". */}
                     {customer.orderCount ?? customer.totalOrders ?? 0} Orders
                   </p>
                 </div>
@@ -220,19 +213,17 @@ export const AdminDashboard = () => {
         </div>
       </ChartCard>
 
-      {/* Row 4: Top Riders — ranked on deliveries completed, since that is what
-          a rider controls. Earnings are shown but never the ranking: carrying
-          expensive orders doesn't make someone a better rider. */}
+      {/* 🎯 Row 4: Top Riders Section (2xl & 3xl Layout grid expanded) */}
       <ChartCard
         title="Top Riders"
         subtitle="Ranked by completed deliveries"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-4 gap-4">
           {topRiders.length > 0 ? (
             topRiders.map((rider, i) => (
               <div
                 key={rider.riderId || i}
-                className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50"
               >
                 <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-bold flex items-center justify-center shrink-0">
                   #{rider.rank || i + 1}
@@ -241,8 +232,6 @@ export const AdminDashboard = () => {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
                     {rider.name}
                   </p>
-                  {/* Reliability is the whole point of this list, so show it
-                      always — not only for riders who have refused something. */}
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     {rider.deliveries} {rider.deliveries === 1 ? 'delivery' : 'deliveries'}
                     {' · '}
@@ -254,8 +243,6 @@ export const AdminDashboard = () => {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  {/* The rider's own earnings lead; the value they carried is
-                      context, not their money. */}
                   <span className="flex items-center justify-end gap-1 text-primary-500 font-bold text-sm">
                     <Bike className="w-3.5 h-3.5" />
                     {currency(rider.earnings || 0)}

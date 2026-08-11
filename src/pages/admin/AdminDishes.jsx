@@ -331,7 +331,6 @@ export const AdminDishes = () => {
         delete updatedPrices[targetId];
       } else {
         updatedBranchIds = [...prev.branchIds, targetId];
-        // Don't auto-set to 0, let it be empty until they type
       }
 
       return {
@@ -348,7 +347,7 @@ export const AdminDishes = () => {
       ...prev,
       branchPrices: {
         ...prev.branchPrices,
-        [targetId]: value, // Keep as string here so user can type "-"
+        [targetId]: value,
       },
     }));
   };
@@ -401,7 +400,6 @@ export const AdminDishes = () => {
       const categoryOrder =
         existingCategoryIndex !== -1 ? existingCategoryIndex + 1 : 999;
 
-      // Clean up branch prices before sending
       const parsedBranchPrices = {};
       Object.entries(formData.branchPrices).forEach(([key, val]) => {
         const parsedVal = parseFloat(val);
@@ -482,7 +480,7 @@ export const AdminDishes = () => {
     formData.discountPct > 0 || formData.discountAmount > 0;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -719,10 +717,10 @@ export const AdminDishes = () => {
                       <img
                         src={food.image}
                         alt={food.name}
-                        className="w-14 h-14 rounded-xl object-cover bg-neutral-50 shrink-0"
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover bg-neutral-50 shrink-0"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
                         <Layers className="w-5 h-5" />
                       </div>
                     )}
@@ -752,10 +750,10 @@ export const AdminDishes = () => {
                           <Star className="w-3.5 h-3.5 text-primary-500 fill-primary-500" />
                         )}
                       </div>
-                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm truncate">
+                      <h3 className="font-bold text-neutral-900 dark:text-white text-sm sm:text-base truncate">
                         {food.name}
                       </h3>
-                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl hidden md:block">
+                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5 max-w-xl 2xl:max-w-2xl hidden md:block">
                         {food.description || "No description provided."}
                       </p>
 
@@ -789,7 +787,7 @@ export const AdminDishes = () => {
 
                   <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-neutral-50 dark:border-neutral-800/50">
                     <div className="text-left sm:text-right min-w-[75px] pointer-events-none">
-                      <p className="text-sm font-black text-primary-500">
+                      <p className="text-sm sm:text-base font-black text-primary-500">
                         ৳{food.price}
                       </p>
                       {food.rating && (
@@ -802,13 +800,13 @@ export const AdminDishes = () => {
                     <div className="flex items-center gap-1 pointer-events-auto">
                       <button
                         onClick={() => openEditModal(food)}
-                        className="p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+                        className="p-2 sm:p-2.5 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(food.id || food._id)}
-                        className="p-2 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"
+                        className="p-2 sm:p-2.5 rounded-xl text-neutral-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -829,7 +827,7 @@ export const AdminDishes = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-xl max-h-[85vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-xl 2xl:max-w-2xl max-h-[85vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <h2 className="text-lg font-black text-neutral-900 dark:text-white">
@@ -1209,7 +1207,7 @@ export const AdminDishes = () => {
                   </div>
                 </div>
 
-                {/* 🎯 Branch Availability Section (Updated with Adjust Logic) */}
+                {/* Branch Availability Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">
                     Available Branches
@@ -1223,7 +1221,6 @@ export const AdminDishes = () => {
                       const bId = String(b._id || b.id);
                       const isSelected = formData.branchIds.includes(bId);
 
-                      // অ্যাডজাস্টমেন্ট ভ্যালু এবং বেস প্রাইসের সাথে ফাইনাল প্রাইস ক্যালকুলেশন
                       const adjustValue = formData.branchPrices[bId] ?? "";
                       const finalPrice =
                         (Number(formData.price) || 0) +
@@ -1262,7 +1259,6 @@ export const AdminDishes = () => {
                                 />
                               </div>
 
-                              {/* 🎯 ফাইনাল প্রাইস দেখানোর লজিক */}
                               {adjustValue !== "" &&
                                 Number(adjustValue) !== 0 && (
                                   <div className="text-[10px] font-extrabold text-primary-500 text-right pr-1">

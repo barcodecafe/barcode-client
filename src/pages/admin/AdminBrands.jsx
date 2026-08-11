@@ -6,7 +6,7 @@ import {
   createBrand,
   updateBrand,
   deleteBrand,
-  updateBrandOrder, // 🎯 রি-অর্ডার এপিআই সার্ভিস
+  updateBrandOrder,
 } from "../../services/brandsService";
 
 const BLANK = {
@@ -34,7 +34,6 @@ export const AdminBrands = () => {
   };
   useEffect(load, []);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI)
   const handleBrandReorder = (reorderedBrands) => {
     setBrands(reorderedBrands);
     const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
@@ -116,7 +115,7 @@ export const AdminBrands = () => {
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-3 max-w-4xl">
+        <div className="flex flex-col gap-3 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
           {[1, 2, 3].map((n) => <div key={n} className="h-28 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
         </div>
       ) : brands.length === 0 ? (
@@ -125,12 +124,12 @@ export const AdminBrands = () => {
           <p className="text-sm">No brands yet. Add your first brand to get started.</p>
         </div>
       ) : (
-        /* 🎯 ১ কলামে সিঙ্গেল লিস্টে স্মুথ ড্র্যাগ অ্যান্ড ড্রপ Reorder.Group */
+        /* 🎯 Ultra-wide responsive container optimization */
         <Reorder.Group
           axis="y"
           values={brands}
           onReorder={handleBrandReorder}
-          className="flex flex-col gap-3 max-w-4xl"
+          className="flex flex-col gap-3.5 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl"
         >
           {brands.map((b) => (
             <Reorder.Item
@@ -140,11 +139,11 @@ export const AdminBrands = () => {
             >
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
                 {/* Brand Image & Drag Handle */}
-                <div className="relative w-full sm:w-40 h-24 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
+                <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
                   {b.cover ? (
                     <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
                   ) : b.logoLight ? (
-                    <img src={b.logoLight} alt={b.name} className="max-h-12 max-w-[70%] object-contain pointer-events-none" />
+                    <img src={b.logoLight} alt={b.name} className="max-h-14 max-w-[75%] object-contain pointer-events-none" />
                   ) : (
                     <Store className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
                   )}
@@ -161,17 +160,17 @@ export const AdminBrands = () => {
                 </div>
 
                 {/* Brand Info */}
-                <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
-                  <h3 className="font-bold text-sm text-neutral-800 dark:text-white truncate">{b.name}</h3>
-                  <p className="text-[11px] text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
-                  {b.tagline && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
+                <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1">
+                  <h3 className="font-bold text-base sm:text-lg text-neutral-800 dark:text-white truncate">{b.name}</h3>
+                  <p className="text-xs text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
+                  {b.tagline && <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="p-3.5 sm:p-4 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
-                <button onClick={() => openEdit(b)} className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(b.id)} className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+              <div className="p-4 sm:p-5 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
+                <button onClick={() => openEdit(b)} className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(b.id)} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
               </div>
             </Reorder.Item>
           ))}
@@ -184,7 +183,7 @@ export const AdminBrands = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg max-h-[88vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl"
+              className="relative w-full max-w-lg 2xl:max-w-xl max-h-[88vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
                 <h2 className="text-lg font-black text-neutral-900 dark:text-white">{editing ? "Edit Brand" : "Add Brand"}</h2>

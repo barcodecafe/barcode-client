@@ -14,7 +14,7 @@ import {
   Link as LinkIcon,
   Image,
   AlertCircle,
-  CreditCard, // Added an icon for the payment method
+  CreditCard,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 
@@ -51,13 +51,6 @@ export const AdminSettings = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // ⚠️ Every useState above reads `settings` ONCE, on first render. The context
-  // starts at DEFAULT_SETTINGS and hydrates from the API a moment later, so
-  // without this the form showed defaults/blanks forever — and saving it wrote
-  // those blanks over the real site settings. Re-sync when the real values land.
-  //
-  // Keyed on the settings object identity, which only changes on hydrate,
-  // save or reset — so this never fights the admin's own typing.
   useEffect(() => {
     if (!isSettingsLoaded) return;
     setFooterDescription(settings.footerDescription || "");
@@ -81,7 +74,7 @@ export const AdminSettings = () => {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoLight(reader.result); // Base64 image
+        setLogoLight(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -96,13 +89,12 @@ export const AdminSettings = () => {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoDark(reader.result); // Base64 image
+        setLogoDark(reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Payment banner upload handler
   const handlePaymentBannerUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -112,7 +104,7 @@ export const AdminSettings = () => {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPaymentBanner(reader.result); // Base64 image
+        setPaymentBanner(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -130,7 +122,7 @@ export const AdminSettings = () => {
       const payload = {
         logoLight,
         logoDark,
-        paymentBanner, //added to payload
+        paymentBanner,
         footerDescription: footerDescription.trim(),
         footerAddress: footerAddress.trim(),
         footerPhone: footerPhone.trim(),
@@ -140,7 +132,6 @@ export const AdminSettings = () => {
         footerTwitter: footerTwitter.trim(),
       };
 
-      // await the API — only show success when the server actually persisted it.
       await updateSettings(payload);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -167,8 +158,6 @@ export const AdminSettings = () => {
     setError("");
 
     try {
-      // resetSettings is async — await the resolved settings object before
-      // syncing the form inputs (otherwise we'd assign fields off a Promise).
       const defaults = await resetSettings();
 
       setFooterDescription(defaults.footerDescription);
@@ -192,7 +181,7 @@ export const AdminSettings = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -209,7 +198,7 @@ export const AdminSettings = () => {
         <button
           type="button"
           onClick={handleReset}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-neutral-250 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-bold text-xs hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all self-start"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-neutral-250 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-bold text-xs hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all self-start cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Reset Defaults
@@ -282,7 +271,7 @@ export const AdminSettings = () => {
                   <button
                     type="button"
                     onClick={() => setLogoLight("")}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
                   >
                     Clear Custom
                   </button>
@@ -326,7 +315,7 @@ export const AdminSettings = () => {
                   <button
                     type="button"
                     onClick={() => setLogoDark("")}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
                   >
                     Clear Custom
                   </button>
@@ -336,7 +325,7 @@ export const AdminSettings = () => {
           </div>
         </div>
 
-        {/* Newly added payment method banner upload section */}
+        {/* Footer payment method banner */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-5 sm:p-6 space-y-4">
           <h3 className="font-display font-extrabold text-sm text-neutral-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
             <CreditCard className="w-4 h-4 text-primary-500" />
@@ -383,7 +372,7 @@ export const AdminSettings = () => {
                   <button
                     type="button"
                     onClick={() => setPaymentBanner("")}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
                   >
                     Clear Custom
                   </button>
@@ -415,7 +404,7 @@ export const AdminSettings = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-primary-500" /> Head
@@ -518,7 +507,7 @@ export const AdminSettings = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold shadow-lg shadow-primary-500/10 active:scale-95 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             {saving ? "Saving..." : "Save Site Settings"}

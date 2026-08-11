@@ -52,12 +52,14 @@ export const RidersFleetOverview = ({
   };
 
   return (
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 shadow-xs">
-      <h3 className="text-xs font-bold font-display text-neutral-855 dark:text-white mb-3 flex items-center gap-2">
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 sm:p-5 shadow-xs w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
+      <h3 className="text-xs sm:text-sm font-bold font-display text-neutral-855 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
         <Bike className="w-4 h-4 text-primary-500" />
         Riders Fleet Overview & Cash Settlement
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      {/* 🎯 Ultra-wide Grid: 2xl, 3xl, 4xl স্ক্রিনে ৪, ৫ ও ৬ কলামে কার্ড ছড়াবে */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-4">
         {riders.map((r) => {
           const stats = getRiderPerformanceStats(r.id);
           const { cashStatus } = stats;
@@ -65,7 +67,7 @@ export const RidersFleetOverview = ({
           return (
             <div
               key={r.id}
-              className="p-3 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20 flex flex-col justify-between space-y-3"
+              className="p-3.5 border border-neutral-150 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-955/20 flex flex-col justify-between space-y-3"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -101,7 +103,7 @@ export const RidersFleetOverview = ({
                     Today's Collection ({stats.daily.deliveredCount}{" "}
                     Delivered)
                   </span>
-                  <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/60 dark:bg-neutral-950/40 p-2 rounded-lg">
+                  <div className="grid grid-cols-2 gap-1 text-[10px] bg-neutral-100/60 dark:bg-neutral-955/40 p-2 rounded-lg">
                     <div>
                       <span className="text-neutral-400 text-[9px] block">
                         Cash Collected
@@ -210,7 +212,7 @@ export const RidersFleetOverview = ({
                                 )
                               }
                               disabled={confirmingRiderId === r.id}
-                              className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase transition-all active:scale-95 disabled:opacity-50 ${
+                              className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase transition-all active:scale-95 disabled:opacity-50 cursor-pointer ${
                                 day.isSubmitted
                                   ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                                   : "bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300"

@@ -4,11 +4,6 @@ import { Map, Plus, Edit2, Trash2, X, Building2, Truck } from 'lucide-react';
 import { getAllRegions, createRegion, updateRegion, deleteRegion } from '../../services/regionsService';
 import { getAllBranches } from '../../services/branchesService';
 
-// ---------------------------------------------------------------------------
-// AdminRegions.jsx — /admin/regions
-//
-// Manage the top-level Regions that group branches (e.g. Dhaka, Chattogram).
-// ---------------------------------------------------------------------------
 export const AdminRegions = () => {
   const [regions, setRegions] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -21,9 +16,6 @@ export const AdminRegions = () => {
 
   const fetchData = () => {
     setLoading(true);
-    // allSettled: regions and branches are independent, so one failing must not
-    // wipe out the other. Promise.all skipped .then entirely on any rejection,
-    // leaving BOTH lists empty and producing an unhandled promise rejection.
     Promise.allSettled([getAllRegions(), getAllBranches()])
       .then(([regionsRes, branchesRes]) => {
         if (regionsRes.status === 'fulfilled') {
@@ -71,7 +63,6 @@ export const AdminRegions = () => {
     setIsModalOpen(true);
   };
 
-  // ── Delivery area editor (per-region: area name + charge) ──
   const addZone = () =>
     setForm((p) => ({ ...p, deliveryZones: [...p.deliveryZones, { name: '', charge: p.defaultDeliveryCharge || 0 }] }));
   const changeZone = (i, field, value) =>
@@ -120,7 +111,7 @@ export const AdminRegions = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
@@ -133,7 +124,7 @@ export const AdminRegions = () => {
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all shrink-0"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Add Region
@@ -151,7 +142,8 @@ export const AdminRegions = () => {
           <p className="text-xs mt-1">Add your first region (e.g. Dhaka, Chattogram).</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* 🎯 Ultra-wide Grid for Regions: 2xl, 3xl, 4xl-এ ৪টি ও ৫টি রিজিয়ন কার্ড রেসপন্সিভ দেখাবে */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-4 sm:gap-6">
           {regions.map((region) => (
             <motion.div
               key={region.id}
@@ -167,14 +159,14 @@ export const AdminRegions = () => {
                   <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => openEdit(region)}
-                      className="p-1.5 rounded-lg text-neutral-500 hover:text-primary-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      className="p-1.5 rounded-lg text-neutral-500 hover:text-primary-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
                       title="Edit"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(region)}
-                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10"
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 cursor-pointer"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -218,13 +210,13 @@ export const AdminRegions = () => {
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              className="relative w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-10 p-6"
+              className="relative w-full max-w-md 2xl:max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-10 p-6"
             >
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-100 dark:border-neutral-800">
                 <h3 className="text-lg font-bold font-display text-neutral-800 dark:text-white">
                   {editing ? 'Edit Region' : 'Add Region'}
                 </h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -245,7 +237,7 @@ export const AdminRegions = () => {
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="e.g. Dhaka"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                     required
                   />
                 </div>
@@ -257,17 +249,16 @@ export const AdminRegions = () => {
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     placeholder="e.g. Capital division"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                   />
                 </div>
 
-                {/* Delivery Areas (per-region: area name → charge) */}
-                <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
+                <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-955/30 border border-amber-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1">
                       <Truck className="w-3.5 h-3.5" /> Delivery Areas
                     </label>
-                    <button type="button" onClick={addZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg active:scale-95 transition-all">+ Add Area</button>
+                    <button type="button" onClick={addZone} className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg active:scale-95 transition-all cursor-pointer">+ Add Area</button>
                   </div>
                   <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
                     এই region-এ কোন অঞ্চলে কত টাকা ডেলিভারি — customer checkout-এ নিজের অঞ্চল বাছবে। অঞ্চল না থাকলে region-টি delivery-র জন্য দেখাবে না।
@@ -280,7 +271,7 @@ export const AdminRegions = () => {
                       <input
                         type="number" min="0" step="1" value={form.defaultDeliveryCharge}
                         onChange={(e) => setForm((p) => ({ ...p, defaultDeliveryCharge: parseFloat(e.target.value) || 0 }))}
-                        className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
                   </div>
@@ -293,17 +284,17 @@ export const AdminRegions = () => {
                       <input
                         type="text" placeholder="Area name (e.g. Agrabad)" value={z.name}
                         onChange={(e) => changeZone(index, 'name', e.target.value)}
-                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                       <div className="relative w-28 shrink-0">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">৳</span>
                         <input
                           type="number" min="0" step="1" placeholder="Charge" value={z.charge}
                           onChange={(e) => changeZone(index, 'charge', e.target.value)}
-                          className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
-                      <button type="button" onClick={() => removeZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">✕</button>
+                      <button type="button" onClick={() => removeZone(index)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg cursor-pointer">✕</button>
                     </div>
                   ))}
                   </div>
@@ -313,13 +304,13 @@ export const AdminRegions = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all"
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all"
+                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm shadow-md shadow-primary-500/10 active:scale-95 transition-all cursor-pointer"
                   >
                     {editing ? 'Save Changes' : 'Create Region'}
                   </button>

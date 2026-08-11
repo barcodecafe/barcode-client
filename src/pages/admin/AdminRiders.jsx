@@ -19,15 +19,6 @@ import {
   getApplicationDocUrl,
 } from '../../services/ridersService';
 
-// ---------------------------------------------------------------------------
-// AdminRiders.jsx — /admin/rider-applications
-//
-// LIVE BACKEND. Lists rider applications from GET /api/rider-applications and
-// approves/rejects via the API (which flips the applicant's approval status).
-// Photos & license PDFs are fetched through the admin-authenticated stream
-// endpoints as object URLs (never public).
-// ---------------------------------------------------------------------------
-
 // Lazy-loads a rider's photo through the auth-gated document stream.
 const RiderPhoto = ({ appId, alt }) => {
   const [url, setUrl] = useState(null);
@@ -129,7 +120,7 @@ export const AdminRiders = () => {
   const countFor = (status) => applications.filter((a) => a.status === status).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
           <Bike className="w-8 h-8 text-primary-500" />
@@ -147,7 +138,7 @@ export const AdminRiders = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
                 activeTab === tab
                   ? 'bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white shadow-xs'
                   : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
@@ -158,7 +149,7 @@ export const AdminRiders = () => {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-64 2xl:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
@@ -181,7 +172,8 @@ export const AdminRiders = () => {
           <p className="text-xs font-light mt-1">New rider sign-ups will appear here for review.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        /* 🎯 Ultra-wide Grid for Rider Cards: 2xl, 3xl, 4xl-এ ৩টি ও ৪টি কার্ড রেসপন্সিভ দেখাবে */
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 gap-6">
           {filteredApps.map((app) => (
             <motion.div
               layout
@@ -192,7 +184,7 @@ export const AdminRiders = () => {
             >
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0">
+                  <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0">
                     <RiderPhoto appId={app.id} alt={app.name} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -232,7 +224,7 @@ export const AdminRiders = () => {
                   </div>
                   <button
                     onClick={() => viewLicense(app)}
-                    className="flex items-center gap-2 text-primary-500 font-semibold hover:underline"
+                    className="flex items-center gap-2 text-primary-500 font-semibold hover:underline cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">View License PDF</span>
@@ -245,7 +237,7 @@ export const AdminRiders = () => {
                   <button
                     onClick={() => handleReject(app)}
                     disabled={busyId === app.id}
-                    className="flex-grow flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-bold transition-all active:scale-98 disabled:opacity-50"
+                    className="flex-grow flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-bold transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                     Reject
@@ -253,7 +245,7 @@ export const AdminRiders = () => {
                   <button
                     onClick={() => handleApprove(app)}
                     disabled={busyId === app.id}
-                    className="flex-grow flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/10 transition-all active:scale-98 disabled:opacity-50"
+                    className="flex-grow flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/10 transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                     Approve

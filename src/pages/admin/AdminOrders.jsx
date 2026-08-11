@@ -558,11 +558,9 @@ export const AdminOrders = () => {
     }
   };
 
-  // 🎯 Admin Control for Rider Accept/Reject Status Override
   const handleAdminRiderAcceptStatus = async (orderId, newAcceptStatus) => {
     try {
       if (newAcceptStatus === "accepted") {
-        // ১. অপটিমিস্টিক লোকাল স্টেট আপডেট (Preparing সেট করা)
         setOrders((prevOrders) =>
           prevOrders.map((ord) => {
             const ordId = ord.id || ord._id;
@@ -578,7 +576,6 @@ export const AdminOrders = () => {
           }),
         );
 
-        // ২. ব্যাকএন্ডে status হিসেবে "Preparing" এবং riderAcceptStatus হিসেবে "accepted" পাঠানো
         await updateOrderStatus(orderId, "Preparing", "accepted");
 
         const payload = {
@@ -693,7 +690,7 @@ export const AdminOrders = () => {
   );
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-6">
       <Toaster />
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -715,19 +712,20 @@ export const AdminOrders = () => {
       />
 
       <div className="w-full flex flex-col gap-6">
+        {/* 🎯 Ultra-wide Table Container Optimization */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
           <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-xs text-left border-collapse table-auto">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
-                  <th className="px-2.5 py-3.5">Order ID</th>
-                  <th className="px-2.5 py-3.5">Customer</th>
-                  <th className="px-2.5 py-3.5">Address</th>
-                  <th className="px-2.5 py-3.5">Total Amount</th>
-                  <th className="px-2.5 py-3.5">Order Action</th>
-                  <th className="px-2.5 py-3.5">Delivery Status</th>
-                  <th className="px-2.5 py-3.5">Assigned Rider</th>
-                  <th className="px-2.5 py-3.5 text-right">Actions</th>
+                  <th className="px-3 py-3.5 sm:px-4">Order ID</th>
+                  <th className="px-3 py-3.5 sm:px-4">Customer</th>
+                  <th className="px-3 py-3.5 sm:px-4">Address</th>
+                  <th className="px-3 py-3.5 sm:px-4">Total Amount</th>
+                  <th className="px-3 py-3.5 sm:px-4">Order Action</th>
+                  <th className="px-3 py-3.5 sm:px-4">Delivery Status</th>
+                  <th className="px-3 py-3.5 sm:px-4">Assigned Rider</th>
+                  <th className="px-3 py-3.5 sm:px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -765,11 +763,11 @@ export const AdminOrders = () => {
                     return (
                       <tr
                         key={ordId}
-                        className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-colors"
+                        className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors"
                       >
                         <td
                           onClick={() => setSelectedOrderDetails(ord)}
-                          className="px-2.5 py-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                          className="px-3 py-3 sm:px-4 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
                           title={ordId}
                         >
                           {formatShortOrderId(ordId)}
@@ -782,8 +780,8 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-2.5 py-3">
-                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px]">
+                        <td className="px-3 py-3 sm:px-4">
+                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[120px] 2xl:max-w-[160px]">
                             {ord.user?.name || ord.customerName || "Guest"}
                           </span>
                           <span className="block text-[10px] text-neutral-400 mt-0.5">
@@ -791,23 +789,23 @@ export const AdminOrders = () => {
                           </span>
                         </td>
 
-                        <td className="px-2.5 py-3">
+                        <td className="px-3 py-3 sm:px-4">
                           <span
-                            className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[120px]"
+                            className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[140px] 2xl:max-w-[200px]"
                             title={ord.user?.address || ord.deliveryAddress}
                           >
                             {ord.user?.address || ord.deliveryAddress || "-"}
                           </span>
-                          <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[120px]">
+                          <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]">
                             {ord.user?.pickArea || ord.area || ""}
                           </span>
                         </td>
 
-                        <td className="px-2.5 py-3 font-bold text-primary-500 whitespace-nowrap">
+                        <td className="px-3 py-3 sm:px-4 font-bold text-primary-500 whitespace-nowrap">
                           ৳{Number(ord.total || ord.grandTotal || 0).toFixed(2)}
                         </td>
 
-                        <td className="px-2.5 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
                           {isPendingUnhandled ? (
                             <div className="flex gap-1">
                               <button
@@ -840,7 +838,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-2.5 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
                           {isPendingUnhandled ? (
                             <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                               Pending
@@ -890,8 +888,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        {/* ASSIGNED RIDER Column */}
-                        <td className="px-2.5 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
                             <select
                               value={assignedRiderId}
@@ -903,7 +900,7 @@ export const AdminOrders = () => {
                               onChange={(e) =>
                                 handleAssignRider(ordId, e.target.value)
                               }
-                              className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[130px] ${
+                              className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[140px] 2xl:max-w-[180px] ${
                                 isPendingUnhandled ||
                                 isRejected ||
                                 ord.status === "Delivered"
@@ -923,14 +920,13 @@ export const AdminOrders = () => {
                               ))}
                             </select>
 
-                            {/* Admin Rider Override Buttons */}
                             {assignedRiderId &&
                               !isPendingUnhandled &&
                               !isRejected &&
                               ord.status !== "Delivered" && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {ord.riderAcceptStatus === "accepted" ? (
-                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-955/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                                       ✓ Accepted
                                     </span>
                                   ) : (
@@ -968,17 +964,17 @@ export const AdminOrders = () => {
                           </div>
                         </td>
 
-                        <td className="px-2.5 py-3 text-right whitespace-nowrap">
+                        <td className="px-3 py-3 sm:px-4 text-right whitespace-nowrap">
                           <button
                             onClick={() => setActiveChatOrderId(ordId)}
-                            className={`p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
                               activeChatOrderId === ordId
                                 ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
                                 : ""
                             }`}
                             title="Open Live Chat Console"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
@@ -999,7 +995,7 @@ export const AdminOrders = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-lg flex flex-col h-[580px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-2xl"
+              className="w-full max-w-lg 2xl:max-w-xl flex flex-col h-[580px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-2xl"
             >
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 flex items-center justify-between shrink-0">
                 <div>
@@ -1049,7 +1045,7 @@ export const AdminOrders = () => {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-950/20">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-955/20">
                 {(currentChat.chatHistory || []).length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-neutral-400 text-xs gap-1">
                     <MessageSquare className="w-8 h-8 opacity-40" />
@@ -1090,7 +1086,7 @@ export const AdminOrders = () => {
                   value={adminChatMessage}
                   onChange={(e) => setAdminChatMessage(e.target.value)}
                   placeholder="Type message as Barcode Admin..."
-                  className="flex-grow px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="flex-grow px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <button
                   type="submit"
@@ -1112,7 +1108,7 @@ export const AdminOrders = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6"
+              className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl 2xl:max-w-5xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6"
             >
               <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
                 <div>
