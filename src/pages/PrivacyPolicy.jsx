@@ -8,8 +8,8 @@ export const PrivacyPolicy = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 pt-5 pb-12 transition-colors duration-300">
-      {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
-      <div className="site-container space-y-4">
+      {/* 🎯 Max Width Responsive করার ফলে Large Screen-এ ফাকা থাকবে না */}
+      <div className="site-container max-w-4xl xl:max-w-6xl 2xl:max-w-7xl mx-auto space-y-4 px-4 sm:px-6">
         
         {/* Compact Header */}
         <div className="text-center space-y-1">
