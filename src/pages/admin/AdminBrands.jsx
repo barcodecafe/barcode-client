@@ -28,19 +28,29 @@ export const AdminBrands = () => {
 
   const load = () => {
     getAllBrandsAdmin()
-      .then((data) => setBrands(data || []))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        // 🎯 order ফিল্ড অনুযায়ী সোর্ট নিশ্চিত করা
+        const sorted = list.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+        setBrands(sorted);
+      })
       .catch((e) => console.error("Failed to load brands:", e))
       .finally(() => setLoading(false));
   };
+
   useEffect(load, []);
 
-  // 🎯 ড্র্যাগ অ্যান্ড ড্রপের পর ব্যাকএন্ডে সঠিক ID সহ সেভ করার লজিক
+  // 🎯 ড্র্যাগ অ্যান্ড ড্রপের পর ব্যাকএন্ডে সঠিক ID সহ সেভ ও order ভ্যালু আপডেট
   const handleBrandReorder = async (reorderedBrands) => {
-    // ১. লোকাল স্টেট আপডেট
-    setBrands(reorderedBrands);
+    // ১. সাথে সাথে UI তে নতুন order মান বসিয়ে স্টেট আপডেট
+    const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
+      ...brand,
+      order: idx + 1,
+    }));
+    setBrands(updatedWithOrder);
 
-    // ২. _id অথবা id সঠিকভাবে এক্সট্র্যাক্ট করা
-    const orderedIds = reorderedBrands
+    // ২. _id অথবা id এক্সট্র্যাক্ট করে স্ট্রিং অ্যারে তৈরি
+    const orderedIds = updatedWithOrder
       .map((b) => String(b._id || b.id))
       .filter((id) => id && id !== "undefined");
 
@@ -147,7 +157,6 @@ export const AdminBrands = () => {
               className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
-                {/* Brand Image & Drag Handle */}
                 <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-955 flex items-center justify-center">
                   {b.cover ? (
                     <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
@@ -168,7 +177,6 @@ export const AdminBrands = () => {
                   )}
                 </div>
 
-                {/* Brand Info */}
                 <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1">
                   <h3 className="font-bold text-base sm:text-lg text-neutral-800 dark:text-white truncate">{b.name}</h3>
                   <p className="text-xs text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
@@ -176,7 +184,6 @@ export const AdminBrands = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="p-4 sm:p-5 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
                 <button onClick={() => openEdit(b)} className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
                 <button onClick={() => handleDelete(b)} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>

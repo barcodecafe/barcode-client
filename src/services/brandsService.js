@@ -43,7 +43,10 @@ export async function updateBrand(id, updatedFields) {
 
 /** PUT /api/brands/reorder (admin) — Live Server-এ ব্র্যান্ড অর্ডার সেভ করার জন্য */
 export async function updateBrandOrder(orderedBrandIds) {
-  return apiClient.put('/brands/reorder', { brandIds: orderedBrandIds });
+  return apiClient.put('/brands/reorder', { 
+    brandIds: orderedBrandIds,
+    orderedIds: orderedBrandIds 
+  });
 }
 
 /** DELETE /api/brands/:id (admin) */
