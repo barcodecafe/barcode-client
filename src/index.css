@@ -4,7 +4,6 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  
   --color-primary-50: #fdf2f2;
   --color-primary-100: #fde8e8;
   --color-primary-200: #fbd5d5;
@@ -15,7 +14,6 @@
   --color-primary-700: #990000; 
   --color-primary-800: #800000;
   --color-primary-900: #660000;
-
 
   --color-barcode-black: #000000; /* K-100 */
 
@@ -44,6 +42,10 @@
   --color-red-650: #ca2121;
   --color-red-850: #8b1c1c;
 
+  /* Custom breakpoints for ultra-wide monitors */
+  --breakpoint-3xl: 120rem; /* 1920px */
+  --breakpoint-4xl: 160rem; /* 2560px */
+
   --font-sans: 'Inter', sans-serif;
   --font-display: 'Outfit', sans-serif;
 }
@@ -53,7 +55,7 @@
 ------------------------------------------------------------------------ */
 @utility site-container {
   width: 100%;
-  max-width: 80rem; /* 1280px (max-w-7xl) */
+  max-width: 80rem; /* 1280px - Standard Laptop (max-w-7xl) */
   margin-left: auto;
   margin-right: auto;
   padding-left: 1.5rem;  /* 24px - Mobile (px-6) */
@@ -71,6 +73,25 @@
   .site-container {
     padding-left: 4rem;    /* 64px - Laptop/Desktop (lg:px-16) */
     padding-right: 4rem;
+  }
+}
+
+/* Responsive scaling for Ultra-wide / Large Displays */
+@media (min-width: 1536px) {
+  .site-container {
+    max-width: 96rem;   /* 1536px (2xl) */
+  }
+}
+
+@media (min-width: 1920px) {
+  .site-container {
+    max-width: 120rem;  /* 1920px (3xl - Full HD Big Monitor) */
+  }
+}
+
+@media (min-width: 2560px) {
+  .site-container {
+    max-width: 160rem;  /* 2560px (4xl - 2K/4K Ultra-wide) */
   }
 }
 
