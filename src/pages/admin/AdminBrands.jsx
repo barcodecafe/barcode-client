@@ -74,7 +74,7 @@ export const AdminBrands = () => {
       if (orderedIds.length > 0) {
         syncOrderToServer(orderedIds);
       }
-    }, 300);
+    }, 100);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
