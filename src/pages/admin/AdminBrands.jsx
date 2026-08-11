@@ -25,6 +25,9 @@ export const AdminBrands = () => {
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  
+  // 🎯 Debounce Ref to avoid rapid multiple requests to backend
+  const syncTimerRef = useRef(null);
 
   // 🎯 Fast Async Sync to Backend
   const syncOrderToServer = useCallback(async (orderedIds) => {
@@ -51,23 +54,27 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 Instant Optimistic UI Update (কোনো রিসেট/অপেক্ষা ছাড়াই ফাস্ট সেভ)
+  // 🎯 Debounced Optimistic UI Update (Super fast front-end, throttled back-end)
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Super Fast Response)
+    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Instant 0ms response)
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ব্যাকগ্রাউন্ডে অ্যাসিনক্রোনাসভাবে সেভ (Non-blocking call)
-    const orderedIds = updatedWithOrder
-      .map((b) => b.id ?? b._id)
-      .filter((id) => id !== undefined && id !== null);
+    // ২. ড্র্যাগিং চলাকালীন অপ্রয়োজনীয় ব্যাকএন্ড রিকোয়েস্ট বাতিল করে ৩০০ms পর ১টি কল পাঠাবে
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 
-    if (orderedIds.length > 0) {
-      syncOrderToServer(orderedIds);
-    }
+    syncTimerRef.current = setTimeout(() => {
+      const orderedIds = updatedWithOrder
+        .map((b) => b.id ?? b._id)
+        .filter((id) => id !== undefined && id !== null);
+
+      if (orderedIds.length > 0) {
+        syncOrderToServer(orderedIds);
+      }
+    }, 300);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
