@@ -39,7 +39,7 @@ export const AdminBrands = () => {
     }
   }, []);
 
-  // 🎯 FIX 1: Deterministic Sorting Strategy (order একই হলে id দিয়ে সোর্ট করবে)
+  // 🎯 Deterministic Sorting Strategy
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
@@ -47,10 +47,10 @@ export const AdminBrands = () => {
         const list = Array.isArray(rawList) ? rawList : [];
         
         const sorted = [...list].sort((a, b) => {
-          const orderA = a.order ?? 9999;
-          const orderB = b.order ?? 9999;
+          const orderA = typeof a.order === "number" ? a.order : 9999;
+          const orderB = typeof b.order === "number" ? b.order : 9999;
           if (orderA !== orderB) return orderA - orderB;
-          return (a.id ?? a._id ?? 0) - (b.id ?? b._id ?? 0);
+          return String(a.id ?? a._id ?? "").localeCompare(String(b.id ?? b._id ?? ""));
         });
         
         setBrands(sorted);
@@ -61,16 +61,16 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 FIX 2: Fast Reorder with Instant Async Persistence
+  // 🎯 FIX: Fast Reorder with Stable Sync Delay
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Instant Response)
+    // ১. সাথে সাথে স্টেট আপডেট
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ড্র্যাগ ছেড়ে দেওয়ার সাথে সাথেই সেভ শুরু হবে
+    // ২. ৫০০ms বাফারে ব্যাকএন্ড সেভ (যেন ড্র্যাগ শেষ হলে রিকোয়েস্ট সফল হয়)
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 
     syncTimerRef.current = setTimeout(() => {
@@ -81,7 +81,7 @@ export const AdminBrands = () => {
       if (orderedIds.length > 0) {
         syncOrderToServer(orderedIds);
       }
-    }, 50); // ৫০ms এর মধ্যে সেভ ট্রিগার হবে
+    }, 500);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
@@ -116,6 +116,7 @@ export const AdminBrands = () => {
         setBrands((prev) => [...prev, created?.data || created]);
       }
       setIsModalOpen(false);
+      load(); // নতুন ডাটা সঠিকভাবে সোর্ট হয়ে লোড করার জন্য
     } catch (err) {
       alert("Failed to save brand: " + err.message);
     } finally {
