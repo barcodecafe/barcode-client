@@ -26,25 +26,35 @@ export const AdminBrands = () => {
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
-  // 🎯 Fast Async Sync to Backend
-  const syncOrderToServer = useCallback(async (orderedIds) => {
-    try {
-      if (typeof updateBrandOrder === "function") {
-        const res = await updateBrandOrder(orderedIds);
-        console.log("Reorder API Response:", res);
-      }
-    } catch (err) {
-      console.error("Failed to sync brand order on server:", err);
+  // 🎯 Timeout Ref for Debounce (Race Condition Safety)
+  const reorderTimeoutRef = useRef(null);
+
+  // 🎯 Debounced & Safe Sync to Backend (300ms delay)
+  const syncOrderToServer = useCallback((orderedIds) => {
+    if (reorderTimeoutRef.current) {
+      clearTimeout(reorderTimeoutRef.current);
     }
+
+    reorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (typeof updateBrandOrder === "function") {
+          const res = await updateBrandOrder(orderedIds);
+          console.log("Reorder API Response:", res);
+        }
+      } catch (err) {
+        console.error("Failed to sync brand order on server:", err);
+      }
+    }, 300);
   }, []);
 
-  // 🎯 Strict Deterministic Sorting Strategy
+  // 🎯 Clean & Strict Sorting Strategy
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
         const rawList = Array.isArray(res) ? res : res?.data || [];
         const list = Array.isArray(rawList) ? rawList : [];
 
+        // Strictly sort by `order` field
         const sorted = [...list].sort((a, b) => {
           const orderA = typeof a.order === "number" ? a.order : 9999;
           const orderB = typeof b.order === "number" ? b.order : 9999;
@@ -64,7 +74,7 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 FIX: Immediate Sync without Debounce Loss on Drag
+  // 🎯 FIX: Debounced Sync to avoid race conditions on drag
   const handleBrandReorder = (reorderedBrands) => {
     // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
@@ -78,7 +88,7 @@ export const AdminBrands = () => {
       .map((b) => b.id ?? b._id)
       .filter((id) => id !== undefined && id !== null);
 
-    // ৩. ইনস্ট্যান্ট ব্যাকএন্ড সেভ কল
+    // ৩. ডিব্যাউন্সড ব্যাকএন্ড সেভ কল (৩০০ms বিরতিতে সেভ হবে)
     if (orderedIds.length > 0) {
       syncOrderToServer(orderedIds);
     }
