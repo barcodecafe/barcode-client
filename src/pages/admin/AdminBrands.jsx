@@ -28,8 +28,11 @@ export const AdminBrands = () => {
 
   const load = () => {
     getAllBrandsAdmin()
-      .then((data) => {
-        const list = Array.isArray(data) ? data : [];
+      .then((res) => {
+        // 🎯 backend response structure: { success: true, data: [...] } or direct array
+        const rawList = res?.data || res;
+        const list = Array.isArray(rawList) ? rawList : [];
+        
         // 🎯 order ফিল্ড অনুযায়ী সোর্ট নিশ্চিত করা
         const sorted = list.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
         setBrands(sorted);
@@ -49,10 +52,10 @@ export const AdminBrands = () => {
     }));
     setBrands(updatedWithOrder);
 
-    // ২. _id অথবা id এক্সট্র্যাক্ট করে স্ট্রিং অ্যারে তৈরি
+    // ২. Numeric ID (id) থাকলে সেটি অগ্রাধিকার পাবে, না থাকলে MongoDB _id
     const orderedIds = updatedWithOrder
-      .map((b) => String(b._id || b.id))
-      .filter((id) => id && id !== "undefined");
+      .map((b) => b.id ?? b._id)
+      .filter((id) => id !== undefined && id !== null);
 
     if (typeof updateBrandOrder === "function" && orderedIds.length > 0) {
       try {
@@ -86,13 +89,13 @@ export const AdminBrands = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const targetId = editing?._id || editing?.id;
+      const targetId = editing?.id ?? editing?._id;
       if (editing) {
         const updated = await updateBrand(targetId, form);
-        setBrands((prev) => prev.map((b) => ((b._id || b.id) === targetId ? updated : b)));
+        setBrands((prev) => prev.map((b) => ((b.id ?? b._id) === targetId ? (updated?.data || updated) : b)));
       } else {
         const created = await createBrand(form);
-        setBrands((prev) => [...prev, created]);
+        setBrands((prev) => [...prev, created?.data || created]);
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -103,11 +106,11 @@ export const AdminBrands = () => {
   };
 
   const handleDelete = async (b) => {
-    const targetId = b._id || b.id;
+    const targetId = b.id ?? b._id;
     if (!window.confirm("Delete this brand? Its branches will be unassigned (not deleted).")) return;
     try {
       await deleteBrand(targetId);
-      setBrands((prev) => prev.filter((item) => (item._id || item.id) !== targetId));
+      setBrands((prev) => prev.filter((item) => (item.id ?? item._id) !== targetId));
     } catch (err) {
       alert("Failed to delete brand: " + err.message);
     }
@@ -152,7 +155,7 @@ export const AdminBrands = () => {
         >
           {brands.map((b) => (
             <Reorder.Item
-              key={b._id || b.id}
+              key={b.id ?? b._id}
               value={b}
               className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
