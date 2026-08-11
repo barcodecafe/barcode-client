@@ -26,7 +26,6 @@ export const AdminBrands = () => {
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
   
-  // 🎯 Debounce Ref to avoid rapid multiple requests to backend
   const syncTimerRef = useRef(null);
 
   // 🎯 Fast Async Sync to Backend
@@ -40,12 +39,20 @@ export const AdminBrands = () => {
     }
   }, []);
 
+  // 🎯 FIX 1: Deterministic Sorting Strategy (order একই হলে id দিয়ে সোর্ট করবে)
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
         const rawList = res?.data || res;
         const list = Array.isArray(rawList) ? rawList : [];
-        const sorted = list.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+        
+        const sorted = [...list].sort((a, b) => {
+          const orderA = a.order ?? 9999;
+          const orderB = b.order ?? 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.id ?? a._id ?? 0) - (b.id ?? b._id ?? 0);
+        });
+        
         setBrands(sorted);
       })
       .catch((e) => console.error("Failed to load brands:", e))
@@ -54,16 +61,16 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 Debounced Optimistic UI Update (Super fast front-end, throttled back-end)
+  // 🎯 FIX 2: Fast Reorder with Instant Async Persistence
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Instant 0ms response)
+    // ১. তাত্ক্ষণিকভাবে ফ্রন্টএন্ড স্টেট আপডেট (Instant Response)
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ড্র্যাগিং চলাকালীন অপ্রয়োজনীয় ব্যাকএন্ড রিকোয়েস্ট বাতিল করে ৩০০ms পর ১টি কল পাঠাবে
+    // ২. ড্র্যাগ ছেড়ে দেওয়ার সাথে সাথেই সেভ শুরু হবে
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 
     syncTimerRef.current = setTimeout(() => {
@@ -74,7 +81,7 @@ export const AdminBrands = () => {
       if (orderedIds.length > 0) {
         syncOrderToServer(orderedIds);
       }
-    }, 100);
+    }, 50); // ৫০ms এর মধ্যে সেভ ট্রিগার হবে
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
