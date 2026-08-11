@@ -34,14 +34,22 @@ export const AdminBrands = () => {
   };
   useEffect(load, []);
 
-  const handleBrandReorder = (reorderedBrands) => {
+  // 🎯 ড্র্যাগ অ্যান্ড ড্রপের পর ব্যাকএন্ডে সঠিক ID সহ সেভ করার লজিক
+  const handleBrandReorder = async (reorderedBrands) => {
+    // ১. লোকাল স্টেট আপডেট
     setBrands(reorderedBrands);
-    const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
 
-    if (typeof updateBrandOrder === "function") {
-      updateBrandOrder(orderedIds).catch((err) => {
+    // ২. _id অথবা id সঠিকভাবে এক্সট্র্যাক্ট করা
+    const orderedIds = reorderedBrands
+      .map((b) => String(b._id || b.id))
+      .filter((id) => id && id !== "undefined");
+
+    if (typeof updateBrandOrder === "function" && orderedIds.length > 0) {
+      try {
+        await updateBrandOrder(orderedIds);
+      } catch (err) {
         console.error("Failed to sync brand order on server:", err);
-      });
+      }
     }
   };
 
@@ -68,9 +76,10 @@ export const AdminBrands = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      const targetId = editing?._id || editing?.id;
       if (editing) {
-        const updated = await updateBrand(editing.id, form);
-        setBrands((prev) => prev.map((b) => (b.id === editing.id ? updated : b)));
+        const updated = await updateBrand(targetId, form);
+        setBrands((prev) => prev.map((b) => ((b._id || b.id) === targetId ? updated : b)));
       } else {
         const created = await createBrand(form);
         setBrands((prev) => [...prev, created]);
@@ -83,11 +92,12 @@ export const AdminBrands = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (b) => {
+    const targetId = b._id || b.id;
     if (!window.confirm("Delete this brand? Its branches will be unassigned (not deleted).")) return;
     try {
-      await deleteBrand(id);
-      setBrands((prev) => prev.filter((b) => b.id !== id));
+      await deleteBrand(targetId);
+      setBrands((prev) => prev.filter((item) => (item._id || item.id) !== targetId));
     } catch (err) {
       alert("Failed to delete brand: " + err.message);
     }
@@ -124,7 +134,6 @@ export const AdminBrands = () => {
           <p className="text-sm">No brands yet. Add your first brand to get started.</p>
         </div>
       ) : (
-        /* 🎯 Ultra-wide responsive container optimization */
         <Reorder.Group
           axis="y"
           values={brands}
@@ -133,13 +142,13 @@ export const AdminBrands = () => {
         >
           {brands.map((b) => (
             <Reorder.Item
-              key={b.id || b._id}
+              key={b._id || b.id}
               value={b}
               className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
                 {/* Brand Image & Drag Handle */}
-                <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
+                <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-955 flex items-center justify-center">
                   {b.cover ? (
                     <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
                   ) : b.logoLight ? (
@@ -170,7 +179,7 @@ export const AdminBrands = () => {
               {/* Action Buttons */}
               <div className="p-4 sm:p-5 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
                 <button onClick={() => openEdit(b)} className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(b.id)} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(b)} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
               </div>
             </Reorder.Item>
           ))}
