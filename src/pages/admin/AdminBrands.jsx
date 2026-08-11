@@ -25,8 +25,6 @@ export const AdminBrands = () => {
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
-  
-  const syncTimerRef = useRef(null);
 
   // 🎯 Fast Async Sync to Backend
   const syncOrderToServer = useCallback(async (orderedIds) => {
@@ -39,20 +37,24 @@ export const AdminBrands = () => {
     }
   }, []);
 
-  // 🎯 Deterministic Sorting Strategy
+  // 🎯 Strict Deterministic Sorting Strategy
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
         const rawList = res?.data || res;
         const list = Array.isArray(rawList) ? rawList : [];
-        
+
         const sorted = [...list].sort((a, b) => {
           const orderA = typeof a.order === "number" ? a.order : 9999;
           const orderB = typeof b.order === "number" ? b.order : 9999;
+
           if (orderA !== orderB) return orderA - orderB;
-          return String(a.id ?? a._id ?? "").localeCompare(String(b.id ?? b._id ?? ""));
+
+          const idA = String(a.id ?? a._id ?? "");
+          const idB = String(b.id ?? b._id ?? "");
+          return idA.localeCompare(idB);
         });
-        
+
         setBrands(sorted);
       })
       .catch((e) => console.error("Failed to load brands:", e))
@@ -61,27 +63,24 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 FIX: Fast Reorder with Stable Sync Delay
+  // 🎯 FIX: Immediate Sync without Debounce Loss on Drag
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. সাথে সাথে স্টেট আপডেট
+    // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ৫০০ms বাফারে ব্যাকএন্ড সেভ (যেন ড্র্যাগ শেষ হলে রিকোয়েস্ট সফল হয়)
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    // ২. নিশ্চিত আইডি লিস্ট ফিল্টার
+    const orderedIds = updatedWithOrder
+      .map((b) => b.id ?? b._id)
+      .filter((id) => id !== undefined && id !== null);
 
-    syncTimerRef.current = setTimeout(() => {
-      const orderedIds = updatedWithOrder
-        .map((b) => b.id ?? b._id)
-        .filter((id) => id !== undefined && id !== null);
-
-      if (orderedIds.length > 0) {
-        syncOrderToServer(orderedIds);
-      }
-    }, 500);
+    // ৩. ইনস্ট্যান্ট ব্যাকএন্ড সেভ কল
+    if (orderedIds.length > 0) {
+      syncOrderToServer(orderedIds);
+    }
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
@@ -116,7 +115,7 @@ export const AdminBrands = () => {
         setBrands((prev) => [...prev, created?.data || created]);
       }
       setIsModalOpen(false);
-      load(); // নতুন ডাটা সঠিকভাবে সোর্ট হয়ে লোড করার জন্য
+      load(); // নতুন ডাটা প্রপারলি লোড করার জন্য
     } catch (err) {
       alert("Failed to save brand: " + err.message);
     } finally {
