@@ -30,7 +30,8 @@ export const AdminBrands = () => {
   const syncOrderToServer = useCallback(async (orderedIds) => {
     try {
       if (typeof updateBrandOrder === "function") {
-        await updateBrandOrder(orderedIds);
+        const res = await updateBrandOrder(orderedIds);
+        console.log("Reorder API Response:", res);
       }
     } catch (err) {
       console.error("Failed to sync brand order on server:", err);
@@ -41,7 +42,7 @@ export const AdminBrands = () => {
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
-        const rawList = res?.data || res;
+        const rawList = Array.isArray(res) ? res : res?.data || [];
         const list = Array.isArray(rawList) ? rawList : [];
 
         const sorted = [...list].sort((a, b) => {
@@ -72,7 +73,7 @@ export const AdminBrands = () => {
     }));
     setBrands(updatedWithOrder);
 
-    // ২. নিশ্চিত আইডি লিস্ট ফিল্টার
+    // ২. ফিল্টার করে আইডি বের করুন
     const orderedIds = updatedWithOrder
       .map((b) => b.id ?? b._id)
       .filter((id) => id !== undefined && id !== null);
@@ -109,13 +110,15 @@ export const AdminBrands = () => {
       const targetId = editing?.id ?? editing?._id;
       if (editing) {
         const updated = await updateBrand(targetId, form);
-        setBrands((prev) => prev.map((b) => ((b.id ?? b._id) === targetId ? (updated?.data || updated) : b)));
+        const freshData = updated?.data || updated;
+        setBrands((prev) => prev.map((b) => ((b.id ?? b._id) === targetId ? freshData : b)));
       } else {
         const created = await createBrand(form);
-        setBrands((prev) => [...prev, created?.data || created]);
+        const freshData = created?.data || created;
+        setBrands((prev) => [...prev, freshData]);
       }
       setIsModalOpen(false);
-      load(); // নতুন ডাটা প্রপারলি লোড করার জন্য
+      load();
     } catch (err) {
       alert("Failed to save brand: " + err.message);
     } finally {

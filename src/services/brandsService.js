@@ -1,16 +1,21 @@
 // ---------------------------------------------------------------------------
 // brandsService.js — LIVE BACKEND
-// Brands are the group level above branches: Barcode Café, Omerta, Teheriwala,
-// Mezzan Haile Aaiun, Bir Chattala, Barcode Sweets. A branch belongs to a brand
-// (branch.brandId), and each brand has its own /brands/:slug microsite.
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
+
+/** Helper to strictly extract data payload */
+const extractData = (res) => {
+  if (!res) return [];
+  if (res.data && res.data.data) return res.data.data;
+  if (res.data) return res.data;
+  return res;
+};
 
 /** GET /api/brands — public listing (active brands, ordered) */
 export async function getAllBrands() {
   try {
     const response = await apiClient.get('/brands');
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error("Error fetching public brands:", error);
     throw error;
@@ -21,7 +26,7 @@ export async function getAllBrands() {
 export async function getAllBrandsAdmin() {
   try {
     const response = await apiClient.get('/brands?all=true');
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error("Error fetching admin brands:", error);
     throw error;
@@ -32,7 +37,7 @@ export async function getAllBrandsAdmin() {
 export async function getBrandBySlug(slug) {
   try {
     const response = await apiClient.get(`/brands/slug/${encodeURIComponent(slug)}`);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error(`Error fetching brand with slug ${slug}:`, error);
     throw error;
@@ -43,7 +48,7 @@ export async function getBrandBySlug(slug) {
 export async function getBrandBranches(slug) {
   try {
     const response = await apiClient.get(`/brands/slug/${encodeURIComponent(slug)}/branches`);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error(`Error fetching branches for brand ${slug}:`, error);
     throw error;
@@ -54,7 +59,7 @@ export async function getBrandBranches(slug) {
 export async function getBrandMenu(slug) {
   try {
     const response = await apiClient.get(`/brands/slug/${encodeURIComponent(slug)}/menu`);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error(`Error fetching menu for brand ${slug}:`, error);
     throw error;
@@ -65,7 +70,7 @@ export async function getBrandMenu(slug) {
 export async function createBrand(brand) {
   try {
     const response = await apiClient.post('/brands', brand);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error("Error creating brand:", error);
     throw error;
@@ -76,7 +81,7 @@ export async function createBrand(brand) {
 export async function updateBrand(id, updatedFields) {
   try {
     const response = await apiClient.patch(`/brands/${id}`, updatedFields);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error(`Error updating brand ${id}:`, error);
     throw error;
@@ -86,7 +91,6 @@ export async function updateBrand(id, updatedFields) {
 /** PUT /api/brands/reorder (admin) — Live Server-এ ব্র্যান্ড অর্ডার সেভ করার জন্য */
 export async function updateBrandOrder(orderedBrandIds) {
   try {
-    // 백엔드가 orderedIds অথবা brandIds যেকোনো একটি রিড করলে সমস্যা হবে না
     const response = await apiClient.put('/brands/reorder', { 
       brandIds: orderedBrandIds,
       orderedIds: orderedBrandIds 
@@ -102,7 +106,7 @@ export async function updateBrandOrder(orderedBrandIds) {
 export async function deleteBrand(id) {
   try {
     const response = await apiClient.delete(`/brands/${id}`);
-    return response?.data ?? response;
+    return extractData(response);
   } catch (error) {
     console.error(`Error deleting brand ${id}:`, error);
     throw error;
