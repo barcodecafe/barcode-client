@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
+import {
+  Plus, Edit2, Trash2, X, Store, Upload, ExternalLink,
+  Eye, EyeOff, GripVertical, Phone, Mail, Globe,
+} from "lucide-react";
 import {
   getAllBrandsAdmin,
   createBrand,
   updateBrand,
   deleteBrand,
-  updateBrandOrder, // 🎯 রি-অর্ডার এপিআই সার্ভিস
+  updateBrandOrder,
 } from "../../services/brandsService";
 
 const BLANK = {
@@ -25,7 +28,7 @@ export const AdminBrands = () => {
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
-  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
+  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref
 
   const load = () => {
     getAllBrandsAdmin()
@@ -36,19 +39,17 @@ export const AdminBrands = () => {
   useEffect(load, []);
 
   // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Rollback + Debounce)
-  // [SORTING-FIX] API fail হলে আগের order-এ rollback করা হবে এবং দ্রুত ড্র্যাগিং এ রেইস কন্ডিশন ঠেকাতে debounce করা হবে
   const handleBrandReorder = (reorderedBrands) => {
-    const previousBrands = brands; // [SORTING-FIX] rollback এর জন্য আগের state save
+    const previousBrands = brands;
     setBrands(reorderedBrands);
     const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
 
-    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
     reorderTimeoutRef.current = setTimeout(() => {
       if (typeof updateBrandOrder === "function") {
         updateBrandOrder(orderedIds).catch((err) => {
           console.error("Failed to sync brand order on server:", err);
-          setBrands(previousBrands); // [SORTING-FIX] ❌ API fail → আগের order restore
+          setBrands(previousBrands); // [SORTING-FIX] rollback on error
         });
       }
     }, 300);
@@ -102,181 +103,251 @@ export const AdminBrands = () => {
     }
   };
 
-  const field = "w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500";
+  const inputClass = "w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="w-full space-y-6">
+      {/* ── Responsive Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-100 dark:border-neutral-800/80">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
-            Brands
+          <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
+            Brands Management
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            The group's brands — drag cards up/down to reorder display sequence.
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Manage restaurant group brands — drag and drop cards to change public display order.
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all cursor-pointer w-full sm:w-auto shrink-0"
         >
-          <Plus className="w-4 h-4" /> Add Brand
+          <Plus className="w-4 h-4 stroke-[2.5]" /> Add New Brand
         </button>
       </div>
 
+      {/* ── Brand List / Skeletons ── */}
       {loading ? (
-        <div className="flex flex-col gap-3 max-w-4xl">
-          {[1, 2, 3].map((n) => <div key={n} className="h-28 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-28 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/40 dark:border-neutral-800/40" />
+          ))}
         </div>
       ) : brands.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-neutral-400">
-          <Store className="w-10 h-10 mx-auto stroke-1 mb-3" />
-          <p className="text-sm">No brands yet. Add your first brand to get started.</p>
+        <div className="text-center py-16 px-4 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl bg-neutral-50/50 dark:bg-neutral-950/30 text-neutral-400">
+          <Store className="w-12 h-12 mx-auto stroke-1 mb-3 text-neutral-300 dark:text-neutral-700" />
+          <h3 className="text-sm sm:text-base font-bold text-neutral-700 dark:text-neutral-300">No brands found</h3>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">Get started by adding your first brand.</p>
+          <button onClick={openCreate} className="mt-4 px-4 py-2 bg-primary-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-primary-600 transition-colors">
+            Create Brand
+          </button>
         </div>
       ) : (
-        /* 🎯 ১ কলামে সিঙ্গেল লিস্টে স্মুথ ড্র্যাগ অ্যান্ড ড্রপ Reorder.Group */
-        <Reorder.Group
-          axis="y"
-          values={brands}
-          onReorder={handleBrandReorder}
-          className="flex flex-col gap-3 max-w-4xl"
-        >
+        /* 🎯 Responsive Reorder Group */
+        <Reorder.Group axis="y" values={brands} onReorder={handleBrandReorder} className="flex flex-col gap-3.5">
           {brands.map((b) => (
             <Reorder.Item
               key={b.id || b._id}
               value={b}
-              className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
+              className="group relative rounded-2xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
+              {/* Card Main */}
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
-                {/* Brand Image & Drag Handle */}
-                <div className="relative w-full sm:w-40 h-24 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
+                {/* Image & Badges */}
+                <div className="relative w-full sm:w-44 md:w-48 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center overflow-hidden border-b sm:border-b-0 sm:border-r border-neutral-100 dark:border-neutral-800/60">
                   {b.cover ? (
-                    <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
+                    <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none transition-transform duration-500 group-hover:scale-105" />
                   ) : b.logoLight ? (
-                    <img src={b.logoLight} alt={b.name} className="max-h-12 max-w-[70%] object-contain pointer-events-none" />
+                    <img src={b.logoLight} alt={b.name} className="max-h-14 max-w-[75%] object-contain pointer-events-none p-2" />
                   ) : (
-                    <Store className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                    <div className="flex flex-col items-center gap-1 text-neutral-300 dark:text-neutral-700">
+                      <Store className="w-8 h-8" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">No Image</span>
+                    </div>
                   )}
 
-                  <div className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 backdrop-blur-md text-white">
-                    <GripVertical className="w-4 h-4" />
+                  <div className="absolute top-2.5 left-2.5 p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white shadow-xs flex items-center gap-1">
+                    <GripVertical className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-mono font-bold pr-0.5">#{b.order || 1}</span>
                   </div>
 
-                  {b.isActive === false && (
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-neutral-900/80 text-white text-[9px] font-bold uppercase flex items-center gap-1">
-                      <EyeOff className="w-2.5 h-2.5" /> Hidden
+                  {b.isActive === false ? (
+                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-neutral-900/85 text-neutral-300 text-[10px] font-bold uppercase flex items-center gap-1 border border-neutral-700/50">
+                      <EyeOff className="w-3 h-3 text-red-400" /> Hidden
+                    </span>
+                  ) : (
+                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 text-[10px] font-bold uppercase flex items-center gap-1 border border-emerald-800/40">
+                      <Eye className="w-3 h-3 text-emerald-400" /> Live
                     </span>
                   )}
                 </div>
 
-                {/* Brand Info */}
-                <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
-                  <h3 className="font-bold text-sm text-neutral-800 dark:text-white truncate">{b.name}</h3>
-                  <p className="text-[11px] text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
-                  {b.tagline && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
+                {/* Details */}
+                <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-extrabold text-base sm:text-lg text-neutral-900 dark:text-white truncate">{b.name}</h3>
+                    <span className="text-[11px] font-mono text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md border border-primary-200/60 dark:border-primary-900/40 truncate">
+                      /brands/{b.slug}
+                    </span>
+                  </div>
+
+                  {b.tagline && <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 line-clamp-1">{b.tagline}</p>}
+                  {b.description && <p className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">{b.description}</p>}
+
+                  <div className="flex items-center gap-3 pt-1 flex-wrap text-[11px] text-neutral-500 dark:text-neutral-400">
+                    {b.contactPhone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3 text-neutral-400" /><span className="truncate max-w-[120px]">{b.contactPhone}</span></span>}
+                    {b.contactEmail && <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3 text-neutral-400" /><span className="truncate max-w-[140px]">{b.contactEmail}</span></span>}
+                    {b.website && (
+                      <a href={b.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary-500 hover:underline" onClick={(e) => e.stopPropagation()}>
+                        <Globe className="w-3 h-3" /> Website
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="p-3.5 sm:p-4 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
-                <button onClick={() => openEdit(b)} className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(b.id)} className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+              {/* Actions */}
+              <div className="p-3.5 sm:p-4 flex items-center justify-end sm:flex-col sm:justify-center border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0 bg-neutral-50/40 dark:bg-neutral-950/20">
+                <button type="button" onClick={() => openEdit(b)} className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 text-xs font-bold transition-all cursor-pointer active:scale-95">
+                  <Edit2 className="w-3.5 h-3.5" /><span className="sm:hidden">Edit</span>
+                </button>
+                <button type="button" onClick={() => handleDelete(b.id)} className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/30 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 text-xs font-bold transition-all cursor-pointer active:scale-95">
+                  <Trash2 className="w-3.5 h-3.5" /><span className="sm:hidden">Delete</span>
+                </button>
               </div>
             </Reorder.Item>
           ))}
         </Reorder.Group>
       )}
 
-      {/* Modal */}
+      {/* ── Modal (Bottom Sheet on Mobile, Centered on Desktop) ── */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg max-h-[88vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl"
+              initial={{ opacity: 0, y: 30, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.97 }}
+              className="relative w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
-                <h2 className="text-lg font-black text-neutral-900 dark:text-white">{editing ? "Edit Brand" : "Add Brand"}</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="w-4 h-4" /></button>
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 shrink-0">
+                <div>
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-neutral-900 dark:text-white">
+                    {editing ? `Edit: ${editing.name}` : "Create New Brand"}
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Fill in brand branding and contact details.</p>
+                </div>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 rounded-xl text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-4 space-y-3.5">
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Brand Name *</label>
-                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={field} placeholder="Barcode Café" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Slug (URL) — leave blank to auto-generate</label>
-                  <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={field} placeholder="barcode-cafe" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Tagline</label>
-                  <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className={field} placeholder="Coffee, food & good vibes" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Description</label>
-                  <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${field} resize-none`} />
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Brand Name *</label>
+                    <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} placeholder="e.g. Barcode Café" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Slug (URL identifier)</label>
+                    <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputClass} placeholder="auto-generated if blank" />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 block mb-1">Logo</label>
+                <div>
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Tagline</label>
+                  <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className={inputClass} placeholder="e.g. Coffee, food & good vibes" />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Description</label>
+                  <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} resize-none`} placeholder="Short description of the brand..." />
+                </div>
+
+                {/* Uploads */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/40 space-y-2">
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block">Brand Logo</label>
                     <input type="file" accept="image/*" ref={logoInputRef} onChange={(e) => readImage(e.target.files[0], "logoLight")} className="hidden" />
-                    <button type="button" onClick={() => logoInputRef.current?.click()} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-xs text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-950/40">
-                      <Upload className="w-3.5 h-3.5" /> {form.logoLight ? "Change" : "Upload"}
+                    <button type="button" onClick={() => logoInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-900 transition-colors cursor-pointer">
+                      <Upload className="w-3.5 h-3.5 text-primary-500" /> {form.logoLight ? "Change Logo" : "Upload Logo"}
                     </button>
-                    {form.logoLight && <img src={form.logoLight} alt="logo" className="mt-2 h-10 object-contain mx-auto" />}
+                    {form.logoLight && (
+                      <div className="p-2 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800 flex items-center justify-center">
+                        <img src={form.logoLight} alt="logo" className="h-10 object-contain" />
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500 block mb-1">Cover Image</label>
+
+                  <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/40 space-y-2">
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block">Cover Image</label>
                     <input type="file" accept="image/*" ref={coverInputRef} onChange={(e) => readImage(e.target.files[0], "cover")} className="hidden" />
-                    <button type="button" onClick={() => coverInputRef.current?.click()} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-xs text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-950/40">
-                      <Upload className="w-3.5 h-3.5" /> {form.cover ? "Change" : "Upload"}
+                    <button type="button" onClick={() => coverInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-900 transition-colors cursor-pointer">
+                      <Upload className="w-3.5 h-3.5 text-primary-500" /> {form.cover ? "Change Cover" : "Upload Cover"}
                     </button>
-                    {form.cover && <img src={form.cover} alt="cover" className="mt-2 h-10 w-full object-cover rounded" />}
+                    {form.cover && (
+                      <div className="h-14 rounded-xl overflow-hidden border border-neutral-100 dark:border-neutral-800">
+                        <img src={form.cover} alt="cover" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Website</label>
-                  <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={field} placeholder="https://www.mybarcodecafe.com" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+                {/* Contact */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 block mb-1">Contact Phone</label>
-                    <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} className={field} placeholder="+8801..." />
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Website URL</label>
+                    <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputClass} placeholder="https://..." />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 block mb-1">Contact Email</label>
-                    <input value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={field} placeholder="hello@brand.com" />
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Contact Phone</label>
+                    <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} className={inputClass} placeholder="+8801..." />
                   </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-neutral-500 block mb-1">Contact Address</label>
-                  <input value={form.contactAddress} onChange={(e) => setForm({ ...form, contactAddress: e.target.value })} className={field} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="text-xs font-bold text-neutral-500 block mb-1">Display Order</label>
-                    <input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 0 })} className={field} />
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Contact Email</label>
+                    <input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={inputClass} placeholder="hello@brand.com" />
                   </div>
-                  <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer mt-5">
-                    <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="rounded text-primary-500" />
-                    {form.isActive ? <Eye className="w-4 h-4 text-green-500" /> : <EyeOff className="w-4 h-4 text-neutral-400" />}
-                    Visible publicly
-                  </label>
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Contact Address</label>
+                    <input value={form.contactAddress} onChange={(e) => setForm({ ...form, contactAddress: e.target.value })} className={inputClass} placeholder="e.g. GEC Circle, Chattogram" />
+                  </div>
+                </div>
+
+                {/* Order & Status */}
+                <div className="p-3.5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/40 grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Display Sequence</label>
+                    <input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 0 })} className={inputClass} />
+                  </div>
+                  <div className="flex items-center gap-3 pt-1 sm:pt-4">
+                    <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 cursor-pointer select-none">
+                      <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="w-4 h-4 rounded text-primary-500 accent-primary-500 cursor-pointer" />
+                      {form.isActive ? (
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold"><Eye className="w-4 h-4" /> Visible Publicly</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-neutral-400 font-semibold"><EyeOff className="w-4 h-4" /> Hidden</span>
+                      )}
+                    </label>
+                  </div>
                 </div>
 
                 {form.website && (
-                  <a href={form.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] text-primary-500 hover:underline">
-                    <ExternalLink className="w-3 h-3" /> Test website link
-                  </a>
+                  <div className="pt-0.5">
+                    <a href={form.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-500 hover:underline font-semibold">
+                      <ExternalLink className="w-3 h-3" /> Test visit website
+                    </a>
+                  </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border text-neutral-600 dark:text-neutral-300 text-sm font-semibold">Cancel</button>
-                  <button type="submit" disabled={saving} className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold disabled:opacity-60">
-                    {saving ? "Saving…" : editing ? "Save Changes" : "Create Brand"}
+                {/* Footer Actions */}
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs sm:text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving} className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-500/20 active:scale-95 transition-all disabled:opacity-60 cursor-pointer">
+                    {saving ? "Saving..." : editing ? "Save Changes" : "Create Brand"}
                   </button>
                 </div>
               </form>
