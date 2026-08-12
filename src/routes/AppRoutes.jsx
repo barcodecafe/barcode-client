@@ -9,6 +9,7 @@ import BranchDetail from '../pages/BranchDetail';
 import { Brands } from '../pages/Brands';
 import { BrandLayout } from '../layouts/BrandLayout';
 import { BrandHome } from '../pages/BrandHome';
+import { BrandBranches } from '../pages/BrandBranches';
 import { BrandMenu } from '../pages/BrandMenu';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
@@ -100,6 +101,7 @@ export const AppRoutes = () => {
                 {/* Brand microsites */}
                 <Route path="/brands/:slug" element={<BrandLayout />}>
                   <Route index element={<BrandHome />} />
+                  <Route path="branches" element={<BrandBranches />} />
                   <Route path="menu" element={<BrandMenu />} />
                 </Route>
 
