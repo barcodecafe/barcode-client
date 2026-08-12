@@ -1336,7 +1336,7 @@ export const AdminOrders = () => {
                       <span className="font-medium">0.00</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
-                      <span>Sub Total (Including Vat):</span>
+                      <span>Sub Total (Including Tax):</span>
                       <span>৳{subTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-neutral-200">

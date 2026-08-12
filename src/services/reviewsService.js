@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+
 /** GET /api/reviews/food/:foodId — Get reviews & rating summary for a food */
 export async function getFoodReviews(foodId) {
   const fallback = {
@@ -16,6 +17,7 @@ export async function getFoodReviews(foodId) {
     return fallback;
   }
 }
+
 /** POST /api/reviews — Submit or update a review for a food item (Protected) */
 export async function submitReview({ foodId, rating, comment }) {
   return apiClient.post('/reviews', {
@@ -24,6 +26,7 @@ export async function submitReview({ foodId, rating, comment }) {
     comment: comment || '',
   });
 }
+
 /** DELETE /api/reviews/:id — Delete a review (Protected) */
 export async function deleteReview(reviewId) {
   return apiClient.delete(`/reviews/${Number(reviewId)}`);
