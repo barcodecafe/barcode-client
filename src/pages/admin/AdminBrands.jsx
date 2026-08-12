@@ -38,7 +38,7 @@ export const AdminBrands = () => {
     }
   }, []);
 
-  // 🎯 Load and Sort Brands initially
+  // 🎯 Load and Sort Brands strictly by `order` field from DB
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
@@ -67,19 +67,19 @@ export const AdminBrands = () => {
 
   // 🎯 Instant Save on Drag & Drop Reorder
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট
+    // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট (১ থেকে শুরু করে পর পর Order ভ্যালু সেট)
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
       ...brand,
       order: idx + 1,
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ফিল্টার করে সঠিক ID লিস্ট বের করা
+    // ২. ফিল্টার করে সঠিক ID (কাস্টম id অথবা Mongo _id) বের করা
     const orderedIds = updatedWithOrder
       .map((b) => b.id ?? b._id)
       .filter((id) => id !== undefined && id !== null);
 
-    // ৩. সাথে সাথে (Instant) ব্যাকএন্ডে API রিকোয়েস্ট পাঠানো
+    // ৩. সাথে সাথে ব্যাকএন্ডে API কল পাঠানো
     if (orderedIds.length > 0) {
       syncOrderToServer(orderedIds);
     }
