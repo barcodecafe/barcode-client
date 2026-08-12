@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   Search,
@@ -113,16 +113,32 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
+  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
+
+  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Debounce
+  // আগে filter active থাকলে reorder করলে বাকি branches হারিয়ে যেত।
+  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleBranchReorder = (reorderedBranches) => {
-    setBranches(reorderedBranches);
+    const previousBranches = branches; // [SORTING-FIX] rollback এর জন্য আগের state save
 
-    const orderedIds = reorderedBranches.map((b) => String(b.id || b._id));
+    // [SORTING-FIX] Filter active থাকলে: reordered items merge করো পুরো list-এ
+    const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
+    const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
+    const merged = [...reorderedBranches, ...untouched];
+    setBranches(merged);
 
-    if (typeof updateBranchOrder === "function") {
-      updateBranchOrder(orderedIds).catch((err) => {
-        console.error("Background sync error for branch order:", err);
-      });
-    }
+    const orderedIds = merged.map((b) => String(b.id || b._id));
+
+    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(() => {
+      if (typeof updateBranchOrder === "function") {
+        updateBranchOrder(orderedIds).catch((err) => {
+          console.error("Background sync error for branch order:", err);
+          setBranches(previousBranches); // [SORTING-FIX] ❌ API fail → আগের order restore
+        });
+      }
+    }, 300);
   };
 
   const openAddModal = () => {

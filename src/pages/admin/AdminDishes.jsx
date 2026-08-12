@@ -41,6 +41,7 @@ export const AdminDishes = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reorderCooldown, setReorderCooldown] = useState(false); // [SORTING-FIX] reorder-এর পরে কিছুক্ষণ polling বন্ধ রাখা
 
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -158,9 +159,10 @@ export const AdminDishes = () => {
     [],
   );
 
+  // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling বন্ধ থাকবে যেন server overwrite না করে
   useVisiblePolling(syncFromServer, {
     intervalMs: 60000,
-    enabled: !isModalOpen,
+    enabled: !isModalOpen && !reorderCooldown,
   });
 
   const handleManualRefresh = () => {
@@ -168,7 +170,14 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
+  const foodReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for food reordering
+  const categoryReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for category reordering
+
+  // [SORTING-FIX] Category reorder-এ rollback + cooldown + debounce যোগ করা হয়েছে
   const handleCategoryReorder = async (newOrder) => {
+    const previousCategories = sortedCategories; // [SORTING-FIX] rollback এর জন্য save
+    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য save
+
     const orderMap = new Map();
     newOrder.forEach((cat) => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
@@ -187,26 +196,55 @@ export const AdminDishes = () => {
       })),
     );
 
-    try {
-      if (typeof updateCategoryOrder === "function") {
-        await updateCategoryOrder(finalUniqueOrder);
+    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
+    setReorderCooldown(true);
+    setTimeout(() => setReorderCooldown(false), 5000);
+
+    // [SORTING-FIX] Debounce category API call (300ms)
+    if (categoryReorderTimeoutRef.current) clearTimeout(categoryReorderTimeoutRef.current);
+    categoryReorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (typeof updateCategoryOrder === "function") {
+          await updateCategoryOrder(finalUniqueOrder);
+        }
+      } catch (err) {
+        console.error("Error updating category order on server:", err);
+        setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
+        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
       }
-    } catch (err) {
-      console.error("Error updating category order on server:", err);
-    }
+    }, 300);
   };
 
+  // [SORTING-FIX] Filtered list reorder fix + rollback + cooldown + debounce
+  // আগে filter/search active থাকলে reorder করলে বাকি foods হারিয়ে যেত।
+  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleFoodReorder = async (reorderedFoods) => {
-    setFoods(reorderedFoods);
-    const orderedIds = reorderedFoods.map((f) => String(f.id || f._id));
+    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য আগের state save
 
-    try {
-      if (typeof updateFoodOrder === "function") {
-        await updateFoodOrder(orderedIds);
+    // [SORTING-FIX] Filter/search active থাকলে: reordered items merge করো পুরো list-এ
+    const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
+    const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
+    const merged = [...reorderedFoods, ...untouched];
+    setFoods(merged);
+
+    const orderedIds = merged.map((b) => String(b.id || b._id));
+
+    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
+    setReorderCooldown(true);
+    setTimeout(() => setReorderCooldown(false), 5000);
+
+    // [SORTING-FIX] Debounce food API call (300ms)
+    if (foodReorderTimeoutRef.current) clearTimeout(foodReorderTimeoutRef.current);
+    foodReorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (typeof updateFoodOrder === "function") {
+          await updateFoodOrder(orderedIds);
+        }
+      } catch (err) {
+        console.error("Error updating food order on server:", err);
+        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের order restore
       }
-    } catch (err) {
-      console.error("Error updating food order on server:", err);
-    }
+    }, 300);
   };
 
   const formatForDateTimeInput = (dateStr) => {
@@ -790,11 +828,14 @@ export const AdminDishes = () => {
                       <p className="text-sm sm:text-base font-black text-primary-500">
                         ৳{food.price}
                       </p>
-                      {food.rating && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">
-                          ★ {food.rating}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 mt-0.5 rounded">
+                        ★ {food.rating || 4.5}
+                        {food.reviewCount > 0 ? (
+                          <span className="text-neutral-400 font-normal">({food.reviewCount})</span>
+                        ) : (
+                          <span className="text-[9px] text-neutral-400 font-normal">(Base)</span>
+                        )}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1 pointer-events-auto">

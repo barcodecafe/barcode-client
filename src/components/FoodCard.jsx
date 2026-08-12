@@ -112,7 +112,12 @@ const FoodCard = ({
           </span>
           <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-amber-500">
             <Star className="h-3 w-3 fill-current" />
-            {food.rating}
+            <span>{food.rating || 4.5}</span>
+            {food.reviewCount > 0 && (
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-normal">
+                ({food.reviewCount})
+              </span>
+            )}
           </span>
         </div>
 
