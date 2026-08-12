@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
 import {
@@ -26,28 +26,19 @@ export const AdminBrands = () => {
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
-  // 🎯 Timeout Ref for Debounce (Race Condition Safety)
-  const reorderTimeoutRef = useRef(null);
-
-  // 🎯 Debounced & Safe Sync to Backend (300ms delay)
-  const syncOrderToServer = useCallback((orderedIds) => {
-    if (reorderTimeoutRef.current) {
-      clearTimeout(reorderTimeoutRef.current);
-    }
-
-    reorderTimeoutRef.current = setTimeout(async () => {
-      try {
-        if (typeof updateBrandOrder === "function") {
-          const res = await updateBrandOrder(orderedIds);
-          console.log("Reorder API Response:", res);
-        }
-      } catch (err) {
-        console.error("Failed to sync brand order on server:", err);
+  // 🎯 Instant Sync to Backend (No Timeout / No Debounce Delay)
+  const syncOrderToServer = useCallback(async (orderedIds) => {
+    try {
+      if (typeof updateBrandOrder === "function") {
+        const res = await updateBrandOrder(orderedIds);
+        console.log("Reorder Saved to Server Successfully:", res);
       }
-    }, 300);
+    } catch (err) {
+      console.error("Failed to sync brand order on server:", err);
+    }
   }, []);
 
-  // 🎯 Clean & Strict Sorting Strategy
+  // 🎯 Load and Sort Brands initially
   const load = () => {
     getAllBrandsAdmin()
       .then((res) => {
@@ -74,7 +65,7 @@ export const AdminBrands = () => {
 
   useEffect(load, []);
 
-  // 🎯 FIX: Debounced Sync to avoid race conditions on drag
+  // 🎯 Instant Save on Drag & Drop Reorder
   const handleBrandReorder = (reorderedBrands) => {
     // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট
     const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
@@ -83,12 +74,12 @@ export const AdminBrands = () => {
     }));
     setBrands(updatedWithOrder);
 
-    // ২. ফিল্টার করে আইডি বের করুন
+    // ২. ফিল্টার করে সঠিক ID লিস্ট বের করা
     const orderedIds = updatedWithOrder
       .map((b) => b.id ?? b._id)
       .filter((id) => id !== undefined && id !== null);
 
-    // ৩. ডিব্যাউন্সড ব্যাকএন্ড সেভ কল (৩০০ms বিরতিতে সেভ হবে)
+    // ৩. সাথে সাথে (Instant) ব্যাকএন্ডে API রিকোয়েস্ট পাঠানো
     if (orderedIds.length > 0) {
       syncOrderToServer(orderedIds);
     }
