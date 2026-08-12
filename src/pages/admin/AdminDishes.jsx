@@ -828,11 +828,14 @@ export const AdminDishes = () => {
                       <p className="text-sm sm:text-base font-black text-primary-500">
                         ৳{food.price}
                       </p>
-                      {food.rating && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 mt-0.5 rounded">
-                          ★ {food.rating}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 mt-0.5 rounded">
+                        ★ {food.rating || 4.5}
+                        {food.reviewCount > 0 ? (
+                          <span className="text-neutral-400 font-normal">({food.reviewCount})</span>
+                        ) : (
+                          <span className="text-[9px] text-neutral-400 font-normal">(Base)</span>
+                        )}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1 pointer-events-auto">
