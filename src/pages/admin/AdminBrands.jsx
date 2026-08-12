@@ -34,14 +34,17 @@ export const AdminBrands = () => {
   };
   useEffect(load, []);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI)
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Rollback)
+  // [SORTING-FIX] API fail হলে আগের order-এ rollback করা হবে
   const handleBrandReorder = (reorderedBrands) => {
+    const previousBrands = brands; // [SORTING-FIX] rollback এর জন্য আগের state save
     setBrands(reorderedBrands);
     const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
 
     if (typeof updateBrandOrder === "function") {
       updateBrandOrder(orderedIds).catch((err) => {
         console.error("Failed to sync brand order on server:", err);
+        setBrands(previousBrands); // [SORTING-FIX] ❌ API fail → আগের order restore
       });
     }
   };

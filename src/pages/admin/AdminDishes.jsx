@@ -41,6 +41,7 @@ export const AdminDishes = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reorderCooldown, setReorderCooldown] = useState(false); // [SORTING-FIX] reorder-এর পরে কিছুক্ষণ polling বন্ধ রাখা
 
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -158,9 +159,10 @@ export const AdminDishes = () => {
     [],
   );
 
+  // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling বন্ধ থাকবে যেন server overwrite না করে
   useVisiblePolling(syncFromServer, {
     intervalMs: 60000,
-    enabled: !isModalOpen,
+    enabled: !isModalOpen && !reorderCooldown,
   });
 
   const handleManualRefresh = () => {
@@ -168,7 +170,11 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
+  // [SORTING-FIX] Category reorder-এ rollback + cooldown যোগ করা হয়েছে
   const handleCategoryReorder = async (newOrder) => {
+    const previousCategories = sortedCategories; // [SORTING-FIX] rollback এর জন্য save
+    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য save
+
     const orderMap = new Map();
     newOrder.forEach((cat) => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
@@ -187,18 +193,38 @@ export const AdminDishes = () => {
       })),
     );
 
+    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
+    setReorderCooldown(true);
+    setTimeout(() => setReorderCooldown(false), 5000);
+
     try {
       if (typeof updateCategoryOrder === "function") {
         await updateCategoryOrder(finalUniqueOrder);
       }
     } catch (err) {
       console.error("Error updating category order on server:", err);
+      setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
+      setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
     }
   };
 
+  // [SORTING-FIX] Filtered list reorder fix + rollback + cooldown
+  // আগে filter/search active থাকলে reorder করলে বাকি foods হারিয়ে যেত।
+  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleFoodReorder = async (reorderedFoods) => {
-    setFoods(reorderedFoods);
-    const orderedIds = reorderedFoods.map((f) => String(f.id || f._id));
+    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য আগের state save
+
+    // [SORTING-FIX] Filter/search active থাকলে: reordered items merge করো পুরো list-এ
+    const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
+    const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
+    const merged = [...reorderedFoods, ...untouched];
+    setFoods(merged);
+
+    const orderedIds = merged.map((f) => String(f.id || f._id));
+
+    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
+    setReorderCooldown(true);
+    setTimeout(() => setReorderCooldown(false), 5000);
 
     try {
       if (typeof updateFoodOrder === "function") {
@@ -206,6 +232,7 @@ export const AdminDishes = () => {
       }
     } catch (err) {
       console.error("Error updating food order on server:", err);
+      setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের order restore
     }
   };
 

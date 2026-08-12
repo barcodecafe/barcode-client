@@ -113,14 +113,24 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
+  // [SORTING-FIX] Filtered list reorder fix + API fail rollback
+  // আগে filter active থাকলে reorder করলে বাকি branches হারিয়ে যেত।
+  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleBranchReorder = (reorderedBranches) => {
-    setBranches(reorderedBranches);
+    const previousBranches = branches; // [SORTING-FIX] rollback এর জন্য আগের state save
 
-    const orderedIds = reorderedBranches.map((b) => String(b.id || b._id));
+    // [SORTING-FIX] Filter active থাকলে: reordered items merge করো পুরো list-এ
+    const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
+    const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
+    const merged = [...reorderedBranches, ...untouched];
+    setBranches(merged);
+
+    const orderedIds = merged.map((b) => String(b.id || b._id));
 
     if (typeof updateBranchOrder === "function") {
       updateBranchOrder(orderedIds).catch((err) => {
         console.error("Background sync error for branch order:", err);
+        setBranches(previousBranches); // [SORTING-FIX] ❌ API fail → আগের order restore
       });
     }
   };
