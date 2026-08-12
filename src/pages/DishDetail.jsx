@@ -69,6 +69,11 @@ export const DishDetail = () => {
   const [selectedVariation, setSelectedVariation] = useState(null);
 
   // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য সঠিক প্রায়োরিটি অর্ডার
+  const branchIdParam = searchParams.get("branchId");
+  const storedBranch =
+    localStorage.getItem("selectedBranchId") ||
+    localStorage.getItem("branchId");
+
   const branchId = branchIdParam 
     ? Number(branchIdParam) 
     : selectedBranchId 
