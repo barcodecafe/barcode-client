@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
 import {
@@ -6,7 +6,7 @@ import {
   createBrand,
   updateBrand,
   deleteBrand,
-  updateBrandOrder,
+  updateBrandOrder, // 🎯 রি-অর্ডার এপিআই সার্ভিস
 } from "../../services/brandsService";
 
 const BLANK = {
@@ -26,62 +26,23 @@ export const AdminBrands = () => {
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
-  // 🎯 Instant Sync to Backend (No Timeout / No Debounce Delay)
-  const syncOrderToServer = useCallback(async (orderedIds) => {
-    try {
-      if (typeof updateBrandOrder === "function") {
-        const res = await updateBrandOrder(orderedIds);
-        console.log("Reorder Saved to Server Successfully:", res);
-      }
-    } catch (err) {
-      console.error("Failed to sync brand order on server:", err);
-    }
-  }, []);
-
-  // 🎯 Load and Sort Brands strictly by `order` field from DB
   const load = () => {
     getAllBrandsAdmin()
-      .then((res) => {
-        const rawList = Array.isArray(res) ? res : res?.data || [];
-        const list = Array.isArray(rawList) ? rawList : [];
-
-        // Strictly sort by `order` field
-        const sorted = [...list].sort((a, b) => {
-          const orderA = typeof a.order === "number" ? a.order : 9999;
-          const orderB = typeof b.order === "number" ? b.order : 9999;
-
-          if (orderA !== orderB) return orderA - orderB;
-
-          const idA = String(a.id ?? a._id ?? "");
-          const idB = String(b.id ?? b._id ?? "");
-          return idA.localeCompare(idB);
-        });
-
-        setBrands(sorted);
-      })
+      .then((data) => setBrands(data || []))
       .catch((e) => console.error("Failed to load brands:", e))
       .finally(() => setLoading(false));
   };
-
   useEffect(load, []);
 
-  // 🎯 Instant Save on Drag & Drop Reorder
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI)
   const handleBrandReorder = (reorderedBrands) => {
-    // ১. সাথে সাথে ফ্রন্টএন্ড UI স্টেট আপডেট (১ থেকে শুরু করে পর পর Order ভ্যালু সেট)
-    const updatedWithOrder = reorderedBrands.map((brand, idx) => ({
-      ...brand,
-      order: idx + 1,
-    }));
-    setBrands(updatedWithOrder);
+    setBrands(reorderedBrands);
+    const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
 
-    // ২. ফিল্টার করে সঠিক ID (কাস্টম id অথবা Mongo _id) বের করা
-    const orderedIds = updatedWithOrder
-      .map((b) => b.id ?? b._id)
-      .filter((id) => id !== undefined && id !== null);
-
-    // ৩. সাথে সাথে ব্যাকএন্ডে API কল পাঠানো
-    if (orderedIds.length > 0) {
-      syncOrderToServer(orderedIds);
+    if (typeof updateBrandOrder === "function") {
+      updateBrandOrder(orderedIds).catch((err) => {
+        console.error("Failed to sync brand order on server:", err);
+      });
     }
   };
 
@@ -108,18 +69,14 @@ export const AdminBrands = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const targetId = editing?.id ?? editing?._id;
       if (editing) {
-        const updated = await updateBrand(targetId, form);
-        const freshData = updated?.data || updated;
-        setBrands((prev) => prev.map((b) => ((b.id ?? b._id) === targetId ? freshData : b)));
+        const updated = await updateBrand(editing.id, form);
+        setBrands((prev) => prev.map((b) => (b.id === editing.id ? updated : b)));
       } else {
         const created = await createBrand(form);
-        const freshData = created?.data || created;
-        setBrands((prev) => [...prev, freshData]);
+        setBrands((prev) => [...prev, created]);
       }
       setIsModalOpen(false);
-      load();
     } catch (err) {
       alert("Failed to save brand: " + err.message);
     } finally {
@@ -127,12 +84,11 @@ export const AdminBrands = () => {
     }
   };
 
-  const handleDelete = async (b) => {
-    const targetId = b.id ?? b._id;
+  const handleDelete = async (id) => {
     if (!window.confirm("Delete this brand? Its branches will be unassigned (not deleted).")) return;
     try {
-      await deleteBrand(targetId);
-      setBrands((prev) => prev.filter((item) => (item.id ?? item._id) !== targetId));
+      await deleteBrand(id);
+      setBrands((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
       alert("Failed to delete brand: " + err.message);
     }
@@ -160,7 +116,7 @@ export const AdminBrands = () => {
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-3 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
+        <div className="flex flex-col gap-3 max-w-4xl">
           {[1, 2, 3].map((n) => <div key={n} className="h-28 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />)}
         </div>
       ) : brands.length === 0 ? (
@@ -169,26 +125,26 @@ export const AdminBrands = () => {
           <p className="text-sm">No brands yet. Add your first brand to get started.</p>
         </div>
       ) : (
+        /* 🎯 ১ কলামে সিঙ্গেল লিস্টে স্মুথ ড্র্যাগ অ্যান্ড ড্রপ Reorder.Group */
         <Reorder.Group
           axis="y"
           values={brands}
           onReorder={handleBrandReorder}
-          className="flex flex-col gap-3.5 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl"
+          className="flex flex-col gap-3 max-w-4xl"
         >
           {brands.map((b) => (
             <Reorder.Item
-              key={b.id ?? b._id}
+              key={b.id || b._id}
               value={b}
-              layout="position"
-              transition={{ type: "spring", stiffness: 500, damping: 35 }}
               className="group relative rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
             >
               <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
-                <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-955 flex items-center justify-center">
+                {/* Brand Image & Drag Handle */}
+                <div className="relative w-full sm:w-40 h-24 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center">
                   {b.cover ? (
                     <img src={b.cover} alt={b.name} className="w-full h-full object-cover pointer-events-none" />
                   ) : b.logoLight ? (
-                    <img src={b.logoLight} alt={b.name} className="max-h-14 max-w-[75%] object-contain pointer-events-none" />
+                    <img src={b.logoLight} alt={b.name} className="max-h-12 max-w-[70%] object-contain pointer-events-none" />
                   ) : (
                     <Store className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
                   )}
@@ -204,16 +160,18 @@ export const AdminBrands = () => {
                   )}
                 </div>
 
-                <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1">
-                  <h3 className="font-bold text-base sm:text-lg text-neutral-800 dark:text-white truncate">{b.name}</h3>
-                  <p className="text-xs text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
-                  {b.tagline && <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
+                {/* Brand Info */}
+                <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
+                  <h3 className="font-bold text-sm text-neutral-800 dark:text-white truncate">{b.name}</h3>
+                  <p className="text-[11px] text-neutral-400 font-mono truncate">/brands/{b.slug}</p>
+                  {b.tagline && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">{b.tagline}</p>}
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
-                <button onClick={() => openEdit(b)} className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(b)} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+              {/* Action Buttons */}
+              <div className="p-3.5 sm:p-4 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0">
+                <button onClick={() => openEdit(b)} className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(b.id)} className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
               </div>
             </Reorder.Item>
           ))}
@@ -226,7 +184,7 @@ export const AdminBrands = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg 2xl:max-w-xl max-h-[88vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl"
+              className="relative w-full max-w-lg max-h-[88vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
                 <h2 className="text-lg font-black text-neutral-900 dark:text-white">{editing ? "Edit Brand" : "Add Brand"}</h2>
