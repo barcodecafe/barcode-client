@@ -105,6 +105,7 @@ export const AdminBrands = () => {
   const field = "w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500";
 
   return (
+    /* 🎯 [RESPONSIVE-FIX] index.css-এর site-container এর সাথে ১০০% রেসপনসিভ ফিট নিশ্চিত করতে w-full যুক্ত করা হয়েছে */
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
