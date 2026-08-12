@@ -25,6 +25,7 @@ export const AdminBrands = () => {
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
 
   const load = () => {
     getAllBrandsAdmin()
@@ -34,19 +35,23 @@ export const AdminBrands = () => {
   };
   useEffect(load, []);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Rollback)
-  // [SORTING-FIX] API fail হলে আগের order-এ rollback করা হবে
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Rollback + Debounce)
+  // [SORTING-FIX] API fail হলে আগের order-এ rollback করা হবে এবং দ্রুত ড্র্যাগিং এ রেইস কন্ডিশন ঠেকাতে debounce করা হবে
   const handleBrandReorder = (reorderedBrands) => {
     const previousBrands = brands; // [SORTING-FIX] rollback এর জন্য আগের state save
     setBrands(reorderedBrands);
     const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
 
-    if (typeof updateBrandOrder === "function") {
-      updateBrandOrder(orderedIds).catch((err) => {
-        console.error("Failed to sync brand order on server:", err);
-        setBrands(previousBrands); // [SORTING-FIX] ❌ API fail → আগের order restore
-      });
-    }
+    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(() => {
+      if (typeof updateBrandOrder === "function") {
+        updateBrandOrder(orderedIds).catch((err) => {
+          console.error("Failed to sync brand order on server:", err);
+          setBrands(previousBrands); // [SORTING-FIX] ❌ API fail → আগের order restore
+        });
+      }
+    }, 300);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };

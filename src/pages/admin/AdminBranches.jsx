@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   Search,
@@ -113,7 +113,9 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  // [SORTING-FIX] Filtered list reorder fix + API fail rollback
+  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
+
+  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Debounce
   // আগে filter active থাকলে reorder করলে বাকি branches হারিয়ে যেত।
   // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleBranchReorder = (reorderedBranches) => {
@@ -127,12 +129,16 @@ export const AdminBranches = () => {
 
     const orderedIds = merged.map((b) => String(b.id || b._id));
 
-    if (typeof updateBranchOrder === "function") {
-      updateBranchOrder(orderedIds).catch((err) => {
-        console.error("Background sync error for branch order:", err);
-        setBranches(previousBranches); // [SORTING-FIX] ❌ API fail → আগের order restore
-      });
-    }
+    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(() => {
+      if (typeof updateBranchOrder === "function") {
+        updateBranchOrder(orderedIds).catch((err) => {
+          console.error("Background sync error for branch order:", err);
+          setBranches(previousBranches); // [SORTING-FIX] ❌ API fail → আগের order restore
+        });
+      }
+    }, 300);
   };
 
   const openAddModal = () => {

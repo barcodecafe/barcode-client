@@ -170,7 +170,10 @@ export const AdminDishes = () => {
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  // [SORTING-FIX] Category reorder-এ rollback + cooldown যোগ করা হয়েছে
+  const foodReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for food reordering
+  const categoryReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for category reordering
+
+  // [SORTING-FIX] Category reorder-এ rollback + cooldown + debounce যোগ করা হয়েছে
   const handleCategoryReorder = async (newOrder) => {
     const previousCategories = sortedCategories; // [SORTING-FIX] rollback এর জন্য save
     const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য save
@@ -197,18 +200,22 @@ export const AdminDishes = () => {
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
 
-    try {
-      if (typeof updateCategoryOrder === "function") {
-        await updateCategoryOrder(finalUniqueOrder);
+    // [SORTING-FIX] Debounce category API call (300ms)
+    if (categoryReorderTimeoutRef.current) clearTimeout(categoryReorderTimeoutRef.current);
+    categoryReorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (typeof updateCategoryOrder === "function") {
+          await updateCategoryOrder(finalUniqueOrder);
+        }
+      } catch (err) {
+        console.error("Error updating category order on server:", err);
+        setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
+        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
       }
-    } catch (err) {
-      console.error("Error updating category order on server:", err);
-      setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
-      setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
-    }
+    }, 300);
   };
 
-  // [SORTING-FIX] Filtered list reorder fix + rollback + cooldown
+  // [SORTING-FIX] Filtered list reorder fix + rollback + cooldown + debounce
   // আগে filter/search active থাকলে reorder করলে বাকি foods হারিয়ে যেত।
   // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleFoodReorder = async (reorderedFoods) => {
@@ -220,20 +227,24 @@ export const AdminDishes = () => {
     const merged = [...reorderedFoods, ...untouched];
     setFoods(merged);
 
-    const orderedIds = merged.map((f) => String(f.id || f._id));
+    const orderedIds = merged.map((b) => String(b.id || b._id));
 
     // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
 
-    try {
-      if (typeof updateFoodOrder === "function") {
-        await updateFoodOrder(orderedIds);
+    // [SORTING-FIX] Debounce food API call (300ms)
+    if (foodReorderTimeoutRef.current) clearTimeout(foodReorderTimeoutRef.current);
+    foodReorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (typeof updateFoodOrder === "function") {
+          await updateFoodOrder(orderedIds);
+        }
+      } catch (err) {
+        console.error("Error updating food order on server:", err);
+        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের order restore
       }
-    } catch (err) {
-      console.error("Error updating food order on server:", err);
-      setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের order restore
-    }
+    }, 300);
   };
 
   const formatForDateTimeInput = (dateStr) => {
