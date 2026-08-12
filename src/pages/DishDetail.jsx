@@ -101,25 +101,34 @@ export const DishDetail = () => {
   useEffect(() => {
     setLoading(true);
     window.scrollTo(0, 0);
-    Promise.all([getFoodById(id), getPopularFoods(6), getFoodReviews(id)])
-      .then(([foodData, popularData, reviewsRes]) => {
-        setFood(foodData);
-        setFeaturedMenu(popularData || []);
-        if (reviewsRes) setReviewsData(reviewsRes);
 
-        // Auto select first variation if exists
+    // 🎯 মূল খাবার লোড করা (Primary priority)
+    getFoodById(id)
+      .then((foodData) => {
+        setFood(foodData);
         if (foodData && foodData.variations && foodData.variations.length > 0) {
           setSelectedVariation(foodData.variations[0]);
         } else {
           setSelectedVariation(null);
         }
-
-        setLoading(false);
       })
       .catch((err) => {
         console.error("Error loading dish detail:", err);
+      })
+      .finally(() => {
         setLoading(false);
       });
+
+    // 🎯 সেকেন্ডারি ডাটা লোড (নন-ব্লকিং)
+    getPopularFoods(6)
+      .then((popularData) => setFeaturedMenu(popularData || []))
+      .catch(() => setFeaturedMenu([]));
+
+    getFoodReviews(id)
+      .then((reviewsRes) => {
+        if (reviewsRes) setReviewsData(reviewsRes);
+      })
+      .catch(() => {});
   }, [id]);
 
   const handleReviewSubmit = async (e) => {
