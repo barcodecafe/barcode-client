@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Phone, ArrowRight, ChevronDown } from 'lucide-react';
+import { MapPin, Phone, ArrowRight, ChevronDown } from 'lucide-react';
 import { getAllBranches } from '../services/branchesService';
 import { getAllRegions } from '../services/regionsService';
 import { getAllFoods, applyFoodDiscount } from '../services/foodsService';
@@ -25,7 +25,6 @@ export const Branches = () => {
   const [regions, setRegions] = useState([]);
   const [allFoods, setAllFoods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeRegion, setActiveRegion] = useState('All');
 
   // Bestsellers & Featured Toggles & Sorting
@@ -51,19 +50,13 @@ export const Branches = () => {
     });
   }, []);
 
-  // Filters branches by search text + selected region (by regionId)
+  // Filters branches by selected region (by regionId)
   const filteredBranches = useMemo(
     () =>
       branches.filter((branch) => {
-        const matchesSearch =
-          branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          branch.location.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesRegion = activeRegion === 'All' || branch.regionId === activeRegion;
-
-        return matchesSearch && matchesRegion;
+        return activeRegion === 'All' || branch.regionId === activeRegion;
       }),
-    [branches, searchQuery, activeRegion]
+    [branches, activeRegion]
   );
 
   const regionTabs = [{ id: 'All', name: 'All' }, ...regions];
@@ -163,36 +156,21 @@ export const Branches = () => {
   return (
     /* 🎯 Global site-container class applied for Navbar & Footer alignment */
     <div className="site-container py-8">
-      {/* Filters and Search Bar Container */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        {/* Regions Horizontal Navigation Toggle */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-          {regionTabs.map((region) => (
-            <button
-              key={region.id}
-              onClick={() => setActiveRegion(region.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
-                activeRegion === region.id
-                  ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                  : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
-              }`}
-            >
-              {region.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Input Search Field */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search branches..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
-          />
-        </div>
+      {/* Regions Horizontal Navigation Filter */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-8 scrollbar-none">
+        {regionTabs.map((region) => (
+          <button
+            key={region.id}
+            onClick={() => setActiveRegion(region.id)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
+              activeRegion === region.id
+                ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                : 'bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500'
+            }`}
+          >
+            {region.name}
+          </button>
+        ))}
       </div>
 
       {/* Main Content Showcase Section */}
@@ -220,7 +198,7 @@ export const Branches = () => {
         ) : filteredBranches.length === 0 ? (
           <div className="p-12 text-center bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/60 rounded-2xl">
             <p className="text-neutral-500 dark:text-neutral-400 font-medium">
-              No branches match your search or filter.
+              No branches available for this region.
             </p>
           </div>
         ) : (
