@@ -22,6 +22,7 @@ import {
   Bike,
   Settings,
   Bell,
+  ShieldCheck,
 } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
@@ -51,6 +52,7 @@ const navItems = [
   { name: 'Coupons', path: '/admin/coupons', icon: Tag },
   { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
   { name: 'About Info', path: '/admin/about', icon: Info },
+  { name: 'Policies & Terms', path: '/admin/policies', icon: ShieldCheck },
   { name: 'Rider Applications', path: '/admin/rider-applications', icon: Bike },
   { name: 'Site Settings', path: '/admin/settings', icon: Settings },
 ];

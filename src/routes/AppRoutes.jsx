@@ -43,6 +43,7 @@ import { AdminCustomers } from '../pages/admin/AdminCustomers';
 import { AdminCoupons } from '../pages/admin/AdminCoupons';
 import { AdminHero } from '../pages/admin/AdminHero';
 import { AdminAbout } from '../pages/admin/AdminAbout';
+import { AdminPolicies } from '../pages/admin/AdminPolicies';
 import { RiderApplication } from '../pages/RiderApplication';
 import { AdminRiders } from '../pages/admin/AdminRiders';
 import { AdminSettings } from '../pages/admin/AdminSettings';
@@ -145,6 +146,7 @@ export const AppRoutes = () => {
                   <Route path="coupons" element={<AdminCoupons />} />
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="about" element={<AdminAbout />} />
+                  <Route path="policies" element={<AdminPolicies />} />
                   <Route path="rider-applications" element={<AdminRiders />} />
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
