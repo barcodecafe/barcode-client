@@ -107,8 +107,9 @@ export const Login = ({ variant = 'user' }) => {
       }
 
       // Success Path
+      const searchRedirect = new URLSearchParams(location.search).get('redirect');
       const defaultHome = loggedInUser.role === 'rider' ? '/rider' : loggedInUser.role === 'admin' ? '/admin' : '/';
-      const redirectTo = location.state?.from || defaultHome;
+      const redirectTo = searchRedirect || location.state?.from || defaultHome;
 
       Swal.fire({
         icon: 'success',

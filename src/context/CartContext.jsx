@@ -55,20 +55,38 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
-    const sizeName = (selectedSize && (selectedSize.name || selectedSize)) || food.selectedSize || null;
-    const variationObj = selectedSize && typeof selectedSize === 'object' ? selectedSize : null;
-    
-    let targetQty = Number(quantity) > 0 ? Number(quantity) : 1;
-    if (quantity === 1) {
+    if (!food) return;
+
+    const activeBranchId =
+      branchId !== undefined && branchId !== null
+        ? branchId
+        : food.branchId !== undefined && food.branchId !== null
+        ? food.branchId
+        : typeof window !== 'undefined' && localStorage.getItem('selectedBranchId')
+        ? Number(localStorage.getItem('selectedBranchId'))
+        : null;
+
+    const sizeName =
+      (selectedSize && (selectedSize.name || selectedSize)) ||
+      food.selectedSize ||
+      (food.selectedVariation && food.selectedVariation.name) ||
+      null;
+
+    const variationObj =
+      (selectedSize && typeof selectedSize === 'object' ? selectedSize : null) ||
+      food.selectedVariation ||
+      null;
+
+    let targetQty = Number(quantity) > 0 ? Number(quantity) : (Number(food.quantity) > 0 ? Number(food.quantity) : 1);
+    if (quantity === 1 && (!food.quantity || food.quantity === 1)) {
       if (food.offerType === 'bogo_1g1') targetQty = 2;
       else if (food.offerType === 'bogo_1g2') targetQty = 3;
     }
 
     setCart((prevCart) => {
-      const activeBranchId = branchId !== undefined && branchId !== null ? branchId : null;
       const foodId = food.id || food._id;
-      
-      // 🎯 অরিজিনাল বেস প্রাইস নেওয়া হচ্ছে
+
+      // 🎯 অরিজিনাল বেস প্রাইস (ব্রাঞ্চ এডজাস্টমেন্ট ও সাইজ ভেরিয়েশন সহ)
       const rawBasePrice = getActivePrice(food, activeBranchId, sizeName);
 
       // 🎯 অরিজিনাল বেস প্রাইসের ওপর ঠিক একবারই ডিসকাউন্ট অ্যাপ্লাই হবে (যেমন: ৳340 -> ৳306)
@@ -81,22 +99,34 @@ export const CartProvider = ({ children }) => {
       if (existing) {
         return prevCart.map((item) =>
           (item.cartId || item.id || item._id) === cartId
-            ? { ...item, quantity: item.quantity + targetQty, price: purchasePrice }
+            ? {
+                ...item,
+                quantity: item.quantity + targetQty,
+                originalPrice: rawBasePrice,
+                price: purchasePrice,
+                offerType: food.offerType || item.offerType || 'none',
+                promoCode: food.promoCode || item.promoCode || null,
+              }
             : item
         );
       }
 
-      return [...prevCart, {
-        ...food,
-        id: foodId,
-        cartId,
-        branchId: activeBranchId,
-        selectedSize: sizeName,
-        selectedVariation: variationObj,
-        quantity: targetQty,
-        price: purchasePrice, // 🎯 হুবহু সঠিক ডিসকাউন্টেড প্রাইস (৳306.00) থাকবে
-        offerType: food.offerType || 'none',
-      }];
+      return [
+        ...prevCart,
+        {
+          ...food,
+          id: foodId,
+          cartId,
+          branchId: activeBranchId,
+          selectedSize: sizeName,
+          selectedVariation: variationObj,
+          quantity: targetQty,
+          originalPrice: rawBasePrice, // 🎯 অরিজিনাল প্রাইস (যেমন: ৳340.00)
+          price: purchasePrice, // 🎯 ডিসকাউন্টেড পেইড প্রাইস (যেমন: ৳306.00)
+          offerType: food.offerType || 'none',
+          promoCode: food.promoCode || null,
+        },
+      ];
     });
 
     showNotification(`${food.name} added to order!`);
@@ -109,7 +139,13 @@ export const CartProvider = ({ children }) => {
       prevCart
         .map((item) => {
           const itemKey = item.cartId || item.id || item._id;
-          if (itemKey === targetId) {
+          if (
+            itemKey === targetId ||
+            itemKey === cartIdOrFoodId ||
+            item.id === cartIdOrFoodId ||
+            item.cartId === cartIdOrFoodId ||
+            String(item.id) === String(cartIdOrFoodId)
+          ) {
             return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
           }
           return item;
@@ -117,6 +153,10 @@ export const CartProvider = ({ children }) => {
         .filter(Boolean)
     );
   }, []);
+
+  const removeFromCart = useCallback((cartIdOrFoodId, selectedSize = null) => {
+    updateCartQuantity(cartIdOrFoodId, 0, selectedSize);
+  }, [updateCartQuantity]);
 
   const clearCart = useCallback(() => {
     setCart([]);
@@ -134,6 +174,7 @@ export const CartProvider = ({ children }) => {
     cartItemCount,
     addToCart,
     updateCartQuantity,
+    removeFromCart,
     clearCart,
     getCartItemLineTotal,
     openCart: () => setIsCartOpen(true),

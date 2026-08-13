@@ -666,7 +666,7 @@ export const Checkout = () => {
                     className="flex gap-3 items-center"
                   >
                     <img
-                      src={item.image}
+                      src={item.selectedVariation?.image || item.image}
                       alt={item.name}
                       className="w-12 h-12 rounded-lg object-cover bg-neutral-100 shrink-0"
                     />
@@ -683,9 +683,9 @@ export const Checkout = () => {
                         </span>
                       )}
 
-                      {item.selectedSize && (
+                      {(item.selectedSize || item.selectedVariation?.name) && (
                         <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5 ml-1">
-                          {item.selectedSize}
+                          Option: {item.selectedSize || item.selectedVariation?.name}
                         </span>
                       )}
 

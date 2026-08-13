@@ -10,6 +10,7 @@ import { Brands } from '../pages/Brands';
 import { BrandLayout } from '../layouts/BrandLayout';
 import { BrandHome } from '../pages/BrandHome';
 import { BrandBranches } from '../pages/BrandBranches';
+import { BrandBranchDetail } from '../pages/BrandBranchDetail';
 import { BrandMenu } from '../pages/BrandMenu';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
@@ -42,6 +43,8 @@ import { AdminCustomers } from '../pages/admin/AdminCustomers';
 import { AdminCoupons } from '../pages/admin/AdminCoupons';
 import { AdminHero } from '../pages/admin/AdminHero';
 import { AdminAbout } from '../pages/admin/AdminAbout';
+import { AdminPolicies } from '../pages/admin/AdminPolicies';
+import { AdminReviews } from '../pages/admin/AdminReviews';
 import { RiderApplication } from '../pages/RiderApplication';
 import { AdminRiders } from '../pages/admin/AdminRiders';
 import { AdminSettings } from '../pages/admin/AdminSettings';
@@ -102,6 +105,7 @@ export const AppRoutes = () => {
                 <Route path="/brands/:slug" element={<BrandLayout />}>
                   <Route index element={<BrandHome />} />
                   <Route path="branches" element={<BrandBranches />} />
+                  <Route path="branches/:id" element={<BrandBranchDetail />} />
                   <Route path="menu" element={<BrandMenu />} />
                 </Route>
 
@@ -140,9 +144,11 @@ export const AppRoutes = () => {
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="fleet-overview" element={<AdminRidersFleet />} />
                   <Route path="customers" element={<AdminCustomers />} />
+                  <Route path="reviews" element={<AdminReviews />} />
                   <Route path="coupons" element={<AdminCoupons />} />
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="about" element={<AdminAbout />} />
+                  <Route path="policies" element={<AdminPolicies />} />
                   <Route path="rider-applications" element={<AdminRiders />} />
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>

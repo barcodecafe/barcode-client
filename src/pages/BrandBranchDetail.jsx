@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,22 +15,22 @@ import {
   ChevronRight,
   Sparkles,
   UtensilsCrossed,
+  Building2,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useBrand } from "../context/BrandContext";
 import { getFoodsByBranch } from "../services/foodsService";
 import { getBranchById } from "../services/branchesService";
 import LeafletMap from "../components/LeafletMap";
-
-// 💡 Shared Global FoodCard Component
 import FoodCard from "../components/FoodCard";
 
-// Import Swiper styles
+// Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 
 // ---------------------------------------------------------------------------
-// HeroImageCarousel — handles banner photo transitions, drag & autoplay
+// HeroImageCarousel — banner photo transitions, drag & autoplay
 // ---------------------------------------------------------------------------
 const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
   const slides = images && images.length > 0 ? images : [];
@@ -179,11 +179,11 @@ const InfoCard = ({ icon, label, value, delay = 0, href }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Main Component
+// BrandBranchDetail Component
 // ---------------------------------------------------------------------------
-export const BranchDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+export const BrandBranchDetail = () => {
+  const { slug, id } = useParams();
+  const brand = useBrand();
   const { addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -193,6 +193,10 @@ export const BranchDetail = () => {
   const [branchMenu, setBranchMenu] = useState([]);
 
   const rawCategory = searchParams.get("category") || "All";
+  const scrollContainerRef = useRef(null);
+
+  const brandSlug = brand?.slug || slug;
+  const backToBranchesUrl = `/brands/${brandSlug}/branches`;
 
   const handleCategoryChange = (catName) => {
     if (!catName || catName === "All") {
@@ -202,15 +206,10 @@ export const BranchDetail = () => {
     }
   };
 
-  const scrollContainerRef = useRef(null);
-
   useEffect(() => {
     setLoading(true);
     let cancelled = false;
 
-    // Every path now clears `loading`. Previously neither request had a
-    // .catch/.finally, so a failed branch or menu fetch left this public page
-    // spinning forever with no way out but a reload.
     (async () => {
       try {
         const data = await getBranchById(id);
@@ -223,7 +222,7 @@ export const BranchDetail = () => {
           setBranchMenu(Array.isArray(menuData) ? menuData : []);
         }
       } catch (err) {
-        console.error('Failed to load branch:', err);
+        console.error("Failed to load branch in brand microsite:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -280,6 +279,17 @@ export const BranchDetail = () => {
     );
   }, [branchMenu, activeCategory]);
 
+  const handleCategoryScroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollAmount =
+        direction === "left"
+          ? -container.offsetWidth / 2
+          : container.offsetWidth / 2;
+      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
@@ -291,18 +301,19 @@ export const BranchDetail = () => {
   if (!branch) {
     return (
       <div className="site-container py-16 text-center">
+        <Building2 className="w-12 h-12 mx-auto stroke-1 text-neutral-300 dark:text-neutral-700 mb-3" />
         <h2 className="text-2xl font-bold mb-4 text-neutral-800 dark:text-neutral-200">
-          Venue Not Found
+          Branch Not Found
         </h2>
-        <p className="text-neutral-500 mb-6">
-          The branch you are looking for doesn't exist or has moved.
+        <p className="text-neutral-500 mb-6 text-sm">
+          The branch you are looking for does not exist or has been relocated.
         </p>
-        <button
-          onClick={() => navigate("/branches")}
+        <Link
+          to={backToBranchesUrl}
           className="text-primary-500 font-semibold inline-flex items-center gap-2 hover:underline cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to all branches
-        </button>
+          <ArrowLeft className="w-4 h-4" /> Back to {brand?.name || "Brand"} Branches
+        </Link>
       </div>
     );
   }
@@ -354,63 +365,74 @@ export const BranchDetail = () => {
     visible: { transition: { staggerChildren: 0.06 } },
   };
 
-  const handleCategoryScroll = (direction) => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const scrollAmount =
-        direction === "left"
-          ? -container.offsetWidth / 2
-          : container.offsetWidth / 2;
-      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    }
-  };
-
   return (
     <div className="w-full">
       {/* 1. IMMERSIVE HERO HEADER */}
-      <section className="relative w-full h-[55vh] sm:h-[70vh] bg-black overflow-hidden">
+      <section className="relative w-full h-[50vh] sm:h-[65vh] bg-black overflow-hidden">
         <HeroImageCarousel images={slides} alt={branch.name} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" />
 
+        {/* Back Button within Brand Microsite */}
         <div className="absolute top-5 left-4 sm:top-8 sm:left-8 z-30">
-          <button
-            onClick={() => navigate("/branches")}
-            className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
+          <Link
+            to={backToBranchesUrl}
+            className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Branches
-          </button>
+            Back to {brand?.name ? `${brand.name} Branches` : "Branches"}
+          </Link>
         </div>
 
+        {/* Hero Title & Badges */}
         <div className="absolute bottom-8 left-4 right-4 sm:left-8 sm:right-8 z-20 text-white flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <span className="px-2.5 py-1 rounded-md bg-primary-500 text-xs font-bold uppercase tracking-wider shadow-md">
-              {getRegion(branch.location)}
-            </span>
-            <h1 className="font-display text-3xl sm:text-6xl font-extrabold mt-3 tracking-tight drop-shadow-lg">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {brand?.name && (
+                <span className="px-2.5 py-1 rounded-md bg-white/20 backdrop-blur-md text-white text-[11px] font-bold tracking-wide">
+                  {brand.name}
+                </span>
+              )}
+              <span className="px-2.5 py-1 rounded-md bg-primary-500 text-xs font-bold uppercase tracking-wider shadow-md">
+                {getRegion(branch.location)}
+              </span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight drop-shadow-lg">
               {branch.name}
             </h1>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
-          >
-            <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
-            <span>{branch.rating} Rating</span>
-          </motion.div>
+          {branch.rating && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
+            >
+              <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
+              <span>{branch.rating} Rating</span>
+            </motion.div>
+          )}
         </div>
       </section>
 
       {/* 2. BRANCH-SPECIFIC MENU GRID & INLINE CATEGORY FILTER */}
       <section className="site-container pb-16 sm:pb-24 pt-16">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white flex items-center gap-2">
+              <UtensilsCrossed className="w-5 h-5 text-primary-500" /> Menu at {branch.name}
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+              Freshly prepared dishes available at this outlet.
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-4 border-b border-neutral-200/60 dark:border-neutral-800/60">
           <div className="relative flex items-center w-full max-w-full group">
             {categories.length > 5 && (
@@ -463,7 +485,7 @@ export const BranchDetail = () => {
         {branchMenu.length === 0 ? (
           <div className="py-16 text-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800">
             <UtensilsCrossed className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
-            <p className="text-neutral-500 dark:text-neutral-400 font-medium">
+            <p className="text-neutral-500 dark:text-neutral-400 font-medium text-sm">
               Full menu for this branch is coming soon.
             </p>
           </div>
@@ -486,16 +508,16 @@ export const BranchDetail = () => {
                 className="!pb-8"
               >
                 {filteredMenu.map((food) => {
-                  const favorited = isFavorite(food.id);
+                  const favorited = isFavorite(food.id || food._id);
                   return (
-                    <SwiperSlide key={food.id}>
+                    <SwiperSlide key={food.id || food._id}>
                       <FoodCard
                         food={food}
-                        branchId={branch.id}
+                        branchId={branch.id || branch._id}
                         favorited={favorited}
                         onToggleFavorite={toggleFavorite}
                         onAddToCart={(foodItem, bId) => {
-                          addToCart(foodItem, bId || branch.id);
+                          addToCart(foodItem, bId || branch.id || branch._id);
                         }}
                         variants={cardVariants}
                       />
@@ -514,15 +536,16 @@ export const BranchDetail = () => {
               className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
             >
               {filteredMenu.map((food) => {
-                const favorited = isFavorite(food.id);
+                const favorited = isFavorite(food.id || food._id);
                 return (
                   <FoodCard
+                    key={food.id || food._id}
                     food={food}
-                    branchId={branch.id}
+                    branchId={branch.id || branch._id}
                     favorited={favorited}
                     onToggleFavorite={toggleFavorite}
                     onAddToCart={(itemFood, bId) => {
-                      addToCart(itemFood, bId || branch.id);
+                      addToCart(itemFood, bId || branch.id || branch._id);
                     }}
                     variants={cardVariants}
                   />
@@ -539,19 +562,19 @@ export const BranchDetail = () => {
           <InfoCard
             icon={<Clock className="w-5 h-5" />}
             label="Opening Hours"
-            value={branch.hours}
+            value={branch.hours || "11:00 AM – 11:00 PM"}
             delay={0}
           />
           <InfoCard
             icon={<MapPin className="w-5 h-5" />}
             label="Full Address"
-            value={branch.location}
+            value={branch.location || branch.address || "Main Street"}
             delay={0.05}
           />
           <InfoCard
             icon={<Phone className="w-5 h-5" />}
             label="Contact Number"
-            value={branch.contact}
+            value={branch.contact || branch.phone || "N/A"}
             delay={0.1}
             href={telHref}
           />
@@ -653,4 +676,4 @@ export const BranchDetail = () => {
   );
 };
 
-export default BranchDetail;
+export default BrandBranchDetail;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -26,6 +26,13 @@ import {
   Star,
   ClipboardList,
   ArrowRight,
+  MessageSquarePlus,
+  Sparkles,
+  CheckCircle2,
+  HelpCircle,
+  Send,
+  Check,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -38,12 +45,15 @@ import {
   hasFoodDiscount,
   applyFoodDiscount,
 } from "../services/foodsService";
+import { getAllBranches } from "../services/branchesService";
+import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
 
 const SECTIONS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "orders", label: "My Orders", icon: ShoppingBag },
   { key: "payments", label: "Payments", icon: CreditCard },
   { key: "favorites", label: "Favorites", icon: Heart },
+  { key: "reviews", label: "Experience & Review", icon: MessageSquarePlus },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -271,21 +281,26 @@ export const Profile = () => {
   const { user, logout, isAuthLoaded, updateProfile } = useAuth();
   const { favoriteIds, toggleFavorite, isFavoritesLoaded } = useFavorites();
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
 
+  const VALID_TABS = [
+    "overview",
+    "orders",
+    "payments",
+    "favorites",
+    "reviews",
+    "settings",
+  ];
+
   const [activeSection, setActiveSection] = useState(
-    tabParam &&
-      ["overview", "orders", "payments", "favorites", "settings"].includes(
-        tabParam,
-      )
-      ? tabParam
-      : "overview",
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : "overview"
   );
 
   const [orders, setOrders] = useState([]);
   const [foods, setFoods] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -298,9 +313,35 @@ export const Profile = () => {
   const [settingsNotice, setSettingsNotice] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // 🎯 Feedback & Review States
+  const [feedbackForm, setFeedbackForm] = useState({
+    userName: "",
+    phone: "",
+    email: "",
+    branchId: "",
+    branchName: "General / Online Delivery",
+    foodQuality: 0,
+    serviceSpeed: 0,
+    staffBehavior: 0,
+    likedMost: "",
+    improvements: "",
+    comments: "",
+    heardFrom: "",
+    visitAgain: "",
+  });
+  const [feedbackNotice, setFeedbackNotice] = useState(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [myFeedbacks, setMyFeedbacks] = useState([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+
   useEffect(() => {
     if (isAuthLoaded && !user) {
-      navigate("/login", { replace: true });
+      const redirectUrl =
+        location.pathname + location.search + location.hash;
+      navigate(
+        `/login?redirect=${encodeURIComponent(redirectUrl)}`,
+        { replace: true }
+      );
       return;
     }
     if (user) {
@@ -310,16 +351,17 @@ export const Profile = () => {
         pickArea: user.pickArea || "",
         address: user.address || "",
       });
+      setFeedbackForm((prev) => ({
+        ...prev,
+        userName: prev.userName || user.name || "",
+        phone: prev.phone || user.phone || "",
+        email: prev.email || user.email || "",
+      }));
     }
-  }, [user, isAuthLoaded, navigate]);
+  }, [user, isAuthLoaded, navigate, location.pathname, location.search, location.hash]);
 
   useEffect(() => {
-    if (
-      tabParam &&
-      ["overview", "orders", "payments", "favorites", "settings"].includes(
-        tabParam,
-      )
-    ) {
+    if (tabParam && VALID_TABS.includes(tabParam)) {
       setActiveSection(tabParam);
     }
   }, [tabParam]);
@@ -333,12 +375,27 @@ export const Profile = () => {
         .catch(() => getActiveOrdersForUser(user.id))
         .catch(() => []),
       getAllFoods().catch(() => []),
-    ]).then(([ordersData, foodsData]) => {
+      getAllBranches().catch(() => []),
+    ]).then(([ordersData, foodsData, branchesData]) => {
       if (cancelled) return;
       setOrders(Array.isArray(ordersData) ? ordersData : []);
       setFoods(Array.isArray(foodsData) ? foodsData : []);
+      setBranches(Array.isArray(branchesData) ? branchesData : []);
       setLoading(false);
     });
+
+    setLoadingFeedbacks(true);
+    getMyFeedbacks(user.phone || "")
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setMyFeedbacks(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingFeedbacks(false);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -368,6 +425,14 @@ export const Profile = () => {
       favoriteIds.map((id) => foods.find((f) => f.id === id)).filter(Boolean),
     [favoriteIds, foods],
   );
+
+  if (!isAuthLoaded) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 
@@ -986,11 +1051,762 @@ export const Profile = () => {
     );
   };
 
+  const feedbackProgress = useMemo(() => {
+    const isPhoneValid = /^(?:\+88|88)?01[3-9]\d{8}$/.test(
+      (feedbackForm.phone || "").trim()
+    );
+    const criteria = [
+      {
+        id: "food",
+        label: "Food Quality Rating",
+        done: feedbackForm.foodQuality > 0,
+      },
+      {
+        id: "speed",
+        label: "Service Speed Rating",
+        done: feedbackForm.serviceSpeed > 0,
+      },
+      {
+        id: "staff",
+        label: "Staff Behavior Rating",
+        done: feedbackForm.staffBehavior > 0,
+      },
+      {
+        id: "heard",
+        label: "How You Heard About Us",
+        done: Boolean(feedbackForm.heardFrom),
+      },
+      {
+        id: "visit",
+        label: "Would You Visit Again",
+        done: Boolean(feedbackForm.visitAgain),
+      },
+      {
+        id: "name",
+        label: "Customer Name",
+        done: Boolean((feedbackForm.userName || "").trim()),
+      },
+      {
+        id: "phone",
+        label: "Valid Phone (+88 Mandatory)",
+        done: isPhoneValid,
+      },
+    ];
+
+    const completed = criteria.filter((c) => c.done).length;
+    const percentage = Math.round((completed / criteria.length) * 100);
+    const remaining = criteria.length - completed;
+
+    return { criteria, completed, total: criteria.length, percentage, remaining };
+  }, [feedbackForm]);
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    setFeedbackNotice(null);
+
+    if (!feedbackForm.userName.trim()) {
+      setFeedbackNotice({ ok: false, text: "Please enter your full name." });
+      return;
+    }
+
+    const cleanPhone = feedbackForm.phone.trim();
+    if (!/^(?:\+88|88)?01[3-9]\d{8}$/.test(cleanPhone)) {
+      setFeedbackNotice({
+        ok: false,
+        text: "Please enter a valid Bangladeshi mobile number (e.g. +8801XXXXXXXXX or 01XXXXXXXXX).",
+      });
+      return;
+    }
+
+    if (
+      feedbackForm.foodQuality < 1 ||
+      feedbackForm.serviceSpeed < 1 ||
+      feedbackForm.staffBehavior < 1
+    ) {
+      setFeedbackNotice({
+        ok: false,
+        text: "Please select ratings for Food Quality, Service Speed, and Staff Behavior.",
+      });
+      return;
+    }
+
+    if (!feedbackForm.heardFrom) {
+      setFeedbackNotice({
+        ok: false,
+        text: "Please choose how you heard about us.",
+      });
+      return;
+    }
+
+    if (!feedbackForm.visitAgain) {
+      setFeedbackNotice({
+        ok: false,
+        text: "Please answer if you would visit us again.",
+      });
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      const selectedBranch = branches.find(
+        (b) => String(b.id || b._id) === String(feedbackForm.branchId)
+      );
+
+      const formattedPhone = cleanPhone.startsWith("+88")
+        ? cleanPhone
+        : cleanPhone.startsWith("88")
+        ? `+${cleanPhone}`
+        : `+88${cleanPhone}`;
+
+      const payload = {
+        userName: feedbackForm.userName.trim(),
+        phone: formattedPhone,
+        email: feedbackForm.email.trim(),
+        branchId: feedbackForm.branchId || null,
+        branchName: selectedBranch ? selectedBranch.name : "General / Online Delivery",
+        foodQuality: Number(feedbackForm.foodQuality),
+        serviceSpeed: Number(feedbackForm.serviceSpeed),
+        staffBehavior: Number(feedbackForm.staffBehavior),
+        likedMost: feedbackForm.likedMost.trim(),
+        improvements: feedbackForm.improvements.trim(),
+        comments: feedbackForm.comments.trim(),
+        heardFrom: feedbackForm.heardFrom,
+        visitAgain: feedbackForm.visitAgain,
+      };
+
+      const result = await submitFeedback(payload);
+      setFeedbackNotice({
+        ok: true,
+        text: "Thank you so much! Your experience feedback has been recorded successfully.",
+      });
+
+      if (result?.data) {
+        setMyFeedbacks((prev) => [result.data, ...prev]);
+      }
+
+      setFeedbackForm((prev) => ({
+        ...prev,
+        foodQuality: 0,
+        serviceSpeed: 0,
+        staffBehavior: 0,
+        likedMost: "",
+        improvements: "",
+        comments: "",
+        heardFrom: "",
+        visitAgain: "",
+      }));
+    } catch (err) {
+      setFeedbackNotice({
+        ok: false,
+        text: err.message || "Failed to submit feedback. Please try again.",
+      });
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const renderReviews = () => {
+    const inputClass =
+      "w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm";
+    const labelClass =
+      "block text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider mb-1.5";
+
+    const FOOD_QUALITY_OPTIONS = [
+      { value: 1, label: "1 - Terrible" },
+      { value: 2, label: "2 - Poor" },
+      { value: 3, label: "3 - Average" },
+      { value: 4, label: "4 - Good" },
+      { value: 5, label: "5 - Excellent" },
+    ];
+
+    const SERVICE_SPEED_OPTIONS = [
+      { value: 1, label: "1 - Very Slow" },
+      { value: 2, label: "2 - Slow" },
+      { value: 3, label: "3 - Moderate" },
+      { value: 4, label: "4 - Fast" },
+      { value: 5, label: "5 - Super Fast" },
+    ];
+
+    const STAFF_BEHAVIOR_OPTIONS = [
+      { value: 1, label: "1 - Unfriendly" },
+      { value: 2, label: "2 - Inattentive" },
+      { value: 3, label: "3 - Average" },
+      { value: 4, label: "4 - Polite & Helpful" },
+      { value: 5, label: "5 - Exceptional" },
+    ];
+
+    const HEARD_FROM_OPTIONS = [
+      { value: "friends_family", label: "Friends & Family" },
+      { value: "social_media", label: "Social Media (Facebook / Instagram / TikTok)" },
+      { value: "advertisement", label: "Online Advertisements" },
+      { value: "billboard", label: "Billboard / Outdoor Signage" },
+      { value: "walk_in", label: "Walk-in / Passed by" },
+      { value: "other", label: "Others" },
+    ];
+
+    const VISIT_AGAIN_OPTIONS = [
+      { value: "definitely", label: "Definitely" },
+      { value: "maybe", label: "Maybe" },
+      { value: "no", label: "No / Unlikely" },
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Progress Tracker Banner */}
+        <Card className="p-5 sm:p-6 bg-gradient-to-br from-white via-white to-primary-500/5 dark:from-neutral-900 dark:via-neutral-900 dark:to-primary-500/10 border border-primary-500/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary-500" />
+                <h3 className="font-display font-extrabold text-base sm:text-lg text-neutral-900 dark:text-white">
+                  Your Progress Tracker
+                </h3>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {feedbackProgress.remaining > 0
+                  ? `${feedbackProgress.remaining} required field${feedbackProgress.remaining > 1 ? "s" : ""} left to complete your review.`
+                  : "All required criteria met! Ready for submission."}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="w-36 sm:w-48 bg-neutral-200 dark:bg-neutral-800 rounded-full h-3 overflow-hidden">
+                <motion.div
+                  className="bg-primary-500 h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${feedbackProgress.percentage}%` }}
+                  transition={{ duration: 0.4 }}
+                />
+              </div>
+              <span className="text-sm font-black font-display text-primary-600 dark:text-primary-400 min-w-12 text-right">
+                {feedbackProgress.percentage}%
+              </span>
+            </div>
+          </div>
+
+          {/* Real-time Checklist Chips */}
+          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+            {feedbackProgress.criteria.map((c) => (
+              <span
+                key={c.id}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  c.done
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 border border-neutral-200 dark:border-neutral-700"
+                }`}
+              >
+                {c.done ? (
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-neutral-400" />
+                )}
+                {c.label}
+              </span>
+            ))}
+          </div>
+        </Card>
+
+        {/* Main Review Form */}
+        <Card className="p-5 sm:p-8 space-y-8">
+          <SectionHeading
+            icon={MessageSquarePlus}
+            title="Restaurant Experience & Review"
+            subtitle="Your honest feedback helps us elevate our food, service, and hospitality."
+          />
+
+          {feedbackNotice && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex items-start gap-2.5 p-4 rounded-2xl border text-sm ${
+                feedbackNotice.ok
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-medium"
+                  : "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 font-medium"
+              }`}
+            >
+              <Info className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{feedbackNotice.text}</span>
+            </motion.div>
+          )}
+
+          <form onSubmit={handleFeedbackSubmit} className="space-y-8">
+            {/* 1. Performance Ratings */}
+            <div className="space-y-6">
+              <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
+                  <Star className="w-4 h-4 text-primary-500" />
+                  1. Performance Ratings
+                </h4>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  Rate your satisfaction on food quality, service speed, and staff hospitality.
+                </p>
+              </div>
+
+              {/* Food Quality */}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Food Quality <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {FOOD_QUALITY_OPTIONS.map((opt) => {
+                    const isSelected = feedbackForm.foodQuality === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          setFeedbackForm((prev) => ({
+                            ...prev,
+                            foodQuality: opt.value,
+                          }))
+                        }
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
+                          isSelected
+                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
+                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Service Speed */}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Service Speed <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {SERVICE_SPEED_OPTIONS.map((opt) => {
+                    const isSelected = feedbackForm.serviceSpeed === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          setFeedbackForm((prev) => ({
+                            ...prev,
+                            serviceSpeed: opt.value,
+                          }))
+                        }
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
+                          isSelected
+                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
+                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Staff Behavior */}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Staff Behavior <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {STAFF_BEHAVIOR_OPTIONS.map((opt) => {
+                    const isSelected = feedbackForm.staffBehavior === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          setFeedbackForm((prev) => ({
+                            ...prev,
+                            staffBehavior: opt.value,
+                          }))
+                        }
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
+                          isSelected
+                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
+                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Qualitative Feedback */}
+            <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-primary-500" />
+                  2. Qualitative Feedback
+                </h4>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  Share what you enjoyed most and suggestions to help us improve.
+                </p>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  What did you like most about your visit?
+                </label>
+                <input
+                  type="text"
+                  value={feedbackForm.likedMost}
+                  onChange={(e) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      likedMost: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Delicious grilled platter, cozy ambience, courteous staff..."
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  What can we improve?
+                </label>
+                <textarea
+                  rows={3}
+                  value={feedbackForm.improvements}
+                  onChange={(e) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      improvements: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Faster beverage serving, more parking space, dessert varieties..."
+                  className={`${inputClass} resize-y leading-relaxed`}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Additional Comments
+                </label>
+                <textarea
+                  rows={2}
+                  value={feedbackForm.comments}
+                  onChange={(e) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      comments: e.target.value,
+                    }))
+                  }
+                  placeholder="Any other thoughts you want to share with us..."
+                  className={`${inputClass} resize-y leading-relaxed`}
+                />
+              </div>
+            </div>
+
+            {/* 3. Marketing & Customer Retention Data */}
+            <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-primary-500" />
+                  3. Marketing & Customer Retention Data
+                </h4>
+              </div>
+
+              {/* How did you hear about us */}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  How did you hear about us? <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {HEARD_FROM_OPTIONS.map((item) => {
+                    const isSelected = feedbackForm.heardFrom === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() =>
+                          setFeedbackForm((prev) => ({
+                            ...prev,
+                            heardFrom: item.value,
+                          }))
+                        }
+                        className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary-500 text-white border-primary-500 shadow-sm"
+                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Would you visit again */}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Would you visit us again? <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {VISIT_AGAIN_OPTIONS.map((item) => {
+                    const isSelected = feedbackForm.visitAgain === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() =>
+                          setFeedbackForm((prev) => ({
+                            ...prev,
+                            visitAgain: item.value,
+                          }))
+                        }
+                        className={`px-4 py-2.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary-500 text-white border-primary-500 shadow-sm"
+                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Customer Contact & Branch Info */}
+            <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary-500" />
+                  4. Contact Information
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>
+                    Your Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={feedbackForm.userName}
+                    onChange={(e) =>
+                      setFeedbackForm((prev) => ({
+                        ...prev,
+                        userName: e.target.value,
+                      }))
+                    }
+                    placeholder="Full Name"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={feedbackForm.phone}
+                    onChange={(e) =>
+                      setFeedbackForm((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g. +8801700000000"
+                    className={inputClass}
+                    required
+                  />
+                  <p className="text-[10px] text-neutral-400 mt-1">
+                    Mandatory with Bangladeshi +88 format for promotional offers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>
+                    Branch Visited
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <select
+                      value={feedbackForm.branchId}
+                      onChange={(e) =>
+                        setFeedbackForm((prev) => ({
+                          ...prev,
+                          branchId: e.target.value,
+                        }))
+                      }
+                      className={`${inputClass} pl-10`}
+                    >
+                      <option value="">General / Online Delivery</option>
+                      {branches.map((b) => (
+                        <option key={b.id || b._id} value={b.id || b._id}>
+                          {b.name} {b.address ? `(${b.address})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Email Address (Optional)</label>
+                  <input
+                    type="email"
+                    value={feedbackForm.email}
+                    onChange={(e) =>
+                      setFeedbackForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder="email@example.com"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="text-xs text-neutral-400">
+                <span>Progress: </span>
+                <span className="font-bold text-primary-500">
+                  {feedbackProgress.percentage}% Completed
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFeedbackForm({
+                      userName: user.name || "",
+                      phone: user.phone || "",
+                      email: user.email || "",
+                      branchId: "",
+                      branchName: "General / Online Delivery",
+                      foodQuality: 0,
+                      serviceSpeed: 0,
+                      staffBehavior: 0,
+                      likedMost: "",
+                      improvements: "",
+                      comments: "",
+                      heardFrom: "",
+                      visitAgain: "",
+                    })
+                  }
+                  className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold text-xs transition-all cursor-pointer"
+                >
+                  Reset Form
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingFeedback || feedbackProgress.percentage < 100}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  {submittingFeedback ? "Submitting..." : "Submit Experience Review"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </Card>
+
+        {/* 6. Past Feedback History */}
+        <Card className="p-5 sm:p-6 space-y-4">
+          <SectionHeading
+            icon={ClipboardList}
+            title="My Past Feedback History"
+            subtitle="Reviews and experiences you have shared with Barcode Restaurant Group."
+          />
+
+          {loadingFeedbacks ? (
+            spinner
+          ) : myFeedbacks.length === 0 ? (
+            <EmptyState
+              icon={MessageSquarePlus}
+              title="No previous reviews"
+              message="When you submit your dining feedback, it will appear here for your reference."
+            />
+          ) : (
+            <div className="space-y-3">
+              {myFeedbacks.map((fb, idx) => (
+                <div
+                  key={fb._id || fb.id || idx}
+                  className="p-4 rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/40 dark:bg-neutral-950/20 space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200/50 dark:border-neutral-800/50 pb-2.5">
+                    <div>
+                      <span className="text-xs font-bold text-neutral-800 dark:text-white">
+                        {fb.branchName || "General / Delivery"}
+                      </span>
+                      <span className="text-[11px] text-neutral-400 block mt-0.5">
+                        Submitted on: {formatDate(fb.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-500 border border-primary-500/20 uppercase">
+                        Visit Again: {fb.visitAgain}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
+                      <span className="text-[10px] text-neutral-400 block">Food Quality</span>
+                      <span className="font-bold text-neutral-800 dark:text-white">
+                        {fb.foodQuality} / 5
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
+                      <span className="text-[10px] text-neutral-400 block">Service Speed</span>
+                      <span className="font-bold text-neutral-800 dark:text-white">
+                        {fb.serviceSpeed} / 5
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
+                      <span className="text-[10px] text-neutral-400 block">Staff Behavior</span>
+                      <span className="font-bold text-neutral-800 dark:text-white">
+                        {fb.staffBehavior} / 5
+                      </span>
+                    </div>
+                  </div>
+
+                  {fb.likedMost && (
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      <strong className="text-neutral-800 dark:text-neutral-200">Liked most: </strong>
+                      {fb.likedMost}
+                    </p>
+                  )}
+
+                  {fb.improvements && (
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      <strong className="text-neutral-800 dark:text-neutral-200">Suggestions: </strong>
+                      {fb.improvements}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+    );
+  };
+
   const sectionContent = {
     overview: renderOverview,
     orders: renderOrders,
     payments: renderPayments,
     favorites: renderFavorites,
+    reviews: renderReviews,
     settings: renderSettings,
   };
 

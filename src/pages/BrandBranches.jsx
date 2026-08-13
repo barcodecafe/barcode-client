@@ -145,7 +145,7 @@ export const BrandBranches = () => {
                 variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
               >
                 <Link
-                  to={`/branches/${branch.id || branch._id}`}
+                  to={`/brands/${brand.slug}/branches/${branch.id || branch._id}`}
                   className="group flex flex-col h-full rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary-500/40 transition-all duration-300"
                 >
                   {/* Branch Cover Image */}
