@@ -145,7 +145,11 @@ export const BrandBranches = () => {
                 variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
               >
                 <Link
+<<<<<<< HEAD
                   to={`/brands/${brand.slug}/branches/${branch.id || branch._id}`}
+=======
+                  to={`/branches/${branch.id || branch._id}`}
+>>>>>>> 352b2401d0a36b35bc0d3473b215ce3b49118f38
                   className="group flex flex-col h-full rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary-500/40 transition-all duration-300"
                 >
                   {/* Branch Cover Image */}
