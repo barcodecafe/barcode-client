@@ -13,8 +13,14 @@ export async function getMyFeedbacks(phone = '') {
   return res?.data || res;
 }
 
-/** GET /api/feedbacks — Admin: Get all customer feedback */
+/** GET /api/feedbacks — Admin: Get all customer feedback with filters */
 export async function getAllFeedbacks(filters = {}) {
   const res = await apiClient.get('/feedbacks', { params: filters });
+  return res?.data || res;
+}
+
+/** DELETE /api/feedbacks/:id — Admin: Delete feedback */
+export async function deleteFeedback(id) {
+  const res = await apiClient.delete(`/feedbacks/${id}`);
   return res?.data || res;
 }
