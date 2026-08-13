@@ -539,7 +539,7 @@ export const AdminReviews = () => {
                       {fb.likedMost && (
                         <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
-                            Liked Most (পছন্দের দিক)
+                            Liked Most
                           </span>
                           <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
                             {fb.likedMost}
@@ -550,7 +550,7 @@ export const AdminReviews = () => {
                       {fb.improvements && (
                         <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
-                            Suggested Improvements (উন্নতির পরামর্শ)
+                            Suggested Improvements
                           </span>
                           <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
                             {fb.improvements}
@@ -561,7 +561,7 @@ export const AdminReviews = () => {
                       {fb.comments && (
                         <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary-600 dark:text-primary-400 block">
-                            Additional Comments (মন্তব্য)
+                            Additional Comments
                           </span>
                           <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
                             {fb.comments}

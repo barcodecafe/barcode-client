@@ -1245,9 +1245,9 @@ export const Profile = () => {
     ];
 
     const VISIT_AGAIN_OPTIONS = [
-      { value: "definitely", label: "Definitely (অবশ্যই আসব)" },
-      { value: "maybe", label: "Maybe (সুযোগ পেলে আসব)" },
-      { value: "no", label: "No (সম্ভবত না)" },
+      { value: "definitely", label: "Definitely" },
+      { value: "maybe", label: "Maybe" },
+      { value: "no", label: "No / Unlikely" },
     ];
 
     return (
@@ -1335,17 +1335,17 @@ export const Profile = () => {
               <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
                   <Star className="w-4 h-4 text-primary-500" />
-                  ১. রেটিং তথ্য (Performance Ratings)
+                  1. Performance Ratings
                 </h4>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  খাবারের স্বাদ, পরিবেশনের গতি ও স্টাফদের আতিথেয়তার মান নির্ধারণ করুন।
+                  Rate your satisfaction on food quality, service speed, and staff hospitality.
                 </p>
               </div>
 
               {/* Food Quality */}
               <div className="space-y-2">
                 <label className={labelClass}>
-                  Food Quality (খাবারের মান) <span className="text-red-500">*</span>
+                  Food Quality <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {FOOD_QUALITY_OPTIONS.map((opt) => {
@@ -1376,7 +1376,7 @@ export const Profile = () => {
               {/* Service Speed */}
               <div className="space-y-2">
                 <label className={labelClass}>
-                  Service Speed (পরিবেশনের গতি) <span className="text-red-500">*</span>
+                  Service Speed <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {SERVICE_SPEED_OPTIONS.map((opt) => {
@@ -1407,7 +1407,7 @@ export const Profile = () => {
               {/* Staff Behavior */}
               <div className="space-y-2">
                 <label className={labelClass}>
-                  Staff Behavior (স্টাফদের আচরণ) <span className="text-red-500">*</span>
+                  Staff Behavior <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {STAFF_BEHAVIOR_OPTIONS.map((opt) => {
@@ -1441,16 +1441,16 @@ export const Profile = () => {
               <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
                   <ClipboardList className="w-4 h-4 text-primary-500" />
-                  ২. গুণগত মতামত (Qualitative Feedback)
+                  2. Qualitative Feedback
                 </h4>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  আপনার সবচেয়ে পছন্দের দিক এবং যেকোনো পরামর্শ সরাসরি আমাদের জানান।
+                  Share what you enjoyed most and suggestions to help us improve.
                 </p>
               </div>
 
               <div>
                 <label className={labelClass}>
-                  What did you like most about your visit? (আপনার সবচেয়ে পছন্দের দিক)
+                  What did you like most about your visit?
                 </label>
                 <input
                   type="text"
@@ -1468,7 +1468,7 @@ export const Profile = () => {
 
               <div>
                 <label className={labelClass}>
-                  What can we improve? (কীভাবে আমরা আরো উন্নত করতে পারি?)
+                  What can we improve?
                 </label>
                 <textarea
                   rows={3}
@@ -1486,7 +1486,7 @@ export const Profile = () => {
 
               <div>
                 <label className={labelClass}>
-                  Additional Comments (অন্যান্য মন্তব্য বা বিশেষ অনুরোধ)
+                  Additional Comments
                 </label>
                 <textarea
                   rows={2}
@@ -1508,14 +1508,14 @@ export const Profile = () => {
               <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
                   <HelpCircle className="w-4 h-4 text-primary-500" />
-                  ৩. মার্কেটিং ও কাস্টমার রিটেনশন তথ্য (Marketing & Loyalty Data)
+                  3. Marketing & Customer Retention Data
                 </h4>
               </div>
 
               {/* How did you hear about us */}
               <div className="space-y-2">
                 <label className={labelClass}>
-                  How did you hear about us? (আমাদের সম্পর্কে কীভাবে জেনেছেন?) <span className="text-red-500">*</span>
+                  How did you hear about us? <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {HEARD_FROM_OPTIONS.map((item) => {
@@ -1546,7 +1546,7 @@ export const Profile = () => {
               {/* Would you visit again */}
               <div className="space-y-2">
                 <label className={labelClass}>
-                  Would you visit us again? (আপনি কি পুনরায় আমাদের এখানে আসতে চান?) <span className="text-red-500">*</span>
+                  Would you visit us again? <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {VISIT_AGAIN_OPTIONS.map((item) => {
@@ -1580,14 +1580,14 @@ export const Profile = () => {
               <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
                   <User className="w-4 h-4 text-primary-500" />
-                  ৪. কাস্টমার কন্টাক্ট ও সিআরএম ডাটা (Personal Information)
+                  4. Contact Information
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>
-                    Your Name (আপনার নাম) <span className="text-red-500">*</span>
+                    Your Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1606,7 +1606,7 @@ export const Profile = () => {
 
                 <div>
                   <label className={labelClass}>
-                    Phone Number (ফোন নম্বর) <span className="text-red-500">*</span>
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -1630,7 +1630,7 @@ export const Profile = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>
-                    Branch Visited (যে ব্রাঞ্চে গিয়েছিলেন)
+                    Branch Visited
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -1655,7 +1655,7 @@ export const Profile = () => {
                 </div>
 
                 <div>
-                  <label className={labelClass}>Email Address (ঐচ্ছিক)</label>
+                  <label className={labelClass}>Email Address (Optional)</label>
                   <input
                     type="email"
                     value={feedbackForm.email}
