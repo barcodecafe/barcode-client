@@ -199,7 +199,6 @@ export const AdminCustomers = () => {
       {/* MEMBERSHIP CARD MODAL */}
       {activeCardUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          {/* Container size expanded to max-w-4xl to prevent overflowing */}
           <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-4xl w-full border border-neutral-200 dark:border-neutral-800 space-y-6 my-auto">
             
             <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
@@ -235,7 +234,7 @@ export const AdminCustomers = () => {
                   <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
                     
                     {/* QR Code Positioned in top-right area under BARCODE logo */}
-                    <div className="flex justify-end pt-12 pr-6">
+                    <div className="flex justify-end pt-11 pr-5">
                       <div className="p-0.5 bg-white rounded shadow-md">
                         {activeCardUser.membershipQr ? (
                           <img
@@ -249,12 +248,12 @@ export const AdminCustomers = () => {
                       </div>
                     </div>
 
-                    {/* Name & Membership ID Positioned in bottom-right area */}
-                    <div className="text-right pr-6 pb-6 space-y-0.5">
-                      <span className="block font-bold text-xs sm:text-sm tracking-wide text-white uppercase truncate max-w-[180px]">
+                    {/* Name & Membership ID Stacked Together on Bottom Right */}
+                    <div className="flex flex-col items-end pr-5 pb-5 leading-tight">
+                      <span className="block font-bold text-xs sm:text-sm tracking-wide text-white uppercase truncate max-w-[200px]">
                         {activeCardUser.name}
                       </span>
-                      <span className="block font-mono font-bold text-xs text-neutral-100 tracking-wider">
+                      <span className="block font-mono font-bold text-xs text-neutral-200 tracking-wider mt-0.5">
                         {membershipIdOf(activeCardUser)}
                       </span>
                     </div>
