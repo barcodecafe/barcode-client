@@ -19,7 +19,10 @@ export const AdminCustomers = () => {
 
   const [activeCardUser, setActiveCardUser] = useState(null);
   const [downloading, setDownloading] = useState(false);
-  const cardRef = useRef(null);
+  
+  // Ref for Front & Back container download
+  const frontCardRef = useRef(null);
+  const backCardRef = useRef(null);
 
   useEffect(() => {
     Promise.allSettled([getAllUsers(), getTopCustomers()])
@@ -51,16 +54,18 @@ export const AdminCustomers = () => {
     () => [...customers].sort((a, b) => (spendByUser[b.id]?.totalSpent || 0) - (spendByUser[a.id]?.totalSpent || 0)),
     [customers, spendByUser]
   );
+  
   const topThree = useMemo(
     () => rankedCustomers.filter((c) => (spendByUser[c.id]?.totalSpent || 0) > 0).slice(0, 3),
     [rankedCustomers, spendByUser]
   );
 
-  const handleDownloadCard = async () => {
-    if (!cardRef.current || !activeCardUser || downloading) return;
+  // Single Card Download Helper
+  const downloadSingleCard = async (targetRef, cardType) => {
+    if (!targetRef.current || !activeCardUser || downloading) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(targetRef.current, {
         scale: 3,
         useCORS: true,
         backgroundColor: null,
@@ -68,11 +73,11 @@ export const AdminCustomers = () => {
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `Membership_Card_${membershipIdOf(activeCardUser)}.png`;
+      link.download = `Membership_Card_${cardType}_${membershipIdOf(activeCardUser)}.png`;
       link.click();
     } catch (err) {
       console.error('Card download failed:', err);
-      alert('Could not generate the card image. Please try again.');
+      alert(`Could not generate ${cardType} card image. Please try again.`);
     } finally {
       setDownloading(false);
     }
@@ -99,7 +104,7 @@ export const AdminCustomers = () => {
 
       <ErrorBanner title="Could not load customers" error={loadError} />
 
-      {/* 🎯 Ultra-wide layout grid optimization for Top Customers */}
+      {/* Top Customers Cards */}
       {topThree.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 2xl:grid-cols-3 gap-4 lg:gap-6">
           {topThree.map((c, i) => {
@@ -126,7 +131,7 @@ export const AdminCustomers = () => {
         </div>
       )}
 
-      {/* 🎯 Ultra-wide responsive container */}
+      {/* Main Customers Table */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 sm:p-6 shadow-xs w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm text-left">
@@ -193,108 +198,126 @@ export const AdminCustomers = () => {
         </div>
       </div>
 
-      {/* MEMBERSHIP CARD GENERATOR MODAL */}
+      {/* MEMBERSHIP CARD MODAL (FRONT & BACK) */}
       {activeCardUser && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-md w-full border border-neutral-200 dark:border-neutral-800 space-y-6">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-2xl w-full border border-neutral-200 dark:border-neutral-800 space-y-6 my-auto">
             
             <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-              <h3 className="font-display font-bold text-neutral-800 dark:text-white text-sm uppercase tracking-wide">
+              <h3 className="font-display font-bold text-neutral-800 dark:text-white text-base uppercase tracking-wide">
                 Membership Card Preview
               </h3>
               <button 
                 onClick={() => setActiveCardUser(null)}
                 className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex flex-col items-center p-2">
-              <div
-                ref={cardRef}
-                onClick={handleDownloadCard}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDownloadCard(); } }}
-                title="Click to download this card as an image"
-                className={`group w-96 h-56 rounded-2xl p-5 bg-gradient-to-br from-neutral-900 via-neutral-850 to-neutral-950 text-white relative shadow-xl overflow-hidden border border-neutral-800 flex flex-col justify-between font-sans select-none transition-transform hover:scale-[1.02] ${downloading ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
-                style={{ width: '384px', height: '224px' }}
-              >
-                <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            {/* CARDS DISPLAY CONTAINER */}
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-6 p-2">
+              
+              {/* FRONT CARD DESIGN */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase">Front Side</p>
+                <div
+                  ref={frontCardRef}
+                  className="relative w-[384px] h-[224px] rounded-2xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900"
+                  style={{ width: '384px', height: '224px' }}
+                >
+                  {/* Static Card Front Background */}
+                  <img
+                    src="/card_1_front.png" 
+                    alt="Card Front BG"
+                    className="absolute inset-0 w-full h-full object-cover z-0"
+                  />
 
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="block font-display font-black text-xs tracking-wider text-primary-400 uppercase">
-                      BARCODE CAFE
-                    </span>
-                    <span className="block text-[8px] text-neutral-400 font-light tracking-widest uppercase">
-                      Premium Loyalty Club
-                    </span>
-                  </div>
-                  <div className="px-2 py-0.5 rounded border border-primary-500/30 bg-primary-500/10 text-primary-400 font-bold text-[7px] uppercase tracking-wider">
-                    VIP MEMBER
+                  {/* Dynamic overlay values */}
+                  <div className="relative z-10 w-full h-full p-5 flex flex-col justify-between">
+                    
+                    {/* Top Row: Name & Member ID */}
+                    <div className="flex justify-between items-start pt-2">
+                      <div>
+                        <span className="block text-[9px] text-neutral-400 font-medium uppercase tracking-wider">
+                          Card Holder
+                        </span>
+                        <span className="block font-bold text-sm tracking-wide text-white uppercase truncate max-w-[200px]">
+                          {activeCardUser.name}
+                        </span>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="block text-[9px] text-neutral-400 font-medium uppercase tracking-wider">
+                          Membership ID
+                        </span>
+                        <span className="block font-mono font-bold text-sm text-primary-400 tracking-wider">
+                          {membershipIdOf(activeCardUser)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Dynamic QR Code */}
+                    <div className="flex justify-end items-end pb-1">
+                      <div className="p-1 bg-white rounded-lg shadow-md">
+                        {activeCardUser.membershipQr ? (
+                          <img
+                            src={activeCardUser.membershipQr}
+                            alt={`QR ${membershipIdOf(activeCardUser)}`}
+                            className="w-12 h-12 object-contain"
+                          />
+                        ) : (
+                          <QrCode className="w-12 h-12 stroke-[1.5] text-neutral-800" />
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-
-                <div className="flex justify-between items-center my-2">
-                  <div className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-300 via-amber-400 to-amber-200 opacity-80 border border-amber-500/30 shadow-inner" />
-
-                  <div className="p-1 bg-white rounded-md">
-                    {activeCardUser.membershipQr ? (
-                      <img
-                        src={activeCardUser.membershipQr}
-                        alt={`Membership QR ${membershipIdOf(activeCardUser)}`}
-                        className="w-12 h-12 object-contain"
-                      />
-                    ) : (
-                      <QrCode className="w-7 h-7 stroke-[1.5] text-neutral-500" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-end border-t border-neutral-800/60 pt-2">
-                  <div className="space-y-0.5">
-                    <span className="block text-[8px] text-neutral-500 uppercase font-semibold tracking-wider">
-                      Card Holder
-                    </span>
-                    <span className="block font-bold text-xs tracking-wide text-neutral-100 uppercase truncate max-w-[200px]">
-                      {activeCardUser.name}
-                    </span>
-                    <span className="block text-[8px] text-neutral-450 font-light">
-                      Joined: {new Date(activeCardUser.createdAt || Date.now()).toLocaleDateString()}
-                    </span>
-                  </div>
-                  
-                  <div className="text-right">
-                    <span className="block text-[8px] text-neutral-500 uppercase font-semibold tracking-wider">
-                      Membership ID
-                    </span>
-                    <span className="block font-mono font-bold text-sm text-primary-400 tracking-wider">
-                      {membershipIdOf(activeCardUser)}
-                    </span>
-                  </div>
-                </div>
+                
+                <button
+                  onClick={() => downloadSingleCard(frontCardRef, 'Front')}
+                  disabled={downloading}
+                  className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Download className="w-3 h-3" /> Download Front
+                </button>
               </div>
-              <p className="mt-2 text-[10px] text-neutral-400 flex items-center gap-1">
-                <Download className="w-3 h-3" /> Tip: click the card to download it
-              </p>
+
+              {/* BACK CARD DESIGN (Fully Static) */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase">Back Side</p>
+                <div
+                  ref={backCardRef}
+                  className="relative w-[384px] h-[224px] rounded-2xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900"
+                  style={{ width: '384px', height: '224px' }}
+                >
+                  {/* Static Card Back Image */}
+                  <img
+                    src="/card_2_front.png" 
+                    alt="Card Back BG"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <button
+                  onClick={() => downloadSingleCard(backCardRef, 'Back')}
+                  disabled={downloading}
+                  className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Download className="w-3 h-3" /> Download Back
+                </button>
+              </div>
+
             </div>
 
-            <div className="flex gap-3 pt-2">
+            {/* Bottom Modal Actions */}
+            <div className="flex gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <button
                 onClick={() => setActiveCardUser(null)}
                 className="flex-1 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 rounded-xl transition-all cursor-pointer text-center"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleDownloadCard}
-                disabled={downloading}
-                className="flex-1 py-2 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 active:scale-95 rounded-xl shadow-md shadow-primary-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-              >
-                <Download className="w-3.5 h-3.5" /> {downloading ? 'Generating…' : 'Download Card'}
+                Close
               </button>
             </div>
 
