@@ -10,10 +10,7 @@ import { Brands } from '../pages/Brands';
 import { BrandLayout } from '../layouts/BrandLayout';
 import { BrandHome } from '../pages/BrandHome';
 import { BrandBranches } from '../pages/BrandBranches';
-<<<<<<< HEAD
 import { BrandBranchDetail } from '../pages/BrandBranchDetail';
-=======
->>>>>>> 352b2401d0a36b35bc0d3473b215ce3b49118f38
 import { BrandMenu } from '../pages/BrandMenu';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
@@ -106,10 +103,7 @@ export const AppRoutes = () => {
                 <Route path="/brands/:slug" element={<BrandLayout />}>
                   <Route index element={<BrandHome />} />
                   <Route path="branches" element={<BrandBranches />} />
-<<<<<<< HEAD
                   <Route path="branches/:id" element={<BrandBranchDetail />} />
-=======
->>>>>>> 352b2401d0a36b35bc0d3473b215ce3b49118f38
                   <Route path="menu" element={<BrandMenu />} />
                 </Route>
 

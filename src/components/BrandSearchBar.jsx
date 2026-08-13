@@ -104,7 +104,6 @@ export const BrandSearchBar = ({ brand, variant = 'desktop', onClose }) => {
       setQuery('');
       setIsOpen(false);
       onClose?.();
-<<<<<<< HEAD
       if (brand?.slug) {
         navigate(`/brands/${brand.slug}/branches/${branch.id || branch._id}`);
       } else {
@@ -112,11 +111,6 @@ export const BrandSearchBar = ({ brand, variant = 'desktop', onClose }) => {
       }
     },
     [navigate, onClose, brand?.slug]
-=======
-      navigate(`/branches/${branch.id || branch._id}`);
-    },
-    [navigate, onClose]
->>>>>>> 352b2401d0a36b35bc0d3473b215ce3b49118f38
   );
 
   const dropdown = isOpen && query.trim() !== '' && (
