@@ -28,7 +28,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireRider = 
   if (!isAuthenticated) {
     // Send visitors to the login that matches the area they were trying to reach.
     const loginPath = requireAdmin ? '/admin/login' : requireRider ? '/rider/login' : '/login';
-    return <Navigate to={loginPath} state={{ from: location.pathname }} replace />;
+    return <Navigate to={loginPath} state={{ from: location.pathname + location.search }} replace />;
   }
 
   if (requireAdmin && !isAdmin) {

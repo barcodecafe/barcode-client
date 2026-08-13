@@ -335,15 +335,6 @@ export const Profile = () => {
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
 
   useEffect(() => {
-    if (isAuthLoaded && !user) {
-      const redirectUrl =
-        location.pathname + location.search + location.hash;
-      navigate(
-        `/login?redirect=${encodeURIComponent(redirectUrl)}`,
-        { replace: true }
-      );
-      return;
-    }
     if (user) {
       setForm({
         name: user.name || "",
@@ -358,7 +349,7 @@ export const Profile = () => {
         email: prev.email || user.email || "",
       }));
     }
-  }, [user, isAuthLoaded, navigate, location.pathname, location.search, location.hash]);
+  }, [user]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -434,7 +425,43 @@ export const Profile = () => {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    const redirectUrl = location.pathname + location.search + location.hash;
+    return (
+      <div className="min-h-[calc(100vh-3.5rem)] bg-neutral-50/50 dark:bg-neutral-950/50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-6 sm:p-8 text-center shadow-lg space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center mx-auto shadow-inner">
+              <User className="w-8 h-8" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white">
+                Sign in to view your profile
+              </h2>
+              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+                Please log in to track your active orders, check order history, view saved favorites, and submit dining experience reviews.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <Link
+                to={`/login?redirect=${encodeURIComponent(redirectUrl)}`}
+                className="w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm shadow-md shadow-primary-500/20 active:scale-95 transition-all text-center"
+              >
+                Log In to Your Account
+              </Link>
+              <Link
+                to="/signup"
+                className="w-full py-3 px-4 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold text-sm transition-all text-center"
+              >
+                Don't have an account? Sign Up
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const firstName = (user.name || "there").trim().split(" ")[0];
 
