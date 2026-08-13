@@ -124,6 +124,14 @@ export function getAuthErrorMessage(error) {
 }
 
 /**
+ * 🎯 POS Scanner / Customer Search Lookup
+ * BACKEND: GET /api/users/pos-lookup/:query
+ */
+export async function posLookupCustomer(query) {
+  return apiClient.get(`/users/pos-lookup/${encodeURIComponent(query)}`);
+}
+
+/**
  * Admin-only list of all users.
  * BACKEND: GET /api/users
  */

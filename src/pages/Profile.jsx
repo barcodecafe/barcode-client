@@ -48,6 +48,7 @@ import {
 } from "../services/foodsService";
 import { getAllBranches } from "../services/branchesService";
 import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
+import { getCustomerTier, membershipIdOf } from "./admin/AdminCustomers";
 
 const SECTIONS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -560,8 +561,48 @@ export const Profile = () => {
   const renderOverview = () => {
     const active = sortedOrders.filter((o) => isActive(o.status));
     const recent = sortedOrders.slice(0, 3);
+    const tier = getCustomerTier(stats.totalSpent);
+    const memId = membershipIdOf(user);
+
     return (
       <div className="space-y-6">
+        {/* 👑 Customer Membership & Tier Badge Card */}
+        <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-neutral-900 via-neutral-850 to-neutral-900 border border-neutral-800 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+              {tier.icon}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-display font-extrabold text-base sm:text-lg text-white">
+                  {user.name}
+                </h3>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${tier.color}`}>
+                  {tier.icon} {tier.badge}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-1 flex items-center gap-2 font-mono">
+                <span>Membership ID:</span>
+                <span className="font-bold text-primary-400">
+                  {memId}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 self-stretch md:self-auto justify-end">
+            <div className="text-right">
+              <span className="block text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Lifetime Spend</span>
+              <span className="font-black text-sm sm:text-base text-emerald-400">{taka(stats.totalSpent)}</span>
+            </div>
+            {user.membershipQr && (
+              <div className="p-1 bg-white rounded-xl shadow-md shrink-0">
+                <img src={user.membershipQr} alt="Membership QR" className="w-11 h-11 object-contain" />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatTile
             icon={ShoppingBag}
