@@ -69,11 +69,14 @@ export const DishDetail = () => {
   const [selectedVariation, setSelectedVariation] = useState(null);
 
   // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য সঠিক প্রায়োরিটি অর্ডার
+<<<<<<< HEAD
   const branchIdParam = searchParams.get("branchId");
   const storedBranch =
     localStorage.getItem("selectedBranchId") ||
     localStorage.getItem("branchId");
 
+=======
+>>>>>>> 3acc09c (feat: add customer reviews and ratings system with live average calculation)
   const branchId = branchIdParam 
     ? Number(branchIdParam) 
     : selectedBranchId 
@@ -106,6 +109,14 @@ export const DishDetail = () => {
   useEffect(() => {
     setLoading(true);
     window.scrollTo(0, 0);
+<<<<<<< HEAD
+=======
+    Promise.all([getFoodById(id), getPopularFoods(6), getFoodReviews(id)])
+      .then(([foodData, popularData, reviewsRes]) => {
+        setFood(foodData);
+        setFeaturedMenu(popularData || []);
+        if (reviewsRes) setReviewsData(reviewsRes);
+>>>>>>> 3acc09c (feat: add customer reviews and ratings system with live average calculation)
 
     // 🎯 মূল খাবার লোড করা (Primary priority)
     getFoodById(id)
