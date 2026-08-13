@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -281,6 +281,9 @@ export const Profile = () => {
   const { user, logout, isAuthLoaded, updateProfile } = useAuth();
   const { favoriteIds, toggleFavorite, isFavoritesLoaded } = useFavorites();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
 
   const VALID_TABS = [
     "overview",
@@ -333,7 +336,12 @@ export const Profile = () => {
 
   useEffect(() => {
     if (isAuthLoaded && !user) {
-      navigate("/login", { replace: true });
+      const redirectUrl =
+        location.pathname + location.search + location.hash;
+      navigate(
+        `/login?redirect=${encodeURIComponent(redirectUrl)}`,
+        { replace: true }
+      );
       return;
     }
     if (user) {
@@ -350,7 +358,7 @@ export const Profile = () => {
         email: prev.email || user.email || "",
       }));
     }
-  }, [user, isAuthLoaded, navigate]);
+  }, [user, isAuthLoaded, navigate, location.pathname, location.search, location.hash]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -417,6 +425,14 @@ export const Profile = () => {
       favoriteIds.map((id) => foods.find((f) => f.id === id)).filter(Boolean),
     [favoriteIds, foods],
   );
+
+  if (!isAuthLoaded) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 
