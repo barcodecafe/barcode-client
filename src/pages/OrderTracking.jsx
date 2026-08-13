@@ -115,7 +115,7 @@ export const OrderTracking = () => {
   useEffect(() => {
     const handleOrderUpdate = (data) => {
       const updatedOrder = data?.order || data;
-      const incomingId = updatedOrder?._id || updatedOrder?.id || data?.orderId;
+      const incomingId = updatedOrder?._id || updatedOrder?.id || data?.orderId || data?.id;
       const currentOrderId = order?._id || order?.id || id;
 
       if (incomingId && currentOrderId && String(incomingId) === String(currentOrderId)) {

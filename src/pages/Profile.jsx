@@ -388,7 +388,7 @@ export const Profile = () => {
   useEffect(() => {
     const handleOrderUpdate = (data) => {
       const updatedOrder = data?.order || data;
-      const orderId = updatedOrder?._id || updatedOrder?.id || data?.orderId;
+      const orderId = updatedOrder?._id || updatedOrder?.id || data?.orderId || data?.id;
       if (!orderId) return;
 
       setOrders((prevOrders) => {
