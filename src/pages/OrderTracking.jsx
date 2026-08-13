@@ -27,9 +27,12 @@ import {
   CreditCard,
   RefreshCw,
   AlertTriangle,
+  Star,
+  Sparkles,
 } from "lucide-react";
 import { getOrderById, addChatMessage } from "../services/ordersService";
 import { initPayment } from "../services/paymentsService"; // 👈 API_BASE_URL এর বদলে সার্ভিস ইমপোর্ট করা হলো
+import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useVisiblePolling } from "../hooks/useVisiblePolling";
@@ -107,6 +110,71 @@ export const OrderTracking = () => {
       clearCart();
     }
   }, [paymentParam, order?.paymentStatus, clearCart]);
+
+  // Real-time socket updates for order status changes (e.g. Rider / Admin sets Delivered)
+  useEffect(() => {
+    const handleOrderUpdate = (data) => {
+      const updatedOrder = data?.order || data;
+      const incomingId = updatedOrder?._id || updatedOrder?.id || data?.orderId;
+      const currentOrderId = order?._id || order?.id || id;
+
+      if (incomingId && currentOrderId && String(incomingId) === String(currentOrderId)) {
+        if (updatedOrder && (updatedOrder.status || updatedOrder._id)) {
+          setOrder((prev) => ({ ...prev, ...updatedOrder }));
+        } else if (data?.status) {
+          setOrder((prev) => ({ ...prev, status: data.status }));
+        }
+      }
+    };
+
+    socket.on("order_status_updated", handleOrderUpdate);
+    socket.on("order_updated", handleOrderUpdate);
+
+    return () => {
+      socket.off("order_status_updated", handleOrderUpdate);
+      socket.off("order_updated", handleOrderUpdate);
+    };
+  }, [id, order?._id, order?.id]);
+
+  // 🎯 Auto-redirect to Experience & Review when order status is "Delivered"
+  const [redirectCountdown, setRedirectCountdown] = useState(null);
+  const [countdownPaused, setCountdownPaused] = useState(false);
+
+  const handleGoToReview = () => {
+    const branchId = order?.branchId || order?.branch?._id || order?.branch || "";
+    const branchName = order?.branchName || order?.branch?.name || "";
+    const query = new URLSearchParams();
+    query.set("tab", "reviews");
+    if (branchId) query.set("branchId", branchId);
+    if (branchName) query.set("branchName", branchName);
+    navigate(`/profile?${query.toString()}`);
+  };
+
+  const handleCancelAutoRedirect = () => {
+    setCountdownPaused(true);
+    setRedirectCountdown(null);
+  };
+
+  useEffect(() => {
+    if (order?.status === "Delivered" && redirectCountdown === null && !countdownPaused) {
+      setRedirectCountdown(5);
+    }
+  }, [order?.status, redirectCountdown, countdownPaused]);
+
+  useEffect(() => {
+    if (redirectCountdown === null || countdownPaused) return;
+
+    if (redirectCountdown <= 0) {
+      handleGoToReview();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setRedirectCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [redirectCountdown, countdownPaused]);
 
   // 🎯 FIX: API_BASE_URL undefined ইস্যু ঠিক করতে initPayment সার্ভিস ব্যবহার করা হলো
   const handleRetryPayment = async () => {
@@ -247,6 +315,59 @@ export const OrderTracking = () => {
           </span>
         </div>
       </div>
+
+      {/* 🚀 Order Delivered Banner with Instant Review CTA */}
+      {order.status === "Delivered" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-primary-500/15 border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-6 mb-8 shadow-xl relative overflow-hidden"
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+                <Sparkles className="w-7 h-7 animate-spin" style={{ animationDuration: "6s" }} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
+                    Order Delivered
+                  </span>
+                  {redirectCountdown !== null && !countdownPaused && (
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse">
+                      Redirecting to Review in {redirectCountdown}s...
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-neutral-900 dark:text-white">
+                  Enjoy your meal! How was your experience?
+                </h2>
+                <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 max-w-xl leading-relaxed">
+                  Your feedback helps us continuously improve our food quality, kitchen speed, and rider hospitality. Please share your rating!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <button
+                onClick={handleGoToReview}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-primary-500/25 active:scale-95 transition-all cursor-pointer"
+              >
+                <Star className="w-4 h-4 fill-current" />
+                <span>Share Experience & Review</span>
+              </button>
+              {redirectCountdown !== null && !countdownPaused && (
+                <button
+                  onClick={handleCancelAutoRedirect}
+                  className="px-3.5 py-3 rounded-2xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-semibold text-xs transition-all cursor-pointer"
+                >
+                  Stay on this page
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Payment Confirmed Banner */}
       {showPaymentSuccess && (

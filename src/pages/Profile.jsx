@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { socket } from "../services/socket";
 import {
   getAllOrders,
   getActiveOrdersForUser,
@@ -210,9 +211,11 @@ const Card = ({ children, className = "" }) => (
 
 // Profile.jsx এর ভেতর OrderCard কম্পোনেন্ট এবং রেন্ডার সেকশনে ট্র্যাক বাটনটি এভাবে আপডেট করুন:
 
-const OrderCard = ({ order, expanded, onToggle }) => {
+const OrderCard = ({ order, expanded, onToggle, onRateExperience }) => {
   const active = isActive(order.status);
   const orderId = order.id || order._id; // 🎯 সঠিক আইডি পিক করার জন্য
+  const isDelivered = order.status === "Delivered";
+
   return (
     <div className="rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/30 dark:bg-neutral-950/20 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
@@ -249,7 +252,7 @@ const OrderCard = ({ order, expanded, onToggle }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={onToggle}
             className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500 font-bold text-xs active:scale-95 transition-all cursor-pointer"
@@ -269,6 +272,17 @@ const OrderCard = ({ order, expanded, onToggle }) => {
               <Truck className="w-3.5 h-3.5" />
               Track
             </Link>
+          )}
+
+          {/* 🌟 Delivered হলে Rate Experience বাটন */}
+          {isDelivered && onRateExperience && (
+            <button
+              onClick={() => onRateExperience(order)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/30 active:scale-95 transition-all cursor-pointer shadow-xs"
+            >
+              <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
+              Rate Experience
+            </button>
           )}
         </div>
       </div>
@@ -334,6 +348,9 @@ export const Profile = () => {
   const [myFeedbacks, setMyFeedbacks] = useState([]);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
 
+  const branchIdParam = searchParams.get("branchId");
+  const branchNameParam = searchParams.get("branchName");
+
   useEffect(() => {
     if (user) {
       setForm({
@@ -352,10 +369,70 @@ export const Profile = () => {
   }, [user]);
 
   useEffect(() => {
+    if (branchIdParam || branchNameParam) {
+      setFeedbackForm((prev) => ({
+        ...prev,
+        branchId: branchIdParam || prev.branchId,
+        branchName: branchNameParam || prev.branchName,
+      }));
+    }
+  }, [branchIdParam, branchNameParam]);
+
+  useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
       setActiveSection(tabParam);
     }
   }, [tabParam]);
+
+  // 🔄 Real-time order status sync via socket (e.g. when rider/admin updates status to Delivered)
+  useEffect(() => {
+    const handleOrderUpdate = (data) => {
+      const updatedOrder = data?.order || data;
+      const orderId = updatedOrder?._id || updatedOrder?.id || data?.orderId;
+      if (!orderId) return;
+
+      setOrders((prevOrders) => {
+        const exists = prevOrders.some(
+          (o) => String(o.id || o._id) === String(orderId)
+        );
+        if (!exists) return prevOrders;
+
+        return prevOrders.map((o) => {
+          if (String(o.id || o._id) === String(orderId)) {
+            const merged = { ...o, ...updatedOrder };
+            if (data?.status) merged.status = data.status;
+            return merged;
+          }
+          return o;
+        });
+      });
+    };
+
+    socket.on("order_status_updated", handleOrderUpdate);
+    socket.on("order_updated", handleOrderUpdate);
+
+    return () => {
+      socket.off("order_status_updated", handleOrderUpdate);
+      socket.off("order_updated", handleOrderUpdate);
+    };
+  }, []);
+
+  const handleRateExperience = (ord) => {
+    setActiveSection("reviews");
+    const bId = ord.branchId || ord.branch?._id || ord.branch || "";
+    const bName = ord.branchName || ord.branch?.name || "General / Online Delivery";
+    setFeedbackForm((prev) => ({
+      ...prev,
+      branchId: bId,
+      branchName: bName,
+    }));
+    setSearchParams({
+      tab: "reviews",
+      ...(bId ? { branchId: bId } : {}),
+      ...(bName ? { branchName: bName } : {}),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -599,10 +676,11 @@ export const Profile = () => {
             <div className="space-y-3">
               {recent.map((order) => (
                 <OrderCard
-                  key={order.id}
+                  key={order.id || order._id}
                   order={order}
-                  expanded={expandedOrderId === order.id}
-                  onToggle={() => toggleOrder(order.id)}
+                  expanded={expandedOrderId === (order.id || order._id)}
+                  onToggle={() => toggleOrder(order.id || order._id)}
+                  onRateExperience={handleRateExperience}
                 />
               ))}
             </div>
@@ -639,10 +717,11 @@ export const Profile = () => {
         <div className="space-y-3">
           {sortedOrders.map((order) => (
             <OrderCard
-              key={order.id}
+              key={order.id || order._id}
               order={order}
-              expanded={expandedOrderId === order.id}
-              onToggle={() => toggleOrder(order.id)}
+              expanded={expandedOrderId === (order.id || order._id)}
+              onToggle={() => toggleOrder(order.id || order._id)}
+              onRateExperience={handleRateExperience}
             />
           ))}
         </div>
