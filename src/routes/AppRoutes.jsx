@@ -85,7 +85,7 @@ export const AppRoutes = () => {
                   <Route path="signup" element={<SignUp />} />
                   <Route path="forgot-password" element={<ForgotPassword />} /> 
                   <Route path="admin-signup" element={<SignUp defaultRole="admin" />} />
-                  <Route path="profile" element={<Profile />} />
+                  <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="checkout" element={<Checkout />} />
                   <Route path="rider-application" element={<RiderApplication />} />
                   <Route path="order-tracking/:id" element={<OrderTracking />} />
