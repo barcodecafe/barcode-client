@@ -58,8 +58,8 @@ import { ScrollToTop } from '../components/ScrollToTop';
 import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import AdminRidersFleet from '../pages/admin/AdminRidersFleet';
-
 import { OrderProvider } from '../context/OrderContext';
+import { Toaster } from 'react-hot-toast';
 
 export const AppRoutes = () => {
   return (
@@ -71,6 +71,7 @@ export const AppRoutes = () => {
             <OrderProvider>
               <ScrollToTop />
               <NormalizePath />
+              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
               <Routes>
                 {/* Public / User Routes */}
                 <Route path="/" element={<RootLayout />}>

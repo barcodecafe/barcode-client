@@ -30,6 +30,7 @@ import {
   Star,
   Sparkles,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { getOrderById, addChatMessage } from "../services/ordersService";
 import { initPayment } from "../services/paymentsService"; // 👈 API_BASE_URL এর বদলে সার্ভিস ইমপোর্ট করা হলো
 import { socket } from "../services/socket";
@@ -155,9 +156,30 @@ export const OrderTracking = () => {
     setRedirectCountdown(null);
   };
 
+  const toastShownRef = useRef(false);
+
   useEffect(() => {
     if (order?.status === "Delivered" && redirectCountdown === null && !countdownPaused) {
       setRedirectCountdown(5);
+
+      if (!toastShownRef.current) {
+        toastShownRef.current = true;
+        toast.success(
+          "🎉 Order Delivered! Redirecting to Experience & Review...",
+          {
+            duration: 5000,
+            icon: "🍽️",
+            style: {
+              borderRadius: "14px",
+              background: "#10b981",
+              color: "#fff",
+              fontWeight: "bold",
+              fontSize: "13px",
+              boxShadow: "0 10px 25px -5px rgba(16, 185, 129, 0.4)",
+            },
+          }
+        );
+      }
     }
   }, [order?.status, redirectCountdown, countdownPaused]);
 
