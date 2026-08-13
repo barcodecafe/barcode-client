@@ -517,28 +517,7 @@ export const BrandBranchDetail = () => {
                         favorited={favorited}
                         onToggleFavorite={toggleFavorite}
                         onAddToCart={(foodItem, bId) => {
-                          let effPrice = Number(foodItem.price) || 0;
-                          if (
-                            bId &&
-                            foodItem.branchPrices &&
-                            foodItem.branchPrices[String(bId)] !== undefined
-                          ) {
-                            effPrice = Math.max(
-                              0,
-                              effPrice +
-                                (Number(foodItem.branchPrices[String(bId)]) || 0),
-                            );
-                          }
-
-                          addToCart({
-                            ...foodItem,
-                            price: effPrice,
-                            originalPrice:
-                              foodItem.originalPrice ||
-                              foodItem.oldPrice ||
-                              effPrice,
-                            branchId: bId,
-                          });
+                          addToCart(foodItem, bId || branch.id || branch._id);
                         }}
                         variants={cardVariants}
                       />
@@ -565,31 +544,8 @@ export const BrandBranchDetail = () => {
                     branchId={branch.id || branch._id}
                     favorited={favorited}
                     onToggleFavorite={toggleFavorite}
-                    onAddToCart={(itemFood) => {
-                      let effectivePrice = Number(itemFood.price) || 0;
-                      const branchKey = String(branch.id || branch._id);
-                      if (
-                        branchKey &&
-                        itemFood.branchPrices &&
-                        itemFood.branchPrices[branchKey] !== undefined
-                      ) {
-                        const adjustVal =
-                          Number(itemFood.branchPrices[branchKey]) || 0;
-                        effectivePrice = Math.max(
-                          0,
-                          effectivePrice + adjustVal,
-                        );
-                      }
-
-                      addToCart({
-                        ...itemFood,
-                        price: effectivePrice,
-                        originalPrice:
-                          itemFood.originalPrice ||
-                          itemFood.oldPrice ||
-                          effectivePrice,
-                        branchId: branch.id || branch._id,
-                      });
+                    onAddToCart={(itemFood, bId) => {
+                      addToCart(itemFood, bId || branch.id || branch._id);
                     }}
                     variants={cardVariants}
                   />

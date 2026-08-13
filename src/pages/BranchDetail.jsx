@@ -495,30 +495,7 @@ export const BranchDetail = () => {
                         favorited={favorited}
                         onToggleFavorite={toggleFavorite}
                         onAddToCart={(foodItem, bId) => {
-                          // 🎯 FoodCard-এর ভেতরের লজিক অনুযায়ী ব্রাঞ্চের সঠিক প্রাইস বের করে কার্টে পাঠানো হচ্ছে
-                          let effPrice = Number(foodItem.price) || 0;
-                          if (
-                            bId &&
-                            foodItem.branchPrices &&
-                            foodItem.branchPrices[String(bId)] !== undefined
-                          ) {
-                            effPrice = Math.max(
-                              0,
-                              effPrice +
-                                (Number(foodItem.branchPrices[String(bId)]) ||
-                                  0),
-                            );
-                          }
-
-                          addToCart({
-                            ...foodItem,
-                            price: effPrice,
-                            originalPrice:
-                              foodItem.originalPrice ||
-                              foodItem.oldPrice ||
-                              effPrice,
-                            branchId: bId,
-                          });
+                          addToCart(foodItem, bId || branch.id);
                         }}
                         variants={cardVariants}
                       />
@@ -544,31 +521,8 @@ export const BranchDetail = () => {
                     branchId={branch.id}
                     favorited={favorited}
                     onToggleFavorite={toggleFavorite}
-                    onAddToCart={(itemFood) => {
-                      // 🎯 FoodCard-এর নিজস্ব ব্রাঞ্চ প্রাইস ক্যালকুলেশন লজিক ব্যবহার করে কার্টে পাঠানো হচ্ছে
-                      let effectivePrice = Number(itemFood.price) || 0;
-                      if (
-                        branch.id &&
-                        itemFood.branchPrices &&
-                        itemFood.branchPrices[String(branch.id)] !== undefined
-                      ) {
-                        const adjustVal =
-                          Number(itemFood.branchPrices[String(branch.id)]) || 0;
-                        effectivePrice = Math.max(
-                          0,
-                          effectivePrice + adjustVal,
-                        );
-                      }
-
-                      addToCart({
-                        ...itemFood,
-                        price: effectivePrice,
-                        originalPrice:
-                          itemFood.originalPrice ||
-                          itemFood.oldPrice ||
-                          effectivePrice,
-                        branchId: branch.id,
-                      });
+                    onAddToCart={(itemFood, bId) => {
+                      addToCart(itemFood, bId || branch.id);
                     }}
                     variants={cardVariants}
                   />
