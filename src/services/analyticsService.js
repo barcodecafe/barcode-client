@@ -5,6 +5,11 @@
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
+/** GET /api/analytics/dashboard-all — single fast roundtrip for entire dashboard */
+export async function getDashboardAll() {
+  return apiClient.get('/analytics/dashboard-all');
+}
+
 /** GET /api/analytics/revenue-by-branch */
 export async function getRevenueByBranch() {
   return apiClient.get('/analytics/revenue-by-branch');

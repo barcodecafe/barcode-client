@@ -9,6 +9,7 @@ import { PieChart } from '../../components/admin/charts/PieChart';
 import { LineChart } from '../../components/admin/charts/LineChart';
 
 import {
+  getDashboardAll,
   getDashboardSummary,
   getRevenueByBranch,
   getOrdersByCategory,
@@ -37,30 +38,99 @@ export const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getDashboardSummary().catch(() => null),
-      getRevenueByBranch().catch(() => []),
-      getOrdersByCategory().catch(() => []),
-      getRevenueTrend(12).catch(() => []),
-      getTopDishes(5).catch(() => []),
-      getTopCustomers(5).catch(() => []),
-      getTopRiders(5).catch(() => []),
-    ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
-      setSummary(summaryData);
-      setRevenueByBranch(branchData || []);
-      setOrdersByCategory(categoryData || []);
-      setRevenueTrend(trendData || []);
-      setTopDishes(dishesData || []);
-      setTopCustomers(customersData || []);
-      setTopRiders(ridersData || []);
-      setIsLoading(false);
-    });
+    let active = true;
+
+    // ⚡ Unified high-speed endpoint (single network roundtrip)
+    getDashboardAll()
+      .then((res) => {
+        if (!active) return;
+        if (res) {
+          setSummary(res.summary || null);
+          setRevenueByBranch(res.revenueByBranch || []);
+          setOrdersByCategory(res.ordersByCategory || []);
+          setRevenueTrend(res.revenueTrend || []);
+          setTopDishes(res.topDishes || []);
+          setTopCustomers(res.topCustomers || []);
+          setTopRiders(res.topRiders || []);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        // Fallback to separate endpoints if ever needed
+        Promise.all([
+          getDashboardSummary().catch(() => null),
+          getRevenueByBranch().catch(() => []),
+          getOrdersByCategory().catch(() => []),
+          getRevenueTrend(12).catch(() => []),
+          getTopDishes(5).catch(() => []),
+          getTopCustomers(5).catch(() => []),
+          getTopRiders(5).catch(() => []),
+        ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
+          if (!active) return;
+          setSummary(summaryData);
+          setRevenueByBranch(branchData || []);
+          setOrdersByCategory(categoryData || []);
+          setRevenueTrend(trendData || []);
+          setTopDishes(dishesData || []);
+          setTopCustomers(customersData || []);
+          setTopRiders(ridersData || []);
+          setIsLoading(false);
+        });
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 w-64 bg-neutral-200 dark:bg-neutral-800 rounded-xl" />
+          <div className="h-4 w-96 bg-neutral-100 dark:bg-neutral-850 rounded-lg" />
+        </div>
+
+        {/* Stat Cards Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-5 flex flex-col justify-between">
+              <div className="flex justify-between items-center">
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800" />
+                <div className="w-14 h-5 rounded-md bg-neutral-100 dark:bg-neutral-800" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="w-20 h-3.5 rounded bg-neutral-100 dark:bg-neutral-800" />
+                <div className="w-28 h-6 rounded bg-neutral-200 dark:bg-neutral-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Row 1 Skeleton */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6">
+          <div className="xl:col-span-3 h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="w-40 h-5 bg-neutral-200 dark:bg-neutral-700 rounded" />
+              <div className="w-56 h-3 bg-neutral-100 dark:bg-neutral-800 rounded" />
+            </div>
+            <div className="h-48 w-full bg-neutral-50 dark:bg-neutral-850 rounded-xl flex items-end justify-around p-4 gap-2">
+              {[...Array(8)].map((_, j) => (
+                <div key={j} className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-t" style={{ height: `${30 + (j * 15) % 60}%` }} />
+              ))}
+            </div>
+          </div>
+
+          <div className="xl:col-span-2 h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="w-36 h-5 bg-neutral-200 dark:bg-neutral-700 rounded" />
+              <div className="w-48 h-3 bg-neutral-100 dark:bg-neutral-800 rounded" />
+            </div>
+            <div className="h-44 w-44 rounded-full border-8 border-neutral-100 dark:border-neutral-800 mx-auto my-auto flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-neutral-50 dark:bg-neutral-850" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
