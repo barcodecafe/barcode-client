@@ -129,7 +129,7 @@ export const BrandHome = () => {
                 {branches.map((br) => (
                   <SwiperSlide key={br.id || br._id}>
                     <Link
-                      to={`/branches/${br.id}`}
+                      to={`/brands/${brand.slug}/branches/${br.id || br._id}`}
                       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                     >
                       <div className="relative h-40 bg-neutral-100 dark:bg-neutral-950 overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
@@ -171,7 +171,7 @@ export const BrandHome = () => {
               {branches.map((br) => (
                 <motion.div key={br.id || br._id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
                   <Link
-                    to={`/branches/${br.id}`}
+                    to={`/brands/${brand.slug}/branches/${br.id || br._id}`}
                     className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
                   >
                     <div className="relative h-40 bg-neutral-100 dark:bg-neutral-950 overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">

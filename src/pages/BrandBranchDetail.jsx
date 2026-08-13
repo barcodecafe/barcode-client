@@ -1,0 +1,723 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MapPin,
+  Phone,
+  Navigation,
+  Clock,
+  ArrowLeft,
+  Users,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  UtensilsCrossed,
+  Building2,
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { useBrand } from "../context/BrandContext";
+import { getFoodsByBranch } from "../services/foodsService";
+import { getBranchById } from "../services/branchesService";
+import LeafletMap from "../components/LeafletMap";
+import FoodCard from "../components/FoodCard";
+
+// Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+
+// ---------------------------------------------------------------------------
+// HeroImageCarousel — banner photo transitions, drag & autoplay
+// ---------------------------------------------------------------------------
+const HeroImageCarousel = ({ images, alt, autoplayInterval = 5000 }) => {
+  const slides = images && images.length > 0 ? images : [];
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const timeoutRef = useRef(null);
+  const hasMultiple = slides.length > 1;
+
+  const goTo = useCallback(
+    (newIndex, dir) => {
+      if (slides.length === 0) return;
+      const wrapped = (newIndex + slides.length) % slides.length;
+      setDirection(dir);
+      setIndex(wrapped);
+    },
+    [slides.length],
+  );
+
+  const goNext = useCallback(() => goTo(index + 1, 1), [goTo, index]);
+  const goPrev = useCallback(() => goTo(index - 1, -1), [goTo, index]);
+
+  useEffect(() => {
+    if (!hasMultiple) return;
+    timeoutRef.current = setTimeout(() => {
+      goTo(index + 1, 1);
+    }, autoplayInterval);
+    return () => clearTimeout(timeoutRef.current);
+  }, [index, hasMultiple, autoplayInterval, goTo]);
+
+  const slideVariants = {
+    enter: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+  };
+
+  const stop = (e) => e.stopPropagation();
+
+  if (slides.length === 0) return null;
+
+  return (
+    <>
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.img
+          key={index}
+          src={slides[index]}
+          alt={alt}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{
+            x: { type: "tween", duration: 0.5, ease: "easeInOut" },
+            opacity: { duration: 0.3 },
+          }}
+          drag={hasMultiple ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.6}
+          onDragEnd={(e, info) => {
+            if (info.offset.x < -60) goNext();
+            else if (info.offset.x > 60) goPrev();
+          }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </AnimatePresence>
+
+      {hasMultiple && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              stop(e);
+              goPrev();
+            }}
+            aria-label="Previous image"
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all duration-200 active:scale-90 cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              stop(e);
+              goNext();
+            }}
+            aria-label="Next image"
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all duration-200 active:scale-90 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-2">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  goTo(i, i > index ? 1 : -1);
+                }}
+                aria-label={`Go to slide ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === index
+                    ? "w-5 bg-white"
+                    : "w-1.5 bg-white/50 hover:bg-white/80"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// InfoCard — small grid element helper for quick info pieces
+// ---------------------------------------------------------------------------
+const InfoCard = ({ icon, label, value, delay = 0, href }) => {
+  const CardWrapper = href ? motion.a : motion.div;
+
+  return (
+    <CardWrapper
+      href={href}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay }}
+      className={`group flex gap-4 items-start p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
+        href ? "cursor-pointer hover:border-primary-500/50" : ""
+      }`}
+    >
+      <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shrink-0 group-hover:scale-105 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-neutral-800 dark:text-neutral-100 font-semibold mt-0.5 leading-snug">
+          {value}
+        </p>
+      </div>
+    </CardWrapper>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// BrandBranchDetail Component
+// ---------------------------------------------------------------------------
+export const BrandBranchDetail = () => {
+  const { slug, id } = useParams();
+  const brand = useBrand();
+  const { addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [branch, setBranch] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [branchMenu, setBranchMenu] = useState([]);
+
+  const rawCategory = searchParams.get("category") || "All";
+  const scrollContainerRef = useRef(null);
+
+  const brandSlug = brand?.slug || slug;
+  const backToBranchesUrl = `/brands/${brandSlug}/branches`;
+
+  const handleCategoryChange = (catName) => {
+    if (!catName || catName === "All") {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ category: catName }, { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await getBranchById(id);
+        if (cancelled) return;
+        setBranch(data);
+
+        if (data) {
+          const menuData = await getFoodsByBranch(data.id || id, 100);
+          if (cancelled) return;
+          setBranchMenu(Array.isArray(menuData) ? menuData : []);
+        }
+      } catch (err) {
+        console.error("Failed to load branch in brand microsite:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const categories = useMemo(() => {
+    if (!branchMenu || branchMenu.length === 0) return ["All"];
+
+    const categoryMap = new Map();
+
+    branchMenu.forEach((item) => {
+      if (item.category?.trim()) {
+        const catName = item.category.trim();
+        const lowerName = catName.toLowerCase();
+        const orderVal =
+          typeof item.categoryOrder === "number" ? item.categoryOrder : 999;
+
+        if (!categoryMap.has(lowerName)) {
+          categoryMap.set(lowerName, { name: catName, order: orderVal });
+        } else {
+          if (orderVal < categoryMap.get(lowerName).order) {
+            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          }
+        }
+      }
+    });
+
+    const sortedCats = Array.from(categoryMap.values())
+      .sort((a, b) => a.order - b.order)
+      .map((item) => item.name);
+
+    return ["All", ...sortedCats];
+  }, [branchMenu]);
+
+  const activeCategory = useMemo(() => {
+    if (rawCategory === "All") return "All";
+    const match = categories.find(
+      (c) => c.trim().toLowerCase() === rawCategory.trim().toLowerCase(),
+    );
+    return match || "All";
+  }, [rawCategory, categories]);
+
+  const filteredMenu = useMemo(() => {
+    if (activeCategory === "All") return branchMenu;
+    return branchMenu.filter(
+      (food) =>
+        food.category?.trim().toLowerCase() ===
+        activeCategory.trim().toLowerCase(),
+    );
+  }, [branchMenu, activeCategory]);
+
+  const handleCategoryScroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollAmount =
+        direction === "left"
+          ? -container.offsetWidth / 2
+          : container.offsetWidth / 2;
+      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!branch) {
+    return (
+      <div className="site-container py-16 text-center">
+        <Building2 className="w-12 h-12 mx-auto stroke-1 text-neutral-300 dark:text-neutral-700 mb-3" />
+        <h2 className="text-2xl font-bold mb-4 text-neutral-800 dark:text-neutral-200">
+          Branch Not Found
+        </h2>
+        <p className="text-neutral-500 mb-6 text-sm">
+          The branch you are looking for does not exist or has been relocated.
+        </p>
+        <Link
+          to={backToBranchesUrl}
+          className="text-primary-500 font-semibold inline-flex items-center gap-2 hover:underline cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to {brand?.name || "Brand"} Branches
+        </Link>
+      </div>
+    );
+  }
+
+  const activeDetails = {
+    manager: branch.manager || "Branch Manager",
+    capacity: branch.capacity || 150,
+    features: branch.features || [
+      "Premium Seating",
+      "AC Venue",
+      "Wi-Fi Access",
+      "Parking Available",
+    ],
+  };
+
+  const hasCoords =
+    typeof branch.lat === "number" &&
+    typeof branch.lng === "number" &&
+    !(branch.lat === 0 && branch.lng === 0);
+  const telHref = `tel:${branch.contact ? branch.contact.replace(/[^\d+]/g, "") : ""}`;
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.location || branch.name)}`;
+
+  const getRegion = (location) => {
+    if (!location) return "Chattogram";
+    const lowerLoc = location.toLowerCase();
+    if (lowerLoc.includes("cox") || lowerLoc.includes("bazar"))
+      return "Cox's Bazar";
+    if (
+      lowerLoc.includes("dhaka") ||
+      lowerLoc.includes("banani") ||
+      lowerLoc.includes("gulshan")
+    )
+      return "Dhaka";
+    return "Chattogram";
+  };
+
+  const slides =
+    branch.images && branch.images.length > 0 ? branch.images : [branch.image];
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.97 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4 } },
+  };
+
+  const gridVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.06 } },
+  };
+
+  return (
+    <div className="w-full">
+      {/* 1. IMMERSIVE HERO HEADER */}
+      <section className="relative w-full h-[50vh] sm:h-[65vh] bg-black overflow-hidden">
+        <HeroImageCarousel images={slides} alt={branch.name} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" />
+
+        {/* Back Button within Brand Microsite */}
+        <div className="absolute top-5 left-4 sm:top-8 sm:left-8 z-30">
+          <Link
+            to={backToBranchesUrl}
+            className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to {brand?.name ? `${brand.name} Branches` : "Branches"}
+          </Link>
+        </div>
+
+        {/* Hero Title & Badges */}
+        <div className="absolute bottom-8 left-4 right-4 sm:left-8 sm:right-8 z-20 text-white flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {brand?.name && (
+                <span className="px-2.5 py-1 rounded-md bg-white/20 backdrop-blur-md text-white text-[11px] font-bold tracking-wide">
+                  {brand.name}
+                </span>
+              )}
+              <span className="px-2.5 py-1 rounded-md bg-primary-500 text-xs font-bold uppercase tracking-wider shadow-md">
+                {getRegion(branch.location)}
+              </span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight drop-shadow-lg">
+              {branch.name}
+            </h1>
+          </motion.div>
+
+          {branch.rating && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
+            >
+              <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
+              <span>{branch.rating} Rating</span>
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      {/* 2. BRANCH-SPECIFIC MENU GRID & INLINE CATEGORY FILTER */}
+      <section className="site-container pb-16 sm:pb-24 pt-16">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white flex items-center gap-2">
+              <UtensilsCrossed className="w-5 h-5 text-primary-500" /> Menu at {branch.name}
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+              Freshly prepared dishes available at this outlet.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-4 border-b border-neutral-200/60 dark:border-neutral-800/60">
+          <div className="relative flex items-center w-full max-w-full group">
+            {categories.length > 5 && (
+              <button
+                type="button"
+                onClick={() => handleCategoryScroll("left")}
+                className="absolute left-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
+                aria-label="Scroll categories left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+
+            <div
+              ref={scrollContainerRef}
+              className={`flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none snap-x w-full transition-all ${
+                categories.length > 5 ? "px-8" : ""
+              }`}
+            >
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => handleCategoryChange(cat)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center cursor-pointer ${
+                    activeCategory?.trim().toLowerCase() ===
+                    cat?.trim().toLowerCase()
+                      ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                      : "bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/30 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {categories.length > 5 && (
+              <button
+                type="button"
+                onClick={() => handleCategoryScroll("right")}
+                className="absolute right-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
+                aria-label="Scroll categories right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {branchMenu.length === 0 ? (
+          <div className="py-16 text-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800">
+            <UtensilsCrossed className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
+            <p className="text-neutral-500 dark:text-neutral-400 font-medium text-sm">
+              Full menu for this branch is coming soon.
+            </p>
+          </div>
+        ) : filteredMenu.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-neutral-500 dark:text-neutral-400 font-medium text-sm">
+              No menu items available under "{activeCategory}" at this moment.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile View: Swiper Carousel */}
+            <div className="sm:hidden px-2">
+              <Swiper
+                key={activeCategory}
+                modules={[Pagination]}
+                slidesPerView={1.15}
+                spaceBetween={16}
+                pagination={{ clickable: true }}
+                className="!pb-8"
+              >
+                {filteredMenu.map((food) => {
+                  const favorited = isFavorite(food.id || food._id);
+                  return (
+                    <SwiperSlide key={food.id || food._id}>
+                      <FoodCard
+                        food={food}
+                        branchId={branch.id || branch._id}
+                        favorited={favorited}
+                        onToggleFavorite={toggleFavorite}
+                        onAddToCart={(foodItem, bId) => {
+                          let effPrice = Number(foodItem.price) || 0;
+                          if (
+                            bId &&
+                            foodItem.branchPrices &&
+                            foodItem.branchPrices[String(bId)] !== undefined
+                          ) {
+                            effPrice = Math.max(
+                              0,
+                              effPrice +
+                                (Number(foodItem.branchPrices[String(bId)]) || 0),
+                            );
+                          }
+
+                          addToCart({
+                            ...foodItem,
+                            price: effPrice,
+                            originalPrice:
+                              foodItem.originalPrice ||
+                              foodItem.oldPrice ||
+                              effPrice,
+                            branchId: bId,
+                          });
+                        }}
+                        variants={cardVariants}
+                      />
+                    </SwiperSlide>
+                  );
+                })}
+              </Swiper>
+            </div>
+
+            {/* Desktop View: Responsive Grid */}
+            <motion.div
+              key={activeCategory}
+              variants={gridVariants}
+              initial="hidden"
+              animate="visible"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+            >
+              {filteredMenu.map((food) => {
+                const favorited = isFavorite(food.id || food._id);
+                return (
+                  <FoodCard
+                    key={food.id || food._id}
+                    food={food}
+                    branchId={branch.id || branch._id}
+                    favorited={favorited}
+                    onToggleFavorite={toggleFavorite}
+                    onAddToCart={(itemFood) => {
+                      let effectivePrice = Number(itemFood.price) || 0;
+                      const branchKey = String(branch.id || branch._id);
+                      if (
+                        branchKey &&
+                        itemFood.branchPrices &&
+                        itemFood.branchPrices[branchKey] !== undefined
+                      ) {
+                        const adjustVal =
+                          Number(itemFood.branchPrices[branchKey]) || 0;
+                        effectivePrice = Math.max(
+                          0,
+                          effectivePrice + adjustVal,
+                        );
+                      }
+
+                      addToCart({
+                        ...itemFood,
+                        price: effectivePrice,
+                        originalPrice:
+                          itemFood.originalPrice ||
+                          itemFood.oldPrice ||
+                          effectivePrice,
+                        branchId: branch.id || branch._id,
+                      });
+                    }}
+                    variants={cardVariants}
+                  />
+                );
+              })}
+            </motion.div>
+          </>
+        )}
+      </section>
+
+      {/* 3. BRANCH INFORMATION — CARD GRID */}
+      <section className="site-container -mt-10 sm:-mt-14 relative z-10 pb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <InfoCard
+            icon={<Clock className="w-5 h-5" />}
+            label="Opening Hours"
+            value={branch.hours || "11:00 AM – 11:00 PM"}
+            delay={0}
+          />
+          <InfoCard
+            icon={<MapPin className="w-5 h-5" />}
+            label="Full Address"
+            value={branch.location || branch.address || "Main Street"}
+            delay={0.05}
+          />
+          <InfoCard
+            icon={<Phone className="w-5 h-5" />}
+            label="Contact Number"
+            value={branch.contact || branch.phone || "N/A"}
+            delay={0.1}
+            href={telHref}
+          />
+          <InfoCard
+            icon={<Users className="w-5 h-5" />}
+            label="Seating Capacity"
+            value={`${activeDetails.capacity} Guests`}
+            delay={0.15}
+          />
+        </div>
+      </section>
+
+      {/* 4. AMBIENCE / FEATURES + MAP ACTIONS */}
+      <section className="site-container mb-6 py-0 pt-10 sm:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-7 p-6 sm:p-8 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Sparkles className="w-5 h-5 text-primary-500" />
+              <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
+                Ambience & Amenities
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {activeDetails.features.map((feature, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold border border-neutral-200/10"
+                >
+                  {feature}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-3.5 pt-5 border-t border-neutral-100 dark:border-neutral-800/60">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 shadow-xs text-neutral-400 border border-neutral-200/40 dark:border-neutral-800/40">
+                <UtensilsCrossed className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                  General Manager
+                </p>
+                <p className="font-semibold text-neutral-800 dark:text-neutral-200 text-sm mt-0.5">
+                  {activeDetails.manager}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-5 space-y-4"
+          >
+            {hasCoords ? (
+              <LeafletMap
+                lat={branch.lat}
+                lng={branch.lng}
+                zoom={16}
+                className="h-56 sm:min-h-[220px] w-full border border-neutral-200 dark:border-neutral-800 shadow-inner"
+              />
+            ) : (
+              <div className="relative h-56 sm:min-h-[220px] rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-dashed border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col items-center justify-center gap-2 shadow-inner text-center px-4">
+                <MapPin className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
+                <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 max-w-[85%]">
+                  Precise map pin coming soon — use “Get Directions” to find us.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <a
+                href={telHref}
+                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300 cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                Call Branch
+              </a>
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
+              >
+                <Navigation className="w-4 h-4" />
+                Get Directions
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default BrandBranchDetail;

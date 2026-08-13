@@ -104,9 +104,13 @@ export const BrandSearchBar = ({ brand, variant = 'desktop', onClose }) => {
       setQuery('');
       setIsOpen(false);
       onClose?.();
-      navigate(`/branches/${branch.id || branch._id}`);
+      if (brand?.slug) {
+        navigate(`/brands/${brand.slug}/branches/${branch.id || branch._id}`);
+      } else {
+        navigate(`/branches/${branch.id || branch._id}`);
+      }
     },
-    [navigate, onClose]
+    [navigate, onClose, brand?.slug]
   );
 
   const dropdown = isOpen && query.trim() !== '' && (
