@@ -20,7 +20,6 @@ export const AdminCustomers = () => {
   const [activeCardUser, setActiveCardUser] = useState(null);
   const [downloading, setDownloading] = useState(false);
   
-  // Ref for Front & Back container download
   const frontCardRef = useRef(null);
   const backCardRef = useRef(null);
 
@@ -60,7 +59,6 @@ export const AdminCustomers = () => {
     [rankedCustomers, spendByUser]
   );
 
-  // Single Card Download Helper
   const downloadSingleCard = async (targetRef, cardType) => {
     if (!targetRef.current || !activeCardUser || downloading) return;
     setDownloading(true);
@@ -198,10 +196,11 @@ export const AdminCustomers = () => {
         </div>
       </div>
 
-      {/* MEMBERSHIP CARD MODAL (FRONT & BACK) */}
+      {/* MEMBERSHIP CARD MODAL */}
       {activeCardUser && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-2xl w-full border border-neutral-200 dark:border-neutral-800 space-y-6 my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          {/* Container size expanded to max-w-4xl to prevent overflowing */}
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-4xl w-full border border-neutral-200 dark:border-neutral-800 space-y-6 my-auto">
             
             <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
               <h3 className="font-display font-bold text-neutral-800 dark:text-white text-base uppercase tracking-wide">
@@ -216,15 +215,14 @@ export const AdminCustomers = () => {
             </div>
 
             {/* CARDS DISPLAY CONTAINER */}
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-6 p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center items-center p-2">
               
               {/* FRONT CARD DESIGN */}
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2 w-full">
                 <p className="text-xs font-semibold text-neutral-500 uppercase">Front Side</p>
                 <div
                   ref={frontCardRef}
-                  className="relative w-[384px] h-[224px] rounded-2xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900"
-                  style={{ width: '384px', height: '224px' }}
+                  className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
                 >
                   {/* Static Card Front Background */}
                   <img
@@ -234,42 +232,31 @@ export const AdminCustomers = () => {
                   />
 
                   {/* Dynamic overlay values */}
-                  <div className="relative z-10 w-full h-full p-5 flex flex-col justify-between">
+                  <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
                     
-                    {/* Top Row: Name & Member ID */}
-                    <div className="flex justify-between items-start pt-2">
-                      <div>
-                        <span className="block text-[9px] text-neutral-400 font-medium uppercase tracking-wider">
-                          Card Holder
-                        </span>
-                        <span className="block font-bold text-sm tracking-wide text-white uppercase truncate max-w-[200px]">
-                          {activeCardUser.name}
-                        </span>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="block text-[9px] text-neutral-400 font-medium uppercase tracking-wider">
-                          Membership ID
-                        </span>
-                        <span className="block font-mono font-bold text-sm text-primary-400 tracking-wider">
-                          {membershipIdOf(activeCardUser)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bottom Row: Dynamic QR Code */}
-                    <div className="flex justify-end items-end pb-1">
-                      <div className="p-1 bg-white rounded-lg shadow-md">
+                    {/* QR Code Positioned in top-right area under BARCODE logo */}
+                    <div className="flex justify-end pt-12 pr-6">
+                      <div className="p-0.5 bg-white rounded shadow-md">
                         {activeCardUser.membershipQr ? (
                           <img
                             src={activeCardUser.membershipQr}
                             alt={`QR ${membershipIdOf(activeCardUser)}`}
-                            className="w-12 h-12 object-contain"
+                            className="w-10 h-10 object-contain"
                           />
                         ) : (
-                          <QrCode className="w-12 h-12 stroke-[1.5] text-neutral-800" />
+                          <QrCode className="w-10 h-10 stroke-[1.5] text-neutral-800" />
                         )}
                       </div>
+                    </div>
+
+                    {/* Name & Membership ID Positioned in bottom-right area */}
+                    <div className="text-right pr-6 pb-6 space-y-0.5">
+                      <span className="block font-bold text-xs sm:text-sm tracking-wide text-white uppercase truncate max-w-[180px]">
+                        {activeCardUser.name}
+                      </span>
+                      <span className="block font-mono font-bold text-xs text-neutral-100 tracking-wider">
+                        {membershipIdOf(activeCardUser)}
+                      </span>
                     </div>
 
                   </div>
@@ -280,19 +267,17 @@ export const AdminCustomers = () => {
                   disabled={downloading}
                   className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <Download className="w-3 h-3" /> Download Front
+                  <Download className="w-3.5 h-3.5" /> Download Front
                 </button>
               </div>
 
-              {/* BACK CARD DESIGN (Fully Static) */}
-              <div className="flex flex-col items-center gap-2">
+              {/* BACK CARD DESIGN */}
+              <div className="flex flex-col items-center gap-2 w-full">
                 <p className="text-xs font-semibold text-neutral-500 uppercase">Back Side</p>
                 <div
                   ref={backCardRef}
-                  className="relative w-[384px] h-[224px] rounded-2xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900"
-                  style={{ width: '384px', height: '224px' }}
+                  className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
                 >
-                  {/* Static Card Back Image */}
                   <img
                     src="/card_2_front.png" 
                     alt="Card Back BG"
@@ -305,7 +290,7 @@ export const AdminCustomers = () => {
                   disabled={downloading}
                   className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <Download className="w-3 h-3" /> Download Back
+                  <Download className="w-3.5 h-3.5" /> Download Back
                 </button>
               </div>
 
