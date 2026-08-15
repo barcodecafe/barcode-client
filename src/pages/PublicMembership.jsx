@@ -140,7 +140,7 @@ export const PublicMembership = () => {
               B
             </span>
             <span className="font-display font-bold text-xl tracking-tight text-white">
-              Barcode <span className="text-primary-400">Cafe</span>
+              Barcode <span className="text-primary-400">Restaurant Group</span>
             </span>
           </Link>
 
@@ -149,7 +149,7 @@ export const PublicMembership = () => {
           </div>
           
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Digital Membership Pass
+            Virtual Membership Pass
           </h1>
           <p className="text-xs sm:text-sm text-neutral-400 max-w-md mx-auto">
             Live membership authenticity verification and customer privilege status.
@@ -368,7 +368,7 @@ export const PublicMembership = () => {
 
         {/* Footer info */}
         <div className="text-center text-[11px] text-neutral-500 pt-6 border-t border-neutral-900">
-          <p>© {new Date().getFullYear()} Barcode Cafe. Digital membership verification powered by Barcode Cloud POS.</p>
+          <p>© {new Date().getFullYear()} Barcode Restaurant Group. Virtual membership verification powered by Barcode Cloud POS.</p>
         </div>
 
       </div>
