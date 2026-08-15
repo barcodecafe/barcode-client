@@ -624,19 +624,11 @@ export const AdminCustomers = () => {
 
                   </div>
                 </div>
-                
-                <button
-                  onClick={() => downloadSingleCard(frontCardRef, 'Front')}
-                  disabled={downloading}
-                  className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download Front
-                </button>
               </div>
 
               {/* BACK CARD DESIGN */}
               <div className="flex flex-col items-center gap-2 w-full">
-                <p className="text-xs font-semibold text-neutral-500 uppercase">Back Side</p>
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Back Side</p>
                 <div
                   ref={backCardRef}
                   className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
@@ -647,14 +639,6 @@ export const AdminCustomers = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-
-                <button
-                  onClick={() => downloadSingleCard(backCardRef, 'Back')}
-                  disabled={downloading}
-                  className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download Back
-                </button>
               </div>
 
             </div>
@@ -665,10 +649,10 @@ export const AdminCustomers = () => {
                 type="button"
                 onClick={downloadBothCards}
                 disabled={downloading}
-                className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="px-6 py-3 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Download className="w-4 h-4" />
-                <span>{downloading ? 'Generating Cards...' : 'Download Both Sides (Front & Back)'}</span>
+                <span>{downloading ? 'Generating Cards...' : 'Download Membership Card (Front & Back)'}</span>
               </button>
             </div>
 

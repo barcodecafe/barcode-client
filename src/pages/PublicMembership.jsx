@@ -116,7 +116,6 @@ export const PublicMembership = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
   const [downloading, setDownloading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [cardQrDataUrl, setCardQrDataUrl] = useState('');
@@ -360,115 +359,82 @@ export const PublicMembership = () => {
             transition={{ duration: 0.35 }}
             className="space-y-8"
           >
-            {/* 👑 3D INTERACTIVE CARD SHOWCASE */}
-            <div className="flex flex-col items-center gap-4">
+            {/* 👑 DIGITAL MEMBERSHIP CARDS SHOWCASE (Mobile: Front top, Back bottom; Desktop: Side-by-side) */}
+            <div className="flex flex-col items-center gap-6">
               
-              {/* Card Switcher Tabs */}
-              <div className="flex items-center p-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-inner text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setActiveSide('front')}
-                  className={`px-4 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    activeSide === 'front'
-                      ? 'bg-primary-500 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Front Side
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSide('back')}
-                  className={`px-4 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    activeSide === 'back'
-                      ? 'bg-primary-500 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Back Side
-                </button>
-              </div>
-
-              {/* CARD PREVIEWS CONTAINER */}
-              <div className="relative flex justify-center items-center w-full overflow-hidden py-2">
+              {/* CARDS DISPLAY CONTAINER */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center items-center w-full p-2">
                 
                 {/* FRONT CARD */}
-                <div
-                  ref={frontCardRef}
-                  className={`relative w-[340px] sm:w-[390px] h-[200px] sm:h-[230px] rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 select-none bg-neutral-900 shrink-0 transition-all duration-300 ${
-                    activeSide === 'front' ? 'block ring-2 ring-primary-500/30' : 'hidden'
-                  }`}
-                >
-                  <img
-                    src="/card_1_front.png"
-                    alt="Membership Card Front"
-                    className="absolute inset-0 w-full h-full object-cover z-0"
-                  />
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Front Side</p>
+                  <div
+                    ref={frontCardRef}
+                    className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
+                  >
+                    <img
+                      src="/card_1_front.png"
+                      alt="Membership Card Front"
+                      className="absolute inset-0 w-full h-full object-cover z-0"
+                    />
 
-                  {/* Card Content Overlay */}
-                  <div className="relative z-10 w-full h-full p-4 sm:p-5 flex flex-col justify-between">
-                    {/* Top Right: QR Code (Positioned 2px lower for balanced spacing) */}
-                    <div className="flex items-start justify-end pt-[31px] pr-4">
-                      <div className="p-1 bg-white rounded-lg shadow-lg">
-                        {cardQrDataUrl || data.membershipQr ? (
-                          <img
-                            src={cardQrDataUrl || data.membershipQr}
-                            alt={`QR ${data.membershipId}`}
-                            className="w-13 h-13 sm:w-14 sm:h-14 object-contain"
-                          />
-                        ) : (
-                          <QrCode className="w-13 h-13 text-neutral-900" />
-                        )}
+                    {/* Card Content Overlay */}
+                    <div className="relative z-10 w-full h-full p-4 sm:p-5 flex flex-col justify-between">
+                      {/* Top Right: QR Code (Positioned 2px lower for balanced spacing) */}
+                      <div className="flex items-start justify-end pt-[31px] pr-4">
+                        <div className="p-1 bg-white rounded-lg shadow-lg">
+                          {cardQrDataUrl || data.membershipQr ? (
+                            <img
+                              src={cardQrDataUrl || data.membershipQr}
+                              alt={`QR ${data.membershipId}`}
+                              className="w-13 h-13 sm:w-14 sm:h-14 object-contain"
+                            />
+                          ) : (
+                            <QrCode className="w-13 h-13 text-neutral-900" />
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Bottom Right: Name & ID */}
-                    <div className="flex flex-col items-end pr-4 pb-4 leading-tight">
-                      <span className="block font-bold text-sm sm:text-base tracking-wide text-white uppercase truncate max-w-[220px]">
-                        {data.name}
-                      </span>
-                      <span className="block font-mono font-bold text-xs text-neutral-300 tracking-wider mt-0.5">
-                        {data.membershipId}
-                      </span>
+                      {/* Bottom Right: Name & ID */}
+                      <div className="flex flex-col items-end pr-4 pb-4 leading-tight">
+                        <span className="block font-bold text-sm sm:text-base tracking-wide text-white uppercase truncate max-w-[220px]">
+                          {data.name}
+                        </span>
+                        <span className="block font-mono font-bold text-xs text-neutral-300 tracking-wider mt-0.5">
+                          {data.membershipId}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* BACK CARD */}
-                <div
-                  ref={backCardRef}
-                  className={`relative w-[340px] sm:w-[390px] h-[200px] sm:h-[230px] rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 select-none bg-neutral-900 shrink-0 transition-all duration-300 ${
-                    activeSide === 'back' ? 'block ring-2 ring-primary-500/30' : 'hidden'
-                  }`}
-                >
-                  <img
-                    src="/card_2_front.png"
-                    alt="Membership Card Back"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Back Side</p>
+                  <div
+                    ref={backCardRef}
+                    className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
+                  >
+                    <img
+                      src="/card_2_front.png"
+                      alt="Membership Card Back"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
 
               </div>
 
-              {/* CARD DOWNLOAD & SAVE BUTTONS */}
-              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              {/* 🎯 SINGLE 1-CLICK DOWNLOAD BOTH SIDES BUTTON */}
+              <div className="flex items-center justify-center pt-1 w-full">
                 <button
                   type="button"
                   onClick={downloadBothCards}
                   disabled={downloading}
-                  className="px-4 py-2 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-6 py-3.5 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
-                  <span>{downloading ? 'Preparing Cards...' : 'Download Card (Front & Back)'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadSingleCard(activeSide === 'front' ? frontCardRef : backCardRef, activeSide === 'front' ? 'Front' : 'Back')}
-                  disabled={downloading}
-                  className="px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Save {activeSide === 'front' ? 'Front' : 'Back'}</span>
+                  <span>{downloading ? 'Preparing Cards...' : 'Download Membership Card (Front & Back)'}</span>
                 </button>
               </div>
 

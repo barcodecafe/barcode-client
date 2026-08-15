@@ -2173,55 +2173,37 @@ export const Profile = () => {
                       </div>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadSingleCard(frontCardRef, 'Front')}
-                    disabled={downloadingCard}
-                    className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download Front
-                  </button>
                 </div>
 
-                {/* BACK CARD DESIGN */}
-                <div className="flex flex-col items-center gap-2 w-full">
-                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Back Side</p>
-                  <div
-                    ref={backCardRef}
-                    className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
-                  >
-                    <img
-                      src="/card_2_front.png"
-                      alt="Card Back BG"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadSingleCard(backCardRef, 'Back')}
-                    disabled={downloadingCard}
-                    className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download Back
-                  </button>
-                </div>
-
-              </div>
-
-              {/* 🎯 1-CLICK DOWNLOAD BOTH SIDES BAR */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={downloadBothCards}
-                  disabled={downloadingCard}
-                  className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              {/* BACK CARD DESIGN */}
+              <div className="flex flex-col items-center gap-2 w-full">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Back Side</p>
+                <div
+                  ref={backCardRef}
+                  className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>{downloadingCard ? 'Generating Cards...' : 'Download Both Sides (Front & Back)'}</span>
-                </button>
+                  <img
+                    src="/card_2_front.png"
+                    alt="Card Back BG"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
+
+            </div>
+
+            {/* 🎯 1-CLICK DOWNLOAD BOTH SIDES BAR */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={downloadBothCards}
+                disabled={downloadingCard}
+                className="px-6 py-3 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>{downloadingCard ? 'Generating Cards...' : 'Download Membership Card (Front & Back)'}</span>
+              </button>
+            </div>
 
               {/* 🔗 DIRECT VERIFICATION LINK & TEST BAR */}
               <div className="p-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl border border-neutral-200 dark:border-neutral-750 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
