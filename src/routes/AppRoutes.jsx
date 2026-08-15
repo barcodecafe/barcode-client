@@ -23,6 +23,7 @@ import { Checkout } from '../pages/Checkout';
 import { OrderTracking } from '../pages/OrderTracking';
 import { PaymentResult } from '../pages/PaymentResult';
 import { PaymentDemo } from '../pages/PaymentDemo';
+import { PublicMembership } from '../pages/PublicMembership';
 
 // 📄 পলিসি পেজসমূহ ইমপোর্ট
 import { PrivacyPolicy } from '../pages/PrivacyPolicy';
@@ -109,6 +110,10 @@ export const AppRoutes = () => {
                   <Route path="branches/:id" element={<BrandBranchDetail />} />
                   <Route path="menu" element={<BrandMenu />} />
                 </Route>
+
+                {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}
+                <Route path="/membership/:id" element={<PublicMembership />} />
+                <Route path="/membership-verify/:id" element={<PublicMembership />} />
 
                 {/* Role Login Portals */}
                 <Route path="/admin/login" element={<Login variant="admin" />} />

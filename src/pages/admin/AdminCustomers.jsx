@@ -176,7 +176,11 @@ export const AdminCustomers = () => {
   // 🎯 POS Search / Scan Filter
   const filteredCustomers = useMemo(() => {
     if (!posSearchQuery.trim()) return rankedCustomers;
-    const q = posSearchQuery.trim().toLowerCase();
+    let q = posSearchQuery.trim().toLowerCase();
+    const urlMatch = q.match(/\/membership\/([^/?#]+)/i);
+    if (urlMatch && urlMatch[1]) {
+      q = decodeURIComponent(urlMatch[1]).trim().toLowerCase();
+    }
     const cleanQ = cleanPhoneForMembership(q);
 
     return rankedCustomers.filter((c) => {
@@ -201,9 +205,15 @@ export const AdminCustomers = () => {
     e?.preventDefault();
     if (!posSearchQuery.trim()) return;
 
+    let q = posSearchQuery.trim();
+    const urlMatch = q.match(/\/membership\/([^/?#]+)/i);
+    if (urlMatch && urlMatch[1]) {
+      q = decodeURIComponent(urlMatch[1]).trim();
+    }
+
     setIsSearchingPos(true);
     try {
-      const res = await posLookupCustomer(posSearchQuery.trim());
+      const res = await posLookupCustomer(q);
       if (res && res.user) {
         setScannedCustomer(res);
       } else {
@@ -213,8 +223,8 @@ export const AdminCustomers = () => {
       // If server lookup returns 404, check local state
       const localMatch = rankedCustomers.find((c) => {
         const mid = membershipIdOf(c).toLowerCase();
-        const q = posSearchQuery.trim().toLowerCase();
-        return mid === q || (c.phone && c.phone.includes(q));
+        const lowQ = q.toLowerCase();
+        return mid === lowQ || (c.phone && c.phone.includes(lowQ));
       });
       if (localMatch) {
         const s = spendOf(localMatch);
@@ -534,14 +544,8 @@ export const AdminCustomers = () => {
                   {/* Dynamic overlay values */}
                   <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
                     
-                    {/* Top Right: Tier Badge & QR Code */}
-                    <div className="flex items-start justify-between pt-9 pr-5 pl-2">
-                      {/* Tier Badge Pill on Card */}
-                      <div className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/20 text-white font-black text-[10px] uppercase tracking-wider flex items-center gap-1">
-                        <span>{getCustomerTier(spendOf(activeCardUser).totalSpent).icon}</span>
-                        <span>{getCustomerTier(spendOf(activeCardUser).totalSpent).badge}</span>
-                      </div>
-
+                    {/* Top Right: QR Code */}
+                    <div className="flex items-start justify-end pt-9 pr-5">
                       {/* QR Code */}
                       <div className="p-0.5 bg-white rounded shadow-md">
                         {activeCardUser.membershipQr ? (

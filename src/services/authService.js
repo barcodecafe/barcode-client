@@ -132,6 +132,14 @@ export async function posLookupCustomer(query) {
 }
 
 /**
+ * 🎯 Public Customer Membership Verification (Non-admin safe public lookup)
+ * BACKEND: GET /api/users/public-membership/:query
+ */
+export async function getPublicMembership(query) {
+  return apiClient.get(`/users/public-membership/${encodeURIComponent(query)}`);
+}
+
+/**
  * Admin-only list of all users.
  * BACKEND: GET /api/users
  */
