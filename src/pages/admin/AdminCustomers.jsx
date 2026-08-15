@@ -560,23 +560,23 @@ export const AdminCustomers = () => {
                   <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
                     
                     {/* Top Right: QR Code */}
-                    <div className="flex items-start justify-end pt-9 pr-5">
+                    <div className="flex items-start justify-end pt-7 pr-4">
                       {/* QR Code */}
-                      <div className="p-0.5 bg-white rounded shadow-md">
+                      <div className="p-1 bg-white rounded-lg shadow-lg">
                         {cardQrUrl || activeCardUser.membershipQr ? (
                           <img
                             src={cardQrUrl || activeCardUser.membershipQr}
                             alt={`QR ${membershipIdOf(activeCardUser)}`}
-                            className="w-10 h-10 object-contain"
+                            className="w-13 h-13 sm:w-14 sm:h-14 object-contain"
                           />
                         ) : (
-                          <QrCode className="w-10 h-10 stroke-[1.5] text-neutral-800" />
+                          <QrCode className="w-13 h-13 stroke-[1.5] text-neutral-800" />
                         )}
                       </div>
                     </div>
 
                     {/* Name & Membership ID Stacked Together on Bottom Right */}
-                    <div className="flex flex-col items-end pr-5 pb-5 leading-tight">
+                    <div className="flex flex-col items-end pr-4 pb-4 leading-tight">
                       <span className="block font-bold text-xs sm:text-sm tracking-wide text-white uppercase truncate max-w-[200px]">
                         {activeCardUser.name}
                       </span>
@@ -620,6 +620,43 @@ export const AdminCustomers = () => {
                 </button>
               </div>
 
+            </div>
+
+            {/* 🔗 DIRECT VERIFICATION LINK & TEST BAR */}
+            <div className="p-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl border border-neutral-200 dark:border-neutral-750 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+                <QrCode className="w-4 h-4 text-primary-500 shrink-0" />
+                <span className="text-neutral-500 dark:text-neutral-400 shrink-0 font-medium">Scan / Verification Link:</span>
+                <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 truncate select-all">
+                  {window.location.origin}/membership/{membershipIdOf(activeCardUser)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(`${window.location.origin}/membership/${membershipIdOf(activeCardUser)}`)}
+                  className="px-2.5 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-all"
+                >
+                  {copiedId === `${window.location.origin}/membership/${membershipIdOf(activeCardUser)}` ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" /> Copy URL
+                    </>
+                  )}
+                </button>
+                <a
+                  href={`/membership/${encodeURIComponent(membershipIdOf(activeCardUser))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  <span>Test Page</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
 
             {/* Bottom Modal Actions */}
