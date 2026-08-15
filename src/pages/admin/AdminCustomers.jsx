@@ -4,6 +4,7 @@ import { getTopCustomers } from '../../services/analyticsService';
 import { CreditCard, Download, X, QrCode, Crown, Search, Sparkles, Check, Copy, UserCheck } from 'lucide-react';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import html2canvas from 'html2canvas-pro';
+import QRCode from 'qrcode';
 
 const taka = (n) => `৳${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const MEDAL = ['🥇', '🥈', '🥉'];
@@ -126,8 +127,22 @@ export const AdminCustomers = () => {
   const [loadError, setLoadError] = useState(null);
 
   const [activeCardUser, setActiveCardUser] = useState(null);
+  const [cardQrUrl, setCardQrUrl] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+
+  // Generate dynamic live verification QR code for card preview
+  useEffect(() => {
+    if (activeCardUser) {
+      const memId = membershipIdOf(activeCardUser);
+      const verifyUrl = `${window.location.origin}/membership/${encodeURIComponent(memId)}`;
+      QRCode.toDataURL(verifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 260 })
+        .then((url) => setCardQrUrl(url))
+        .catch(() => setCardQrUrl(activeCardUser.membershipQr || ''));
+    } else {
+      setCardQrUrl('');
+    }
+  }, [activeCardUser]);
 
   // 🎯 POS Barcode / QR Scanner & Search Query
   const [posSearchQuery, setPosSearchQuery] = useState('');
@@ -548,9 +563,9 @@ export const AdminCustomers = () => {
                     <div className="flex items-start justify-end pt-9 pr-5">
                       {/* QR Code */}
                       <div className="p-0.5 bg-white rounded shadow-md">
-                        {activeCardUser.membershipQr ? (
+                        {cardQrUrl || activeCardUser.membershipQr ? (
                           <img
-                            src={activeCardUser.membershipQr}
+                            src={cardQrUrl || activeCardUser.membershipQr}
                             alt={`QR ${membershipIdOf(activeCardUser)}`}
                             className="w-10 h-10 object-contain"
                           />

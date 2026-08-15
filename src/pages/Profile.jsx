@@ -49,6 +49,7 @@ import {
 import { getAllBranches } from "../services/branchesService";
 import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
 import { getCustomerTier, membershipIdOf } from "./admin/AdminCustomers";
+import QRCode from "qrcode";
 
 const SECTIONS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -470,6 +471,17 @@ export const Profile = () => {
     };
   }, [user]);
 
+  const [profileQr, setProfileQr] = useState('');
+  useEffect(() => {
+    if (user) {
+      const memId = membershipIdOf(user);
+      const verifyUrl = `${window.location.origin}/membership/${encodeURIComponent(memId)}`;
+      QRCode.toDataURL(verifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 240 })
+        .then((url) => setProfileQr(url))
+        .catch(() => setProfileQr(user.membershipQr || ''));
+    }
+  }, [user]);
+
   const sortedOrders = useMemo(
     () =>
       [...orders].sort(
@@ -595,9 +607,9 @@ export const Profile = () => {
               <span className="block text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Lifetime Spend</span>
               <span className="font-black text-sm sm:text-base text-emerald-400">{taka(stats.totalSpent)}</span>
             </div>
-            {user.membershipQr && (
+            {(profileQr || user.membershipQr) && (
               <div className="p-1 bg-white rounded-xl shadow-md shrink-0">
-                <img src={user.membershipQr} alt="Membership QR" className="w-11 h-11 object-contain" />
+                <img src={profileQr || user.membershipQr} alt="Membership QR" className="w-11 h-11 object-contain" />
               </div>
             )}
           </div>
