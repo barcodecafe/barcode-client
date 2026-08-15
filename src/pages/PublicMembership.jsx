@@ -363,8 +363,8 @@ export const PublicMembership = () => {
 
                     {/* Card Content Overlay */}
                     <div className="relative z-10 w-full h-full p-4 sm:p-5 flex flex-col justify-between">
-                      {/* Top Right: QR Code (Positioned 2px lower for balanced spacing) */}
-                      <div className="flex items-start justify-end pt-[31px] pr-4">
+                      {/* Top Right: QR Code (Positioned 10px lower as requested) */}
+                      <div className="flex items-start justify-end pt-[41px] pr-4">
                         <div className="p-1 bg-white rounded-lg shadow-lg">
                           {cardQrDataUrl || data.membershipQr ? (
                             <img
