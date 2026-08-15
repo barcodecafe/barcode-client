@@ -492,10 +492,47 @@ export const DishDetail = () => {
                 </div>
               </div>
             )}
+
+            {/* 🎯 Real-time Item Price & Subtotal Breakdown Box */}
+            <div className="mt-4 p-3.5 bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/80 dark:border-neutral-800 space-y-2 rounded-none">
+              <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
+                <span>Base Dish ({selectedVariation ? selectedVariation.name : 'Standard'}):</span>
+                <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
+                  ৳{discountedPrice.toFixed(2)}
+                </span>
+              </div>
+
+              {selectedAddons.length > 0 && (
+                <div className="space-y-1 pt-1.5 border-t border-neutral-200/60 dark:border-neutral-800/60">
+                  <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>Selected Add-ons ({selectedAddons.length}):</span>
+                    <span className="font-mono font-bold">+৳{addonsPriceTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="pl-2 space-y-0.5">
+                    {selectedAddons.map((addon, aIdx) => (
+                      <div key={aIdx} className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400">
+                        <span>• {addon.name}</span>
+                        <span className="font-mono">+৳{Number(addon.price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-baseline justify-between text-xs font-bold text-neutral-900 dark:text-white">
+                <div className="flex items-baseline gap-1.5">
+                  <span>Subtotal</span>
+                  <span className="text-[11px] font-normal text-neutral-400">({quantity} × ৳{totalDiscountedPrice.toFixed(2)})</span>
+                </div>
+                <span className="text-base font-black font-display text-primary-500">
+                  ৳{(totalDiscountedPrice * quantity).toFixed(2)}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Action Row */}
-          <div className="mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-800/60 flex flex-row items-center gap-2 sm:gap-4">
+          <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-800/60 flex flex-row items-center gap-2 sm:gap-4">
             {/* Quantity Controls */}
             <div className="flex items-center justify-between border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 rounded-none p-1 w-28 sm:w-36 h-12 shrink-0">
               <button

@@ -1344,6 +1344,27 @@ export const AdminOrders = () => {
                       <span>Sub Total (Including Tax):</span>
                       <span>৳{subTotal.toFixed(2)}</span>
                     </div>
+                    {orderItems.reduce((sum, item) => {
+                      const itemAddons = Array.isArray(item.selectedAddons)
+                        ? item.selectedAddons.reduce((s, a) => s + (Number(a.price) || 0), 0)
+                        : 0;
+                      return sum + itemAddons * (Number(item.quantity) || 1);
+                    }, 0) > 0 && (
+                      <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-700 font-medium">
+                        <span>• Included Add-ons & Extras:</span>
+                        <span>
+                          +৳
+                          {orderItems
+                            .reduce((sum, item) => {
+                              const itemAddons = Array.isArray(item.selectedAddons)
+                                ? item.selectedAddons.reduce((s, a) => s + (Number(a.price) || 0), 0)
+                                : 0;
+                              return sum + itemAddons * (Number(item.quantity) || 1);
+                            }, 0)
+                            .toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between py-1 border-b border-neutral-200">
                       <span className="text-neutral-500">Service Charge:</span>
                       <span className="font-medium">0.00</span>

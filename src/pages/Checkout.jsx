@@ -184,12 +184,20 @@ export const Checkout = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + lineTotal(item), 0);
 
-  // 🎯 কার্টের মূল মোট দাম এবং মোট সেভিংস/ছাড়ের হিসেব
+  // 🎯 কার্টের মূল মোট দাম, এড-অনস ও সেভিংসের আলাদা নিখুঁত হিসেব
   const overallOriginalTotal = cart.reduce((sum, item) => {
     const origUnitPrice = item.originalPrice || item.price;
     return sum + origUnitPrice * item.quantity;
   }, 0);
 
+  const totalAddonsPrice = cart.reduce((sum, item) => {
+    const itemAddons = Array.isArray(item.selectedAddons)
+      ? item.selectedAddons.reduce((s, a) => s + (Number(a.price) || 0), 0)
+      : 0;
+    return sum + itemAddons * item.quantity;
+  }, 0);
+
+  const totalBaseDishesPrice = Math.max(0, cartTotal - totalAddonsPrice);
   const totalSavings = Math.max(0, overallOriginalTotal - cartTotal);
 
   // ── Derived money ──────────────────────────────────────────────────────
@@ -853,19 +861,35 @@ export const Checkout = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-500 dark:text-neutral-400">
-                  Subtotal
-                </span>
-                <div className="text-right font-semibold">
-                  {totalSavings > 0 && (
-                    <span className="text-[11px] text-neutral-400 line-through mr-1.5">
-                      ৳{overallOriginalTotal.toFixed(2)}
-                    </span>
-                  )}
-                  <span className="text-neutral-800 dark:text-neutral-100">
-                    ৳{cartTotal.toFixed(2)}
+              <div className="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
+                <div className="flex justify-between items-center">
+                  <span>Dishes Base Total</span>
+                  <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
+                    ৳{totalBaseDishesPrice.toFixed(2)}
                   </span>
+                </div>
+
+                {totalAddonsPrice > 0 && (
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>Extras & Add-ons</span>
+                    <span className="font-mono font-bold">
+                      +৳{totalAddonsPrice.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-1 border-t border-neutral-100 dark:border-neutral-800/80 font-bold">
+                  <span className="text-neutral-700 dark:text-neutral-300">Subtotal</span>
+                  <div className="text-right">
+                    {totalSavings > 0 && (
+                      <span className="text-[11px] text-neutral-400 line-through mr-1.5 font-normal">
+                        ৳{overallOriginalTotal.toFixed(2)}
+                      </span>
+                    )}
+                    <span className="text-neutral-900 dark:text-neutral-100 font-extrabold">
+                      ৳{cartTotal.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
