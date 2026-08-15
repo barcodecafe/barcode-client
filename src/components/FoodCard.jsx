@@ -37,18 +37,27 @@ const FoodCard = ({
     adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
   }
 
-  const hasVariants =
-    (Array.isArray(food.variations) && food.variations.length > 0) ||
-    (Array.isArray(food.addons) && food.addons.length > 0);
+  const hasVariations =
+    Array.isArray(food.variations) && food.variations.length > 0;
+  const hasAddons = Array.isArray(food.addons) && food.addons.length > 0;
+  const hasCustomizations = hasVariations || hasAddons;
 
-  const basePrice = hasVariants
-    ? Math.min(
-        ...food.variations.map((v) => {
-          let vPrice = Number(v.price) || 0;
-          return Math.max(0, vPrice + adjustVal);
-        }),
-      )
-    : Math.max(0, rawBasePrice + adjustVal);
+  // 🎯 Calculate base price safely — never allow Infinity or NaN
+  let basePrice = Math.max(0, rawBasePrice + adjustVal);
+  if (hasVariations) {
+    const validVarPrices = food.variations
+      .map((v) => Number(v.price))
+      .filter((p) => !isNaN(p) && p > 0)
+      .map((p) => Math.max(0, p + adjustVal));
+
+    if (validVarPrices.length > 0) {
+      basePrice = Math.min(...validVarPrices);
+    }
+  }
+
+  if (!Number.isFinite(basePrice) || isNaN(basePrice)) {
+    basePrice = Math.max(0, rawBasePrice + adjustVal) || 0;
+  }
 
   // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
@@ -147,9 +156,18 @@ const FoodCard = ({
         <div className="mt-auto flex items-center justify-between gap-1 pt-3">
           {/* Price Section */}
           <div className="flex flex-col font-display min-w-0 flex-1">
-            <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
-              ৳{discountedPrice.toFixed(2)}
-            </span>
+            {hasVariations ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">From</span>
+                <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
+                  ৳{discountedPrice.toFixed(2)}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs sm:text-sm md:text-base font-extrabold leading-tight text-primary-500 truncate">
+                ৳{discountedPrice.toFixed(2)}
+              </span>
+            )}
             {hasDiscount && (
               <span className="text-[10px] font-semibold leading-none text-neutral-400 line-through dark:text-neutral-500 truncate">
                 ৳{basePrice.toFixed(2)}
@@ -158,7 +176,7 @@ const FoodCard = ({
           </div>
 
           {/* Button Section */}
-          {hasVariants ? (
+          {hasCustomizations ? (
             <Link
               to={foodDetailLink}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
