@@ -75,6 +75,7 @@ export const AdminDishes = () => {
     branchPrices: {},
     variantLabel: "Size",
     variations: [],
+    addons: [],
   });
 
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
@@ -281,6 +282,7 @@ export const AdminDishes = () => {
       branchPrices: {},
       variantLabel: "Size",
       variations: [],
+      addons: [],
     });
     setIsModalOpen(true);
   };
@@ -338,6 +340,11 @@ export const AdminDishes = () => {
         name: v.name || "",
         price: v.price || 0,
         image: v.image || "",
+      })),
+      addons: (food.addons || []).map((a) => ({
+        name: a.name || "",
+        price: a.price || 0,
+        image: a.image || "",
       })),
     });
     setIsModalOpen(true);
@@ -426,6 +433,32 @@ export const AdminDishes = () => {
     }));
   };
 
+  // 🎯 Addon Handlers
+  const handleAddAddon = () => {
+    setFormData((prev) => ({
+      ...prev,
+      addons: [
+        ...(prev.addons || []),
+        { name: "", price: 0, image: "" },
+      ],
+    }));
+  };
+
+  const handleAddonChange = (index, field, val) => {
+    setFormData((prev) => {
+      const updated = [...(prev.addons || [])];
+      updated[index][field] = field === "price" ? parseFloat(val) || 0 : val;
+      return { ...prev, addons: updated };
+    });
+  };
+
+  const handleRemoveAddon = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      addons: (prev.addons || []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -446,6 +479,14 @@ export const AdminDishes = () => {
         }
       });
 
+      const cleanedAddons = (formData.addons || [])
+        .filter((a) => a.name && a.name.trim())
+        .map((a) => ({
+          name: a.name.trim(),
+          price: parseFloat(a.price) || 0,
+          image: a.image || "",
+        }));
+
       const cleanedFormData = {
         ...formData,
         category: categoryName,
@@ -453,6 +494,7 @@ export const AdminDishes = () => {
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
         branchPrices: parsedBranchPrices,
+        addons: cleanedAddons,
         discountPct:
           formData.offerType !== "none" || formData.promoCode
             ? 0
@@ -779,6 +821,16 @@ export const AdminDishes = () => {
                               : food.offerType === "bogo_1g2"
                                 ? "BUY 1 GET 2"
                                 : "COMBO DEAL"}
+                          </span>
+                        )}
+                        {food.variations && food.variations.length > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50">
+                            {food.variations.length} {food.variantLabel || "Variants"}
+                          </span>
+                        )}
+                        {food.addons && food.addons.length > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50">
+                            +{food.addons.length} Add-ons
                           </span>
                         )}
                         {food.popular && (
@@ -1376,6 +1428,86 @@ export const AdminDishes = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* 🎯 Add-ons & Extras Section */}
+                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
+                        Add-ons & Extras (Optional Customizations)
+                      </label>
+                      <span className="text-[11px] text-neutral-400">
+                        e.g. Extra Cheese (+৳50), Extra Patty (+৳120), Garlic Dip (+৳30)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddAddon}
+                      className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg cursor-pointer transition-all active:scale-95 shadow-sm"
+                    >
+                      + Add Add-on
+                    </button>
+                  </div>
+
+                  {formData.addons && formData.addons.length > 0 ? (
+                    <div className="space-y-2.5 pt-1">
+                      {formData.addons.map((a, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm"
+                        >
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              placeholder="Add-on name (e.g. Extra Cheese)"
+                              value={a.name}
+                              onChange={(e) =>
+                                handleAddonChange(
+                                  index,
+                                  "name",
+                                  e.target.value,
+                                )
+                              }
+                              className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
+                              required
+                            />
+                            <div className="relative w-32">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">৳</span>
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="Price"
+                                value={a.price}
+                                onChange={(e) =>
+                                  handleAddonChange(
+                                    index,
+                                    "price",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                                required
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAddon(index)}
+                              className="p-1.5 text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                              title="Remove Add-on"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-3 px-2 text-center text-xs text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/40 dark:bg-neutral-900/40">
+                      No add-ons added yet. Click <span className="font-semibold text-neutral-600 dark:text-neutral-300">"+ Add Add-on"</span> to allow customers to add extra items.
+                    </div>
+                  )}
                 </div>
 
                 {/* Description & Toggles */}

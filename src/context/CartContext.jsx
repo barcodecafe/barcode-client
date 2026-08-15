@@ -54,7 +54,7 @@ export const CartProvider = ({ children }) => {
     }, 3000);
   }, []);
 
-  const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1) => {
+  const addToCart = useCallback((food, branchId = null, selectedSize = null, quantity = 1, selectedAddons = []) => {
     if (!food) return;
 
     const activeBranchId =
@@ -77,6 +77,14 @@ export const CartProvider = ({ children }) => {
       food.selectedVariation ||
       null;
 
+    const finalAddons = Array.isArray(selectedAddons) && selectedAddons.length > 0
+      ? selectedAddons
+      : Array.isArray(food.selectedAddons)
+      ? food.selectedAddons
+      : [];
+
+    const addonsTotal = finalAddons.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+
     let targetQty = Number(quantity) > 0 ? Number(quantity) : (Number(food.quantity) > 0 ? Number(food.quantity) : 1);
     if (quantity === 1 && (!food.quantity || food.quantity === 1)) {
       if (food.offerType === 'bogo_1g1') targetQty = 2;
@@ -92,8 +100,15 @@ export const CartProvider = ({ children }) => {
       // 🎯 অরিজিনাল বেস প্রাইসের ওপর ঠিক একবারই ডিসকাউন্ট অ্যাপ্লাই হবে (যেমন: ৳340 -> ৳306)
       const purchasePrice = applyFoodDiscount(rawBasePrice, food);
 
+      // এড-অনস সহ কার্যকর মোট একক প্রাইস
+      const rawBaseWithAddons = rawBasePrice + addonsTotal;
+      const purchaseWithAddons = purchasePrice + addonsTotal;
+
       const branchPrefix = activeBranchId ? `branch-${activeBranchId}` : 'menu-base';
-      const cartId = food.cartId || (sizeName ? `${branchPrefix}-${foodId}-${sizeName}` : `${branchPrefix}-${foodId}`);
+      const addonsKey = finalAddons.map((a) => `${a.name}:${a.price}`).sort().join('|');
+      const cartId =
+        food.cartId ||
+        `${branchPrefix}-${foodId}${sizeName ? `-${sizeName}` : ''}${addonsKey ? `-[${addonsKey}]` : ''}`;
 
       const existing = prevCart.find((item) => (item.cartId || item.id || item._id) === cartId);
       if (existing) {
@@ -102,8 +117,9 @@ export const CartProvider = ({ children }) => {
             ? {
                 ...item,
                 quantity: item.quantity + targetQty,
-                originalPrice: rawBasePrice,
-                price: purchasePrice,
+                originalPrice: rawBaseWithAddons,
+                price: purchaseWithAddons,
+                selectedAddons: finalAddons,
                 offerType: food.offerType || item.offerType || 'none',
                 promoCode: food.promoCode || item.promoCode || null,
               }
@@ -120,9 +136,10 @@ export const CartProvider = ({ children }) => {
           branchId: activeBranchId,
           selectedSize: sizeName,
           selectedVariation: variationObj,
+          selectedAddons: finalAddons,
           quantity: targetQty,
-          originalPrice: rawBasePrice, // 🎯 অরিজিনাল প্রাইস (যেমন: ৳340.00)
-          price: purchasePrice, // 🎯 ডিসকাউন্টেড পেইড প্রাইস (যেমন: ৳306.00)
+          originalPrice: rawBaseWithAddons, // 🎯 অরিজিনাল প্রাইস (যেমন: ৳340.00 + ৳50)
+          price: purchaseWithAddons, // 🎯 ডিসকাউন্টেড পেইড প্রাইস (যেমন: ৳306.00 + ৳50)
           offerType: food.offerType || 'none',
           promoCode: food.promoCode || null,
         },

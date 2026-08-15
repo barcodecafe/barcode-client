@@ -805,7 +805,16 @@ export const OrderTracking = () => {
                             {item.name}{" "}
                             {item.selectedSize && `(${item.selectedSize})`}
                           </span>
-                          <span className="block text-[10px] text-neutral-400">
+                          {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {item.selectedAddons.map((a, aIdx) => (
+                                <span key={aIdx} className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
+                                  +{a.name} (৳{Number(a.price).toFixed(0)})
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <span className="block text-[10px] text-neutral-400 mt-0.5">
                             Qty: {item.quantity} × ৳{(item.price || 0).toFixed(2)}
                           </span>
                         </div>

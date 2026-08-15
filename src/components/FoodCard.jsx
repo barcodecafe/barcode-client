@@ -38,7 +38,8 @@ const FoodCard = ({
   }
 
   const hasVariants =
-    Array.isArray(food.variations) && food.variations.length > 0;
+    (Array.isArray(food.variations) && food.variations.length > 0) ||
+    (Array.isArray(food.addons) && food.addons.length > 0);
 
   const basePrice = hasVariants
     ? Math.min(

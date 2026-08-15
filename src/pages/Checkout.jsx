@@ -460,6 +460,7 @@ export const Checkout = () => {
           id: item.id,
           quantity: item.quantity,
           selectedSize: item.selectedSize || null,
+          selectedAddons: Array.isArray(item.selectedAddons) ? item.selectedAddons : [],
           // 🎯 ফিক্স: ব্রাঞ্চের ফাইনাল অ্যাডজাস্টেড প্রাইস এবং ব্রাঞ্চ আইডি সঠিকভাবে ব্যাকএন্ডে পাঠানো হচ্ছে
           price: item.price,
           originalPrice: item.originalPrice || item.price,
@@ -687,6 +688,19 @@ export const Checkout = () => {
                         <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5 ml-1">
                           Option: {item.selectedSize || item.selectedVariation?.name}
                         </span>
+                      )}
+
+                      {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedAddons.map((addon, aIdx) => (
+                            <span
+                              key={aIdx}
+                              className="text-[9px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 font-semibold px-1.5 py-0.5 rounded"
+                            >
+                              +{addon.name} (৳{Number(addon.price).toFixed(0)})
+                            </span>
+                          ))}
+                        </div>
                       )}
 
                       <div className="flex items-center gap-2 mt-1">

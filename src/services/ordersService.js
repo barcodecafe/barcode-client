@@ -74,6 +74,7 @@ export async function createOrder(orderData) {
       id: i.id,
       quantity: i.quantity,
       selectedSize: i.selectedSize ?? i.selectedVariation ?? null,
+      selectedAddons: Array.isArray(i.selectedAddons) ? i.selectedAddons : [],
       price: i.price,
       originalPrice: i.originalPrice || i.price,
       offerType: i.offerType || null,

@@ -1300,6 +1300,11 @@ export const AdminOrders = () => {
                               {item.selectedSize
                                 ? `(${item.selectedSize})`
                                 : ""}
+                              {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                                <div className="text-[10px] text-emerald-700 font-normal mt-0.5">
+                                  {item.selectedAddons.map((a) => `+${a.name} (৳${a.price})`).join(", ")}
+                                </div>
+                              )}
                             </td>
                             <td className="p-2.5 border-r border-neutral-300 text-right">
                               ৳{unitPrice.toFixed(2)}

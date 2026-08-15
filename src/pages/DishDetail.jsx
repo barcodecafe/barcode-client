@@ -68,6 +68,20 @@ export const DishDetail = () => {
   // Variations Tracking State
   const [selectedVariation, setSelectedVariation] = useState(null);
 
+  // 🎯 Addons Tracking State
+  const [selectedAddons, setSelectedAddons] = useState([]);
+
+  const toggleAddon = (addon) => {
+    setSelectedAddons((prev) => {
+      const exists = prev.some((a) => a.name === addon.name);
+      if (exists) {
+        return prev.filter((a) => a.name !== addon.name);
+      } else {
+        return [...prev, addon];
+      }
+    });
+  };
+
   // 🎯 ব্রাঞ্চ আইডি ডিটেক্ট করার জন্য সঠিক প্রায়োরিটি অর্ডার
   const branchIdParam = searchParams.get("branchId");
   const storedBranch =
@@ -241,6 +255,14 @@ export const DishDetail = () => {
   );
   const discountedPrice = applyFoodDiscount(activePrice, food);
 
+  // 🎯 Add-ons Price Calculation
+  const addonsPriceTotal = selectedAddons.reduce(
+    (sum, a) => sum + (Number(a.price) || 0),
+    0,
+  );
+  const totalActivePrice = activePrice + addonsPriceTotal;
+  const totalDiscountedPrice = discountedPrice + addonsPriceTotal;
+
   const displayImage = selectedVariation?.image || food.image || "";
 
   const handleQuantityChange = (newQty) => {
@@ -252,7 +274,7 @@ export const DishDetail = () => {
   };
 
   const handleAddToCartClick = () => {
-    addToCart(food, branchId, selectedVariation, quantity);
+    addToCart(food, branchId, selectedVariation, quantity, selectedAddons);
     setIsAdded(true);
     openCart();
   };
@@ -351,15 +373,20 @@ export const DishDetail = () => {
               {hasDiscount ? (
                 <>
                   <span className="text-3xl font-black text-red-500">
-                    ৳{discountedPrice.toFixed(2)}
+                    ৳{totalDiscountedPrice.toFixed(2)}
                   </span>
                   <span className="text-base text-neutral-400 line-through">
-                    ৳{activePrice.toFixed(2)}
+                    ৳{totalActivePrice.toFixed(2)}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-black text-primary-500">
-                  ৳{activePrice.toFixed(2)}
+                  ৳{totalActivePrice.toFixed(2)}
+                </span>
+              )}
+              {addonsPriceTotal > 0 && (
+                <span className="text-xs font-semibold text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-none">
+                  (Includes +৳{addonsPriceTotal} add-ons)
                 </span>
               )}
             </div>
@@ -406,6 +433,59 @@ export const DishDetail = () => {
                         {isSelected && (
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 🎯 Add-ons & Extras Section */}
+            {food.addons && food.addons.length > 0 && (
+              <div className="pt-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                    Add-ons & Extras (Optional)
+                  </h3>
+                  {selectedAddons.length > 0 && (
+                    <span className="text-xs font-bold text-primary-500">
+                      +{selectedAddons.length} selected (+৳{addonsPriceTotal})
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {food.addons.map((addon) => {
+                    const isChecked = selectedAddons.some(
+                      (a) => a.name === addon.name,
+                    );
+                    return (
+                      <button
+                        key={addon.name}
+                        type="button"
+                        onClick={() => toggleAddon(addon)}
+                        className={`p-3 rounded-none border text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left ${
+                          isChecked
+                            ? "bg-primary-50 dark:bg-primary-950/40 border-primary-500 text-primary-900 dark:text-primary-200 shadow-sm"
+                            : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`w-4 h-4 rounded-none border flex items-center justify-center transition-colors ${
+                              isChecked
+                                ? "bg-primary-500 border-primary-500 text-white"
+                                : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                            }`}
+                          >
+                            {isChecked && (
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            )}
+                          </div>
+                          <span>{addon.name}</span>
+                        </div>
+                        <span className="font-mono font-extrabold text-primary-600 dark:text-primary-400">
+                          +৳{Number(addon.price).toFixed(0)}
+                        </span>
                       </button>
                     );
                   })}

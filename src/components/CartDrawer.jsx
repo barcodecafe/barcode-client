@@ -151,6 +151,19 @@ export const CartDrawer = () => {
                               </span>
                             )}
 
+                            {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.selectedAddons.map((addon, aIdx) => (
+                                  <span
+                                    key={aIdx}
+                                    className="text-[9px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 font-semibold px-1.5 py-0.5 rounded"
+                                  >
+                                    +{addon.name} (৳{Number(addon.price).toFixed(0)})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="flex flex-col gap-0.5 mt-1">
                               {offerLabel && freeSavings > 0 ? (
                                 <>
