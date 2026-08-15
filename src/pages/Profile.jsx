@@ -522,38 +522,42 @@ export const Profile = () => {
     }
   };
 
-  // 1-Click Download BOTH Front & Back cards
+  // 1-Click Download BOTH Front & Back cards on a SINGLE combined image
   const downloadBothCards = async () => {
     if (!frontCardRef.current || !backCardRef.current || !user || downloadingCard) return;
     setDownloadingCard(true);
     try {
-      // 1. Download Front Side
-      const canvasFront = await html2canvas(frontCardRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-      });
-      const linkFront = document.createElement('a');
-      linkFront.href = canvasFront.toDataURL('image/png');
-      linkFront.download = `Membership_Card_Front_${membershipIdOf(user)}.png`;
-      linkFront.click();
+      const [canvasFront, canvasBack] = await Promise.all([
+        html2canvas(frontCardRef.current, { scale: 3, useCORS: true, backgroundColor: null }),
+        html2canvas(backCardRef.current, { scale: 3, useCORS: true, backgroundColor: null }),
+      ]);
 
-      // Brief delay for browser to process first download
-      await new Promise((r) => setTimeout(r, 450));
+      const cardW = canvasFront.width;
+      const cardH = canvasFront.height;
+      const gap = 40;
+      const padding = 30;
 
-      // 2. Download Back Side
-      const canvasBack = await html2canvas(backCardRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-      });
-      const linkBack = document.createElement('a');
-      linkBack.href = canvasBack.toDataURL('image/png');
-      linkBack.download = `Membership_Card_Back_${membershipIdOf(user)}.png`;
-      linkBack.click();
+      // Single composite canvas with both Front & Back side-by-side
+      const combinedCanvas = document.createElement('canvas');
+      combinedCanvas.width = cardW * 2 + gap + padding * 2;
+      combinedCanvas.height = cardH + padding * 2;
+
+      const ctx = combinedCanvas.getContext('2d');
+      if (ctx) {
+        // Draw Front Side
+        ctx.drawImage(canvasFront, padding, padding, cardW, cardH);
+        // Draw Back Side
+        ctx.drawImage(canvasBack, padding + cardW + gap, padding, cardW, cardH);
+      }
+
+      const image = combinedCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `Membership_Card_${membershipIdOf(user)}.png`;
+      link.click();
     } catch (err) {
-      console.error('Download both cards failed:', err);
-      alert('Could not download cards. Please try again.');
+      console.error('Download card failed:', err);
+      alert('Could not download card. Please try again.');
     } finally {
       setDownloadingCard(false);
     }
