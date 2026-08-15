@@ -286,6 +286,43 @@ export const AdminCustomers = () => {
     }
   };
 
+  // 1-Click Download BOTH Front & Back cards
+  const downloadBothCards = async () => {
+    if (!frontCardRef.current || !backCardRef.current || !activeCardUser || downloading) return;
+    setDownloading(true);
+    try {
+      // 1. Download Front Side
+      const canvasFront = await html2canvas(frontCardRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const linkFront = document.createElement('a');
+      linkFront.href = canvasFront.toDataURL('image/png');
+      linkFront.download = `Membership_Card_Front_${membershipIdOf(activeCardUser)}.png`;
+      linkFront.click();
+
+      // Brief delay for browser to process first download
+      await new Promise((r) => setTimeout(r, 450));
+
+      // 2. Download Back Side
+      const canvasBack = await html2canvas(backCardRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const linkBack = document.createElement('a');
+      linkBack.href = canvasBack.toDataURL('image/png');
+      linkBack.download = `Membership_Card_Back_${membershipIdOf(activeCardUser)}.png`;
+      linkBack.click();
+    } catch (err) {
+      console.error('Download both cards failed:', err);
+      alert('Could not download both cards. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -559,8 +596,8 @@ export const AdminCustomers = () => {
                   {/* Dynamic overlay values */}
                   <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
                     
-                    {/* Top Right: QR Code */}
-                    <div className="flex items-start justify-end pt-7 pr-4">
+                    {/* Top Right: QR Code (Lowered by 2px for balanced alignment) */}
+                    <div className="flex items-start justify-end pt-[31px] pr-4">
                       {/* QR Code */}
                       <div className="p-1 bg-white rounded-lg shadow-lg">
                         {cardQrUrl || activeCardUser.membershipQr ? (
@@ -620,6 +657,19 @@ export const AdminCustomers = () => {
                 </button>
               </div>
 
+            </div>
+
+            {/* 🎯 1-CLICK DOWNLOAD BOTH SIDES BAR */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={downloadBothCards}
+                disabled={downloading}
+                className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>{downloading ? 'Generating Cards...' : 'Download Both Sides (Front & Back)'}</span>
+              </button>
             </div>
 
             {/* 🔗 DIRECT VERIFICATION LINK & TEST BAR */}

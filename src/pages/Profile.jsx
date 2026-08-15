@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -33,6 +33,11 @@ import {
   Send,
   Check,
   Building2,
+  Download,
+  X,
+  Copy,
+  QrCode,
+  Printer,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -50,6 +55,7 @@ import { getAllBranches } from "../services/branchesService";
 import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
 import { getCustomerTier, membershipIdOf } from "./admin/AdminCustomers";
 import QRCode from "qrcode";
+import html2canvas from "html2canvas-pro";
 
 const SECTIONS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -472,15 +478,86 @@ export const Profile = () => {
   }, [user]);
 
   const [profileQr, setProfileQr] = useState('');
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [downloadingCard, setDownloadingCard] = useState(false);
+  const [copiedCardId, setCopiedCardId] = useState(null);
+  const frontCardRef = useRef(null);
+  const backCardRef = useRef(null);
+
   useEffect(() => {
     if (user) {
       const memId = membershipIdOf(user);
       const verifyUrl = `${window.location.origin}/membership/${encodeURIComponent(memId)}`;
-      QRCode.toDataURL(verifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 240 })
+      QRCode.toDataURL(verifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 280 })
         .then((url) => setProfileQr(url))
         .catch(() => setProfileQr(user.membershipQr || ''));
     }
   }, [user]);
+
+  const copyCardUrl = (text) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedCardId(text);
+    setTimeout(() => setCopiedCardId(null), 2000);
+  };
+
+  const downloadSingleCard = async (targetRef, cardType) => {
+    if (!targetRef.current || !user || downloadingCard) return;
+    setDownloadingCard(true);
+    try {
+      const canvas = await html2canvas(targetRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `Membership_Card_${cardType}_${membershipIdOf(user)}.png`;
+      link.click();
+    } catch (err) {
+      console.error('Card download failed:', err);
+      alert(`Could not generate ${cardType} card image. Please try again.`);
+    } finally {
+      setDownloadingCard(false);
+    }
+  };
+
+  // 1-Click Download BOTH Front & Back cards
+  const downloadBothCards = async () => {
+    if (!frontCardRef.current || !backCardRef.current || !user || downloadingCard) return;
+    setDownloadingCard(true);
+    try {
+      // 1. Download Front Side
+      const canvasFront = await html2canvas(frontCardRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const linkFront = document.createElement('a');
+      linkFront.href = canvasFront.toDataURL('image/png');
+      linkFront.download = `Membership_Card_Front_${membershipIdOf(user)}.png`;
+      linkFront.click();
+
+      // Brief delay for browser to process first download
+      await new Promise((r) => setTimeout(r, 450));
+
+      // 2. Download Back Side
+      const canvasBack = await html2canvas(backCardRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const linkBack = document.createElement('a');
+      linkBack.href = canvasBack.toDataURL('image/png');
+      linkBack.download = `Membership_Card_Back_${membershipIdOf(user)}.png`;
+      linkBack.click();
+    } catch (err) {
+      console.error('Download both cards failed:', err);
+      alert('Could not download cards. Please try again.');
+    } finally {
+      setDownloadingCard(false);
+    }
+  };
 
   const sortedOrders = useMemo(
     () =>
@@ -602,16 +679,29 @@ export const Profile = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 self-stretch md:self-auto justify-end">
+          <div className="flex flex-wrap items-center gap-3 self-stretch md:self-auto justify-end">
             <div className="text-right">
               <span className="block text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Lifetime Spend</span>
               <span className="font-black text-sm sm:text-base text-emerald-400">{taka(stats.totalSpent)}</span>
             </div>
             {(profileQr || user.membershipQr) && (
-              <div className="p-1 bg-white rounded-xl shadow-md shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCardModal(true)}
+                className="p-1 bg-white rounded-xl shadow-md shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                title="Click to view Membership Card"
+              >
                 <img src={profileQr || user.membershipQr} alt="Membership QR" className="w-11 h-11 object-contain" />
-              </div>
+              </button>
             )}
+            <button
+              type="button"
+              onClick={() => setShowCardModal(true)}
+              className="px-3.5 py-2.5 bg-gradient-to-r from-primary-500 to-amber-500 hover:from-primary-600 hover:to-amber-600 text-white font-extrabold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Membership Card</span>
+            </button>
           </div>
         </div>
 
@@ -2009,6 +2099,182 @@ export const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* 👑 CUSTOMER MEMBERSHIP CARD MODAL */}
+      <AnimatePresence>
+        {showCardModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-4xl w-full border border-neutral-200 dark:border-neutral-800 space-y-6 my-auto"
+            >
+              <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-bold text-neutral-800 dark:text-white text-base uppercase tracking-wide flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary-500" />
+                    <span>Official Membership Card</span>
+                  </h3>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${getCustomerTier(stats.totalSpent).color}`}>
+                    {getCustomerTier(stats.totalSpent).icon} {getCustomerTier(stats.totalSpent).badge}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCardModal(false)}
+                  className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* CARDS DISPLAY CONTAINER */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center items-center p-2">
+                
+                {/* FRONT CARD DESIGN */}
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Front Side</p>
+                  <div
+                    ref={frontCardRef}
+                    className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
+                  >
+                    <img
+                      src="/card_1_front.png"
+                      alt="Card Front BG"
+                      className="absolute inset-0 w-full h-full object-cover z-0"
+                    />
+
+                    {/* Dynamic overlay values */}
+                    <div className="relative z-10 w-full h-full p-4 flex flex-col justify-between">
+                      {/* Top Right: QR Code (Positioned 2px lower for perfect balance) */}
+                      <div className="flex items-start justify-end pt-[31px] pr-4">
+                        <div className="p-1 bg-white rounded-lg shadow-lg">
+                          {profileQr || user.membershipQr ? (
+                            <img
+                              src={profileQr || user.membershipQr}
+                              alt={`QR ${membershipIdOf(user)}`}
+                              className="w-13 h-13 sm:w-14 sm:h-14 object-contain"
+                            />
+                          ) : (
+                            <QrCode className="w-13 h-13 stroke-[1.5] text-neutral-800" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name & Membership ID Stacked Together on Bottom Right */}
+                      <div className="flex flex-col items-end pr-4 pb-4 leading-tight">
+                        <span className="block font-bold text-xs sm:text-sm tracking-wide text-white uppercase truncate max-w-[200px]">
+                          {user.name}
+                        </span>
+                        <span className="block font-mono font-bold text-xs text-neutral-200 tracking-wider mt-0.5">
+                          {membershipIdOf(user)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadSingleCard(frontCardRef, 'Front')}
+                    disabled={downloadingCard}
+                    className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download Front
+                  </button>
+                </div>
+
+                {/* BACK CARD DESIGN */}
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Back Side</p>
+                  <div
+                    ref={backCardRef}
+                    className="relative w-[340px] sm:w-[384px] h-[198px] sm:h-[224px] rounded-xl overflow-hidden shadow-xl border border-neutral-800 select-none bg-neutral-900 shrink-0"
+                  >
+                    <img
+                      src="/card_2_front.png"
+                      alt="Card Back BG"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadSingleCard(backCardRef, 'Back')}
+                    disabled={downloadingCard}
+                    className="mt-1 text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download Back
+                  </button>
+                </div>
+
+              </div>
+
+              {/* 🎯 1-CLICK DOWNLOAD BOTH SIDES BAR */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={downloadBothCards}
+                  disabled={downloadingCard}
+                  className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-amber-600 hover:from-primary-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{downloadingCard ? 'Generating Cards...' : 'Download Both Sides (Front & Back)'}</span>
+                </button>
+              </div>
+
+              {/* 🔗 DIRECT VERIFICATION LINK & TEST BAR */}
+              <div className="p-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl border border-neutral-200 dark:border-neutral-750 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+                  <QrCode className="w-4 h-4 text-primary-500 shrink-0" />
+                  <span className="text-neutral-500 dark:text-neutral-400 shrink-0 font-medium">Digital Verification Link:</span>
+                  <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 truncate select-all">
+                    {window.location.origin}/membership/{membershipIdOf(user)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => copyCardUrl(`${window.location.origin}/membership/${membershipIdOf(user)}`)}
+                    className="px-2.5 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 text-neutral-700 dark:text-neutral-200 font-semibold rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-all"
+                  >
+                    {copiedCardId === `${window.location.origin}/membership/${membershipIdOf(user)}` ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> Copy URL
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href={`/membership/${encodeURIComponent(membershipIdOf(user))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <span>Open Digital Pass</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Bottom Modal Actions */}
+              <div className="flex gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setShowCardModal(false)}
+                  className="flex-1 py-2.5 text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 rounded-xl transition-all cursor-pointer text-center"
+                >
+                  Close
+                </button>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
