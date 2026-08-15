@@ -92,8 +92,9 @@ export const PublicMembership = () => {
     getPublicMembership(id)
       .then((res) => {
         if (!isMounted) return;
-        if (res?.success && res?.data) {
-          setData(res.data);
+        const memberData = res?.data || res;
+        if (memberData && (memberData.name || memberData.membershipId)) {
+          setData(memberData);
         } else {
           setError(res?.message || 'Membership profile not found.');
         }
