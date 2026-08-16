@@ -55,37 +55,107 @@ const formatShortOrderId = (id) => {
   return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
 };
 
-const getItemPayableTotal = (item) => {
-  const price = Number(item.price) || 0;
-  const qty = Number(item.quantity) || 0;
-  const fullGross = price * qty;
+export const computeInvoiceItemDetails = (item) => {
+  const qty = Number(item.quantity) || 1;
+  const rawPrice = Number(item.price) || 0;
+  const rawOriginalPrice = Number(item.originalPrice) || 0;
+  const discountPct = Number(item.discountPct) || 0;
+  const discountAmount = Number(item.discountAmount) || 0;
+  const directDiscount = Number(item.discount) || 0;
 
-  const oType = item.offerType;
-  const isBogo1g1 = oType === "bogo_1g1" || item.isBogo;
-  const isBogo1g2 = oType === "bogo_1g2";
+  const offerType = item.offerType || (item.isBogo ? "bogo_1g1" : null) || null;
+  const isBogo1g1 = offerType === "bogo_1g1";
+  const isBogo1g2 = offerType === "bogo_1g2";
+  const isCombo = offerType === "combo";
 
+  // 1. Determine effective original unit price before item discount
+  let origUnitPrice = rawPrice;
+  if (rawOriginalPrice > 0) {
+    origUnitPrice = rawOriginalPrice;
+  } else if (discountPct > 0 && discountPct < 100) {
+    origUnitPrice = rawPrice / (1 - discountPct / 100);
+  } else if (discountAmount > 0) {
+    origUnitPrice = rawPrice + discountAmount;
+  } else if (directDiscount > 0 && qty > 0) {
+    origUnitPrice = rawPrice + directDiscount / qty;
+  }
+
+  // 2. Determine paid unit price (after direct discount, before BOGO deduction)
+  let paidUnitPrice = rawPrice;
+  if (rawOriginalPrice > 0 && rawPrice < rawOriginalPrice) {
+    paidUnitPrice = rawPrice;
+  } else if (discountPct > 0) {
+    paidUnitPrice = origUnitPrice * (1 - discountPct / 100);
+  } else if (discountAmount > 0) {
+    paidUnitPrice = Math.max(0, origUnitPrice - discountAmount);
+  } else if (directDiscount > 0 && qty > 0) {
+    paidUnitPrice = Math.max(0, origUnitPrice - directDiscount / qty);
+  } else {
+    paidUnitPrice = origUnitPrice;
+  }
+
+  // 3. Paid quantity for BOGO promotions
+  let paidQty = qty;
+  let freeQty = 0;
   if (isBogo1g1) {
-    const paidQuantity = Math.ceil(qty / 2);
-    return price * paidQuantity;
+    paidQty = Math.ceil(qty / 2);
+    freeQty = qty - paidQty;
+  } else if (isBogo1g2) {
+    paidQty = Math.ceil(qty / 3);
+    freeQty = qty - paidQty;
   }
 
-  if (isBogo1g2) {
-    const paidQuantity = Math.ceil(qty / 3);
-    return price * paidQuantity;
+  // 4. Gross Total, Net Payable (line total), and Total Item Discount
+  const grossTotal = origUnitPrice * qty;
+  const lineTotal = paidUnitPrice * paidQty;
+  const totalItemDiscount = Math.max(0, grossTotal - lineTotal);
+
+  // 5. Discount / Promotion Offer Label
+  let promoBadge = null;
+  let promoBadgeColor = "";
+  if (isBogo1g1) {
+    promoBadge = "BUY 1 GET 1 FREE";
+    promoBadgeColor = "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800";
+  } else if (isBogo1g2) {
+    promoBadge = "BUY 1 GET 2 FREE";
+    promoBadgeColor = "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800";
+  } else if (isCombo) {
+    promoBadge = "COMBO DEAL";
+    promoBadgeColor = "text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800";
+  } else if (discountPct > 0) {
+    promoBadge = `${discountPct}% OFF`;
+    promoBadgeColor = "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800";
+  } else if (discountAmount > 0) {
+    promoBadge = `৳${discountAmount} OFF`;
+    promoBadgeColor = "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800";
+  } else if (rawOriginalPrice > rawPrice && rawOriginalPrice > 0) {
+    const diff = rawOriginalPrice - rawPrice;
+    promoBadge = `৳${diff.toFixed(0)} OFF`;
+    promoBadgeColor = "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800";
+  } else if (item.promoCode) {
+    promoBadge = `PROMO: ${item.promoCode}`;
+    promoBadgeColor = "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800";
   }
 
-  const itemDiscountPct = Number(item.discountPct) || 0;
-  if (itemDiscountPct > 0) {
-    return fullGross - (fullGross * itemDiscountPct) / 100;
-  }
+  return {
+    origUnitPrice,
+    paidUnitPrice,
+    qty,
+    paidQty,
+    freeQty,
+    grossTotal,
+    lineTotal,
+    totalItemDiscount,
+    promoBadge,
+    promoBadgeColor,
+    isBogo1g1,
+    isBogo1g2,
+    isCombo,
+  };
+};
 
-  const itemDiscountAmount =
-    Number(item.discountAmount) || Number(item.discount) || 0;
-  if (itemDiscountAmount > 0) {
-    return Math.max(0, fullGross - itemDiscountAmount);
-  }
-
-  return fullGross;
+const getItemPayableTotal = (item) => {
+  return computeInvoiceItemDetails(item).lineTotal;
 };
 
 const getPaymentBadge = (ord) => {
@@ -410,7 +480,7 @@ export const AdminOrders = () => {
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page {
-      size: portrait;
+      size: A5 portrait;
       margin: 0;
     }
     @media print {
@@ -418,32 +488,51 @@ export const AdminOrders = () => {
         box-sizing: border-box !important;
       }
       html, body {
-        width: 100% !important;
-        height: 100% !important;
+        width: 148mm !important;
+        max-width: 148mm !important;
+        height: 210mm !important;
+        max-height: 210mm !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
+        overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        font-size: 9.5px !important;
+        line-height: 1.25 !important;
       }
       .invoice-container {
         width: 100% !important;
-        min-height: 100vh !important;
-        height: 100vh !important;
+        max-width: 148mm !important;
+        height: 210mm !important;
+        max-height: 210mm !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
         box-sizing: border-box !important;
-        padding: 8mm 10mm 6mm 10mm !important;
+        padding: 3mm 5mm 2mm 5mm !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
+        page-break-before: avoid !important;
+        overflow: hidden !important;
       }
       .invoice-header {
         flex-shrink: 0 !important;
         width: 100% !important;
       }
+      .invoice-header img {
+        max-height: 46px !important;
+        object-fit: contain !important;
+        width: auto !important;
+        margin: 0 auto !important;
+      }
       .invoice-content {
         flex-grow: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        gap: 3px !important;
+        overflow: hidden !important;
       }
       .invoice-footer {
         flex-shrink: 0 !important;
@@ -451,8 +540,18 @@ export const AdminOrders = () => {
         margin-top: auto !important;
         page-break-inside: avoid !important;
       }
+      .invoice-footer img {
+        max-height: 34px !important;
+        object-fit: contain !important;
+        width: auto !important;
+        margin: 0 auto !important;
+      }
       .no-print {
         display: none !important;
+      }
+      table th, table td {
+        padding: 2px 4px !important;
+        font-size: 8.5px !important;
       }
     }
     body {
@@ -466,16 +565,23 @@ export const AdminOrders = () => {
     }
     .invoice-container {
       width: 100%;
-      min-height: 100vh;
+      max-width: 148mm;
+      min-height: 210mm;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
-      padding: 8mm 10mm 6mm 10mm;
+      padding: 4mm 6mm 3mm 6mm;
     }
     .invoice-header {
       flex-shrink: 0;
       width: 100%;
+    }
+    .invoice-header img {
+      max-height: 50px;
+      object-fit: contain;
+      margin: 0 auto;
     }
     .invoice-content {
       flex-grow: 1;
@@ -484,6 +590,11 @@ export const AdminOrders = () => {
       flex-shrink: 0;
       width: 100%;
       margin-top: auto;
+    }
+    .invoice-footer img {
+      max-height: 38px;
+      object-fit: contain;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -751,11 +862,21 @@ export const AdminOrders = () => {
   const couponCodeApplied =
     selectedOrderDetails?.couponCode || selectedOrderDetails?.promoCode || null;
 
+  const pointsDiscount = Number(selectedOrderDetails?.pointsRedeemed || 0);
+
   const deliveryCharge = Number(selectedOrderDetails?.deliveryCharge) || 0;
   const grandTotal = Math.max(
     0,
-    subTotal + deliveryCharge + currentAdjustment - couponDiscount,
+    subTotal + deliveryCharge + currentAdjustment - couponDiscount - pointsDiscount,
   );
+
+  const isPaidOrder =
+    String(selectedOrderDetails?.paymentStatus || "").toLowerCase() === "paid" ||
+    Boolean(selectedOrderDetails?.isPaid) ||
+    String(selectedOrderDetails?.status || "").toUpperCase() === "DELIVERED";
+
+  const advanceAmount = isPaidOrder ? grandTotal : 0;
+  const remainingAmount = isPaidOrder ? 0 : grandTotal;
 
   return (
     <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-6">
@@ -1213,28 +1334,28 @@ export const AdminOrders = () => {
 
               <div
                 ref={invoiceRef}
-                className="invoice-container bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between min-h-[960px] text-xs font-sans"
+                className="invoice-container bg-white text-neutral-800 p-3 sm:p-5 flex flex-col justify-between max-w-[650px] mx-auto min-h-0 text-[10px] sm:text-xs font-sans"
               >
                 {/* 🎯 Invoice Header (Pinned at Top) */}
-                <div className="invoice-header w-full shrink-0 pb-2">
+                <div className="invoice-header w-full shrink-0 pb-1">
                   <img
                     src={invoiceHeaderImg}
                     alt="Barcode Restaurant Group Header"
-                    className="w-full h-auto object-contain block"
+                    className="w-full h-auto max-h-[52px] object-contain block mx-auto"
                   />
-                  <div className="text-center font-bold text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
+                  <div className="text-center font-bold text-xs sm:text-sm tracking-widest uppercase text-neutral-800 py-1 border-b border-neutral-200 mt-1">
                     Invoice
                   </div>
                 </div>
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
-                <div className="invoice-content flex-grow space-y-5 py-3">
-                  <div className="flex flex-col sm:flex-row justify-between gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
-                    <div className="space-y-1.5 flex-1">
-                      <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
+                <div className="invoice-content flex-grow space-y-2.5 py-1.5">
+                  <div className="flex flex-col sm:flex-row justify-between gap-3 bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 text-[10px] leading-tight">
+                    <div className="space-y-1 flex-1">
+                      <p className="font-bold text-neutral-900 uppercase text-[10px] mb-1">
                         Bill To:
                       </p>
-                      <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
                         <span className="text-neutral-500 font-medium">
                           Customer Name
                         </span>
@@ -1245,7 +1366,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
                         <span className="text-neutral-500 font-medium">
                           Mobile
                         </span>
@@ -1256,7 +1377,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[110px_1fr] gap-x-2 text-xs">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
                         <span className="text-neutral-500 font-medium">
                           Address
                         </span>
@@ -1267,13 +1388,15 @@ export const AdminOrders = () => {
                             "N/A"}{" "}
                           {selectedOrderDetails.user?.pickArea
                             ? `(${selectedOrderDetails.user?.pickArea})`
+                            : selectedOrderDetails.deliveryArea
+                            ? `(${selectedOrderDetails.deliveryArea})`
                             : ""}
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 w-full sm:w-64 pt-6 sm:pt-0">
-                      <div className="grid grid-cols-[100px_1fr] gap-x-2 text-xs">
+                    <div className="space-y-1 w-full sm:w-52 pt-2 sm:pt-0">
+                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
                         <span className="text-neutral-500 font-medium">
                           Invoice Date
                         </span>
@@ -1286,7 +1409,7 @@ export const AdminOrders = () => {
                           }
                         </span>
                       </div>
-                      <div className="grid grid-cols-[100px_1fr] gap-x-2 text-xs">
+                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
                         <span className="text-neutral-500 font-medium">
                           Invoice #
                         </span>
@@ -1297,101 +1420,92 @@ export const AdminOrders = () => {
                           )?.slice(-10)}
                         </span>
                       </div>
+                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
+                        <span className="text-neutral-500 font-medium">
+                          Payment
+                        </span>
+                        <span className="font-bold text-neutral-800 uppercase">
+                          : {selectedOrderDetails.paymentMethod || "COD"}{" "}
+                          ({isPaidOrder ? "PAID" : "DUE"})
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse border border-neutral-300">
+                    <table className="w-full text-[10px] text-left border-collapse border border-neutral-300">
                       <thead>
-                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
-                          <th className="p-2.5 border-r border-neutral-300">
+                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[9px] border-b border-neutral-300">
+                          <th className="py-1.5 px-2 border-r border-neutral-300">
                             Items
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
                             Unit Price
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-center">
+                          <th className="py-1.5 px-2 border-r border-neutral-300 text-center">
                             Quantity
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
                             Discount
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
                             Vat
                           </th>
-                          <th className="p-2.5 text-right">Total</th>
+                          <th className="py-1.5 px-2 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody>
                         {orderItems.map((item, idx) => {
-                          const qty = Number(item.quantity) || 1;
-                          const unitPrice = Number(item.price) || 0;
-
-                          const detectedOfferType = item.offerType;
-                          const isBogo1g1 =
-                            detectedOfferType === "bogo_1g1" || item.isBogo;
-                          const isBogo1g2 = detectedOfferType === "bogo_1g2";
-
-                          const itemDiscountPct = Number(item.discountPct) || 0;
-                          const itemDiscountAmount =
-                            Number(item.discountAmount) || 0;
-                          const directDiscount = Number(item.discount) || 0;
-
-                          const fullGross = unitPrice * qty;
-                          let netPayable = fullGross;
-
-                          if (isBogo1g1) {
-                            const paidQuantity = Math.ceil(qty / 2);
-                            netPayable = unitPrice * paidQuantity;
-                          } else if (isBogo1g2) {
-                            const paidQuantity = Math.ceil(qty / 3);
-                            netPayable = unitPrice * paidQuantity;
-                          } else if (itemDiscountPct > 0) {
-                            netPayable =
-                              fullGross - (fullGross * itemDiscountPct) / 100;
-                          } else if (itemDiscountAmount > 0) {
-                            netPayable = Math.max(
-                              0,
-                              fullGross - itemDiscountAmount * qty,
-                            );
-                          } else if (directDiscount > 0) {
-                            netPayable = Math.max(0, fullGross - directDiscount);
-                          }
-
-                          const freeDiscount = Math.max(
-                            0,
-                            fullGross - netPayable,
-                          );
+                          const details = computeInvoiceItemDetails(item);
+                          const {
+                            origUnitPrice,
+                            qty,
+                            lineTotal,
+                            totalItemDiscount,
+                            promoBadge,
+                            promoBadgeColor,
+                          } = details;
 
                           return (
                             <tr key={idx} className="border-b border-neutral-200">
-                              <td className="p-2.5 border-r border-neutral-300 font-bold">
-                                {item.name}{" "}
-                                {item.selectedSize
-                                  ? `(${item.selectedSize})`
-                                  : ""}
+                              <td className="py-1.5 px-2 border-r border-neutral-300 font-semibold">
+                                <div className="text-neutral-850">
+                                  {item.name}{" "}
+                                  {item.selectedSize
+                                    ? `(${item.selectedSize})`
+                                    : ""}
+                                </div>
+                                {promoBadge && (
+                                  <span
+                                    className={`inline-block mt-0.5 px-1.5 py-0.2 rounded border text-[8.5px] font-black uppercase tracking-wider ${promoBadgeColor}`}
+                                  >
+                                    {promoBadge}
+                                  </span>
+                                )}
                                 {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                                  <div className="text-[10px] text-emerald-700 font-normal mt-0.5">
-                                    {item.selectedAddons.map((a) => `+${a.name} (৳${a.price})`).join(", ")}
+                                  <div className="text-[9px] text-emerald-700 font-normal mt-0.5">
+                                    {item.selectedAddons
+                                      .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
+                                      .join(", ")}
                                   </div>
                                 )}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right">
-                                ৳{unitPrice.toFixed(2)}
+                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-medium">
+                                ৳{origUnitPrice.toFixed(2)}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
+                              <td className="py-1.5 px-2 border-r border-neutral-300 text-center font-bold">
                                 {qty}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right font-extrabold text-emerald-600">
-                                {freeDiscount > 0
-                                  ? `-৳${freeDiscount.toFixed(2)}`
+                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-bold text-emerald-600">
+                                {totalItemDiscount > 0
+                                  ? `-৳${totalItemDiscount.toFixed(2)}`
                                   : "0.00"}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right">
+                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-medium">
                                 0.00
                               </td>
-                              <td className="p-2.5 text-right font-extrabold text-neutral-900">
-                                ৳{netPayable.toFixed(2)}
+                              <td className="py-1.5 px-2 text-right font-extrabold text-neutral-900">
+                                ৳{lineTotal.toFixed(2)}
                               </td>
                             </tr>
                           );
@@ -1400,56 +1514,56 @@ export const AdminOrders = () => {
                     </table>
                   </div>
 
-                  <div className="flex justify-end pt-2">
-                    <div className="w-full sm:w-80 space-y-1.5 text-xs">
+                  <div className="flex justify-end pt-1">
+                    <div className="w-full sm:w-72 space-y-1 text-[10px]">
                       {/* 🎯 Subtotal Breakdown: Add-ons থাকলে সুন্দর স্প্লিট, না থাকলে As It Is */}
                       {orderAddonsTotal > 0 ? (
                         <>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
                             <span className="text-neutral-500">Dishes Base Total:</span>
                             <span className="font-semibold text-neutral-800">
                               ৳{orderDishesBaseTotal.toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-700 font-semibold">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200 text-emerald-700 font-semibold">
                             <span>Extras & Add-ons:</span>
                             <span>+৳{orderAddonsTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1 rounded">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1 rounded">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
+                          <div className="flex justify-between py-0.5 border-b border-neutral-200 font-extrabold text-neutral-900">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       )}
 
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
                         <span className="text-neutral-500">Service Charge:</span>
                         <span className="font-medium">0.00</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
                         <span className="text-neutral-500">Shipping Charge:</span>
                         <span className="font-medium">
                           ৳{deliveryCharge.toFixed(2)}
@@ -1457,16 +1571,25 @@ export const AdminOrders = () => {
                       </div>
 
                       {couponDiscount > 0 && (
-                        <div className="flex justify-between py-1 border-b border-neutral-200 font-semibold text-emerald-600">
+                        <div className="flex justify-between py-0.5 border-b border-neutral-200 font-bold text-emerald-600">
                           <span>
-                            Discount{" "}
+                            Coupon Discount{" "}
                             {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
                           </span>
                           <span>-৳{couponDiscount.toFixed(2)}</span>
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center py-1 border-b border-neutral-200">
+                      {pointsDiscount > 0 && (
+                        <div className="flex justify-between py-0.5 border-b border-neutral-200 font-bold text-emerald-600">
+                          <span>
+                            Points ({selectedOrderDetails.pointsRedeemed} pts):
+                          </span>
+                          <span>-৳{pointsDiscount.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center py-0.5 border-b border-neutral-200">
                         <span className="text-neutral-500">Adjustment:</span>
                         <input
                           type="number"
@@ -1482,39 +1605,43 @@ export const AdminOrders = () => {
                             });
                           }}
                           placeholder="0.00"
-                          className="w-24 px-2 py-0.5 text-right border border-neutral-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 print:border-none print:bg-transparent"
+                          className="w-20 px-1.5 py-0.5 text-right border border-neutral-300 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 print:border-none print:bg-transparent"
                         />
                       </div>
 
-                      <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-black text-sm text-neutral-900">
+                      <div className="flex justify-between py-1 border-b-2 border-neutral-800 font-black text-xs text-neutral-900">
                         <span>Total:</span>
                         <span>৳{grandTotal.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
                         <span className="text-neutral-500">Advance Amount:</span>
-                        <span className="font-medium">0.00</span>
+                        <span className="font-semibold text-neutral-800">
+                          ৳{advanceAmount.toFixed(2)}
+                        </span>
                       </div>
-                      <div className="flex justify-between py-1.5 font-black text-neutral-900">
+                      <div className="flex justify-between py-0.5 font-black text-neutral-900">
                         <span>Remaining Amount:</span>
-                        <span>৳{grandTotal.toFixed(2)}</span>
+                        <span className={remainingAmount > 0 ? "text-rose-600" : "text-emerald-600"}>
+                          ৳{remainingAmount.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-2 text-xs text-neutral-600 font-medium">
+                  <div className="pt-1 text-[9px] text-neutral-600 font-medium">
                     Amount in Words (BDT):{" "}
-                    <span className="italic font-semibold text-neutral-800 uppercase">
+                    <span className="italic font-bold text-neutral-800 uppercase">
                       BDT {grandTotal.toFixed(0)} Taka Only
                     </span>
                   </div>
                 </div>
 
                 {/* 🎯 Invoice Footer (Pinned at Bottom) */}
-                <div className="invoice-footer w-full shrink-0 mt-auto pt-6">
+                <div className="invoice-footer w-full shrink-0 mt-auto pt-2">
                   <img
                     src={invoiceFooterImg}
                     alt="Barcode Restaurant Group Footer"
-                    className="w-full h-auto object-contain block"
+                    className="w-full h-auto max-h-[38px] object-contain block mx-auto"
                   />
                 </div>
               </div>

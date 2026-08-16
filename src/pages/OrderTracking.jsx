@@ -789,41 +789,74 @@ export const OrderTracking = () => {
 
                 {/* Items List */}
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-850 max-h-60 overflow-y-auto pr-1">
-                  {(order.items || order.cart || []).map((item) => (
-                    <div
-                      key={item.id || item._id}
-                      className="flex items-center justify-between py-3 gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-10 h-10 rounded-lg object-cover bg-neutral-100 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <span className="block text-xs font-semibold text-neutral-850 dark:text-neutral-100 truncate">
-                            {item.name}{" "}
-                            {item.selectedSize && `(${item.selectedSize})`}
-                          </span>
-                          {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-0.5">
-                              {item.selectedAddons.map((a, aIdx) => (
-                                <span key={aIdx} className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
-                                  +{a.name} (৳{Number(a.price).toFixed(0)})
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <span className="block text-[10px] text-neutral-400 mt-0.5">
-                            Qty: {item.quantity} × ৳{(item.price || 0).toFixed(2)}
-                          </span>
+                  {(order.items || order.cart || []).map((item) => {
+                    const qty = Number(item.quantity) || 1;
+                    const price = Number(item.price) || 0;
+                    const origPrice = Number(item.originalPrice) || price;
+                    const offerType = item.offerType || (item.isBogo ? 'bogo_1g1' : null);
+                    let paidQty = qty;
+                    let badge = null;
+                    if (offerType === 'bogo_1g1') {
+                      paidQty = Math.ceil(qty / 2);
+                      badge = 'BUY 1 GET 1 FREE';
+                    } else if (offerType === 'bogo_1g2') {
+                      paidQty = Math.ceil(qty / 3);
+                      badge = 'BUY 1 GET 2 FREE';
+                    } else if (offerType === 'combo') {
+                      badge = 'COMBO DEAL';
+                    } else if (item.discountPct > 0) {
+                      badge = `${item.discountPct}% OFF`;
+                    } else if (item.discountAmount > 0) {
+                      badge = `৳${item.discountAmount} OFF`;
+                    } else if (origPrice > price) {
+                      badge = `৳${(origPrice - price).toFixed(0)} OFF`;
+                    } else if (item.promoCode) {
+                      badge = `PROMO: ${item.promoCode}`;
+                    }
+                    const itemLineTotal = price * paidQty;
+
+                    return (
+                      <div
+                        key={item.id || item._id}
+                        className="flex items-center justify-between py-3 gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-10 h-10 rounded-lg object-cover bg-neutral-100 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="block text-xs font-semibold text-neutral-850 dark:text-neutral-100 truncate">
+                              {item.name}{" "}
+                              {item.selectedSize && `(${item.selectedSize})`}
+                            </span>
+                            {badge && (
+                              <span className="inline-block text-[9px] font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.2 rounded mt-0.5 border border-purple-200 dark:border-purple-800">
+                                {badge}
+                              </span>
+                            )}
+                            {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {item.selectedAddons.map((a, aIdx) => (
+                                  <span key={aIdx} className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
+                                    +{a.name} (৳{Number(a.price).toFixed(0)})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <span className="block text-[10px] text-neutral-400 mt-0.5">
+                              Qty: {qty} × ৳{price.toFixed(2)}
+                              {paidQty < qty && ` (${paidQty} paid)`}
+                            </span>
+                          </div>
                         </div>
+                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                          ৳{itemLineTotal.toFixed(2)}
+                        </span>
                       </div>
-                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                        ৳{((item.price || 0) * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Address and metadata */}

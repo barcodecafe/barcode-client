@@ -473,6 +473,10 @@ export const Checkout = () => {
           price: item.price,
           originalPrice: item.originalPrice || item.price,
           offerType: item.offerType || null,
+          promoCode: item.promoCode || null,
+          discountPct: Number(item.discountPct) || 0,
+          discountAmount: Number(item.discountAmount) || 0,
+          discountType: item.discountType || 'percent',
           branchId:
             item.branchId ||
             Number(localStorage.getItem("selected_branch_id")) ||

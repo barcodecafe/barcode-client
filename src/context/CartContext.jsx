@@ -122,6 +122,9 @@ export const CartProvider = ({ children }) => {
                 selectedAddons: finalAddons,
                 offerType: food.offerType || item.offerType || 'none',
                 promoCode: food.promoCode || item.promoCode || null,
+                discountPct: Number(food.discountPct ?? item.discountPct) || 0,
+                discountAmount: Number(food.discountAmount ?? item.discountAmount) || 0,
+                discountType: food.discountType || item.discountType || 'percent',
               }
             : item
         );
@@ -142,6 +145,9 @@ export const CartProvider = ({ children }) => {
           price: purchaseWithAddons, // 🎯 ডিসকাউন্টেড পেইড প্রাইস (যেমন: ৳306.00 + ৳50)
           offerType: food.offerType || 'none',
           promoCode: food.promoCode || null,
+          discountPct: Number(food.discountPct) || 0,
+          discountAmount: Number(food.discountAmount) || 0,
+          discountType: food.discountType || 'percent',
         },
       ];
     });
