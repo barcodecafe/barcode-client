@@ -13,11 +13,9 @@ export const RootLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // 🚚 Rider বা Admin কাস্টমারদের পেজে চলে আসলে স্বয়ংক্রিয়ভাবে তাদের পোর্টালে পাঠিয়ে দেবে
+    // 🚚 Rider কাস্টমারদের পেজে চলে আসলে স্বয়ংক্রিয়ভাবে তাদের পোর্টালে পাঠিয়ে দেবে
     if (user?.role === 'rider' && !location.pathname.startsWith('/rider')) {
       navigate('/rider', { replace: true });
-    } else if (user?.role === 'admin' && !location.pathname.startsWith('/admin')) {
-      navigate('/admin', { replace: true });
     }
   }, [user, navigate, location]);
 
