@@ -507,20 +507,20 @@ export const DishDetail = () => {
             </p>
 
             {/* Variations */}
-            {food.variations && food.variations.length > 0 && (
+            {Array.isArray(food?.variations) && food.variations.length > 0 && (
               <div className="pt-2 space-y-2">
                 <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                  Choose {food.variantLabel || "Size"}
+                  Choose {food?.variantLabel || "Size"}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {food.variations.map((v) => {
+                  {food.variations.filter(Boolean).map((v, vIdx) => {
                     const isSelected =
                       selectedVariation && selectedVariation.name === v.name;
                     const vFull = getActivePrice(food, branchId, v.name);
                     const vPrice = applyFoodDiscount(vFull, food);
                     return (
                       <button
-                        key={v.name}
+                        key={v.name || vIdx}
                         type="button"
                         onClick={() => setSelectedVariation(v)}
                         className={`px-4 py-2.5 rounded-none border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
@@ -529,7 +529,7 @@ export const DishDetail = () => {
                             : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300"
                         }`}
                       >
-                        {v.name} (৳{vPrice.toFixed(0)})
+                        {v.name} (৳{Number(vPrice || 0).toFixed(0)})
                         {isSelected && (
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         )}
@@ -541,7 +541,7 @@ export const DishDetail = () => {
             )}
 
             {/* 🎯 Add-ons & Extras Section */}
-            {groupedFoodAddons && groupedFoodAddons.length > 0 && (
+            {Array.isArray(groupedFoodAddons) && groupedFoodAddons.length > 0 && (
               <div className="pt-3 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
@@ -565,11 +565,11 @@ export const DishDetail = () => {
                       </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {group.items.map((addon, aIdx) => {
-                        const isChecked = selectedAddons.some(
+                      {(group.items || []).filter(Boolean).map((addon, aIdx) => {
+                        const isChecked = (selectedAddons || []).some(
                           (a) =>
-                            a?.name?.trim().toLowerCase() ===
-                            addon?.name?.trim().toLowerCase(),
+                            (a?.name || "").trim().toLowerCase() ===
+                            (addon?.name || "").trim().toLowerCase(),
                         );
                         return (
                           <button
@@ -597,7 +597,7 @@ export const DishDetail = () => {
                               <span className="truncate">{addon.name}</span>
                             </div>
                             <span className="font-mono font-extrabold text-primary-600 dark:text-primary-400 shrink-0 ml-2">
-                              +৳{Number(addon.price).toFixed(0)}
+                              +৳{Number(addon.price || 0).toFixed(0)}
                             </span>
                           </button>
                         );
