@@ -37,10 +37,10 @@ import {
 import { getAllBranches } from "../../services/branchesService";
 import { getAllCoupons } from "../../services/couponsService";
 import {
-  getAllAddons,
-  createAddon,
-  updateAddon,
-  deleteAddon,
+  getAllAddonGroups,
+  createAddonGroup,
+  updateAddonGroup,
+  deleteAddonGroup,
   seedDefaultAddons,
 } from "../../services/addonsService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
@@ -58,18 +58,20 @@ export const AdminDishes = () => {
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // 🎯 Centralized Add-ons Management States
-  const [centralAddons, setCentralAddons] = useState([]);
+  // 🎯 Centralized Add-ons Group Management States
+  const [addonGroups, setAddonGroups] = useState([]);
   const [isCentralAddonsModalOpen, setIsCentralAddonsModalOpen] = useState(false);
+  const [isGroupEditorOpen, setIsGroupEditorOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null); // null for create, object for edit
+  const [groupFormData, setGroupFormData] = useState({
+    title: "",
+    items: [{ name: "", price: "" }],
+  });
+  const [isSavingGroup, setIsSavingGroup] = useState(false);
+
   const [isAddonPickerModalOpen, setIsAddonPickerModalOpen] = useState(false);
-  const [selectedPickerAddonNames, setSelectedPickerAddonNames] = useState(new Set());
+  const [selectedPickerItemNames, setSelectedPickerItemNames] = useState(new Set());
   const [pickerSearch, setPickerSearch] = useState("");
-  const [newCentralGroup, setNewCentralGroup] = useState("Extra Cheese");
-  const [customGroupName, setCustomGroupName] = useState("");
-  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
-  const [newCentralName, setNewCentralName] = useState("");
-  const [newCentralPrice, setNewCentralPrice] = useState("");
-  const [isSubmittingCentralAddon, setIsSubmittingCentralAddon] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
@@ -153,21 +155,21 @@ export const AdminDishes = () => {
 
   const fetchCentralAddons = useCallback(async () => {
     try {
-      const data = await getAllAddons();
-      setCentralAddons(Array.isArray(data) ? data : []);
+      const data = await getAllAddonGroups();
+      setAddonGroups(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading central addons:", err);
     }
   }, []);
 
   useEffect(() => {
-    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddons()])
-      .then(([foodsData, branchesData, couponsData, addonsData]) => {
+    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddonGroups()])
+      .then(([foodsData, branchesData, couponsData, addonGroupsData]) => {
         const loadedFoods = cleanExpiredOffers(foodsData || []);
         setFoods(loadedFoods);
         setBranches(branchesData || []);
         setCoupons(couponsData || []);
-        setCentralAddons(Array.isArray(addonsData) ? addonsData : []);
+        setAddonGroups(Array.isArray(addonGroupsData) ? addonGroupsData : []);
         setIsLoading(false);
 
         const orderedCats = processCategories(loadedFoods);
@@ -181,13 +183,13 @@ export const AdminDishes = () => {
 
   const syncFromServer = useCallback(
     () =>
-      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddons()])
-        .then(([foodsData, branchesData, couponsData, addonsData]) => {
+      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddonGroups()])
+        .then(([foodsData, branchesData, couponsData, addonGroupsData]) => {
           const loadedFoods = cleanExpiredOffers(foodsData || []);
           setFoods(loadedFoods);
           setBranches(branchesData || []);
           setCoupons(couponsData || []);
-          setCentralAddons(Array.isArray(addonsData) ? addonsData : []);
+          setAddonGroups(Array.isArray(addonGroupsData) ? addonGroupsData : []);
 
           const orderedCats = processCategories(loadedFoods);
           setSortedCategories(orderedCats);
@@ -474,77 +476,117 @@ export const AdminDishes = () => {
   };
 
   // 🎯 Centralized Addon Dynamic Groups & Library Handlers
-  const distinctCentralGroups = useMemo(() => {
-    const groups = new Set();
-    centralAddons.forEach((a) => {
-      if (a.group?.trim()) groups.add(a.group.trim());
+  const handleOpenCreateGroup = () => {
+    setEditingGroup(null);
+    setGroupFormData({
+      title: "",
+      items: [{ name: "", price: "" }],
     });
-    if (groups.size === 0) {
-      groups.add("Extra Cheese");
-      groups.add("Premium Add-ons");
-    }
-    return Array.from(groups);
-  }, [centralAddons]);
+    setIsGroupEditorOpen(true);
+  };
 
-  const handleAddCentralAddon = async (e) => {
+  const handleOpenEditGroup = (group) => {
+    setEditingGroup(group);
+    setGroupFormData({
+      title: group.title || "",
+      items:
+        Array.isArray(group.items) && group.items.length > 0
+          ? group.items.map((i) => ({
+              name: i.name || "",
+              price: i.price !== undefined && i.price !== null ? i.price : "",
+            }))
+          : [{ name: "", price: "" }],
+    });
+    setIsGroupEditorOpen(true);
+  };
+
+  const handleAddGroupItemRow = () => {
+    setGroupFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, { name: "", price: "" }],
+    }));
+  };
+
+  const handleUpdateGroupItemRow = (index, field, val) => {
+    setGroupFormData((prev) => {
+      const updated = [...prev.items];
+      updated[index] = {
+        ...updated[index],
+        [field]:
+          field === "price"
+            ? val === ""
+              ? ""
+              : isNaN(Number(val))
+              ? 0
+              : Number(val)
+            : val,
+      };
+      return { ...prev, items: updated };
+    });
+  };
+
+  const handleRemoveGroupItemRow = (index) => {
+    setGroupFormData((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSaveGroup = async (e) => {
     if (e) e.preventDefault();
-    const name = newCentralName.trim();
-    const priceNum = Number(newCentralPrice);
-    const targetGroup = isCreatingNewGroup
-      ? customGroupName.trim()
-      : newCentralGroup.trim();
-
-    if (!name) {
-      alert("Please provide an add-on name");
-      return;
-    }
-    if (newCentralPrice === "" || isNaN(priceNum) || priceNum < 0) {
-      alert("Please provide a valid price (e.g. 50)");
-      return;
-    }
-    if (!targetGroup) {
-      alert("Please choose or enter a group name");
+    const title = groupFormData.title.trim();
+    if (!title) {
+      alert("Please enter a group name (e.g. Extra Cheese, Premium Add-ons)");
       return;
     }
 
-    setIsSubmittingCentralAddon(true);
+    const validItems = (groupFormData.items || [])
+      .filter((i) => i.name && i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        price: Number(i.price) || 0,
+      }));
+
+    if (validItems.length === 0) {
+      alert("Please add at least one item (with name and price) to this group.");
+      return;
+    }
+
+    setIsSavingGroup(true);
     try {
-      const created = await createAddon({
-        name,
-        price: priceNum,
-        group: targetGroup,
-        isAvailable: true,
-      });
-      setCentralAddons((prev) => [...prev, created]);
-      setNewCentralName("");
-      setNewCentralPrice("");
-      if (isCreatingNewGroup) {
-        setIsCreatingNewGroup(false);
-        setNewCentralGroup(targetGroup);
-        setCustomGroupName("");
+      if (editingGroup && (editingGroup._id || editingGroup.id)) {
+        const id = editingGroup._id || editingGroup.id;
+        const updated = await updateAddonGroup(id, { title, items: validItems });
+        setAddonGroups((prev) =>
+          prev.map((g) => ((g._id || g.id) === id ? updated : g))
+        );
+      } else {
+        const created = await createAddonGroup({ title, items: validItems });
+        setAddonGroups((prev) => [...prev, created]);
       }
+      setIsGroupEditorOpen(false);
     } catch (err) {
-      alert("Failed to add to central addons: " + (err.response?.data?.message || err.message));
+      alert("Failed to save group: " + (err.response?.data?.message || err.message));
     } finally {
-      setIsSubmittingCentralAddon(false);
+      setIsSavingGroup(false);
     }
   };
 
-  const handleDeleteCentralAddon = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this add-on from the central library?")) return;
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm("Are you sure you want to delete this entire add-on group?")) return;
     try {
-      await deleteAddon(id);
-      setCentralAddons((prev) => prev.filter((a) => (a._id || a.id) !== id));
+      await deleteAddonGroup(groupId);
+      setAddonGroups((prev) => prev.filter((g) => (g._id || g.id) !== groupId));
     } catch (err) {
-      alert("Failed to delete addon: " + (err.response?.data?.message || err.message));
+      alert("Failed to delete group: " + (err.response?.data?.message || err.message));
     }
   };
 
   const handleSeedDefaults = async () => {
-    if (!window.confirm("Do you want to populate standard Barcode Burger Add-ons (Extra Cheese, Premium Add-ons)?")) return;
+    if (!window.confirm("Do you want to load sample Barcode Burger Add-ons (Extra Cheese, Premium Add-ons)?")) return;
     try {
       const seeded = await seedDefaultAddons();
-      setCentralAddons(Array.isArray(seeded) ? seeded : []);
+      setAddonGroups(Array.isArray(seeded) ? seeded : []);
     } catch (err) {
       alert("Failed to seed defaults: " + (err.response?.data?.message || err.message));
     }
@@ -552,17 +594,19 @@ export const AdminDishes = () => {
 
   // 🎯 1-Click Add-on Picker Handlers (for Dish Form)
   const openAddonPicker = () => {
-    const currentNames = new Set(
-      (formData.addons || []).map((a) => a.name?.trim().toLowerCase()).filter(Boolean)
+    const currentKeys = new Set(
+      (formData.addons || [])
+        .map((a) => a.name?.trim().toLowerCase())
+        .filter(Boolean)
     );
-    setSelectedPickerAddonNames(currentNames);
+    setSelectedPickerItemNames(currentKeys);
     setPickerSearch("");
     setIsAddonPickerModalOpen(true);
   };
 
-  const togglePickerAddon = (addon) => {
-    const key = addon.name.trim().toLowerCase();
-    setSelectedPickerAddonNames((prev) => {
+  const togglePickerItem = (itemName) => {
+    const key = itemName.trim().toLowerCase();
+    setSelectedPickerItemNames((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
@@ -573,13 +617,10 @@ export const AdminDishes = () => {
     });
   };
 
-  const togglePickerGroup = (groupName, isAllSelected) => {
-    const groupItems = centralAddons.filter(
-      (a) => (a.group || "General Add-ons").toLowerCase() === groupName.toLowerCase()
-    );
-    setSelectedPickerAddonNames((prev) => {
+  const togglePickerGroupAll = (group, isAllSelected) => {
+    setSelectedPickerItemNames((prev) => {
       const next = new Set(prev);
-      groupItems.forEach((item) => {
+      (group.items || []).forEach((item) => {
         const key = item.name.trim().toLowerCase();
         if (isAllSelected) {
           next.delete(key);
@@ -592,33 +633,47 @@ export const AdminDishes = () => {
   };
 
   const handleApplyPickerAddons = () => {
-    const chosenItems = centralAddons.filter((a) =>
-      selectedPickerAddonNames.has(a.name?.trim().toLowerCase())
-    );
+    const chosenList = [];
+    addonGroups.forEach((group) => {
+      (group.items || []).forEach((item) => {
+        const key = item.name.trim().toLowerCase();
+        if (selectedPickerItemNames.has(key)) {
+          chosenList.push({
+            name: item.name.trim(),
+            price: item.price,
+            group: group.title,
+          });
+        }
+      });
+    });
 
     setFormData((prev) => {
       const existingMap = new Map(
         (prev.addons || []).map((a) => [a.name?.trim().toLowerCase(), a])
       );
 
-      const mergedAddons = chosenItems.map((chosen) => {
+      const mergedAddons = chosenList.map((chosen) => {
         const key = chosen.name.trim().toLowerCase();
         if (existingMap.has(key)) {
           return existingMap.get(key);
         }
         return {
-          name: chosen.name.trim(),
+          name: chosen.name,
           price: chosen.price,
           group: chosen.group || "",
-          image: chosen.image || "",
+          image: "",
         };
       });
 
-      // Also preserve any custom manual add-ons not in central library
-      const centralKeys = new Set(centralAddons.map((c) => c.name.trim().toLowerCase()));
+      // Also preserve any custom manual add-ons not in library
+      const allLibraryKeys = new Set(
+        addonGroups.flatMap((g) =>
+          (g.items || []).map((i) => i.name.trim().toLowerCase())
+        )
+      );
       (prev.addons || []).forEach((existing) => {
         const key = existing.name?.trim().toLowerCase();
-        if (key && !centralKeys.has(key) && !existingMap.has(key)) {
+        if (key && !allLibraryKeys.has(key) && !existingMap.has(key)) {
           mergedAddons.push(existing);
         }
       });
@@ -1844,10 +1899,10 @@ export const AdminDishes = () => {
                 <div>
                   <h2 className="text-lg font-black text-neutral-800 dark:text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary-500" />
-                    Pick Add-ons from Central Library
+                    Pick Add-ons from Library
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Select add-on groups or items to instantly attach to this dish.
+                    Select groups or individual add-ons to attach to this dish in 1 click.
                   </p>
                 </div>
                 <button
@@ -1865,7 +1920,7 @@ export const AdminDishes = () => {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="text"
-                    placeholder="Search add-on name..."
+                    placeholder="Search add-on item name..."
                     value={pickerSearch}
                     onChange={(e) => setPickerSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none"
@@ -1874,42 +1929,47 @@ export const AdminDishes = () => {
               </div>
 
               {/* Body: Grouped Addons */}
-              <div className="p-5 overflow-y-auto space-y-6 flex-1">
-                {centralAddons.length === 0 ? (
+              <div className="p-5 overflow-y-auto space-y-5 flex-1">
+                {addonGroups.length === 0 ? (
                   <div className="py-12 text-center space-y-3">
                     <Layers className="w-10 h-10 text-neutral-400 mx-auto opacity-50" />
                     <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
-                      No central add-ons found in library.
+                      No add-on groups found in library.
                     </p>
-                    <button
-                      type="button"
-                      onClick={handleSeedDefaults}
-                      className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs cursor-pointer"
-                    >
-                      Populate Standard Burger Add-ons
-                    </button>
+                    <div className="flex justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddonPickerModalOpen(false);
+                          handleOpenCreateGroup();
+                        }}
+                        className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs cursor-pointer"
+                      >
+                        + Create First Group
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSeedDefaults}
+                        className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-xs cursor-pointer"
+                      >
+                        Load Burger Defaults
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  distinctCentralGroups.map((groupName) => {
-                    const groupItems = centralAddons.filter((a) => {
-                      const matchesGroup =
-                        (a.group || "General Add-ons").toLowerCase() ===
-                        groupName.toLowerCase();
-                      const matchesSearch =
-                        !pickerSearch ||
-                        a.name
-                          ?.toLowerCase()
-                          .includes(pickerSearch.toLowerCase());
-                      return matchesGroup && matchesSearch;
-                    });
+                  addonGroups.map((group) => {
+                    const filteredItems = (group.items || []).filter((item) =>
+                      !pickerSearch ||
+                      item.name?.toLowerCase().includes(pickerSearch.toLowerCase())
+                    );
 
-                    if (groupItems.length === 0) return null;
+                    if (filteredItems.length === 0) return null;
 
-                    const allGroupKeys = groupItems.map((i) =>
-                      i.name.trim().toLowerCase(),
+                    const allGroupKeys = (group.items || []).map((i) =>
+                      i.name.trim().toLowerCase()
                     );
                     const selectedCountInGroup = allGroupKeys.filter((k) =>
-                      selectedPickerAddonNames.has(k),
+                      selectedPickerItemNames.has(k)
                     ).length;
                     const isAllGroupSelected =
                       selectedCountInGroup === allGroupKeys.length &&
@@ -1917,39 +1977,39 @@ export const AdminDishes = () => {
 
                     return (
                       <div
-                        key={groupName}
+                        key={group._id || group.id || group.title}
                         className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 space-y-3"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold text-xs uppercase tracking-wider text-neutral-800 dark:text-white">
-                              {groupName}
+                              {group.title}
                             </span>
                             <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[10px] font-bold">
-                              {selectedCountInGroup}/{groupItems.length}
+                              {selectedCountInGroup}/{group.items?.length || 0}
                             </span>
                           </div>
                           <button
                             type="button"
                             onClick={() =>
-                              togglePickerGroup(groupName, isAllGroupSelected)
+                              togglePickerGroupAll(group, isAllGroupSelected)
                             }
                             className="text-[11px] font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer"
                           >
-                            {isAllGroupSelected ? "Deselect All" : "Select All"}
+                            {isAllGroupSelected ? "Deselect Group" : "Select Group (All)"}
                           </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {groupItems.map((addon) => {
-                            const isChecked = selectedPickerAddonNames.has(
-                              addon.name.trim().toLowerCase(),
+                          {filteredItems.map((item) => {
+                            const isChecked = selectedPickerItemNames.has(
+                              item.name.trim().toLowerCase()
                             );
                             return (
                               <button
-                                key={addon._id || addon.id || addon.name}
+                                key={item._id || item.id || item.name}
                                 type="button"
-                                onClick={() => togglePickerAddon(addon)}
+                                onClick={() => togglePickerItem(item.name)}
                                 className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer text-left ${
                                   isChecked
                                     ? "bg-primary-50 dark:bg-primary-955/30 border-primary-500 text-neutral-900 dark:text-white shadow-xs"
@@ -1962,10 +2022,10 @@ export const AdminDishes = () => {
                                   ) : (
                                     <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
                                   )}
-                                  <span className="truncate">{addon.name}</span>
+                                  <span className="truncate">{item.name}</span>
                                 </div>
                                 <span className="font-bold text-primary-500 shrink-0 ml-2">
-                                  ৳{addon.price}
+                                  ৳{item.price}
                                 </span>
                               </button>
                             );
@@ -1980,7 +2040,7 @@ export const AdminDishes = () => {
               {/* Footer */}
               <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
                 <span className="text-xs font-bold text-neutral-500">
-                  {selectedPickerAddonNames.size} add-ons selected
+                  {selectedPickerItemNames.size} add-ons selected
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -1995,7 +2055,7 @@ export const AdminDishes = () => {
                     onClick={handleApplyPickerAddons}
                     className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" /> Apply to Dish ({selectedPickerAddonNames.size})
+                    <Check className="w-4 h-4" /> Apply to Dish ({selectedPickerItemNames.size})
                   </button>
                 </div>
               </div>
@@ -2004,7 +2064,7 @@ export const AdminDishes = () => {
         )}
       </AnimatePresence>
 
-      {/* 🎯 Central Addons Management Modal */}
+      {/* 🎯 Central Addon Groups Library Modal */}
       <AnimatePresence>
         {isCentralAddonsModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -2019,194 +2079,126 @@ export const AdminDishes = () => {
                 <div>
                   <h2 className="text-lg font-black text-neutral-800 dark:text-white flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary-500" />
-                    Centralized Add-ons & Dynamic Groups
+                    Central Add-on Groups Library
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Create reusable add-on items once and attach them to any burger or dish with one click.
+                    Create groups (e.g. Extra Cheese, Premium Add-ons) with multiple items and attach them to any dish.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCentralAddonsModalOpen(false)}
-                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateGroup}
+                    className="px-3.5 py-1.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> + Create New Group
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCentralAddonsModalOpen(false)}
+                    className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="p-5 overflow-y-auto space-y-6 flex-1">
-                {/* Create Addon Form */}
-                <form
-                  onSubmit={handleAddCentralAddon}
-                  className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/60 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-neutral-700 dark:text-neutral-200 flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5 text-primary-500" /> Add New Central Add-on
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsCreatingNewGroup(!isCreatingNewGroup)}
-                      className="text-[11px] font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer flex items-center gap-1"
-                    >
-                      <FolderPlus className="w-3 h-3" />
-                      {isCreatingNewGroup ? "Select Existing Group" : "+ Create New Group"}
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                    {/* Addon Name */}
-                    <div>
-                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
-                        Add-on Name *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Mozzarella Cheese"
-                        value={newCentralName}
-                        onChange={(e) => setNewCentralName(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-medium"
-                        required
-                      />
-                    </div>
-
-                    {/* Price */}
-                    <div>
-                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
-                        Price (৳) *
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
-                          ৳
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          placeholder="e.g. 50"
-                          value={newCentralPrice}
-                          onChange={(e) => setNewCentralPrice(e.target.value)}
-                          className="w-full pl-6 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Group Selection / Quick Chips */}
-                    <div>
-                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
-                        Group Tag (Optional)
-                      </label>
-                      <div className="flex gap-2">
-                        {isCreatingNewGroup ? (
-                          <input
-                            type="text"
-                            placeholder="Type new group name..."
-                            value={customGroupName}
-                            onChange={(e) => setCustomGroupName(e.target.value)}
-                            className="flex-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold"
-                          />
-                        ) : (
-                          <select
-                            value={newCentralGroup}
-                            onChange={(e) => {
-                              if (e.target.value === "__new__") {
-                                setIsCreatingNewGroup(true);
-                                setCustomGroupName("");
-                              } else {
-                                setNewCentralGroup(e.target.value);
-                              }
-                            }}
-                            className="flex-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold cursor-pointer"
-                          >
-                            {distinctCentralGroups.map((g) => (
-                              <option key={g} value={g}>
-                                {g}
-                              </option>
-                            ))}
-                            <option value="__new__">+ New Custom Group...</option>
-                          </select>
-                        )}
-                        <button
-                          type="submit"
-                          disabled={isSubmittingCentralAddon}
-                          className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                        >
-                          + Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-
-                {/* Existing Groups & Items List */}
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
-                      Central Add-ons Library ({centralAddons.length})
+              {/* Body: Groups Cards */}
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {addonGroups.length === 0 ? (
+                  <div className="py-16 text-center space-y-3">
+                    <Layers className="w-12 h-12 text-neutral-400 mx-auto opacity-50" />
+                    <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200">
+                      No Add-on Groups Created Yet
                     </h3>
-                    <button
-                      type="button"
-                      onClick={handleSeedDefaults}
-                      className="text-[11px] font-bold text-neutral-500 hover:text-primary-500 hover:underline cursor-pointer"
-                    >
-                      Restore Barcode Burger Defaults
-                    </button>
-                  </div>
-
-                  {distinctCentralGroups.map((groupName) => {
-                    const items = centralAddons.filter(
-                      (a) =>
-                        (a.group || "General Add-ons").toLowerCase() ===
-                        groupName.toLowerCase(),
-                    );
-                    if (items.length === 0) return null;
-
-                    return (
-                      <div
-                        key={groupName}
-                        className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-3 shadow-xs"
+                    <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                      Click "+ Create New Group" to create your first add-on group and add as many item names and prices as you want.
+                    </p>
+                    <div className="flex justify-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateGroup}
+                        className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold cursor-pointer"
                       >
-                        <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-neutral-800 dark:text-white">
-                            {groupName}
-                          </span>
-                          <span className="text-[10px] font-bold text-neutral-400">
-                            {items.length} items
-                          </span>
+                        + Create New Group
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSeedDefaults}
+                        className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-bold cursor-pointer"
+                      >
+                        Load Burger Menu Sample
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
+                        Saved Groups ({addonGroups.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSeedDefaults}
+                        className="text-[11px] font-bold text-neutral-500 hover:text-primary-500 hover:underline cursor-pointer"
+                      >
+                        Restore Barcode Burger Defaults
+                      </button>
+                    </div>
+
+                    {addonGroups.map((group) => (
+                      <div
+                        key={group._id || group.id || group.title}
+                        className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs space-y-3"
+                      >
+                        <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-sm text-neutral-900 dark:text-white">
+                              {group.title}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[11px] font-bold">
+                              {group.items?.length || 0} items
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditGroup(group)}
+                              className="px-2.5 py-1 text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /> Edit Group
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGroup(group._id || group.id)}
+                              className="p-1.5 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/30 rounded-lg transition-colors cursor-pointer"
+                              title="Delete group"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
+                        {/* Items in this group */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                          {items.map((item) => (
+                          {(group.items || []).map((item, idx) => (
                             <div
-                              key={item._id || item.id || item.name}
-                              className="p-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40 flex items-center justify-between gap-2"
+                              key={idx}
+                              className="p-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/40 flex items-center justify-between gap-2"
                             >
-                              <div className="truncate">
-                                <span className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                                  {item.name}
-                                </span>
-                                <span className="block text-[11px] font-bold text-primary-500">
-                                  ৳{item.price}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDeleteCentralAddon(item._id || item.id)
-                                }
-                                className="p-1 text-neutral-400 hover:text-rose-500 rounded transition-colors cursor-pointer"
-                                title="Delete from central library"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+                                {item.name}
+                              </span>
+                              <span className="text-xs font-bold text-primary-500 shrink-0">
+                                ৳{item.price}
+                              </span>
                             </div>
                           ))}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
@@ -2219,6 +2211,147 @@ export const AdminDishes = () => {
                   Done
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 Create / Edit Add-on Group Modal */}
+      <AnimatePresence>
+        {isGroupEditorOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <div>
+                  <h2 className="text-lg font-black text-neutral-800 dark:text-white">
+                    {editingGroup ? `Edit Group: ${editingGroup.title}` : "Create New Add-on Group"}
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Define the group name and add all item names and prices under it.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsGroupEditorOpen(false)}
+                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleSaveGroup} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                  {/* Group Name */}
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">
+                      Group Name *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Extra Cheese, Premium Add-ons, Sauces"
+                      value={groupFormData.title}
+                      onChange={(e) =>
+                        setGroupFormData({ ...groupFormData, title: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm focus:outline-none font-bold"
+                      required
+                    />
+                  </div>
+
+                  {/* Items list */}
+                  <div className="space-y-2.5 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider block">
+                        Items in this Group ({groupFormData.items.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAddGroupItemRow}
+                        className="text-xs px-2.5 py-1 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> + Add Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {groupFormData.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex gap-2 items-center p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
+                        >
+                          <input
+                            type="text"
+                            placeholder={`Item #${idx + 1} Name (e.g. Mozzarella)`}
+                            value={item.name}
+                            onChange={(e) =>
+                              handleUpdateGroupItemRow(idx, "name", e.target.value)
+                            }
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs focus:outline-none font-medium"
+                            required
+                          />
+                          <div className="relative w-28 shrink-0">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
+                              ৳
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              placeholder="Price"
+                              value={
+                                item.price !== undefined && item.price !== null
+                                  ? item.price
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                handleUpdateGroupItemRow(idx, "price", e.target.value)
+                              }
+                              className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
+                              required
+                            />
+                          </div>
+                          {groupFormData.items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGroupItemRow(idx)}
+                              className="p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/30 rounded-lg transition-colors cursor-pointer shrink-0"
+                              title="Remove item"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer with Save Button */}
+                <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-end gap-2 shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                  <button
+                    type="button"
+                    onClick={() => setIsGroupEditorOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingGroup}
+                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    {isSavingGroup ? "Saving Group..." : "💾 Save Group"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

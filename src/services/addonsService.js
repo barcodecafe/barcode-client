@@ -1,31 +1,34 @@
 import apiClient from './apiClient';
 
-/** GET /api/addons — Fetch all centralized add-ons */
-export async function getAllAddons(group) {
-  const url = group ? `/addons?group=${encodeURIComponent(group)}` : '/addons';
-  const res = await apiClient.get(url);
+/** GET /api/addons — Fetch all add-on groups with their items */
+export async function getAllAddonGroups() {
+  const res = await apiClient.get('/addons');
   return res?.data?.data || res?.data || [];
 }
+export const getAllAddons = getAllAddonGroups;
 
-/** POST /api/addons — Create new centralized add-on */
-export async function createAddon(payload) {
+/** POST /api/addons — Create a new add-on group with items */
+export async function createAddonGroup(payload) {
   const res = await apiClient.post('/addons', payload);
   return res?.data?.data || res?.data;
 }
+export const createAddon = createAddonGroup;
 
-/** PATCH /api/addons/:id — Update centralized add-on */
-export async function updateAddon(id, payload) {
+/** PATCH /api/addons/:id — Update an add-on group (title, items) */
+export async function updateAddonGroup(id, payload) {
   const res = await apiClient.patch(`/addons/${id}`, payload);
   return res?.data?.data || res?.data;
 }
+export const updateAddon = updateAddonGroup;
 
-/** DELETE /api/addons/:id — Delete centralized add-on */
-export async function deleteAddon(id) {
+/** DELETE /api/addons/:id — Delete an add-on group */
+export async function deleteAddonGroup(id) {
   const res = await apiClient.delete(`/addons/${id}`);
   return res?.data?.data || res?.data;
 }
+export const deleteAddon = deleteAddonGroup;
 
-/** POST /api/addons/seed-defaults — Reset/seed default burger add-ons */
+/** POST /api/addons/seed-defaults — Populate sample burger add-on groups (Extra Cheese, Premium Add-ons) */
 export async function seedDefaultAddons() {
   const res = await apiClient.post('/addons/seed-defaults', {});
   return res?.data?.data || res?.data || [];
