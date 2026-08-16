@@ -89,6 +89,8 @@ export const AppRoutes = () => {
                   <Route path="brands" element={<Brands />} />
                   <Route path="menu" element={<Menu />} />
                   <Route path="menu/:id" element={<DishDetail />} />
+                  <Route path="dish/:id" element={<DishDetail />} />
+                  <Route path="food/:id" element={<DishDetail />} />
                   <Route path="about" element={<About />} />
                   <Route path="login" element={<Login variant="user" />} />
                   <Route path="signup" element={<SignUp />} />
@@ -116,6 +118,8 @@ export const AppRoutes = () => {
                   <Route path="branches" element={<BrandBranches />} />
                   <Route path="branches/:id" element={<BrandBranchDetail />} />
                   <Route path="menu" element={<BrandMenu />} />
+                  <Route path="menu/:id" element={<DishDetail />} />
+                  <Route path="dish/:id" element={<DishDetail />} />
                 </Route>
 
                 {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}

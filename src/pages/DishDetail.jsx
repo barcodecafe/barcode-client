@@ -28,6 +28,7 @@ import { Pagination } from "swiper/modules";
 
 import {
   getFoodById,
+  getAllFoods,
   getPopularFoods,
   getActivePrice,
   applyFoodDiscount,
@@ -139,21 +140,53 @@ export const DishDetail = () => {
     setLoading(true);
     window.scrollTo(0, 0);
 
-    // 🎯 মূল খাবার লোড করা (Primary priority)
+    // 🎯 মূল খাবার লোড করা (Primary priority with automatic catalog fallback)
     getFoodById(id)
       .then((foodData) => {
-        setFood(foodData);
-        if (foodData && foodData.variations && foodData.variations.length > 0) {
-          setSelectedVariation(foodData.variations[0]);
+        if (foodData) {
+          setFood(foodData);
+          if (foodData.variations && foodData.variations.length > 0) {
+            setSelectedVariation(foodData.variations[0]);
+          } else {
+            setSelectedVariation(null);
+          }
+          setLoading(false);
         } else {
-          setSelectedVariation(null);
+          // Fallback to searching in all foods catalog
+          getAllFoods()
+            .then((all) => {
+              const matched = (all || []).find(
+                (f) =>
+                  String(f.id) === String(id) ||
+                  String(f._id) === String(id) ||
+                  (f.name && f.name.toLowerCase().trim() === String(id).toLowerCase().trim())
+              );
+              setFood(matched || null);
+              if (matched && matched.variations && matched.variations.length > 0) {
+                setSelectedVariation(matched.variations[0]);
+              }
+            })
+            .catch(() => setFood(null))
+            .finally(() => setLoading(false));
         }
       })
-      .catch((err) => {
-        console.error("Error loading dish detail:", err);
-      })
-      .finally(() => {
-        setLoading(false);
+      .catch(() => {
+        // Fallback to searching in all foods catalog
+        getAllFoods()
+          .then((all) => {
+            const matched = (all || []).find(
+              (f) =>
+                String(f.id) === String(id) ||
+                String(f._id) === String(id) ||
+                (f.name && f.name.toLowerCase().trim() === String(id).toLowerCase().trim())
+            );
+            setFood(matched || null);
+            if (matched && matched.variations && matched.variations.length > 0) {
+              setSelectedVariation(matched.variations[0]);
+            }
+          })
+          .catch(() => setFood(null))
+          .finally(() => setLoading(false));
       });
 
     // 🎯 সেকেন্ডারি ডাটা লোড (নন-ব্লকিং)
