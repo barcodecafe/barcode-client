@@ -216,11 +216,11 @@ export const RiderLayout = () => {
 
           if ("Notification" in window && Notification.permission === "granted") {
             const desktopNotif = new Notification(
-              "🚴 নতুন ডেলিভারি অ্যাসাইন হয়েছে!",
+              "🚴 New Delivery Assigned!",
               {
                 body: orderId !== "NEW"
                   ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
-                  : "আপনাকে নতুন একটি ডেলিভারি অ্যাসাইন করা হয়েছে!",
+                  : "A new delivery has been assigned to you!",
                 icon: settings?.logoLight || resB,
                 requireInteraction: true,
               }
@@ -352,7 +352,7 @@ export const RiderLayout = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                  🚴 নতুন ডেলিভারি এসেছে!
+                  🚴 New Delivery Assigned!
                 </h4>
                 <button
                   onClick={(e) => {

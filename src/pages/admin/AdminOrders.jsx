@@ -322,6 +322,7 @@ export const AdminOrders = () => {
   const [adjustments, setAdjustments] = useState({});
 
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const invoiceRef = useRef(null);
   const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
@@ -413,28 +414,42 @@ export const AdminOrders = () => {
 
     const handleOrderUpdated = (updatedOrder) => {
       const updatedId = updatedOrder?.id || updatedOrder?._id;
-      setOrders((prev) =>
-        prev.map((o) => {
-          if ((o.id || o._id) === updatedId) {
-            return { ...o, ...updatedOrder };
-          }
-          return o;
-        }),
-      );
-      setSelectedOrderDetails((prev) =>
-        (prev?.id || prev?._id) === updatedId
+      if (updatedId) {
+        setOrders((prev) =>
+          prev.map((o) => {
+            if ((o.id || o._id) === updatedId) {
+              return { ...o, ...updatedOrder };
+            }
+            return o;
+          }),
+        );
+      }
+      setSelectedOrderDetails((prev) => {
+        if (!prev || !updatedId) return prev;
+        return (prev.id || prev._id) === updatedId
           ? { ...prev, ...updatedOrder }
-          : prev,
-      );
-      window.dispatchEvent(
-        new CustomEvent("order_updated", {
-          detail: { orderId: updatedId, id: updatedId },
-        }),
-      );
+          : prev;
+      });
+      if (updatedId) {
+        window.dispatchEvent(
+          new CustomEvent("order_updated", {
+            detail: { orderId: updatedId, id: updatedId },
+          }),
+        );
+      }
     };
 
     const handlePendingCount = () => {
       window.dispatchEvent(new CustomEvent("order_updated"));
+    };
+
+    const handleRiderCashSubmitted = (payload) => {
+      const riderName = payload?.riderName || "A rider";
+      const date = payload?.date || "today";
+      toast.success(
+        `💰 Settlement Request: Rider ${riderName} submitted daily cash collection for ${date}.`,
+        { duration: 8000 }
+      );
     };
 
     const handleRiderUpdated = (updatedRider) => {
@@ -478,6 +493,7 @@ export const AdminOrders = () => {
     socket.on("order_created", handleNewOrderIncoming);
     socket.on("order_updated", handleOrderUpdated);
     socket.on("pending_count_updated", handlePendingCount);
+    socket.on("rider_cash_submitted", handleRiderCashSubmitted);
     socket.on("rider_updated", handleRiderUpdated);
     socket.on("new_chat_message", handleChatMessage);
 
@@ -485,17 +501,15 @@ export const AdminOrders = () => {
       socket.off("order_created", handleNewOrderIncoming);
       socket.off("order_updated", handleOrderUpdated);
       socket.off("pending_count_updated", handlePendingCount);
+      socket.off("rider_cash_submitted", handleRiderCashSubmitted);
       socket.off("rider_updated", handleRiderUpdated);
       socket.off("new_chat_message", handleChatMessage);
     };
   }, []);
 
   useEffect(() => {
-    if (chatEndRef.current && activeChatOrderId) {
-      chatEndRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+    if (chatContainerRef.current && activeChatOrderId) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
@@ -1544,7 +1558,10 @@ export const AdminOrders = () => {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-955/20">
+              <div
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/30 dark:bg-neutral-955/20"
+              >
                 {(currentChat.chatHistory || []).length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-neutral-400 text-xs gap-1">
                     <MessageSquare className="w-8 h-8 opacity-40" />

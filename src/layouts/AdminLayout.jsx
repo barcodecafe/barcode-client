@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -30,6 +31,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useOrders } from '../context/OrderContext';
+import { socket } from '../services/socket';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
@@ -70,6 +72,45 @@ export const AdminLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768,
   );
+
+  useEffect(() => {
+    const handleRiderCashSubmitted = (payload) => {
+      const riderName = payload?.riderName || "A rider";
+      const date = payload?.date || "today";
+      toast(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 font-bold text-lg shrink-0">
+              💰
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-extrabold text-xs text-neutral-900 dark:text-white">
+                Cash Settlement Submitted!
+              </p>
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-0.5">
+                Rider <strong className="text-neutral-900 dark:text-white">{riderName}</strong> requested handover verification for <strong>{date}</strong>.
+              </p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 9000,
+          style: {
+            borderRadius: "16px",
+            background: "#ffffff",
+            color: "#1f2937",
+            boxShadow: "0 15px 30px -5px rgba(0, 0, 0, 0.15)",
+            border: "1px solid #10b981",
+          },
+        }
+      );
+    };
+
+    socket.on("rider_cash_submitted", handleRiderCashSubmitted);
+    return () => {
+      socket.off("rider_cash_submitted", handleRiderCashSubmitted);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();

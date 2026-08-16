@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "react-hot-toast";
 import {
   ClipboardList,
   CheckCircle,
@@ -73,12 +74,11 @@ export const RiderSettlement = () => {
         riderName: user?.name || "Rider",
         date: label
       });
-      socket.emit("order_updated", { action: "cash_submit" });
 
-      alert(`Cash submission request sent to Admin for ${label}!`);
+      toast.success(`Cash submission request sent to Admin for ${label}!`);
       fetchRiderOrders();
     } catch (err) {
-      alert("Failed to submit cash: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to submit cash: " + (err.response?.data?.message || err.message));
     } finally {
       setSubmittingCashDate(null);
     }

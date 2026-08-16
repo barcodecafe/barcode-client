@@ -109,32 +109,23 @@ export const RiderOrders = () => {
       const incomingOrder = data?.order || data;
       if (!incomingOrder) return;
       
-      const isMyOrder = isAssignedToMe(incomingOrder);
+      const isMyOrder = isAssignedToMe(incomingOrder, user);
       const isCompleted = incomingOrder.status === "Delivered" || incomingOrder.status === "Rejected";
+      const targetId = incomingOrder.id || incomingOrder._id || incomingOrder.orderId;
       
       let needsFullFetch = false;
 
       setOrders((prev) => {
-        const exists = prev.some((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id || incomingOrder.orderId));
+        const exists = prev.some((o) => (o.id || o._id) === targetId);
 
         if (isMyOrder && !isCompleted) {
           if (exists) {
-            // লিস্টে থাকলে শুধু ডেটা মার্জ করবে
-            return prev.map((o) => (o.id || o._id) === (incomingOrder.id || incomingOrder._id || incomingOrder.orderId) ? { ...o, ...incomingOrder } : o);
+            return prev.map((o) => (o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o);
           }
-          // 🚀 FIX: অর্ডারটি লিস্টে না থাকলে সাথে সাথেই পুশ করে দেবে, যাতে Accept/Reject বাটন শো করে
           needsFullFetch = true;
           return [{ ...incomingOrder, id: incomingOrder.id || incomingOrder.orderId, createdAt: incomingOrder.createdAt || new Date().toISOString() }, ...prev];
         } 
         
-        // আমার না হলে সরিয়ে ফেলবে
-        // ⚠️ Only drop the order when the payload actually says who the rider
-        // is. Several emitters — including this page's own accept/reject
-        // handlers — broadcast a STUB carrying just { id, status,
-        // riderAcceptStatus } with no riderId/riderName, and isAssignedToMe()
-        // cannot call that "mine". So accepting a job used to delete it from the
-        // rider's own list until the next poll put it back: the "order vanishes
-        // and reappears" report.
         const payloadKnowsRider =
           incomingOrder.riderId !== undefined ||
           incomingOrder.riderName !== undefined ||
@@ -142,14 +133,13 @@ export const RiderOrders = () => {
 
         if (!payloadKnowsRider && !isCompleted) return prev;
 
-        return prev.filter((o) => (o.id || o._id) !== (incomingOrder.id || incomingOrder._id || incomingOrder.orderId));
+        return prev.filter((o) => (o.id || o._id) !== targetId);
       });
       
-      // 🚀 FIX: ব্যাকএন্ড ডেটাবেস সেভ হওয়ার জন্য ১.৫ সেকেন্ড সময় দিয়ে তারপর ফুল ডেটা কল করা হলো
       if (needsFullFetch) {
         setTimeout(() => {
           fetchRiderOrders();
-        }, 1500); 
+        }, 1200); 
       }
     };
 
@@ -164,14 +154,11 @@ export const RiderOrders = () => {
       socket.off("order_updated", handleSocketUpdate);
       socket.off("order_status_updated", handleSocketUpdate);
     };
-  }, [isAssignedToMe, fetchRiderOrders]);
+  }, [isAssignedToMe, fetchRiderOrders, user]);
 
   useEffect(() => {
-    if (chatEndRef.current && activeChatOrderId) {
-      chatEndRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+    if (chatContainerRef.current && activeChatOrderId) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [activeChatOrderId, chatMessagesCount]);
 
@@ -186,9 +173,9 @@ export const RiderOrders = () => {
       
       socket.emit("order_updated", { id: orderId, riderAcceptStatus: "accepted", status: "Preparing" });
       socket.emit("order_status_updated", { id: orderId, status: "Preparing" });
-      
+      toast.success("Delivery accepted! Kitchen is preparing the order.");
     } catch (err) {
-      alert("Failed to accept order: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to accept order: " + (err.response?.data?.message || err.message));
       fetchRiderOrders();
     }
   };
@@ -204,9 +191,9 @@ export const RiderOrders = () => {
       }
       
       socket.emit("order_updated", { id: orderId, riderAcceptStatus: "rejected" });
-      
+      toast.success("Order rejected. Returning to fleet pool.");
     } catch (err) {
-      alert("Failed to reject order: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to reject order: " + (err.response?.data?.message || err.message));
       fetchRiderOrders();
     }
   };
@@ -221,9 +208,9 @@ export const RiderOrders = () => {
       
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { id: orderId, status: newStatus });
-      
+      toast.success(`Status updated to ${newStatus}`);
     } catch (err) {
-      alert("Failed to update status: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update status: " + (err.response?.data?.message || err.message));
       fetchRiderOrders();
     }
   };
@@ -241,8 +228,9 @@ export const RiderOrders = () => {
       );
       socket.emit("send_message", { orderId: activeChatOrderId, message: { text: riderChatMessage.trim() } });
       setRiderChatMessage("");
+      toast.success("Message sent");
     } catch (err) {
-      alert("Failed to send message: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to send message: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -446,7 +434,10 @@ export const RiderOrders = () => {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
+              <div
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10"
+              >
                 {(chatOrder.chatHistory || []).map((msg, i) => {
                   const isSelf =
                     msg.sender === "rider" && msg.senderName === user.name;

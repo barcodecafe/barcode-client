@@ -96,10 +96,12 @@ export const OrderTracking = () => {
     enabled: Boolean(id),
   });
 
-  // Auto-scroll chat to bottom when chatHistory updates
+  const chatMessagesBoxRef = useRef(null);
+
+  // Auto-scroll ONLY inner chat box to bottom when chatHistory updates (never hijack window scroll)
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (chatMessagesBoxRef.current) {
+      chatMessagesBoxRef.current.scrollTop = chatMessagesBoxRef.current.scrollHeight;
     }
   }, [order?.chatHistory?.length]);
 
@@ -975,7 +977,10 @@ export const OrderTracking = () => {
             </span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10">
+          <div
+            ref={chatMessagesBoxRef}
+            className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-neutral-50/20 dark:bg-neutral-950/10"
+          >
             {(order.chatHistory || []).map((msg, i) => {
               const isMe = msg.sender === "customer";
               const isRider = msg.sender === "rider";
