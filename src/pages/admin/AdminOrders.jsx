@@ -1366,12 +1366,12 @@ export const AdminOrders = () => {
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
                 <div className="invoice-content flex-grow space-y-4 py-2">
-                  <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
-                    <div className="space-y-1.5 flex-1">
-                      <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
+                  <div className="flex flex-row justify-between items-start gap-4 sm:gap-6 bg-neutral-50 p-3.5 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <p className="font-bold text-neutral-900 uppercase text-[11px] mb-1.5">
                         Bill To:
                       </p>
-                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
+                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Customer Name
                         </span>
@@ -1382,7 +1382,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
+                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Mobile
                         </span>
@@ -1393,7 +1393,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
+                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Address
                         </span>
@@ -1411,8 +1411,8 @@ export const AdminOrders = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 w-full sm:w-56 pt-3 sm:pt-0">
-                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
+                    <div className="space-y-1.5 w-56 sm:w-60 shrink-0 pt-0">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Invoice Date
                         </span>
@@ -1425,7 +1425,7 @@ export const AdminOrders = () => {
                           }
                         </span>
                       </div>
-                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Invoice #
                         </span>
@@ -1436,7 +1436,7 @@ export const AdminOrders = () => {
                           )?.slice(-10)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
+                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Payment
                         </span>
