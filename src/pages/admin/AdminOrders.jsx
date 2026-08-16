@@ -470,6 +470,10 @@ export const AdminOrders = () => {
       toast.error("Please allow popups for this website to print.");
       return;
     }
+    const printStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((el) => el.outerHTML)
+      .join("\n");
+
     WindowPrt.document.open();
     WindowPrt.document.write(`<!DOCTYPE html>
 <html>
@@ -477,127 +481,235 @@ export const AdminOrders = () => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice - ${invoiceNumber}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  ${printStyles}
   <style>
     @page {
       size: auto;
       margin: 0 !important;
     }
-    @media print {
-      *, *::before, *::after {
-        box-sizing: border-box !important;
-      }
-      html, body {
-        width: 100% !important;
-        height: 100% !important;
-        max-height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #ffffff !important;
-        overflow: hidden !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      .invoice-container {
-        width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-        box-sizing: border-box !important;
-        padding: 4mm 7mm 3mm 7mm !important;
-        page-break-after: avoid !important;
-        page-break-inside: avoid !important;
-        page-break-before: avoid !important;
-        overflow: hidden !important;
-      }
-      .invoice-header {
-        flex-shrink: 0 !important;
-        width: 100% !important;
-      }
-      .invoice-header img {
-        width: 100% !important;
-        max-height: 50px !important;
-        object-fit: contain !important;
-        margin: 0 auto !important;
-        display: block !important;
-      }
-      .invoice-content {
-        flex-grow: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-start !important;
-        gap: 6px !important;
-        overflow: hidden !important;
-      }
-      .invoice-footer {
-        flex-shrink: 0 !important;
-        width: 100% !important;
-        margin-top: auto !important;
-        padding-top: 4px !important;
-        page-break-inside: avoid !important;
-        display: block !important;
-        visibility: visible !important;
-      }
-      .invoice-footer img {
-        width: 100% !important;
-        max-height: 38px !important;
-        object-fit: contain !important;
-        margin: 0 auto !important;
-        display: block !important;
-        visibility: visible !important;
-      }
-      .no-print {
-        display: none !important;
-      }
+    *, *::before, *::after {
+      box-sizing: border-box !important;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #ffffff;
-      color: #111827;
-      margin: 0;
-      padding: 0;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+    html, body {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #111827 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+      font-size: 11px !important;
+      line-height: 1.3 !important;
     }
     .invoice-container {
-      width: 100%;
-      min-height: 100vh;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-sizing: border-box;
-      padding: 4mm 7mm 3mm 7mm;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100vh !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      box-sizing: border-box !important;
+      padding: 4mm 6mm 3mm 6mm !important;
+      overflow: hidden !important;
+      page-break-after: avoid !important;
+      page-break-inside: avoid !important;
+      page-break-before: avoid !important;
     }
     .invoice-header {
-      flex-shrink: 0;
-      width: 100%;
+      flex-shrink: 0 !important;
+      width: 100% !important;
+      text-align: center !important;
     }
     .invoice-header img {
-      max-height: 52px;
-      object-fit: contain;
-      margin: 0 auto;
-      display: block;
+      width: 100% !important;
+      max-height: 48px !important;
+      object-fit: contain !important;
+      margin: 0 auto !important;
+      display: block !important;
+    }
+    .invoice-title {
+      text-align: center !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      letter-spacing: 0.15em !important;
+      text-transform: uppercase !important;
+      color: #1f2937 !important;
+      padding: 3px 0 !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      margin-top: 3px !important;
     }
     .invoice-content {
-      flex-grow: 1;
+      flex-grow: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: flex-start !important;
+      gap: 6px !important;
+      overflow: hidden !important;
+    }
+    .bill-to-box {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+      background-color: #f9fafb !important;
+      padding: 8px 12px !important;
+      border-radius: 8px !important;
+      border: 1px solid #e5e7eb !important;
+      font-size: 10.5px !important;
+      line-height: 1.35 !important;
+    }
+    .bill-to-left {
+      flex: 1 !important;
+      min-width: 0 !important;
+    }
+    .bill-to-right {
+      width: 210px !important;
+      flex-shrink: 0 !important;
+    }
+    .bill-row {
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 4px !important;
+      margin-bottom: 2px !important;
+    }
+    .bill-label {
+      color: #6b7280 !important;
+      font-weight: 500 !important;
+      width: 85px !important;
+      flex-shrink: 0 !important;
+    }
+    .bill-value {
+      color: #1f2937 !important;
+      font-weight: 600 !important;
+      flex: 1 !important;
+    }
+    .invoice-table-wrap {
+      width: 100% !important;
+      overflow: hidden !important;
+    }
+    table.invoice-table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+      border: 1px solid #d1d5db !important;
+      font-size: 10.5px !important;
+      display: table !important;
+    }
+    table.invoice-table thead {
+      display: table-header-group !important;
+    }
+    table.invoice-table tbody {
+      display: table-row-group !important;
+    }
+    table.invoice-table tr {
+      display: table-row !important;
+    }
+    table.invoice-table thead tr {
+      background-color: #f3f4f6 !important;
+      color: #374151 !important;
+      text-transform: uppercase !important;
+      font-size: 9px !important;
+      font-weight: 700 !important;
+      border-bottom: 1px solid #d1d5db !important;
+    }
+    table.invoice-table th {
+      display: table-cell !important;
+      padding: 5px 6px !important;
+      border-right: 1px solid #d1d5db !important;
+      text-align: left !important;
+      vertical-align: middle !important;
+    }
+    table.invoice-table th:last-child {
+      border-right: none !important;
+    }
+    table.invoice-table td {
+      display: table-cell !important;
+      padding: 4px 6px !important;
+      border-right: 1px solid #d1d5db !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      vertical-align: middle !important;
+      word-break: break-word !important;
+    }
+    table.invoice-table td:last-child {
+      border-right: none !important;
+    }
+    .col-items { width: 36% !important; text-align: left !important; font-weight: 600 !important; }
+    .col-price { width: 14% !important; text-align: right !important; font-weight: 500 !important; }
+    .col-qty   { width: 8% !important; text-align: center !important; font-weight: 700 !important; }
+    .col-disc  { width: 14% !important; text-align: right !important; font-weight: 700 !important; color: #059669 !important; }
+    .col-vat   { width: 10% !important; text-align: right !important; }
+    .col-total { width: 18% !important; text-align: right !important; font-weight: 800 !important; color: #111827 !important; }
+    
+    .promo-badge {
+      display: inline-block !important;
+      margin-top: 2px !important;
+      padding: 1px 4px !important;
+      border-radius: 3px !important;
+      font-size: 7.5px !important;
+      font-weight: 800 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      border: 1px solid #c4b5fd !important;
+      background-color: #f5f3ff !important;
+      color: #7c3aed !important;
+    }
+    .addons-list {
+      font-size: 8.5px !important;
+      color: #047857 !important;
+      margin-top: 1px !important;
+    }
+    .summary-section {
+      display: flex !important;
+      justify-content: flex-end !important;
+      padding-top: 2px !important;
+    }
+    .summary-box {
+      width: 250px !important;
+      font-size: 10px !important;
+    }
+    .summary-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      padding: 2px 0 !important;
+      border-bottom: 1px solid #e5e7eb !important;
+    }
+    .summary-row.total-row {
+      border-bottom: 2px solid #111827 !important;
+      font-weight: 900 !important;
+      font-size: 12px !important;
+      color: #111827 !important;
+      padding: 3px 0 !important;
+    }
+    .words-section {
+      font-size: 9.5px !important;
+      color: #4b5563 !important;
+      font-weight: 500 !important;
+      padding-top: 1px !important;
     }
     .invoice-footer {
-      flex-shrink: 0;
-      width: 100%;
-      margin-top: auto;
-      padding-top: 6px;
-      display: block;
-      visibility: visible;
+      flex-shrink: 0 !important;
+      width: 100% !important;
+      margin-top: auto !important;
+      padding-top: 4px !important;
+      text-align: center !important;
+      page-break-inside: avoid !important;
+      display: block !important;
+      visibility: visible !important;
     }
     .invoice-footer img {
-      max-height: 40px;
-      object-fit: contain;
-      margin: 0 auto;
-      display: block;
-      visibility: visible;
+      width: 100% !important;
+      max-height: 38px !important;
+      object-fit: contain !important;
+      margin: 0 auto !important;
+      display: block !important;
+      visibility: visible !important;
+    }
+    .no-print {
+      display: none !important;
     }
   </style>
 </head>
@@ -1353,51 +1465,51 @@ export const AdminOrders = () => {
                 className="invoice-container bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans"
               >
                 {/* 🎯 Invoice Header (Pinned at Top) */}
-                <div className="invoice-header w-full shrink-0 pb-2">
+                <div className="invoice-header w-full shrink-0 pb-2 text-center">
                   <img
                     src={invoiceHeaderImg}
                     alt="Barcode Restaurant Group Header"
                     className="w-full h-auto max-h-[60px] object-contain block mx-auto"
                   />
-                  <div className="text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
+                  <div className="invoice-title text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
                     Invoice
                   </div>
                 </div>
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
                 <div className="invoice-content flex-grow space-y-4 py-2">
-                  <div className="flex flex-row justify-between items-start gap-4 sm:gap-6 bg-neutral-50 p-3.5 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
-                    <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="bill-to-box flex flex-row justify-between items-start gap-4 sm:gap-6 bg-neutral-50 p-3.5 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
+                    <div className="bill-to-left space-y-1.5 flex-1 min-w-0">
                       <p className="font-bold text-neutral-900 uppercase text-[11px] mb-1.5">
                         Bill To:
                       </p>
-                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Customer Name
                         </span>
-                        <span className="font-bold text-neutral-800">
+                        <span className="bill-value font-bold text-neutral-800">
                           :{" "}
                           {selectedOrderDetails.user?.name ||
                             selectedOrderDetails.customerName ||
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Mobile
                         </span>
-                        <span className="font-semibold text-neutral-800">
+                        <span className="bill-value font-semibold text-neutral-800">
                           :{" "}
                           {selectedOrderDetails.user?.phone ||
                             selectedOrderDetails.customerPhone ||
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Address
                         </span>
-                        <span className="text-neutral-800">
+                        <span className="bill-value text-neutral-800">
                           :{" "}
                           {selectedOrderDetails.user?.address ||
                             selectedOrderDetails.deliveryAddress ||
@@ -1411,12 +1523,12 @@ export const AdminOrders = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 w-56 sm:w-60 shrink-0 pt-0">
-                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                    <div className="bill-to-right space-y-1.5 w-56 sm:w-60 shrink-0 pt-0">
+                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Invoice Date
                         </span>
-                        <span className="font-semibold text-neutral-800">
+                        <span className="bill-value font-semibold text-neutral-800">
                           :{" "}
                           {
                             new Date(selectedOrderDetails.createdAt || Date.now())
@@ -1425,22 +1537,22 @@ export const AdminOrders = () => {
                           }
                         </span>
                       </div>
-                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Invoice #
                         </span>
-                        <span className="font-bold text-neutral-800 uppercase">
+                        <span className="bill-value font-bold text-neutral-800 uppercase">
                           : IN-
                           {(
                             selectedOrderDetails.id || selectedOrderDetails._id
                           )?.slice(-10)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
                           Payment
                         </span>
-                        <span className="font-bold text-neutral-800 uppercase">
+                        <span className="bill-value font-bold text-neutral-800 uppercase">
                           : {selectedOrderDetails.paymentMethod || "COD"}{" "}
                           ({isPaidOrder ? "PAID" : "DUE"})
                         </span>
@@ -1448,34 +1560,34 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="w-full overflow-hidden">
-                    <table className="w-full text-xs text-left border-collapse border border-neutral-300 table-fixed">
+                  <div className="invoice-table-wrap w-full overflow-hidden">
+                    <table className="invoice-table w-full text-xs text-left border-collapse border border-neutral-300 table-fixed">
                       <colgroup>
-                        <col className="w-[36%]" />
-                        <col className="w-[14%]" />
-                        <col className="w-[8%]" />
-                        <col className="w-[14%]" />
-                        <col className="w-[10%]" />
-                        <col className="w-[18%]" />
+                        <col className="w-[36%]" style={{ width: "36%" }} />
+                        <col className="w-[14%]" style={{ width: "14%" }} />
+                        <col className="w-[8%]" style={{ width: "8%" }} />
+                        <col className="w-[14%]" style={{ width: "14%" }} />
+                        <col className="w-[10%]" style={{ width: "10%" }} />
+                        <col className="w-[18%]" style={{ width: "18%" }} />
                       </colgroup>
                       <thead>
                         <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
-                          <th className="p-2 sm:p-2.5 border-r border-neutral-300">
+                          <th className="col-items p-2 sm:p-2.5 border-r border-neutral-300">
                             Items
                           </th>
-                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-price p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Unit Price
                           </th>
-                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-center">
+                          <th className="col-qty p-2 sm:p-2.5 border-r border-neutral-300 text-center">
                             Quantity
                           </th>
-                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-disc p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Discount
                           </th>
-                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-vat p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Vat
                           </th>
-                          <th className="p-2 sm:p-2.5 text-right">Total</th>
+                          <th className="col-total p-2 sm:p-2.5 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1492,7 +1604,7 @@ export const AdminOrders = () => {
 
                           return (
                             <tr key={idx} className="border-b border-neutral-200">
-                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
+                              <td className="col-items p-2 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
                                 <div className="text-neutral-850">
                                   {item.name}{" "}
                                   {item.selectedSize
@@ -1501,34 +1613,34 @@ export const AdminOrders = () => {
                                 </div>
                                 {promoBadge && (
                                   <span
-                                    className={`inline-block mt-1 px-1.5 py-0.2 rounded border text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
+                                    className={`promo-badge inline-block mt-1 px-1.5 py-0.2 rounded border text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
                                   >
                                     {promoBadge}
                                   </span>
                                 )}
                                 {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                                  <div className="text-[10px] text-emerald-700 font-normal mt-0.5">
+                                  <div className="addons-list text-[10px] text-emerald-700 font-normal mt-0.5">
                                     {item.selectedAddons
                                       .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
                                       .join(", ")}
                                   </div>
                                 )}
                               </td>
-                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
+                              <td className="col-price p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
                                 ৳{origUnitPrice.toFixed(2)}
                               </td>
-                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
+                              <td className="col-qty p-2 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
                                 {qty}
                               </td>
-                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
+                              <td className="col-disc p-2 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
                                 {totalItemDiscount > 0
                                   ? `-৳${totalItemDiscount.toFixed(2)}`
                                   : "0.00"}
                               </td>
-                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
+                              <td className="col-vat p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
                                 0.00
                               </td>
-                              <td className="p-2 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
+                              <td className="col-total p-2 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
                                 ৳{lineTotal.toFixed(2)}
                               </td>
                             </tr>
@@ -1538,56 +1650,56 @@ export const AdminOrders = () => {
                     </table>
                   </div>
 
-                  <div className="flex justify-end pt-2">
-                    <div className="w-full sm:w-80 space-y-1.5 text-xs">
+                  <div className="summary-section flex justify-end pt-2">
+                    <div className="summary-box w-full sm:w-80 space-y-1.5 text-xs">
                       {/* 🎯 Subtotal Breakdown */}
                       {orderAddonsTotal > 0 ? (
                         <>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Dishes Base Total:</span>
                             <span className="font-semibold text-neutral-800">
                               ৳{orderDishesBaseTotal.toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-700 font-semibold">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200 text-emerald-700 font-semibold">
                             <span>Extras & Add-ons:</span>
                             <span>+৳{orderAddonsTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1.5 py-1 rounded">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1.5 py-1 rounded">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
+                          <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       )}
 
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Service Charge:</span>
                         <span className="font-medium">0.00</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Shipping Charge:</span>
                         <span className="font-medium">
                           ৳{deliveryCharge.toFixed(2)}
@@ -1595,7 +1707,7 @@ export const AdminOrders = () => {
                       </div>
 
                       {couponDiscount > 0 && (
-                        <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
+                        <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
                           <span>
                             Coupon Discount{" "}
                             {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
@@ -1605,7 +1717,7 @@ export const AdminOrders = () => {
                       )}
 
                       {pointsDiscount > 0 && (
-                        <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
+                        <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
                           <span>
                             Points ({selectedOrderDetails.pointsRedeemed} pts):
                           </span>
@@ -1613,7 +1725,7 @@ export const AdminOrders = () => {
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center py-1 border-b border-neutral-200">
+                      <div className="summary-row flex justify-between items-center py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Adjustment:</span>
                         <input
                           type="number"
@@ -1633,17 +1745,17 @@ export const AdminOrders = () => {
                         />
                       </div>
 
-                      <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-black text-sm text-neutral-900">
+                      <div className="summary-row total-row flex justify-between py-1.5 border-b-2 border-neutral-800 font-black text-sm text-neutral-900">
                         <span>Total:</span>
                         <span>৳{grandTotal.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-200">
+                      <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Advance Amount:</span>
                         <span className="font-semibold text-neutral-800">
                           ৳{advanceAmount.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between py-1 font-black text-neutral-900">
+                      <div className="summary-row flex justify-between py-1 font-black text-neutral-900">
                         <span>Remaining Amount:</span>
                         <span className={remainingAmount > 0 ? "text-rose-600" : "text-emerald-600"}>
                           ৳{remainingAmount.toFixed(2)}
@@ -1652,7 +1764,7 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 text-xs text-neutral-600 font-medium">
+                  <div className="words-section pt-2 text-xs text-neutral-600 font-medium">
                     Amount in Words (BDT):{" "}
                     <span className="italic font-bold text-neutral-800 uppercase">
                       BDT {grandTotal.toFixed(0)} Taka Only
@@ -1661,7 +1773,7 @@ export const AdminOrders = () => {
                 </div>
 
                 {/* 🎯 Invoice Footer (Pinned at Bottom) */}
-                <div className="invoice-footer w-full shrink-0 mt-auto pt-6">
+                <div className="invoice-footer w-full shrink-0 mt-auto pt-6 text-center">
                   <img
                     src={invoiceFooterImg}
                     alt="Barcode Restaurant Group Footer"
