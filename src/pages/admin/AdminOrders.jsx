@@ -791,6 +791,89 @@ export const AdminOrders = () => {
       display: block !important;
       visibility: visible !important;
     }
+    /* 🎯 Dynamic A5 Scale: Triggered automatically when A5 paper (width <= 175mm / 620px) is chosen */
+    @media print and (max-width: 175mm), (max-width: 620px) {
+      html, body {
+        font-size: 9px !important;
+        line-height: 1.25 !important;
+      }
+      .invoice-container {
+        padding: 3mm 5mm 2mm 5mm !important;
+      }
+      .invoice-header img {
+        max-height: 52px !important;
+      }
+      .invoice-title {
+        font-size: 11px !important;
+        padding: 2px 0 !important;
+        margin-top: 2px !important;
+      }
+      .invoice-content {
+        gap: 5px !important;
+      }
+      .bill-to-box {
+        padding: 6px 9px !important;
+        font-size: 8.5px !important;
+        border-radius: 7px !important;
+        gap: 10px !important;
+      }
+      .bill-to-right {
+        width: 175px !important;
+      }
+      .bill-label {
+        width: 72px !important;
+        font-size: 8.5px !important;
+      }
+      .bill-value {
+        font-size: 8.5px !important;
+      }
+      table.invoice-table {
+        font-size: 8.5px !important;
+      }
+      table.invoice-table thead tr {
+        font-size: 7.5px !important;
+      }
+      table.invoice-table th {
+        padding: 3.5px 4px !important;
+      }
+      table.invoice-table td {
+        padding: 3px 4px !important;
+      }
+      .col-price {
+        font-size: 8px !important;
+      }
+      .col-disc {
+        font-size: 8px !important;
+      }
+      .col-total {
+        font-size: 8.5px !important;
+      }
+      .promo-badge {
+        font-size: 6px !important;
+        padding: 1px 3px !important;
+      }
+      .addons-list {
+        font-size: 7px !important;
+      }
+      .summary-box {
+        width: 215px !important;
+        font-size: 8.5px !important;
+      }
+      .summary-row {
+        padding: 1.5px 0 !important;
+      }
+      .summary-row.total-row {
+        font-size: 10px !important;
+        padding: 2.5px 0 !important;
+      }
+      .words-section {
+        font-size: 8px !important;
+        padding-top: 1px !important;
+      }
+      .invoice-footer img {
+        max-height: 40px !important;
+      }
+    }
     .no-print {
       display: none !important;
     }
