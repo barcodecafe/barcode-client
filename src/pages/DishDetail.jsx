@@ -247,19 +247,24 @@ export const DishDetail = () => {
     return null;
   };
 
-  const offerLabel = getOfferLabel(food.offerType);
-  const hasDiscount = hasFoodDiscount(food) && (!food.offerType || food.offerType === "none");
-  
-  const activePrice = getActivePrice(
-    food,
-    branchId,
-    selectedVariation ? selectedVariation.name : null,
-  );
-  const discountedPrice = applyFoodDiscount(activePrice, food);
+  const offerLabel = getOfferLabel(food?.offerType);
+  const hasDiscount = hasFoodDiscount(food) && (!food?.offerType || food.offerType === "none");
+
+  const activePrice = Number(
+    getActivePrice(
+      food,
+      branchId,
+      selectedVariation ? selectedVariation.name : null,
+    ),
+  ) || 0;
+  const rawDiscountedPrice = typeof applyFoodDiscount === "function"
+    ? applyFoodDiscount(activePrice, food)
+    : activePrice;
+  const discountedPrice = Number(rawDiscountedPrice) || 0;
 
   // 🎯 Add-ons Price Calculation
-  const addonsPriceTotal = selectedAddons.reduce(
-    (sum, a) => sum + (Number(a.price) || 0),
+  const addonsPriceTotal = (selectedAddons || []).reduce(
+    (sum, a) => sum + (Number(a?.price) || 0),
     0,
   );
   const totalActivePrice = activePrice + addonsPriceTotal;
