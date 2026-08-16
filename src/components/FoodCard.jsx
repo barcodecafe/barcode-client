@@ -67,7 +67,8 @@ const FoodCard = ({
     ? applyFoodDiscount(basePrice, food)
     : basePrice;
 
-  const foodDetailLink = `/menu/${food.id || food._id}${branchId ? `?branchId=${branchId}` : ""}`;
+  const foodId = food?.id !== undefined && food?.id !== null ? food.id : food?._id;
+  const foodDetailLink = `/menu/${foodId}${branchId ? `?branchId=${branchId}` : ""}`;
 
   return (
     <motion.div

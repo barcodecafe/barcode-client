@@ -75,7 +75,7 @@ export const SearchBar = ({ variant = 'desktop', onClose }) => {
       setQuery('');
       setIsOpen(false);
       onClose?.();
-      navigate(`/menu/${food.id}`);
+      navigate(`/menu/${food.id || food._id}`);
     },
     [navigate, onClose]
   );
