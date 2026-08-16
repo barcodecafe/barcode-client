@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Star,
@@ -26,20 +26,22 @@ const FoodCard = ({
   onAddToCart,
   variants,
 }) => {
+  const navigate = useNavigate();
+
   // 🎯 Branch-based Price Adjustment Logic
-  let rawBasePrice = Number(food.price) || 0;
+  let rawBasePrice = Number(food?.price) || 0;
   let adjustVal = 0;
   if (
     branchId &&
-    food.branchPrices &&
+    food?.branchPrices &&
     food.branchPrices[String(branchId)] !== undefined
   ) {
     adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
   }
 
   const hasVariations =
-    Array.isArray(food.variations) && food.variations.length > 0;
-  const hasAddons = Array.isArray(food.addons) && food.addons.length > 0;
+    Array.isArray(food?.variations) && food.variations.length > 0;
+  const hasAddons = Array.isArray(food?.addons) && food.addons.length > 0;
   const hasCustomizations = hasVariations || hasAddons;
 
   // 🎯 Calculate base price safely — never allow Infinity or NaN
@@ -70,11 +72,20 @@ const FoodCard = ({
   const foodId = food?.id !== undefined && food?.id !== null ? food.id : food?._id;
   const foodDetailLink = `/menu/${foodId}${branchId ? `?branchId=${branchId}` : ""}`;
 
+  const handleCardClick = (e) => {
+    // If the click is on a button or an interactive link, let it handle its own event
+    if (e.target.closest("button") || e.target.closest("a")) {
+      return;
+    }
+    navigate(foodDetailLink);
+  };
+
   return (
     <motion.div
       variants={variants}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="group relative flex h-full flex-col overflow-hidden rounded-none border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md"
+      onClick={handleCardClick}
+      className="group relative flex h-full flex-col overflow-hidden rounded-none border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm transition-all duration-300 hover:border-primary-500/40 hover:shadow-md cursor-pointer"
     >
       {/* ── Image ─────────────────────────────────────────────── */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">

@@ -416,20 +416,20 @@ export const DishDetail = () => {
 
           <img
             src={displayImage}
-            alt={food.name}
+            alt={food?.name || "Dish"}
             className="w-full h-full object-cover transition-all duration-300"
           />
 
           <button
-            onClick={() => toggleFavorite(food.id || food._id)}
+            onClick={() => toggleFavorite(food?.id || food?._id)}
             className={`absolute top-4 right-4 p-2.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all cursor-pointer ${
-              isFavorite(food.id || food._id)
+              isFavorite(food?.id || food?._id)
                 ? "text-red-500 scale-110"
                 : "text-neutral-400 hover:text-red-500"
             }`}
           >
             <Heart
-              className={`w-5 h-5 ${isFavorite(food.id || food._id) ? "fill-current" : ""}`}
+              className={`w-5 h-5 ${isFavorite(food?.id || food?._id) ? "fill-current" : ""}`}
             />
           </button>
         </div>
@@ -440,7 +440,7 @@ export const DishDetail = () => {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-none bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                  {food.category}
+                  {food?.category || "Menu"}
                 </span>
 
                 {/* 🎯 Extra Badge under Title for Offer */}
@@ -454,8 +454,8 @@ export const DishDetail = () => {
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-none">
                   <Star className="w-4 h-4 fill-current" />
-                  <span>{reviewsData.averageRating ? Number(reviewsData.averageRating).toFixed(1) : (food.rating || 4.5)}</span>
-                  {reviewsData.totalReviews > 0 && (
+                  <span>{reviewsData?.averageRating ? Number(reviewsData.averageRating).toFixed(1) : (food?.rating || 4.5)}</span>
+                  {reviewsData?.totalReviews > 0 && (
                     <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500">
                       ({reviewsData.totalReviews} {reviewsData.totalReviews === 1 ? "review" : "reviews"})
                     </span>
@@ -465,7 +465,7 @@ export const DishDetail = () => {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">
-              {food.name}
+              {food?.name}
             </h1>
 
             {/* Price Tags */}
