@@ -495,12 +495,12 @@ export const AdminOrders = () => {
       margin: 0 !important;
       padding: 0 !important;
       background: #ffffff !important;
-      color: #111827 !important;
+      color: #1f2937 !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-      font-size: 11px !important;
-      line-height: 1.3 !important;
+      font-size: 11.5px !important;
+      line-height: 1.35 !important;
     }
     .invoice-container {
       width: 100% !important;
@@ -512,7 +512,7 @@ export const AdminOrders = () => {
       flex-direction: column !important;
       justify-content: space-between !important;
       box-sizing: border-box !important;
-      padding: 4mm 6mm 3mm 6mm !important;
+      padding: 5mm 8mm 4mm 8mm !important;
       overflow: hidden !important;
       page-break-after: avoid !important;
       page-break-inside: avoid !important;
@@ -522,10 +522,11 @@ export const AdminOrders = () => {
       flex-shrink: 0 !important;
       width: 100% !important;
       text-align: center !important;
+      padding-bottom: 2px !important;
     }
     .invoice-header img {
       width: 100% !important;
-      max-height: 48px !important;
+      max-height: 54px !important;
       object-fit: contain !important;
       margin: 0 auto !important;
       display: block !important;
@@ -533,20 +534,20 @@ export const AdminOrders = () => {
     .invoice-title {
       text-align: center !important;
       font-weight: 800 !important;
-      font-size: 13px !important;
+      font-size: 14px !important;
       letter-spacing: 0.15em !important;
       text-transform: uppercase !important;
       color: #1f2937 !important;
-      padding: 3px 0 !important;
+      padding: 4px 0 !important;
       border-bottom: 1px solid #e5e7eb !important;
-      margin-top: 3px !important;
+      margin-top: 4px !important;
     }
     .invoice-content {
       flex-grow: 1 !important;
       display: flex !important;
       flex-direction: column !important;
       justify-content: flex-start !important;
-      gap: 6px !important;
+      gap: 8px !important;
       overflow: hidden !important;
     }
     .bill-to-box {
@@ -554,32 +555,32 @@ export const AdminOrders = () => {
       flex-direction: row !important;
       justify-content: space-between !important;
       align-items: flex-start !important;
-      gap: 12px !important;
+      gap: 16px !important;
       background-color: #f9fafb !important;
-      padding: 8px 12px !important;
-      border-radius: 8px !important;
+      padding: 10px 14px !important;
+      border-radius: 10px !important;
       border: 1px solid #e5e7eb !important;
-      font-size: 10.5px !important;
-      line-height: 1.35 !important;
+      font-size: 11px !important;
+      line-height: 1.4 !important;
     }
     .bill-to-left {
       flex: 1 !important;
       min-width: 0 !important;
     }
     .bill-to-right {
-      width: 210px !important;
+      width: 220px !important;
       flex-shrink: 0 !important;
     }
     .bill-row {
       display: flex !important;
       flex-direction: row !important;
-      gap: 4px !important;
+      gap: 6px !important;
       margin-bottom: 2px !important;
     }
     .bill-label {
       color: #6b7280 !important;
       font-weight: 500 !important;
-      width: 85px !important;
+      width: 90px !important;
       flex-shrink: 0 !important;
     }
     .bill-value {
@@ -596,7 +597,7 @@ export const AdminOrders = () => {
       table-layout: fixed !important;
       border-collapse: collapse !important;
       border: 1px solid #d1d5db !important;
-      font-size: 10.5px !important;
+      font-size: 11px !important;
       display: table !important;
     }
     table.invoice-table thead {
@@ -612,13 +613,13 @@ export const AdminOrders = () => {
       background-color: #f3f4f6 !important;
       color: #374151 !important;
       text-transform: uppercase !important;
-      font-size: 9px !important;
+      font-size: 9.5px !important;
       font-weight: 700 !important;
       border-bottom: 1px solid #d1d5db !important;
     }
     table.invoice-table th {
       display: table-cell !important;
-      padding: 5px 6px !important;
+      padding: 6px 8px !important;
       border-right: 1px solid #d1d5db !important;
       text-align: left !important;
       vertical-align: middle !important;
@@ -628,7 +629,7 @@ export const AdminOrders = () => {
     }
     table.invoice-table td {
       display: table-cell !important;
-      padding: 4px 6px !important;
+      padding: 5px 8px !important;
       border-right: 1px solid #d1d5db !important;
       border-bottom: 1px solid #e5e7eb !important;
       vertical-align: middle !important;
@@ -647,9 +648,9 @@ export const AdminOrders = () => {
     .promo-badge {
       display: inline-block !important;
       margin-top: 2px !important;
-      padding: 1px 4px !important;
-      border-radius: 3px !important;
-      font-size: 7.5px !important;
+      padding: 1px 5px !important;
+      border-radius: 4px !important;
+      font-size: 8px !important;
       font-weight: 800 !important;
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
@@ -658,43 +659,43 @@ export const AdminOrders = () => {
       color: #7c3aed !important;
     }
     .addons-list {
-      font-size: 8.5px !important;
+      font-size: 9px !important;
       color: #047857 !important;
-      margin-top: 1px !important;
+      margin-top: 2px !important;
     }
     .summary-section {
       display: flex !important;
       justify-content: flex-end !important;
-      padding-top: 2px !important;
+      padding-top: 4px !important;
     }
     .summary-box {
-      width: 250px !important;
-      font-size: 10px !important;
+      width: 270px !important;
+      font-size: 10.5px !important;
     }
     .summary-row {
       display: flex !important;
       justify-content: space-between !important;
-      padding: 2px 0 !important;
+      padding: 2.5px 0 !important;
       border-bottom: 1px solid #e5e7eb !important;
     }
     .summary-row.total-row {
       border-bottom: 2px solid #111827 !important;
       font-weight: 900 !important;
-      font-size: 12px !important;
+      font-size: 12.5px !important;
       color: #111827 !important;
-      padding: 3px 0 !important;
+      padding: 3.5px 0 !important;
     }
     .words-section {
-      font-size: 9.5px !important;
+      font-size: 10px !important;
       color: #4b5563 !important;
       font-weight: 500 !important;
-      padding-top: 1px !important;
+      padding-top: 2px !important;
     }
     .invoice-footer {
       flex-shrink: 0 !important;
       width: 100% !important;
       margin-top: auto !important;
-      padding-top: 4px !important;
+      padding-top: 6px !important;
       text-align: center !important;
       page-break-inside: avoid !important;
       display: block !important;
@@ -702,7 +703,7 @@ export const AdminOrders = () => {
     }
     .invoice-footer img {
       width: 100% !important;
-      max-height: 38px !important;
+      max-height: 42px !important;
       object-fit: contain !important;
       margin: 0 auto !important;
       display: block !important;
