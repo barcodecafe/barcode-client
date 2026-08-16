@@ -139,66 +139,68 @@ export const DishDetail = () => {
   useEffect(() => {
     setLoading(true);
     window.scrollTo(0, 0);
+    let cancelled = false;
 
-    // 🎯 মূল খাবার লোড করা (Primary priority with automatic catalog fallback)
-    getFoodById(id)
-      .then((foodData) => {
-        if (foodData) {
-          setFood(foodData);
-          if (foodData.variations && foodData.variations.length > 0) {
-            setSelectedVariation(foodData.variations[0]);
-          } else {
-            setSelectedVariation(null);
-          }
-          setLoading(false);
-        } else {
-          // Fallback to searching in all foods catalog
-          getAllFoods()
-            .then((all) => {
-              const matched = (all || []).find(
-                (f) =>
-                  String(f.id) === String(id) ||
-                  String(f._id) === String(id) ||
-                  (f.name && f.name.toLowerCase().trim() === String(id).toLowerCase().trim())
-              );
-              setFood(matched || null);
-              if (matched && matched.variations && matched.variations.length > 0) {
-                setSelectedVariation(matched.variations[0]);
-              }
-            })
-            .catch(() => setFood(null))
-            .finally(() => setLoading(false));
+    (async () => {
+      try {
+        let foodData = null;
+        try {
+          foodData = await getFoodById(id);
+        } catch (e) {
+          console.warn("Direct getFoodById failed, trying catalog fallback:", e);
         }
-      })
-      .catch(() => {
-        // Fallback to searching in all foods catalog
-        getAllFoods()
-          .then((all) => {
-            const matched = (all || []).find(
+
+        if (!foodData) {
+          try {
+            const all = await getAllFoods();
+            const foodsList = Array.isArray(all) ? all : Array.isArray(all?.foods) ? all.foods : [];
+            foodData = foodsList.find(
               (f) =>
                 String(f.id) === String(id) ||
                 String(f._id) === String(id) ||
                 (f.name && f.name.toLowerCase().trim() === String(id).toLowerCase().trim())
-            );
-            setFood(matched || null);
-            if (matched && matched.variations && matched.variations.length > 0) {
-              setSelectedVariation(matched.variations[0]);
-            }
-          })
-          .catch(() => setFood(null))
-          .finally(() => setLoading(false));
-      });
+            ) || null;
+          } catch (e) {
+            console.warn("Catalog fallback search failed:", e);
+          }
+        }
 
-    // 🎯 সেকেন্ডারি ডাটা লোড (নন-ব্লকিং)
+        if (cancelled) return;
+
+        setFood(foodData);
+        if (foodData && Array.isArray(foodData.variations) && foodData.variations.length > 0) {
+          setSelectedVariation(foodData.variations[0]);
+        } else {
+          setSelectedVariation(null);
+        }
+      } catch (err) {
+        console.error("Error loading dish detail:", err);
+        if (!cancelled) setFood(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    // Non-blocking secondary loads
     getPopularFoods(6)
-      .then((popularData) => setFeaturedMenu(popularData || []))
-      .catch(() => setFeaturedMenu([]));
+      .then((popularData) => {
+        if (!cancelled) {
+          setFeaturedMenu(Array.isArray(popularData) ? popularData : popularData?.foods || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFeaturedMenu([]);
+      });
 
     getFoodReviews(id)
       .then((reviewsRes) => {
-        if (reviewsRes) setReviewsData(reviewsRes);
+        if (!cancelled && reviewsRes) setReviewsData(reviewsRes);
       })
       .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleReviewSubmit = async (e) => {
