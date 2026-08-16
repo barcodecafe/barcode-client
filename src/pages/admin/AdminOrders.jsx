@@ -1103,6 +1103,12 @@ export const AdminOrders = () => {
         };
 
         socket.emit("order_updated", payload);
+        socket.emit("order_status_updated", {
+          id: orderId,
+          orderId: orderId,
+          status: "Preparing",
+          ...payload,
+        });
         socket.emit("rider_order_updated", payload);
 
         toast.success(

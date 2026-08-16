@@ -418,10 +418,12 @@ export const Profile = () => {
 
     socket.on("order_status_updated", handleOrderUpdate);
     socket.on("order_updated", handleOrderUpdate);
+    socket.on("rider_order_updated", handleOrderUpdate);
 
     return () => {
       socket.off("order_status_updated", handleOrderUpdate);
       socket.off("order_updated", handleOrderUpdate);
+      socket.off("rider_order_updated", handleOrderUpdate);
     };
   }, []);
 
