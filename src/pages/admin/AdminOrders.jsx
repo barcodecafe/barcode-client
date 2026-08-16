@@ -1448,26 +1448,34 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse border border-neutral-300">
+                  <div className="w-full overflow-hidden">
+                    <table className="w-full text-xs text-left border-collapse border border-neutral-300 table-fixed">
+                      <colgroup>
+                        <col className="w-[36%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[10%]" />
+                        <col className="w-[18%]" />
+                      </colgroup>
                       <thead>
                         <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
-                          <th className="p-2.5 border-r border-neutral-300">
+                          <th className="p-2 sm:p-2.5 border-r border-neutral-300">
                             Items
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Unit Price
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-center">
+                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-center">
                             Quantity
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Discount
                           </th>
-                          <th className="p-2.5 border-r border-neutral-300 text-right">
+                          <th className="p-2 sm:p-2.5 border-r border-neutral-300 text-right">
                             Vat
                           </th>
-                          <th className="p-2.5 text-right">Total</th>
+                          <th className="p-2 sm:p-2.5 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1484,7 +1492,7 @@ export const AdminOrders = () => {
 
                           return (
                             <tr key={idx} className="border-b border-neutral-200">
-                              <td className="p-2.5 border-r border-neutral-300 font-semibold">
+                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
                                 <div className="text-neutral-850">
                                   {item.name}{" "}
                                   {item.selectedSize
@@ -1506,21 +1514,21 @@ export const AdminOrders = () => {
                                   </div>
                                 )}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
+                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
                                 ৳{origUnitPrice.toFixed(2)}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
+                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
                                 {qty}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
+                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
                                 {totalItemDiscount > 0
                                   ? `-৳${totalItemDiscount.toFixed(2)}`
                                   : "0.00"}
                               </td>
-                              <td className="p-2.5 border-r border-neutral-300 text-right font-medium">
+                              <td className="p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
                                 0.00
                               </td>
-                              <td className="p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
+                              <td className="p-2 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
                                 ৳{lineTotal.toFixed(2)}
                               </td>
                             </tr>
