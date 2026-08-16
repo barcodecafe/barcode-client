@@ -49,9 +49,29 @@ export const RiderSettlement = () => {
     fetchRiderOrders();
   }, [fetchRiderOrders]);
 
-  // Cash settlement figures change when a delivery completes or the admin
-  // confirms a handover — not every four seconds. See RiderOverview for why the
-  // old interval was a problem; the same reasoning applies here.
+  // ⚡ রিয়েল-টাইম সকেট লিসেনার: এডমিন ক্যাশ সেটেল করলে বা অর্ডারের স্ট্যাটাস বদলালে রিলোড ছাড়াই সাথে সাথে আপডেট
+  useEffect(() => {
+    let burstTimer = null;
+    const handleSettlementSync = (payload) => {
+      if (!payload || !user || !payload.riderId || String(payload.riderId) === String(user?.id || user?._id)) {
+        clearTimeout(burstTimer);
+        burstTimer = setTimeout(fetchRiderOrders, 300);
+      }
+    };
+
+    socket.on("rider_cash_settled", handleSettlementSync);
+    socket.on("order_updated", handleSettlementSync);
+    socket.on("rider_order_updated", handleSettlementSync);
+
+    return () => {
+      clearTimeout(burstTimer);
+      socket.off("rider_cash_settled", handleSettlementSync);
+      socket.off("order_updated", handleSettlementSync);
+      socket.off("rider_order_updated", handleSettlementSync);
+    };
+  }, [fetchRiderOrders, user]);
+
+  // Cash settlement figures fallback polling
   useVisiblePolling(fetchRiderOrders, {
     intervalMs: 30000,
     enabled: Boolean(user),

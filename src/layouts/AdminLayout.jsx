@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -44,7 +44,8 @@ import resW from '../assets/Barcode_restaurant_groupW.png';
 // ---------------------------------------------------------------------------
 
 const navItems = [
-  { name: 'Overview', path: '/admin', icon: LayoutDashboard, end: true },
+  { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
+  { name: 'Categories', path: '/admin/categories', icon: MenuIcon },
   { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
   { name: 'Brands', path: '/admin/brands', icon: Store },
   { name: 'Regions', path: '/admin/regions', icon: Map },
@@ -65,7 +66,7 @@ export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
-  const { unreadOrderCount, markOrdersAsRead } = useOrders();
+  const { unreadOrderCount, markOrdersAsRead, orders } = useOrders();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -73,20 +74,46 @@ export const AdminLayout = () => {
     () => typeof window !== 'undefined' && window.innerWidth >= 768,
   );
 
+  const pendingSettlementCount = useMemo(() => {
+    if (!orders || !Array.isArray(orders)) return 0;
+    return orders.filter((o) => o.isSubmittedToAdmin && !o.isCashSettledByAdmin).length;
+  }, [orders]);
+
   useEffect(() => {
     const handleRiderCashSubmitted = (payload) => {
       const riderName = payload?.riderName || "A rider";
       const date = payload?.date || "today";
+
+      // 🔊 Play notification chime
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.volume = 1.0;
+        audio.play().catch((err) => console.warn("Audio blocked:", err));
+      } catch (err) {
+        console.warn("Notification sound error:", err);
+      }
+
       toast(
         (t) => (
-          <div className="flex items-start gap-3">
+          <div 
+            onClick={() => {
+              navigate('/admin/fleet-overview');
+              toast.dismiss(t.id);
+            }}
+            className="flex items-start gap-3 cursor-pointer select-none"
+          >
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 font-bold text-lg shrink-0">
               💰
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-extrabold text-xs text-neutral-900 dark:text-white">
-                Cash Settlement Submitted!
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-extrabold text-xs text-neutral-900 dark:text-white">
+                  Cash Settlement Submitted!
+                </p>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                  View
+                </span>
+              </div>
               <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-0.5">
                 Rider <strong className="text-neutral-900 dark:text-white">{riderName}</strong> requested handover verification for <strong>{date}</strong>.
               </p>
@@ -110,7 +137,7 @@ export const AdminLayout = () => {
     return () => {
       socket.off("rider_cash_submitted", handleRiderCashSubmitted);
     };
-  }, []);
+  }, [navigate]);
 
   const handleLogout = async () => {
     await logout();
@@ -132,6 +159,7 @@ export const AdminLayout = () => {
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
         {navItems.map((item) => {
           const isOrdersRoute = item.path === '/admin/orders';
+          const isFleetRoute = item.path === '/admin/fleet-overview';
           return (
             <NavLink
               key={item.path}
@@ -157,6 +185,15 @@ export const AdminLayout = () => {
               {isOrdersRoute && unreadOrderCount > 0 && (
                 <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
                   {unreadOrderCount}
+                </span>
+              )}
+
+              {isFleetRoute && pendingSettlementCount > 0 && (
+                <span 
+                  className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-extrabold rounded-full animate-pulse shadow-xs" 
+                  title={`${pendingSettlementCount} cash handover pending`}
+                >
+                  {pendingSettlementCount}
                 </span>
               )}
             </NavLink>

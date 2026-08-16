@@ -114,7 +114,11 @@ export const OrderProvider = ({ children }) => {
     socket.on('connect', handleConnect);
     socket.on('pending_count_updated', handlePendingCount);
     socket.on('order_created', handleOrdersChanged);
+    socket.on('order_updated', handleOrdersChanged);
     socket.on('order_status_updated', handleOrdersChanged);
+    socket.on('rider_cash_submitted', handleOrdersChanged);
+    socket.on('rider_cash_settled', handleOrdersChanged);
+    socket.on('rider_order_updated', handleOrdersChanged);
 
     // ⚠️ Cleanup passes the handler reference. socket.off('order_status_updated')
     // with no handler used to remove RiderLayout's and RiderOrders' listeners
@@ -124,7 +128,11 @@ export const OrderProvider = ({ children }) => {
       socket.off('connect', handleConnect);
       socket.off('pending_count_updated', handlePendingCount);
       socket.off('order_created', handleOrdersChanged);
+      socket.off('order_updated', handleOrdersChanged);
       socket.off('order_status_updated', handleOrdersChanged);
+      socket.off('rider_cash_submitted', handleOrdersChanged);
+      socket.off('rider_cash_settled', handleOrdersChanged);
+      socket.off('rider_order_updated', handleOrdersChanged);
     };
   }, [isAuthLoaded, canReadOrders, fetchAndUpdateOrders]);
 

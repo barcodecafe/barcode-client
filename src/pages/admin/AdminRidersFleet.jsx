@@ -50,17 +50,21 @@ export const AdminRidersFleet = () => {
       clearTimeout(burstTimer);
       burstTimer = setTimeout(() => {
         if (!cancelled) fetchOrdersAndFleet();
-      }, 600);
+      }, 300);
     };
 
     socket.on("order_updated", handleFleetChanged);
     socket.on("rider_updated", handleFleetChanged);
+    socket.on("rider_cash_submitted", handleFleetChanged);
+    socket.on("rider_cash_settled", handleFleetChanged);
 
     return () => {
       cancelled = true;
       clearTimeout(burstTimer);
       socket.off("order_updated", handleFleetChanged);
       socket.off("rider_updated", handleFleetChanged);
+      socket.off("rider_cash_submitted", handleFleetChanged);
+      socket.off("rider_cash_settled", handleFleetChanged);
     };
   }, []);
 
@@ -73,6 +77,7 @@ export const AdminRidersFleet = () => {
     try {
       setConfirmingRiderId(riderId);
       await confirmRiderCashSettlement(riderId, dateKey);
+      socket.emit("rider_cash_settled", { riderId, riderName, dateKey });
       toast.success(`Cash settlement confirmed for ${riderName}!`);
       fetchOrdersAndFleet();
     } catch (err) {
