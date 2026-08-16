@@ -556,14 +556,11 @@ export const AdminDishes = () => {
     try {
       if (editingGroup && (editingGroup._id || editingGroup.id)) {
         const id = editingGroup._id || editingGroup.id;
-        const updated = await updateAddonGroup(id, { title, items: validItems });
-        setAddonGroups((prev) =>
-          prev.map((g) => ((g._id || g.id) === id ? updated : g))
-        );
+        await updateAddonGroup(id, { title, items: validItems });
       } else {
-        const created = await createAddonGroup({ title, items: validItems });
-        setAddonGroups((prev) => [...prev, created]);
+        await createAddonGroup({ title, items: validItems });
       }
+      await fetchCentralAddons();
       setIsGroupEditorOpen(false);
     } catch (err) {
       alert("Failed to save group: " + (err.response?.data?.message || err.message));
