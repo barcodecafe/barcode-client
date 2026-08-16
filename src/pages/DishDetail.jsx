@@ -263,6 +263,28 @@ export const DishDetail = () => {
   const totalActivePrice = activePrice + addonsPriceTotal;
   const totalDiscountedPrice = discountedPrice + addonsPriceTotal;
 
+  const groupedFoodAddons = useMemo(() => {
+    if (!Array.isArray(food?.addons) || food.addons.length === 0) return [];
+    const hasGroups = food.addons.some((a) => a.group && a.group.trim());
+    if (!hasGroups) {
+      return [{ groupName: null, items: food.addons }];
+    }
+
+    const groupMap = new Map();
+    food.addons.forEach((addon) => {
+      const gName = addon.group?.trim() || "Other Extras";
+      if (!groupMap.has(gName)) {
+        groupMap.set(gName, []);
+      }
+      groupMap.get(gName).push(addon);
+    });
+
+    return Array.from(groupMap.entries()).map(([groupName, items]) => ({
+      groupName,
+      items,
+    }));
+  }, [food?.addons]);
+
   const displayImage = selectedVariation?.image || food.image || "";
 
   const handleQuantityChange = (newQty) => {
@@ -441,8 +463,8 @@ export const DishDetail = () => {
             )}
 
             {/* 🎯 Add-ons & Extras Section */}
-            {food.addons && food.addons.length > 0 && (
-              <div className="pt-3 space-y-2.5">
+            {groupedFoodAddons && groupedFoodAddons.length > 0 && (
+              <div className="pt-3 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                     Add-ons & Extras (Optional)
@@ -453,43 +475,56 @@ export const DishDetail = () => {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {food.addons.map((addon) => {
-                    const isChecked = selectedAddons.some(
-                      (a) => a.name === addon.name,
-                    );
-                    return (
-                      <button
-                        key={addon.name}
-                        type="button"
-                        onClick={() => toggleAddon(addon)}
-                        className={`p-3 rounded-none border text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left ${
-                          isChecked
-                            ? "bg-primary-50 dark:bg-primary-950/40 border-primary-500 text-primary-900 dark:text-primary-200 shadow-sm"
-                            : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={`w-4 h-4 rounded-none border flex items-center justify-center transition-colors ${
+
+                {groupedFoodAddons.map((group, gIdx) => (
+                  <div key={gIdx} className="space-y-2">
+                    {group.groupName && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+                          {group.groupName}
+                        </span>
+                        <div className="flex-1 h-[1px] bg-neutral-200 dark:bg-neutral-800" />
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {group.items.map((addon) => {
+                        const isChecked = selectedAddons.some(
+                          (a) => a.name === addon.name,
+                        );
+                        return (
+                          <button
+                            key={addon.name}
+                            type="button"
+                            onClick={() => toggleAddon(addon)}
+                            className={`p-3 rounded-none border text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left ${
                               isChecked
-                                ? "bg-primary-500 border-primary-500 text-white"
-                                : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                                ? "bg-primary-50 dark:bg-primary-950/40 border-primary-500 text-primary-900 dark:text-primary-200 shadow-xs"
+                                : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700"
                             }`}
                           >
-                            {isChecked && (
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            )}
-                          </div>
-                          <span>{addon.name}</span>
-                        </div>
-                        <span className="font-mono font-extrabold text-primary-600 dark:text-primary-400">
-                          +৳{Number(addon.price).toFixed(0)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                            <div className="flex items-center gap-2.5 truncate">
+                              <div
+                                className={`w-4 h-4 rounded-none border flex items-center justify-center transition-colors shrink-0 ${
+                                  isChecked
+                                    ? "bg-primary-500 border-primary-500 text-white"
+                                    : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                                }`}
+                              >
+                                {isChecked && (
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                )}
+                              </div>
+                              <span className="truncate">{addon.name}</span>
+                            </div>
+                            <span className="font-mono font-extrabold text-primary-600 dark:text-primary-400 shrink-0 ml-2">
+                              +৳{Number(addon.price).toFixed(0)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 

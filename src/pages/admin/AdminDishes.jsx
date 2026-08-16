@@ -20,6 +20,11 @@ import {
   Gift,
   AlertCircle,
   Tag,
+  Check,
+  CheckSquare,
+  Square,
+  Sparkles,
+  FolderPlus,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -31,6 +36,13 @@ import {
 } from "../../services/foodsService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllCoupons } from "../../services/couponsService";
+import {
+  getAllAddons,
+  createAddon,
+  updateAddon,
+  deleteAddon,
+  seedDefaultAddons,
+} from "../../services/addonsService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
@@ -46,6 +58,19 @@ export const AdminDishes = () => {
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
+  // 🎯 Centralized Add-ons Management States
+  const [centralAddons, setCentralAddons] = useState([]);
+  const [isCentralAddonsModalOpen, setIsCentralAddonsModalOpen] = useState(false);
+  const [isAddonPickerModalOpen, setIsAddonPickerModalOpen] = useState(false);
+  const [selectedPickerAddonNames, setSelectedPickerAddonNames] = useState(new Set());
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [newCentralGroup, setNewCentralGroup] = useState("Extra Cheese");
+  const [customGroupName, setCustomGroupName] = useState("");
+  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
+  const [newCentralName, setNewCentralName] = useState("");
+  const [newCentralPrice, setNewCentralPrice] = useState("");
+  const [isSubmittingCentralAddon, setIsSubmittingCentralAddon] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
@@ -57,7 +82,7 @@ export const AdminDishes = () => {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
-    price: 0,
+    price: "",
     rating: 4.5,
     image: "",
     description: "",
@@ -65,8 +90,8 @@ export const AdminDishes = () => {
     isAdminFeatured: false,
     featuredOrder: 1,
     discountType: "percent",
-    discountPct: 0,
-    discountAmount: 0,
+    discountPct: "",
+    discountAmount: "",
     offerType: "none",
     promoCode: "",
     discountStartDate: "",
@@ -126,13 +151,23 @@ export const AdminDishes = () => {
     });
   };
 
+  const fetchCentralAddons = useCallback(async () => {
+    try {
+      const data = await getAllAddons();
+      setCentralAddons(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading central addons:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
-      .then(([foodsData, branchesData, couponsData]) => {
+    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddons()])
+      .then(([foodsData, branchesData, couponsData, addonsData]) => {
         const loadedFoods = cleanExpiredOffers(foodsData || []);
         setFoods(loadedFoods);
         setBranches(branchesData || []);
         setCoupons(couponsData || []);
+        setCentralAddons(Array.isArray(addonsData) ? addonsData : []);
         setIsLoading(false);
 
         const orderedCats = processCategories(loadedFoods);
@@ -146,12 +181,13 @@ export const AdminDishes = () => {
 
   const syncFromServer = useCallback(
     () =>
-      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons()])
-        .then(([foodsData, branchesData, couponsData]) => {
+      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddons()])
+        .then(([foodsData, branchesData, couponsData, addonsData]) => {
           const loadedFoods = cleanExpiredOffers(foodsData || []);
           setFoods(loadedFoods);
           setBranches(branchesData || []);
           setCoupons(couponsData || []);
+          setCentralAddons(Array.isArray(addonsData) ? addonsData : []);
 
           const orderedCats = processCategories(loadedFoods);
           setSortedCategories(orderedCats);
@@ -163,7 +199,7 @@ export const AdminDishes = () => {
   // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling বন্ধ থাকবে যেন server overwrite না করে
   useVisiblePolling(syncFromServer, {
     intervalMs: 60000,
-    enabled: !isModalOpen && !reorderCooldown,
+    enabled: !isModalOpen && !isCentralAddonsModalOpen && !isAddonPickerModalOpen && !reorderCooldown,
   });
 
   const handleManualRefresh = () => {
@@ -216,13 +252,9 @@ export const AdminDishes = () => {
     }, 300);
   };
 
-  // [SORTING-FIX] Filtered list reorder fix + rollback + cooldown + debounce
-  // আগে filter/search active থাকলে reorder করলে বাকি foods হারিয়ে যেত।
-  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
   const handleFoodReorder = async (reorderedFoods) => {
     const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য আগের state save
 
-    // [SORTING-FIX] Filter/search active থাকলে: reordered items merge করো পুরো list-এ
     const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
     const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
     const merged = [...reorderedFoods, ...untouched];
@@ -264,7 +296,7 @@ export const AdminDishes = () => {
     setFormData({
       name: "",
       category: sortedCategories[0] || "",
-      price: 0,
+      price: "",
       rating: 4.5,
       image: "",
       description: "",
@@ -272,8 +304,8 @@ export const AdminDishes = () => {
       isAdminFeatured: false,
       featuredOrder: 1,
       discountType: "percent",
-      discountPct: 0,
-      discountAmount: 0,
+      discountPct: "",
+      discountAmount: "",
       offerType: "none",
       promoCode: "",
       discountStartDate: "",
@@ -319,7 +351,7 @@ export const AdminDishes = () => {
     setFormData({
       name: food.name || "",
       category: food.category || "",
-      price: food.price || 0,
+      price: food.price !== undefined && food.price !== null ? food.price : "",
       rating: food.rating || 4.5,
       image: food.image || "",
       description: food.description || "",
@@ -327,8 +359,8 @@ export const AdminDishes = () => {
       isAdminFeatured: !!food.isAdminFeatured,
       featuredOrder: food.featuredOrder || 1,
       discountType: food.discountType === "flat" ? "flat" : "percent",
-      discountPct: food.discountPct || 0,
-      discountAmount: food.discountAmount || 0,
+      discountPct: food.discountPct || "",
+      discountAmount: food.discountAmount || "",
       offerType: food.offerType || "none",
       promoCode: food.promoCode || "",
       discountStartDate: formatForDateTimeInput(food.discountStartDate),
@@ -338,12 +370,13 @@ export const AdminDishes = () => {
       variantLabel: food.variantLabel || "Size",
       variations: (food.variations || []).map((v) => ({
         name: v.name || "",
-        price: v.price || 0,
+        price: v.price !== undefined && v.price !== null ? v.price : "",
         image: v.image || "",
       })),
       addons: (food.addons || []).map((a) => ({
         name: a.name || "",
-        price: a.price || 0,
+        price: a.price !== undefined && a.price !== null ? a.price : "",
+        group: a.group || "",
         image: a.image || "",
       })),
     });
@@ -413,7 +446,7 @@ export const AdminDishes = () => {
       ...prev,
       variations: [
         ...prev.variations,
-        { name: "", price: prev.price, image: "" },
+        { name: "", price: "", image: "" },
       ],
     }));
   };
@@ -421,7 +454,14 @@ export const AdminDishes = () => {
   const handleVariationChange = (index, field, val) => {
     setFormData((prev) => {
       const updated = [...prev.variations];
-      updated[index][field] = field === "price" ? parseFloat(val) || 0 : val;
+      updated[index][field] =
+        field === "price"
+          ? val === ""
+            ? ""
+            : isNaN(Number(val))
+            ? 0
+            : Number(val)
+          : val;
       return { ...prev, variations: updated };
     });
   };
@@ -433,13 +473,172 @@ export const AdminDishes = () => {
     }));
   };
 
-  // 🎯 Addon Handlers
+  // 🎯 Centralized Addon Dynamic Groups & Library Handlers
+  const distinctCentralGroups = useMemo(() => {
+    const groups = new Set();
+    centralAddons.forEach((a) => {
+      if (a.group?.trim()) groups.add(a.group.trim());
+    });
+    if (groups.size === 0) {
+      groups.add("Extra Cheese");
+      groups.add("Premium Add-ons");
+    }
+    return Array.from(groups);
+  }, [centralAddons]);
+
+  const handleAddCentralAddon = async (e) => {
+    if (e) e.preventDefault();
+    const name = newCentralName.trim();
+    const priceNum = Number(newCentralPrice);
+    const targetGroup = isCreatingNewGroup
+      ? customGroupName.trim()
+      : newCentralGroup.trim();
+
+    if (!name) {
+      alert("Please provide an add-on name");
+      return;
+    }
+    if (newCentralPrice === "" || isNaN(priceNum) || priceNum < 0) {
+      alert("Please provide a valid price (e.g. 50)");
+      return;
+    }
+    if (!targetGroup) {
+      alert("Please choose or enter a group name");
+      return;
+    }
+
+    setIsSubmittingCentralAddon(true);
+    try {
+      const created = await createAddon({
+        name,
+        price: priceNum,
+        group: targetGroup,
+        isAvailable: true,
+      });
+      setCentralAddons((prev) => [...prev, created]);
+      setNewCentralName("");
+      setNewCentralPrice("");
+      if (isCreatingNewGroup) {
+        setIsCreatingNewGroup(false);
+        setNewCentralGroup(targetGroup);
+        setCustomGroupName("");
+      }
+    } catch (err) {
+      alert("Failed to add to central addons: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmittingCentralAddon(false);
+    }
+  };
+
+  const handleDeleteCentralAddon = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this add-on from the central library?")) return;
+    try {
+      await deleteAddon(id);
+      setCentralAddons((prev) => prev.filter((a) => (a._id || a.id) !== id));
+    } catch (err) {
+      alert("Failed to delete addon: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleSeedDefaults = async () => {
+    if (!window.confirm("Do you want to populate standard Barcode Burger Add-ons (Extra Cheese, Premium Add-ons)?")) return;
+    try {
+      const seeded = await seedDefaultAddons();
+      setCentralAddons(Array.isArray(seeded) ? seeded : []);
+    } catch (err) {
+      alert("Failed to seed defaults: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // 🎯 1-Click Add-on Picker Handlers (for Dish Form)
+  const openAddonPicker = () => {
+    const currentNames = new Set(
+      (formData.addons || []).map((a) => a.name?.trim().toLowerCase()).filter(Boolean)
+    );
+    setSelectedPickerAddonNames(currentNames);
+    setPickerSearch("");
+    setIsAddonPickerModalOpen(true);
+  };
+
+  const togglePickerAddon = (addon) => {
+    const key = addon.name.trim().toLowerCase();
+    setSelectedPickerAddonNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const togglePickerGroup = (groupName, isAllSelected) => {
+    const groupItems = centralAddons.filter(
+      (a) => (a.group || "General Add-ons").toLowerCase() === groupName.toLowerCase()
+    );
+    setSelectedPickerAddonNames((prev) => {
+      const next = new Set(prev);
+      groupItems.forEach((item) => {
+        const key = item.name.trim().toLowerCase();
+        if (isAllSelected) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+      });
+      return next;
+    });
+  };
+
+  const handleApplyPickerAddons = () => {
+    const chosenItems = centralAddons.filter((a) =>
+      selectedPickerAddonNames.has(a.name?.trim().toLowerCase())
+    );
+
+    setFormData((prev) => {
+      const existingMap = new Map(
+        (prev.addons || []).map((a) => [a.name?.trim().toLowerCase(), a])
+      );
+
+      const mergedAddons = chosenItems.map((chosen) => {
+        const key = chosen.name.trim().toLowerCase();
+        if (existingMap.has(key)) {
+          return existingMap.get(key);
+        }
+        return {
+          name: chosen.name.trim(),
+          price: chosen.price,
+          group: chosen.group || "",
+          image: chosen.image || "",
+        };
+      });
+
+      // Also preserve any custom manual add-ons not in central library
+      const centralKeys = new Set(centralAddons.map((c) => c.name.trim().toLowerCase()));
+      (prev.addons || []).forEach((existing) => {
+        const key = existing.name?.trim().toLowerCase();
+        if (key && !centralKeys.has(key) && !existingMap.has(key)) {
+          mergedAddons.push(existing);
+        }
+      });
+
+      return {
+        ...prev,
+        addons: mergedAddons,
+      };
+    });
+
+    setIsAddonPickerModalOpen(false);
+  };
+
+  // 🎯 Dish Form Direct Addon Handlers
   const handleAddAddon = () => {
     setFormData((prev) => ({
       ...prev,
       addons: [
         ...(prev.addons || []),
-        { name: "", price: 0, image: "" },
+        { name: "", price: "", group: "", image: "" },
       ],
     }));
   };
@@ -447,7 +646,17 @@ export const AdminDishes = () => {
   const handleAddonChange = (index, field, val) => {
     setFormData((prev) => {
       const updated = [...(prev.addons || [])];
-      updated[index][field] = field === "price" ? parseFloat(val) || 0 : val;
+      updated[index] = {
+        ...updated[index],
+        [field]:
+          field === "price"
+            ? val === ""
+              ? ""
+              : isNaN(Number(val))
+              ? 0
+              : Number(val)
+            : val,
+      };
       return { ...prev, addons: updated };
     });
   };
@@ -483,18 +692,25 @@ export const AdminDishes = () => {
         .filter((a) => a.name && a.name.trim())
         .map((a) => ({
           name: a.name.trim(),
-          price: parseFloat(a.price) || 0,
+          price: Number(a.price) || 0,
+          group: a.group ? a.group.trim() : "",
           image: a.image || "",
         }));
 
       const cleanedFormData = {
         ...formData,
+        price: Number(formData.price) || 0,
         category: categoryName,
         categoryOrder,
         variantLabel: formData.variantLabel?.trim(),
         branchIds: formData.branchIds.map(Number),
         branchPrices: parsedBranchPrices,
         addons: cleanedAddons,
+        variations: (formData.variations || []).map((v) => ({
+          name: v.name.trim(),
+          price: Number(v.price) || 0,
+          image: v.image || "",
+        })),
         discountPct:
           formData.offerType !== "none" || formData.promoCode
             ? 0
@@ -571,7 +787,18 @@ export const AdminDishes = () => {
             Total {foods.length} dishes registered
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => {
+              fetchCentralAddons();
+              setIsCentralAddonsModalOpen(true);
+            }}
+            title="Manage Centralized Add-ons Library & Groups"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all cursor-pointer shadow-xs"
+          >
+            <Layers className="w-4 h-4 text-primary-500" />
+            <span className="hidden sm:inline">Central</span> Add-ons ({centralAddons.length})
+          </button>
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
@@ -1083,15 +1310,22 @@ export const AdminDishes = () => {
                     <input
                       type="number"
                       step="0.01"
+                      min="0"
                       required
-                      value={formData.price}
+                      placeholder="e.g. 290"
+                      value={formData.price !== undefined && formData.price !== null ? formData.price : ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          price: parseFloat(e.target.value) || 0,
+                          price:
+                            e.target.value === ""
+                              ? ""
+                              : isNaN(Number(e.target.value))
+                              ? 0
+                              : Number(e.target.value),
                         })
                       }
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
                     />
                   </div>
                 </div>
@@ -1434,52 +1668,73 @@ export const AdminDishes = () => {
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
-                        Add-ons & Extras (Optional Customizations)
+                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider block">
+                        Add-ons & Extras (Customizations)
                       </label>
                       <span className="text-[11px] text-neutral-400">
-                        e.g. Extra Cheese (+৳50), Extra Patty (+৳120), Garlic Dip (+৳30)
+                        Attach extra cheese, premium toppings, or sides to this dish.
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddAddon}
-                      className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg cursor-pointer transition-all active:scale-95 shadow-sm"
-                    >
-                      + Add Add-on
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={openAddonPicker}
+                        className="text-xs px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-xs flex items-center gap-1.5"
+                        title="Pick from centralized library in 1 click"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> ⚡ Pick Central Add-ons
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddAddon}
+                        className="text-xs px-3 py-1.5 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold rounded-xl cursor-pointer transition-all active:scale-95 border border-neutral-200 dark:border-neutral-700 flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Custom
+                      </button>
+                    </div>
                   </div>
 
                   {formData.addons && formData.addons.length > 0 ? (
-                    <div className="space-y-2.5 pt-1">
+                    <div className="space-y-2 pt-1">
                       {formData.addons.map((a, index) => (
                         <div
                           key={index}
-                          className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm"
+                          className="flex flex-col sm:flex-row gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-xs items-start sm:items-center"
                         >
-                          <div className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              placeholder="Add-on name (e.g. Extra Cheese)"
-                              value={a.name}
-                              onChange={(e) =>
-                                handleAddonChange(
-                                  index,
-                                  "name",
-                                  e.target.value,
-                                )
-                              }
-                              className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
-                              required
-                            />
-                            <div className="relative w-32">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">৳</span>
+                          {a.group && (
+                            <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[10px] uppercase tracking-wider shrink-0">
+                              {a.group}
+                            </span>
+                          )}
+                          <input
+                            type="text"
+                            placeholder="Add-on name (e.g. Mozzarella Cheese)"
+                            value={a.name}
+                            onChange={(e) =>
+                              handleAddonChange(
+                                index,
+                                "name",
+                                e.target.value,
+                              )
+                            }
+                            className="flex-1 w-full sm:w-auto px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none font-medium"
+                            required
+                          />
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative w-32 shrink-0">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
+                                ৳
+                              </span>
                               <input
                                 type="number"
                                 step="1"
                                 min="0"
-                                placeholder="Price"
-                                value={a.price}
+                                placeholder="e.g. 50"
+                                value={
+                                  a.price !== undefined && a.price !== null
+                                    ? a.price
+                                    : ""
+                                }
                                 onChange={(e) =>
                                   handleAddonChange(
                                     index,
@@ -1487,25 +1742,25 @@ export const AdminDishes = () => {
                                     e.target.value,
                                   )
                                 }
-                                className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                                className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
                                 required
                               />
                             </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveAddon(index)}
-                              className="p-1.5 text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                              className="p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/30 rounded-lg transition-colors cursor-pointer shrink-0"
                               title="Remove Add-on"
                             >
-                              ✕
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="py-3 px-2 text-center text-xs text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/40 dark:bg-neutral-900/40">
-                      No add-ons added yet. Click <span className="font-semibold text-neutral-600 dark:text-neutral-300">"+ Add Add-on"</span> to allow customers to add extra items.
+                    <div className="py-5 px-3 text-center text-xs text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/40 dark:bg-neutral-900/40">
+                      No add-ons attached yet. Click <span className="font-bold text-primary-500 cursor-pointer" onClick={openAddonPicker}>"⚡ Pick Central Add-ons"</span> to attach cheese & premium toppings in 1 click!
                     </div>
                   )}
                 </div>
@@ -1553,22 +1808,410 @@ export const AdminDishes = () => {
                   </label>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
+                <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border text-neutral-600 text-sm font-semibold cursor-pointer"
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm font-semibold cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold cursor-pointer hover:bg-primary-600 shadow-md shadow-primary-500/20"
                   >
                     {editingFood ? "Save Changes" : "Create Dish"}
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 1-Click Central Addon Picker Modal */}
+      <AnimatePresence>
+        {isAddonPickerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <div>
+                  <h2 className="text-lg font-black text-neutral-800 dark:text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary-500" />
+                    Pick Add-ons from Central Library
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Select add-on groups or items to instantly attach to this dish.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddonPickerModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="p-4 border-b border-neutral-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-900">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <input
+                    type="text"
+                    placeholder="Search add-on name..."
+                    value={pickerSearch}
+                    onChange={(e) => setPickerSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Body: Grouped Addons */}
+              <div className="p-5 overflow-y-auto space-y-6 flex-1">
+                {centralAddons.length === 0 ? (
+                  <div className="py-12 text-center space-y-3">
+                    <Layers className="w-10 h-10 text-neutral-400 mx-auto opacity-50" />
+                    <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
+                      No central add-ons found in library.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSeedDefaults}
+                      className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs cursor-pointer"
+                    >
+                      Populate Standard Burger Add-ons
+                    </button>
+                  </div>
+                ) : (
+                  distinctCentralGroups.map((groupName) => {
+                    const groupItems = centralAddons.filter((a) => {
+                      const matchesGroup =
+                        (a.group || "General Add-ons").toLowerCase() ===
+                        groupName.toLowerCase();
+                      const matchesSearch =
+                        !pickerSearch ||
+                        a.name
+                          ?.toLowerCase()
+                          .includes(pickerSearch.toLowerCase());
+                      return matchesGroup && matchesSearch;
+                    });
+
+                    if (groupItems.length === 0) return null;
+
+                    const allGroupKeys = groupItems.map((i) =>
+                      i.name.trim().toLowerCase(),
+                    );
+                    const selectedCountInGroup = allGroupKeys.filter((k) =>
+                      selectedPickerAddonNames.has(k),
+                    ).length;
+                    const isAllGroupSelected =
+                      selectedCountInGroup === allGroupKeys.length &&
+                      allGroupKeys.length > 0;
+
+                    return (
+                      <div
+                        key={groupName}
+                        className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-xs uppercase tracking-wider text-neutral-800 dark:text-white">
+                              {groupName}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[10px] font-bold">
+                              {selectedCountInGroup}/{groupItems.length}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              togglePickerGroup(groupName, isAllGroupSelected)
+                            }
+                            className="text-[11px] font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer"
+                          >
+                            {isAllGroupSelected ? "Deselect All" : "Select All"}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {groupItems.map((addon) => {
+                            const isChecked = selectedPickerAddonNames.has(
+                              addon.name.trim().toLowerCase(),
+                            );
+                            return (
+                              <button
+                                key={addon._id || addon.id || addon.name}
+                                type="button"
+                                onClick={() => togglePickerAddon(addon)}
+                                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer text-left ${
+                                  isChecked
+                                    ? "bg-primary-50 dark:bg-primary-955/30 border-primary-500 text-neutral-900 dark:text-white shadow-xs"
+                                    : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  {isChecked ? (
+                                    <CheckSquare className="w-4 h-4 text-primary-500 shrink-0" />
+                                  ) : (
+                                    <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
+                                  )}
+                                  <span className="truncate">{addon.name}</span>
+                                </div>
+                                <span className="font-bold text-primary-500 shrink-0 ml-2">
+                                  ৳{addon.price}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <span className="text-xs font-bold text-neutral-500">
+                  {selectedPickerAddonNames.size} add-ons selected
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddonPickerModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplyPickerAddons}
+                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" /> Apply to Dish ({selectedPickerAddonNames.size})
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 Central Addons Management Modal */}
+      <AnimatePresence>
+        {isCentralAddonsModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <div>
+                  <h2 className="text-lg font-black text-neutral-800 dark:text-white flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-primary-500" />
+                    Centralized Add-ons & Dynamic Groups
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Create reusable add-on items once and attach them to any burger or dish with one click.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCentralAddonsModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-6 flex-1">
+                {/* Create Addon Form */}
+                <form
+                  onSubmit={handleAddCentralAddon}
+                  className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/60 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-neutral-700 dark:text-neutral-200 flex items-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5 text-primary-500" /> Add New Central Add-on
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingNewGroup(!isCreatingNewGroup)}
+                      className="text-[11px] font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <FolderPlus className="w-3 h-3" />
+                      {isCreatingNewGroup ? "Select Existing Group" : "+ Create New Group"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Group Selection */}
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
+                        Group / Category
+                      </label>
+                      {isCreatingNewGroup ? (
+                        <input
+                          type="text"
+                          placeholder="e.g. Dipping Sauces"
+                          value={customGroupName}
+                          onChange={(e) => setCustomGroupName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold"
+                          required
+                        />
+                      ) : (
+                        <select
+                          value={newCentralGroup}
+                          onChange={(e) => setNewCentralGroup(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold cursor-pointer"
+                        >
+                          {distinctCentralGroups.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Addon Name */}
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
+                        Add-on Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Mozzarella Cheese"
+                        value={newCentralName}
+                        onChange={(e) => setNewCentralName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-medium"
+                        required
+                      />
+                    </div>
+
+                    {/* Addon Price */}
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
+                        Price (৳)
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
+                            ৳
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="e.g. 50"
+                            value={newCentralPrice}
+                            onChange={(e) => setNewCentralPrice(e.target.value)}
+                            className="w-full pl-6 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
+                            required
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingCentralAddon}
+                          className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Existing Groups & Items List */}
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
+                      Central Add-ons Library ({centralAddons.length})
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={handleSeedDefaults}
+                      className="text-[11px] font-bold text-neutral-500 hover:text-primary-500 hover:underline cursor-pointer"
+                    >
+                      Restore Barcode Burger Defaults
+                    </button>
+                  </div>
+
+                  {distinctCentralGroups.map((groupName) => {
+                    const items = centralAddons.filter(
+                      (a) =>
+                        (a.group || "General Add-ons").toLowerCase() ===
+                        groupName.toLowerCase(),
+                    );
+                    if (items.length === 0) return null;
+
+                    return (
+                      <div
+                        key={groupName}
+                        className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-3 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-neutral-800 dark:text-white">
+                            {groupName}
+                          </span>
+                          <span className="text-[10px] font-bold text-neutral-400">
+                            {items.length} items
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {items.map((item) => (
+                            <div
+                              key={item._id || item.id || item.name}
+                              className="p-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40 flex items-center justify-between gap-2"
+                            >
+                              <div className="truncate">
+                                <span className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+                                  {item.name}
+                                </span>
+                                <span className="block text-[11px] font-bold text-primary-500">
+                                  ৳{item.price}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDeleteCentralAddon(item._id || item.id)
+                                }
+                                className="p-1 text-neutral-400 hover:text-rose-500 rounded transition-colors cursor-pointer"
+                                title="Delete from central library"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-end shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <button
+                  type="button"
+                  onClick={() => setIsCentralAddonsModalOpen(false)}
+                  className="px-5 py-2 rounded-xl bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-900 text-xs font-bold cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
