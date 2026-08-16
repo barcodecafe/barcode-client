@@ -78,10 +78,10 @@ export const AdminRidersFleet = () => {
       setConfirmingRiderId(riderId);
       await confirmRiderCashSettlement(riderId, dateKey);
       socket.emit("rider_cash_settled", { riderId, riderName, dateKey });
-      toast.success(`Cash settlement confirmed for ${riderName}!`);
+      toast.success(`✅ Cash settlement verified & confirmed for ${riderName} (${formatDateKey(dateKey)})!`);
       fetchOrdersAndFleet();
     } catch (err) {
-      toast.error("Settlement failed: " + (err.response?.data?.message || err.message));
+      toast.error("❌ Settlement failed: " + (err.response?.data?.message || err.message));
     } finally {
       setConfirmingRiderId(null);
     }
@@ -97,7 +97,6 @@ export const AdminRidersFleet = () => {
 
   return (
     <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto">
-      <Toaster />
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 flex items-center gap-2">

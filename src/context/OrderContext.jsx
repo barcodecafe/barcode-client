@@ -36,8 +36,10 @@ export const OrderProvider = ({ children }) => {
 
   const role = String(user?.role || '').toLowerCase();
   const canReadOrders = Boolean(user) && ORDER_ROLES.includes(role);
+  const isAdmin = ['admin', 'super_admin', 'superadmin'].includes(role);
 
   const playNotificationSound = () => {
+    if (!isAdmin) return;
     try {
       const audio = new Audio('/notification.mp3');
       audio.volume = 1.0;

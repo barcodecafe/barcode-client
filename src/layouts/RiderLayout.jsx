@@ -73,6 +73,7 @@ export const RiderLayout = () => {
 
   const audioCtxRef = useRef(null);
   const ordersRef = useRef([]);
+  const notifiedOrdersRef = useRef(new Set());
 
   useEffect(() => {
     const unlockAudioContext = () => {
@@ -151,6 +152,14 @@ export const RiderLayout = () => {
 
       ordersRef.current = assigned;
 
+      // প্রথম লোডে থাকা অর্ডারগুলো সেভ রাখা যাতে রিলোডে অযথা এলার্ম না বাজে
+      if (notifiedOrdersRef.current.size === 0) {
+        assigned.forEach((o) => {
+          const id = String(o._id || o.id);
+          if (id) notifiedOrdersRef.current.add(id);
+        });
+      }
+
       const pendingAcceptance = assigned.filter((o) => {
         return o.riderAcceptStatus === "pending" || !o.riderAcceptStatus;
       });
@@ -169,87 +178,103 @@ export const RiderLayout = () => {
       Notification.requestPermission();
     }
 
-    // The server broadcasts every order event to every client, and one admin
-    // action emits several in a row (assign-rider sends three). Refetching
-    // inside the handler meant three or four `GET /orders` per click, in every
-    // rider's browser at once. The refetch is now coalesced into one call per
-    // burst; the notification logic below still runs per event, since it reads
-    // the payload rather than the server.
     let refetchTimer = null;
     const scheduleRefetch = () => {
       clearTimeout(refetchTimer);
-      refetchTimer = setTimeout(fetchRiderPendingOrders, 600);
+      refetchTimer = setTimeout(fetchRiderPendingOrders, 500);
     };
 
-    const handleRiderOrderUpdate = (data) => {
+    // 🚴 ১. শুধুমাত্র নতুন ডেলিভারি অ্যাসাইন হলেই এলার্ম ও পপআপ আসবে
+    const handleNewOrderAssigned = (data) => {
       scheduleRefetch();
 
-      const orderId = data?.id || data?._id || data?.order?.id || data?.order?._id || "NEW";
-      const existingOrder = ordersRef.current.find((o) => String(o._id || o.id) === String(orderId));
+      const incomingOrder = data?.order || data;
+      if (!incomingOrder) return;
 
-      // 🎯 FIX: ইভেন্টটি এই রাইডারের কি না তা চেক করা
-      const isForMe = isAssignedToMe(data, user) || (existingOrder ? true : false);
+      const isForMe = isAssignedToMe(incomingOrder, user);
+      if (!isForMe) return;
 
-      if (isForMe) {
-        const acceptStatus = data?.riderAcceptStatus || data?.order?.riderAcceptStatus || existingOrder?.riderAcceptStatus;
-        const orderStatus = data?.status || data?.order?.status || existingOrder?.status;
-        
-        const isAlreadyProcessed = orderStatus === "Delivered" || orderStatus === "Out for Delivery" || orderStatus === "Rejected";
-        const isAlreadyAccepted = acceptStatus === "accepted";
+      const rawId = incomingOrder.id || incomingOrder._id || incomingOrder.orderId;
+      const orderId = rawId ? String(rawId) : "NEW";
 
-        // শুধুমাত্র নতুন অ্যাসাইন হওয়া অর্ডারের ক্ষেত্রে পপআপ আসবে
-        if (!isAlreadyAccepted && !isAlreadyProcessed) {
-          playLoudNotificationChime();
+      // ইতিমধ্যে নোটিফাই করা হয়ে থাকলে বা এক্সেপ্টেড/ডেলিভার্ড হলে আর এলার্ম বাজবে না
+      if (orderId !== "NEW" && notifiedOrdersRef.current.has(orderId)) {
+        return;
+      }
 
-          const totalAmount = data?.total || data?.totalAmount || data?.order?.total || existingOrder?.total || 0;
-          const customerName = data?.user?.name || data?.customerName || data?.order?.user?.name || existingOrder?.user?.name || "Customer";
+      const acceptStatus = incomingOrder.riderAcceptStatus;
+      const orderStatus = incomingOrder.status;
+      if (acceptStatus === "accepted" || orderStatus === "Delivered" || orderStatus === "Rejected") {
+        return;
+      }
 
-          setToastNotification({
-            id: orderId,
-            total: totalAmount,
-            customer: customerName,
-          });
+      if (orderId !== "NEW") {
+        notifiedOrdersRef.current.add(orderId);
+      }
 
-          setTimeout(() => {
-            setToastNotification((prev) => (prev?.id === orderId ? null : prev));
-          }, 7000);
+      playLoudNotificationChime();
 
-          if ("Notification" in window && Notification.permission === "granted") {
-            const desktopNotif = new Notification(
-              "🚴 New Delivery Assigned!",
-              {
-                body: orderId !== "NEW"
-                  ? `Order ID: #${orderId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`
-                  : "A new delivery has been assigned to you!",
-                icon: settings?.logoLight || resB,
-                requireInteraction: true,
-              }
-            );
+      const totalAmount = incomingOrder.total || incomingOrder.totalAmount || 0;
+      const customerName = incomingOrder.user?.name || incomingOrder.customerName || "Customer";
 
-            desktopNotif.onclick = () => {
-              window.focus();
-              navigate("/rider/orders");
-              desktopNotif.close();
-            };
+      setToastNotification({
+        id: orderId,
+        total: totalAmount,
+        customer: customerName,
+      });
+
+      setTimeout(() => {
+        setToastNotification((prev) => (prev?.id === orderId ? null : prev));
+      }, 7000);
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        const displayId = orderId !== "NEW" ? `#${orderId.slice(-6).toUpperCase()}` : "";
+        const desktopNotif = new Notification(
+          "🚴 New Delivery Assigned!",
+          {
+            body: `Order ${displayId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`,
+            icon: settings?.logoLight || resB,
+            requireInteraction: true,
           }
-        }
+        );
+
+        desktopNotif.onclick = () => {
+          window.focus();
+          navigate("/rider/orders");
+          desktopNotif.close();
+        };
       }
     };
 
-    socket.on("rider_order_assigned", handleRiderOrderUpdate);
-    socket.on("order_assigned", handleRiderOrderUpdate);
-    socket.on("order_updated", handleRiderOrderUpdate);
-    socket.on("order_status_updated", handleRiderOrderUpdate);
+    // 🔄 ২. স্ট্যাটাস পরিবর্তন হলে নিঃশব্দে ডাটা রিফ্রেশ হবে (কোনো নতুন অর্ডার এলার্ম বাজবে না)
+    const handleSilentSync = () => {
+      scheduleRefetch();
+    };
 
-    window.addEventListener("order_updated", handleRiderOrderUpdate);
+    // 💰 ৩. এডমিন ক্যাশ সেটেল করলে নোটিফিকেশন
+    const handleCashSettled = (payload) => {
+      scheduleRefetch();
+      const targetRiderId = payload?.riderId;
+      if (!targetRiderId || String(targetRiderId) === String(user?.id || user?._id)) {
+        toast.success(`💰 Admin confirmed your cash settlement for ${payload?.date || "today"}!`, { duration: 6000 });
+      }
+    };
+
+    socket.on("rider_order_assigned", handleNewOrderAssigned);
+    socket.on("order_assigned", handleNewOrderAssigned);
+    socket.on("order_updated", handleSilentSync);
+    socket.on("order_status_updated", handleSilentSync);
+    socket.on("rider_order_updated", handleSilentSync);
+    socket.on("rider_cash_settled", handleCashSettled);
 
     return () => {
       clearTimeout(refetchTimer);
-      socket.off("rider_order_assigned", handleRiderOrderUpdate);
-      socket.off("order_assigned", handleRiderOrderUpdate);
-      socket.off("order_updated", handleRiderOrderUpdate);
-      socket.off("order_status_updated", handleRiderOrderUpdate);
-      window.removeEventListener("order_updated", handleRiderOrderUpdate);
+      socket.off("rider_order_assigned", handleNewOrderAssigned);
+      socket.off("order_assigned", handleNewOrderAssigned);
+      socket.off("order_updated", handleSilentSync);
+      socket.off("order_status_updated", handleSilentSync);
+      socket.off("rider_order_updated", handleSilentSync);
+      socket.off("rider_cash_settled", handleCashSettled);
     };
   }, [user, navigate, settings?.logoLight]);
 

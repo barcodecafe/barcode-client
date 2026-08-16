@@ -93,42 +93,60 @@ export const AdminLayout = () => {
         console.warn("Notification sound error:", err);
       }
 
-      toast(
+      toast.custom(
         (t) => (
-          <div 
+          <div
             onClick={() => {
               navigate('/admin/fleet-overview');
               toast.dismiss(t.id);
             }}
-            className="flex items-start gap-3 cursor-pointer select-none"
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full bg-white dark:bg-neutral-900 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black/5 dark:ring-white/10 border-2 border-emerald-500 overflow-hidden cursor-pointer transition-all hover:scale-[1.02]`}
           >
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 font-bold text-lg shrink-0">
-              💰
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-extrabold text-xs text-neutral-900 dark:text-white">
-                  Cash Settlement Submitted!
-                </p>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  View
-                </span>
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="shrink-0 pt-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+                    💰
+                  </div>
+                </div>
+                <div className="ml-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Cash Handover Submitted
+                    </p>
+                    <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
+                      Just now
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-bold text-neutral-900 dark:text-white">
+                    Rider <span className="text-emerald-600 dark:text-emerald-400">{riderName}</span> submitted collected cash!
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-300">
+                    Settlement date: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{date}</span>. Click to verify & confirm.
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-0.5">
-                Rider <strong className="text-neutral-900 dark:text-white">{riderName}</strong> requested handover verification for <strong>{date}</strong>.
-              </p>
+            </div>
+            <div className="flex border-l border-neutral-200 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/admin/fleet-overview');
+                  toast.dismiss(t.id);
+                }}
+                className="w-full border border-transparent rounded-none rounded-r-2xl px-4 py-2 flex items-center justify-center text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors cursor-pointer"
+              >
+                View
+              </button>
             </div>
           </div>
         ),
         {
-          duration: 9000,
-          style: {
-            borderRadius: "16px",
-            background: "#ffffff",
-            color: "#1f2937",
-            boxShadow: "0 15px 30px -5px rgba(0, 0, 0, 0.15)",
-            border: "1px solid #10b981",
-          },
+          duration: 10000,
+          id: `cash-handover-${payload?.riderId || 'sub'}-${Date.now()}`,
         }
       );
     };

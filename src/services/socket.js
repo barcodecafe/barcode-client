@@ -20,7 +20,12 @@ SOCKET_URL = SOCKET_URL.replace(/\/api\/?$/, '');
 // ৪. Socket Client তৈরি
 export const socket = io(SOCKET_URL, {
   autoConnect: true,
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
   auth: (cb) => {
     // apiClient.js এর মতো অটোমেটিক authToken পাঠানো
     const token = localStorage.getItem('authToken');

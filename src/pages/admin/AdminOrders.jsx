@@ -443,13 +443,8 @@ export const AdminOrders = () => {
       window.dispatchEvent(new CustomEvent("order_updated"));
     };
 
-    const handleRiderCashSubmitted = (payload) => {
-      const riderName = payload?.riderName || "A rider";
-      const date = payload?.date || "today";
-      toast.success(
-        `💰 Settlement Request: Rider ${riderName} submitted daily cash collection for ${date}.`,
-        { duration: 8000 }
-      );
+    const handleRiderCashSubmitted = () => {
+      fetchOrdersAndFleet();
     };
 
     const handleRiderUpdated = (updatedRider) => {
@@ -1204,7 +1199,6 @@ export const AdminOrders = () => {
 
   return (
     <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-6">
-      <Toaster />
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>

@@ -72,7 +72,14 @@ export const AppRoutes = () => {
             <OrderProvider>
               <ScrollToTop />
               <NormalizePath />
-              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+              <Toaster 
+                position="top-right" 
+                containerStyle={{ zIndex: 999999 }}
+                toastOptions={{ 
+                  duration: 4000,
+                  style: { zIndex: 999999 }
+                }} 
+              />
               <Routes>
                 {/* Public / User Routes */}
                 <Route path="/" element={<RootLayout />}>

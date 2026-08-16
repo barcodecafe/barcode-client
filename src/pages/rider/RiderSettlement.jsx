@@ -81,7 +81,7 @@ export const RiderSettlement = () => {
     e.stopPropagation();
     const label = formatDateKey(dateKey);
     const confirmSubmit = window.confirm(
-      `Are you sure you want to mark all collected cash as submitted for ${label}?`
+      `Are you sure you want to submit all collected cash to Admin for ${label}?`
     );
     if (!confirmSubmit) return;
 
@@ -90,12 +90,12 @@ export const RiderSettlement = () => {
       await submitRiderDailyCash(dateKey);
       
       socket.emit("rider_cash_submitted", {
-        riderId: user?.id,
+        riderId: user?._id || user?.id,
         riderName: user?.name || "Rider",
         date: label
       });
 
-      toast.success(`Cash submission request sent to Admin for ${label}!`);
+      toast.success(`💰 Cash handover request submitted for ${label}! Awaiting admin confirmation.`);
       fetchRiderOrders();
     } catch (err) {
       toast.error("Failed to submit cash: " + (err.response?.data?.message || err.message));
