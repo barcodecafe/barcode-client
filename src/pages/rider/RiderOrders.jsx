@@ -59,12 +59,13 @@ export const RiderOrders = () => {
     const uId = String(user.id || user._id || "").trim();
     const uName = String(user.name || "").trim().toLowerCase();
 
-    const targetOrder = orderData.order || orderData;
+    const targetOrder = orderData?.order || orderData;
+    if (!targetOrder || typeof targetOrder !== 'object') return false;
 
     const oId1 = String(targetOrder.riderId || "").trim();
     const oId2 = String(targetOrder.rider?._id || "").trim();
     const oId3 = String(targetOrder.rider?.id || "").trim();
-    const oId4 = String(targetOrder.rider || "").trim(); 
+    const oId4 = typeof targetOrder.rider === 'string' ? targetOrder.rider.trim() : ""; 
 
     const oName1 = String(targetOrder.riderName || "").trim().toLowerCase();
     const oName2 = String(targetOrder.rider?.name || "").trim().toLowerCase();
@@ -94,10 +95,6 @@ export const RiderOrders = () => {
     fetchRiderOrders();
   }, [fetchRiderOrders]);
 
-  // This screen is driven by the socket handlers below; the poll is only a
-  // safety net for a dropped connection, so it does not need to run every four
-  // seconds — and it must not run at all in a hidden tab, which is where the
-  // old interval quietly burned through the server's request budget.
   useVisiblePolling(fetchRiderOrders, {
     intervalMs: 20000,
     enabled: Boolean(user),
@@ -111,19 +108,20 @@ export const RiderOrders = () => {
       
       const isMyOrder = isAssignedToMe(incomingOrder, user);
       const isCompleted = incomingOrder.status === "Delivered" || incomingOrder.status === "Rejected";
-      const targetId = incomingOrder.id || incomingOrder._id || incomingOrder.orderId;
+      const targetId = String(incomingOrder.id || incomingOrder._id || incomingOrder.orderId || "");
+      if (!targetId) return;
       
       let needsFullFetch = false;
 
       setOrders((prev) => {
-        const exists = prev.some((o) => (o.id || o._id) === targetId);
+        const exists = prev.some((o) => String(o.id || o._id) === targetId);
 
         if (isMyOrder && !isCompleted) {
           if (exists) {
-            return prev.map((o) => (o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o);
+            return prev.map((o) => String(o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o);
           }
           needsFullFetch = true;
-          return [{ ...incomingOrder, id: incomingOrder.id || incomingOrder.orderId, createdAt: incomingOrder.createdAt || new Date().toISOString() }, ...prev];
+          return [{ ...incomingOrder, id: incomingOrder.id || incomingOrder.orderId || targetId, createdAt: incomingOrder.createdAt || new Date().toISOString() }, ...prev];
         } 
         
         const payloadKnowsRider =
@@ -133,7 +131,7 @@ export const RiderOrders = () => {
 
         if (!payloadKnowsRider && !isCompleted) return prev;
 
-        return prev.filter((o) => (o.id || o._id) !== targetId);
+        return prev.filter((o) => String(o.id || o._id) !== targetId);
       });
       
       if (needsFullFetch) {
@@ -164,15 +162,25 @@ export const RiderOrders = () => {
 
   const handleAccept = async (orderId) => {
     try {
-      setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" } : o));
-      
-      if (typeof acceptRiderOrder === "function") {
-         await acceptRiderOrder(orderId);
-      }
-      await updateOrderStatus(orderId, "Preparing");
-      
-      socket.emit("order_updated", { id: orderId, riderAcceptStatus: "accepted", status: "Preparing" });
-      socket.emit("order_status_updated", { id: orderId, status: "Preparing" });
+      setOrders((prev) =>
+        prev.map((o) =>
+          String(o._id || o.id) === String(orderId)
+            ? { ...o, riderAcceptStatus: "accepted", status: "Preparing" }
+            : o
+        )
+      );
+
+      await acceptRiderOrder(orderId);
+
+      socket.emit("order_updated", {
+        id: orderId,
+        riderAcceptStatus: "accepted",
+        status: "Preparing",
+      });
+      socket.emit("order_status_updated", {
+        id: orderId,
+        status: "Preparing",
+      });
       toast.success("Delivery accepted! Kitchen is preparing the order.");
     } catch (err) {
       toast.error("Failed to accept order: " + (err.response?.data?.message || err.message));
@@ -182,14 +190,10 @@ export const RiderOrders = () => {
 
   const handleReject = async (orderId) => {
     try {
-      setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
-      
-      if (typeof rejectRiderOrder === "function") {
-         await rejectRiderOrder(orderId);
-      } else {
-         await updateOrderStatus(orderId, "Rejected");
-      }
-      
+      setOrders((prev) => prev.filter((o) => String(o._id || o.id) !== String(orderId)));
+
+      await rejectRiderOrder(orderId);
+
       socket.emit("order_updated", { id: orderId, riderAcceptStatus: "rejected" });
       toast.success("Order rejected. Returning to fleet pool.");
     } catch (err) {
@@ -201,11 +205,15 @@ export const RiderOrders = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       if (newStatus === "Delivered" || newStatus === "Rejected") {
-         setOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
+        setOrders((prev) => prev.filter((o) => String(o._id || o.id) !== String(orderId)));
       } else {
-         setOrders((prev) => prev.map((o) => (o._id || o.id) === orderId ? { ...o, status: newStatus } : o));
+        setOrders((prev) =>
+          prev.map((o) =>
+            String(o._id || o.id) === String(orderId) ? { ...o, status: newStatus } : o
+          )
+        );
       }
-      
+
       await updateOrderStatus(orderId, newStatus);
       socket.emit("order_status_updated", { id: orderId, status: newStatus });
       toast.success(`Status updated to ${newStatus}`);
@@ -277,17 +285,18 @@ export const RiderOrders = () => {
             ) : (
               <div className="space-y-4">
                 {orders.map((ord) => {
-                  const safeOrderId = ord._id || ord.id || ord.orderId;
+                  const safeOrderId = String(ord._id || ord.id || ord.orderId || "");
+                  const shortDisplayId = safeOrderId ? safeOrderId.slice(-6).toUpperCase() : "N/A";
 
                   return (
                     <div
-                      key={safeOrderId}
+                      key={safeOrderId || Math.random()}
                       className="border border-neutral-100 dark:border-neutral-800 rounded-xl p-4 bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3.5 flex flex-col justify-between"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div>
                           <span className="font-bold text-xs uppercase text-neutral-800 dark:text-white">
-                            Order #{safeOrderId?.slice(-6)}
+                            Order #{shortDisplayId}
                           </span>
                           <span className="block text-[9px] text-neutral-400 font-light mt-0.5">
                             Placed: {ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString() : "Just Now"}
@@ -420,7 +429,7 @@ export const RiderOrders = () => {
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="font-bold text-sm text-neutral-800 dark:text-white">
-                    Chat for #{(chatOrder._id || chatOrder.id || chatOrder.orderId)?.slice(-6)}
+                    Chat for #{String(chatOrder._id || chatOrder.id || chatOrder.orderId || "").slice(-6).toUpperCase()}
                   </h3>
                   <span className="block text-[9px] text-neutral-400">
                     Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
