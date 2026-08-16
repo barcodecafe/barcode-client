@@ -1314,7 +1314,7 @@ export const AdminOrders = () => {
                             Quantity
                           </th>
                           <th className="p-2.5 border-r border-neutral-300 text-right">
-                            Discount / Free
+                            Discount
                           </th>
                           <th className="p-2.5 border-r border-neutral-300 text-right">
                             Vat
@@ -1424,7 +1424,7 @@ export const AdminOrders = () => {
                             <span className="font-medium">0.00</span>
                           </div>
                           <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1 rounded">
-                            <span>Sub Total (Including Tax & Add-ons):</span>
+                            <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
