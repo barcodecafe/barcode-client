@@ -40,10 +40,12 @@ const deduplicateOrders = (orderList) => {
 
   const seen = new Set();
   return cleanList.filter((item) => {
-    const id = item?.id || item?._id;
+    if (!item || typeof item !== "object") return false;
+    const id = item?.id || item?._id || item?.orderId;
     if (!id) return true;
-    if (seen.has(id)) return false;
-    seen.add(id);
+    const strId = String(id);
+    if (seen.has(strId)) return false;
+    seen.add(strId);
     return true;
   });
 };
@@ -119,6 +121,24 @@ export const numberToWords = (num) => {
 };
 
 export const computeInvoiceItemDetails = (item) => {
+  if (!item || typeof item !== "object") {
+    return {
+      origUnitPrice: 0,
+      paidUnitPrice: 0,
+      qty: 0,
+      paidQty: 0,
+      freeQty: 0,
+      grossTotal: 0,
+      lineTotal: 0,
+      totalItemDiscount: 0,
+      promoBadge: null,
+      promoBadgeColor: "",
+      isBogo1g1: false,
+      isBogo1g2: false,
+      isCombo: false,
+    };
+  }
+
   const qty = Number(item.quantity) || 1;
   const rawPrice = Number(item.price) || 0;
   const rawOriginalPrice = Number(item.originalPrice) || 0;
@@ -169,8 +189,8 @@ export const computeInvoiceItemDetails = (item) => {
   }
 
   // 4. Gross Total, Net Payable (line total), and Total Item Discount
-  const grossTotal = origUnitPrice * qty;
-  const lineTotal = paidUnitPrice * paidQty;
+  const grossTotal = Number(origUnitPrice * qty) || 0;
+  const lineTotal = Number(paidUnitPrice * paidQty) || 0;
   const totalItemDiscount = Math.max(0, grossTotal - lineTotal);
 
   // 5. Discount / Promotion Offer Label
@@ -201,11 +221,11 @@ export const computeInvoiceItemDetails = (item) => {
   }
 
   return {
-    origUnitPrice,
-    paidUnitPrice,
-    qty,
-    paidQty,
-    freeQty,
+    origUnitPrice: Number(origUnitPrice) || 0,
+    paidUnitPrice: Number(paidUnitPrice) || 0,
+    qty: Number(qty) || 0,
+    paidQty: Number(paidQty) || 0,
+    freeQty: Number(freeQty) || 0,
     grossTotal,
     lineTotal,
     totalItemDiscount,
@@ -392,51 +412,56 @@ export const AdminOrders = () => {
   }, []);
 
   useEffect(() => {
-    const handleNewOrderIncoming = (newOrder) => {
-      setOrders((prev) => {
-        const newId = newOrder?.id || newOrder?._id;
-        if (!newId) return prev;
-        const exists = prev.some((o) => (o.id || o._id) === newId);
+    const handleNewOrderIncoming = (data) => {
+      const newOrder = data?.order || data;
+      if (!newOrder || typeof newOrder !== "object") return;
+      const newId = String(newOrder.id || newOrder._id || newOrder.orderId || "");
+      if (!newId) return;
 
+      setOrders((prev) => {
+        const exists = prev.some((o) => String(o?.id || o?._id || o?.orderId) === newId);
         if (exists) {
           return prev.map((o) =>
-            (o.id || o._id) === newId ? { ...o, ...newOrder } : o,
+            String(o?.id || o?._id || o?.orderId) === newId ? { ...o, ...newOrder } : o,
           );
         }
         return [newOrder, ...prev];
       });
       window.dispatchEvent(
         new CustomEvent("order_updated", {
-          detail: { orderId: newOrder?.id || newOrder?._id },
+          detail: { orderId: newId },
         }),
       );
     };
 
-    const handleOrderUpdated = (updatedOrder) => {
-      const updatedId = updatedOrder?.id || updatedOrder?._id;
-      if (updatedId) {
-        setOrders((prev) =>
-          prev.map((o) => {
-            if ((o.id || o._id) === updatedId) {
-              return { ...o, ...updatedOrder };
-            }
-            return o;
-          }),
-        );
-      }
+    const handleOrderUpdated = (data) => {
+      const updatedOrder = data?.order || data;
+      if (!updatedOrder || typeof updatedOrder !== "object") return;
+      const updatedId = String(
+        updatedOrder.id || updatedOrder._id || updatedOrder.orderId || data?.orderId || "",
+      );
+      if (!updatedId) return;
+
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (String(o?.id || o?._id || o?.orderId) === updatedId) {
+            return { ...o, ...updatedOrder };
+          }
+          return o;
+        }),
+      );
+
       setSelectedOrderDetails((prev) => {
-        if (!prev || !updatedId) return prev;
-        return (prev.id || prev._id) === updatedId
-          ? { ...prev, ...updatedOrder }
-          : prev;
+        if (!prev) return prev;
+        const prevId = String(prev.id || prev._id || prev.orderId || "");
+        return prevId === updatedId ? { ...prev, ...updatedOrder } : prev;
       });
-      if (updatedId) {
-        window.dispatchEvent(
-          new CustomEvent("order_updated", {
-            detail: { orderId: updatedId, id: updatedId },
-          }),
-        );
-      }
+
+      window.dispatchEvent(
+        new CustomEvent("order_updated", {
+          detail: { orderId: updatedId, id: updatedId },
+        }),
+      );
     };
 
     const handlePendingCount = () => {
@@ -447,12 +472,15 @@ export const AdminOrders = () => {
       fetchOrdersAndFleet();
     };
 
-    const handleRiderUpdated = (updatedRider) => {
-      const updatedId = updatedRider?.id || updatedRider?._id;
+    const handleRiderUpdated = (data) => {
+      const updatedRider = data?.rider || data;
+      if (!updatedRider || typeof updatedRider !== "object") return;
+      const updatedId = String(updatedRider.id || updatedRider._id || "");
       if (!updatedId) return;
+
       setRiders((prev) =>
         prev.map((r) =>
-          (r.id || r._id) === updatedId ? { ...r, ...updatedRider } : r,
+          String(r?.id || r?._id) === updatedId ? { ...r, ...updatedRider } : r,
         ),
       );
     };
@@ -1151,22 +1179,25 @@ export const AdminOrders = () => {
     }
   };
 
-  const currentOrderId = selectedOrderDetails?.id || selectedOrderDetails?._id;
+  const currentOrderId = String(selectedOrderDetails?.id || selectedOrderDetails?._id || "");
   const currentAdjustment = parseFloat(adjustments[currentOrderId]) || 0;
 
-  const orderItems =
-    selectedOrderDetails?.items || selectedOrderDetails?.cart || [];
+  const orderItems = Array.isArray(selectedOrderDetails?.items)
+    ? selectedOrderDetails.items.filter(Boolean)
+    : Array.isArray(selectedOrderDetails?.cart)
+    ? selectedOrderDetails.cart.filter(Boolean)
+    : [];
 
   const subTotal = orderItems.reduce(
-    (sum, item) => sum + getItemPayableTotal(item),
+    (sum, item) => sum + (Number(getItemPayableTotal(item)) || 0),
     0,
   );
 
   const orderAddonsTotal = orderItems.reduce((sum, item) => {
-    const itemAddons = Array.isArray(item.selectedAddons)
-      ? item.selectedAddons.reduce((s, a) => s + (Number(a.price) || 0), 0)
+    const itemAddons = Array.isArray(item?.selectedAddons)
+      ? item.selectedAddons.filter(Boolean).reduce((s, a) => s + (Number(a?.price) || 0), 0)
       : 0;
-    return sum + itemAddons * (Number(item.quantity) || 1);
+    return sum + itemAddons * (Number(item?.quantity) || 1);
   }, 0);
 
   const orderDishesBaseTotal = Math.max(0, subTotal - orderAddonsTotal);
@@ -1248,8 +1279,8 @@ export const AdminOrders = () => {
                     </td>
                   </tr>
                 ) : (
-                  orders.map((ord) => {
-                    const ordId = ord.id || ord._id;
+                  orders.filter(Boolean).map((ord) => {
+                    const ordId = String(ord.id || ord._id || ord.orderId || "");
                     const currentStatus = String(
                       ord.status || "",
                     ).toUpperCase();
@@ -1264,12 +1295,17 @@ export const AdminOrders = () => {
                     const isRejected = currentStatus === "REJECTED";
                     const badge = getPaymentBadge(ord);
 
-                    const assignedRiderId =
-                      ord.riderId || ord.rider?._id || ord.rider?.id || "";
+                    const assignedRiderId = String(
+                      ord.riderId ||
+                      ord.rider?._id ||
+                      ord.rider?.id ||
+                      (typeof ord.rider === "string" ? ord.rider : "") ||
+                      ""
+                    );
 
                     return (
                       <tr
-                        key={ordId}
+                        key={ordId || Math.random()}
                         className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors"
                       >
                         <td
@@ -1416,15 +1452,19 @@ export const AdminOrders = () => {
                               }`}
                             >
                               <option value="">-- ASSIGN RIDER --</option>
-                              {riders.map((r) => (
-                                <option
-                                  key={r.id || r._id}
-                                  value={r.id || r._id}
-                                >
-                                  {r.name} (
-                                  {r.vehicle || r.vehicleType || "RIDER"})
-                                </option>
-                              ))}
+                              {Array.isArray(riders) &&
+                                riders.filter(Boolean).map((r) => {
+                                  const rId = String(r.id || r._id || "");
+                                  return (
+                                    <option
+                                      key={rId}
+                                      value={rId}
+                                    >
+                                      {r.name} (
+                                      {r.vehicle || r.vehicleType || "RIDER"})
+                                    </option>
+                                  );
+                                })}
                             </select>
 
                             {assignedRiderId &&
@@ -1723,11 +1763,15 @@ export const AdminOrders = () => {
                         </span>
                         <span className="bill-value font-semibold text-neutral-800">
                           :{" "}
-                          {
-                            new Date(selectedOrderDetails.createdAt || Date.now())
-                              .toISOString()
-                              .split("T")[0]
-                          }
+                          {(() => {
+                            try {
+                              return selectedOrderDetails?.createdAt
+                                ? new Date(selectedOrderDetails.createdAt).toISOString().split("T")[0]
+                                : new Date().toISOString().split("T")[0];
+                            } catch {
+                              return new Date().toISOString().split("T")[0];
+                            }
+                          })()}
                         </span>
                       </div>
                       <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
@@ -1736,9 +1780,9 @@ export const AdminOrders = () => {
                         </span>
                         <span className="bill-value font-bold text-neutral-800 uppercase">
                           : IN-
-                          {(
-                            selectedOrderDetails.id || selectedOrderDetails._id
-                          )?.slice(-10)}
+                          {String(
+                            selectedOrderDetails?.id || selectedOrderDetails?._id || ""
+                          ).slice(-10).toUpperCase()}
                         </span>
                       </div>
                       <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">

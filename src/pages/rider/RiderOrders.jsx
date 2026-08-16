@@ -49,6 +49,7 @@ export const RiderOrders = () => {
   const [riderChatMessage, setRiderChatMessage] = useState("");
 
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   
   const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
