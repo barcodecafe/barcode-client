@@ -852,7 +852,7 @@ export const AdminDishes = () => {
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all cursor-pointer shadow-xs"
           >
             <Layers className="w-4 h-4 text-primary-500" />
-            <span className="hidden sm:inline">Central</span> Add-ons ({centralAddons.length})
+            <span className="hidden sm:inline">Central</span> Add-ons ({addonGroups.length})
           </button>
           <button
             onClick={handleManualRefresh}
