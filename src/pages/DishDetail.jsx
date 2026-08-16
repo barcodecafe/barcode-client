@@ -72,14 +72,30 @@ export const DishDetail = () => {
   const [selectedAddons, setSelectedAddons] = useState([]);
 
   const toggleAddon = (addon) => {
-    if (!addon || !addon.name) return;
-    const targetKey = addon.name.trim().toLowerCase();
+    if (!addon) return;
+    const name = typeof addon === "string" ? addon : (addon.name || addon.title || "");
+    if (!name || !String(name).trim()) return;
+    const targetKey = String(name).trim().toLowerCase();
+
     setSelectedAddons((prev) => {
-      const exists = prev.some((a) => a?.name?.trim().toLowerCase() === targetKey);
+      const exists = (prev || []).some(
+        (a) => (a?.name || "").trim().toLowerCase() === targetKey,
+      );
       if (exists) {
-        return prev.filter((a) => a?.name?.trim().toLowerCase() !== targetKey);
+        return (prev || []).filter(
+          (a) => (a?.name || "").trim().toLowerCase() !== targetKey,
+        );
       } else {
-        return [...prev, addon];
+        const itemToAdd =
+          typeof addon === "object"
+            ? {
+                name: String(name).trim(),
+                price: Number(addon.price) || 0,
+                group: addon.group || "",
+                image: addon.image || "",
+              }
+            : { name: String(name).trim(), price: 0, group: "", image: "" };
+        return [...(prev || []), itemToAdd];
       }
     });
   };
@@ -197,7 +213,7 @@ export const DishDetail = () => {
   const cartItem = food
     ? cart.find(
         (item) =>
-          item.id === food.id &&
+          String(item.id || item._id) === String(food.id || food._id) &&
           ((!selectedVariation && !item.selectedVariation) ||
             (item.selectedVariation &&
               selectedVariation &&
@@ -274,13 +290,38 @@ export const DishDetail = () => {
     if (!Array.isArray(food?.addons) || food.addons.length === 0) return [];
 
     const groupMap = new Map();
-    food.addons.forEach((addon) => {
-      if (!addon || !addon.name) return;
-      const gName = addon.group?.trim() || "";
+    food.addons.forEach((rawAddon) => {
+      if (!rawAddon) return;
+      const name =
+        typeof rawAddon === "string"
+          ? rawAddon
+          : rawAddon.name || rawAddon.title || "";
+      if (!name || !String(name).trim()) return;
+
+      const cleanName = String(name).trim();
+      const price =
+        typeof rawAddon === "object" &&
+        rawAddon.price !== undefined &&
+        rawAddon.price !== null
+          ? Number(rawAddon.price) || 0
+          : 0;
+      const group =
+        typeof rawAddon === "object" && rawAddon.group
+          ? String(rawAddon.group).trim()
+          : "";
+
+      const normalizedAddon = {
+        name: cleanName,
+        price,
+        group,
+        image: typeof rawAddon === "object" ? rawAddon.image || "" : "",
+      };
+
+      const gName = group || "";
       if (!groupMap.has(gName)) {
         groupMap.set(gName, []);
       }
-      groupMap.get(gName).push(addon);
+      groupMap.get(gName).push(normalizedAddon);
     });
 
     return Array.from(groupMap.entries()).map(([groupName, items]) => ({
@@ -295,7 +336,7 @@ export const DishDetail = () => {
     if (newQty < 1 || newQty > 99) return;
     setQuantity(newQty);
     if (isAdded && cartItem) {
-      updateCartQuantity(food.id, newQty, selectedVariation);
+      updateCartQuantity(food.id || food._id, newQty, selectedVariation);
     }
   };
 
@@ -305,8 +346,8 @@ export const DishDetail = () => {
     openCart();
   };
 
-  const recommendedFoods = featuredMenu
-    .filter((f) => f.id !== food.id)
+  const recommendedFoods = (featuredMenu || [])
+    .filter((f) => String(f?.id || f?._id) !== String(food?.id || food?._id))
     .slice(0, 6);
 
   return (
@@ -347,15 +388,15 @@ export const DishDetail = () => {
           />
 
           <button
-            onClick={() => toggleFavorite(food.id)}
+            onClick={() => toggleFavorite(food.id || food._id)}
             className={`absolute top-4 right-4 p-2.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md transition-all cursor-pointer ${
-              isFavorite(food.id)
+              isFavorite(food.id || food._id)
                 ? "text-red-500 scale-110"
                 : "text-neutral-400 hover:text-red-500"
             }`}
           >
             <Heart
-              className={`w-5 h-5 ${isFavorite(food.id) ? "fill-current" : ""}`}
+              className={`w-5 h-5 ${isFavorite(food.id || food._id) ? "fill-current" : ""}`}
             />
           </button>
         </div>
