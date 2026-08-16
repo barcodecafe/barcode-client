@@ -665,14 +665,17 @@ export const AdminDishes = () => {
       const mergedAddons = chosenList.map((chosen) => {
         const key = chosen.name.trim().toLowerCase();
         if (existingMap.has(key)) {
-          return existingMap.get(key);
+          const existing = existingMap.get(key);
+          return {
+            ...chosen,
+            price:
+              existing.price !== undefined && existing.price !== ""
+                ? existing.price
+                : chosen.price,
+            group: chosen.group || existing.group || "",
+          };
         }
-        return {
-          name: chosen.name,
-          price: chosen.price,
-          group: chosen.group || "",
-          image: "",
-        };
+        return chosen;
       });
 
       // Also preserve any custom manual add-ons not in library
@@ -683,7 +686,7 @@ export const AdminDishes = () => {
       );
       (prev.addons || []).forEach((existing) => {
         const key = existing?.name?.trim().toLowerCase();
-        if (key && !allLibraryKeys.has(key) && !existingMap.has(key)) {
+        if (key && !allLibraryKeys.has(key)) {
           mergedAddons.push(existing);
         }
       });
@@ -697,7 +700,6 @@ export const AdminDishes = () => {
     setIsAddonPickerModalOpen(false);
   };
 
-  // 🎯 Dish Form Direct Addon Handlers
   const handleAddAddon = () => {
     setFormData((prev) => ({
       ...prev,
@@ -708,19 +710,19 @@ export const AdminDishes = () => {
     }));
   };
 
-  const handleAddonChange = (index, field, val) => {
+  const handleAddonChange = (index, field, value) => {
     setFormData((prev) => {
       const updated = [...(prev.addons || [])];
       updated[index] = {
         ...updated[index],
         [field]:
           field === "price"
-            ? val === ""
+            ? value === ""
               ? ""
-              : isNaN(Number(val))
+              : isNaN(Number(value))
               ? 0
-              : Number(val)
-            : val,
+              : Number(value)
+            : value,
       };
       return { ...prev, addons: updated };
     });
@@ -799,12 +801,12 @@ export const AdminDishes = () => {
           cleanedFormData,
         );
         newFoodsList = foods.map((f) =>
-          (f.id || f._id) === (editingFood.id || editingFood._id) ? updated : f,
+          (f.id || f._id) === (editingFood.id || editingFood._id) ? (updated || cleanedFormData) : f,
         );
         setFoods(newFoodsList);
       } else {
         const created = await createFood(cleanedFormData);
-        newFoodsList = [created, ...foods];
+        newFoodsList = [created || cleanedFormData, ...foods];
         setFoods(newFoodsList);
       }
 
@@ -812,8 +814,9 @@ export const AdminDishes = () => {
       setSortedCategories(updatedCats);
 
       setIsModalOpen(false);
+      await syncFromServer();
     } catch (err) {
-      alert("Error saving dish details.");
+      alert("Error saving dish details: " + (err?.response?.data?.message || err?.message || ""));
     }
   };
 

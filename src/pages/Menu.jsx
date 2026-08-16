@@ -22,6 +22,7 @@ import "swiper/css/pagination";
 
 export const Menu = () => {
   const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "All";
@@ -69,17 +70,27 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    if (popularOnly) getPopularFoods(100).then(setFoods);
-    else getFoodsByBranch(null, 100).then(setFoods);
+    setLoading(true);
+    if (popularOnly) {
+      getPopularFoods(100)
+        .then((data) => setFoods(Array.isArray(data) ? data : []))
+        .catch(() => setFoods([]))
+        .finally(() => setLoading(false));
+    } else {
+      getFoodsByBranch(null)
+        .then((data) => setFoods(Array.isArray(data) ? data : []))
+        .catch(() => setFoods([]))
+        .finally(() => setLoading(false));
+    }
   }, [popularOnly]);
 
   const categories = useMemo(() => {
-    if (!foods || foods.length === 0) return ["All"];
+    if (!Array.isArray(foods) || foods.length === 0) return ["All"];
 
     const categoryMap = new Map();
 
     foods.forEach((item) => {
-      if (item.category?.trim()) {
+      if (item && item.category?.trim()) {
         const catName = item.category.trim();
         const lowerName = catName.toLowerCase();
         const orderVal = typeof item.categoryOrder === "number" ? item.categoryOrder : 999;
@@ -161,37 +172,39 @@ export const Menu = () => {
   };
 
  const filteredFoods = useMemo(() => {
-  const query = searchQuery.trim().toLowerCase();
+   if (!Array.isArray(foods)) return [];
+   const query = searchQuery.trim().toLowerCase();
 
-  const matched = foods.filter((food) => {
-    // ১. ক্যাটাগরি ফিল্টার
-    const matchesCategory =
-      activeCategory.trim().toLowerCase() === "all" ||
-      food.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase();
+   const matched = foods.filter((food) => {
+     if (!food) return false;
+     // ১. ক্যাটাগরি ফিল্টার
+     const matchesCategory =
+       activeCategory.trim().toLowerCase() === "all" ||
+       (food.category && food.category.trim().toLowerCase() === activeCategory.trim().toLowerCase());
 
-    // ২. সার্চ কোয়েরি ফিল্টার (খাবারের নাম, বিবরণ বা ক্যাটাগরির সাথে মেলাবে)
-    const matchesSearch =
-      !query ||
-      food.name?.toLowerCase().includes(query) ||
-      food.description?.toLowerCase().includes(query) ||
-      food.category?.toLowerCase().includes(query);
+     // ২. সার্চ কোয়েরি ফিল্টার (খাবারের নাম, বিবরণ বা ক্যাটাগরির সাথে মেলাবে)
+     const matchesSearch =
+       !query ||
+       food.name?.toLowerCase().includes(query) ||
+       food.description?.toLowerCase().includes(query) ||
+       food.category?.toLowerCase().includes(query);
 
-    return matchesCategory && matchesSearch;
-  });
+     return matchesCategory && matchesSearch;
+   });
 
-  return [...matched].sort((a, b) => {
-    const priceA = getEffectivePrice(a);
-    const priceB = getEffectivePrice(b);
-    const ratingA = Number(a?.rating) || 0;
-    const ratingB = Number(b?.rating) || 0;
+   return [...matched].sort((a, b) => {
+     const priceA = getEffectivePrice(a);
+     const priceB = getEffectivePrice(b);
+     const ratingA = Number(a?.rating) || 0;
+     const ratingB = Number(b?.rating) || 0;
 
-    if (sortBy === "price-low") return priceA - priceB;
-    if (sortBy === "price-high") return priceB - priceA;
-    if (sortBy === "rating") return ratingB - ratingA;
+     if (sortBy === "price-low") return priceA - priceB;
+     if (sortBy === "price-high") return priceB - priceA;
+     if (sortBy === "rating") return ratingB - ratingA;
 
-    return 0;
-  });
-}, [foods, activeCategory, searchQuery, sortBy]); // 👈 dependency তে searchQuery যোগ করতে ভুলবেন না
+     return 0;
+   });
+ }, [foods, activeCategory, searchQuery, sortBy]);
 
   const containerVariants = {
     hidden: {},
@@ -322,10 +335,19 @@ export const Menu = () => {
         </div>
       </div>
 
-      {filteredFoods.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 py-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+            <div
+              key={n}
+              className="h-72 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/60 dark:border-neutral-800/60"
+            />
+          ))}
+        </div>
+      ) : filteredFoods.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-neutral-500 dark:text-neutral-400 text-lg font-medium">
-            No dishes matches your filters.
+            No dishes match your filters.
           </p>
         </div>
       ) : (

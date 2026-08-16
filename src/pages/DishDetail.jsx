@@ -72,10 +72,12 @@ export const DishDetail = () => {
   const [selectedAddons, setSelectedAddons] = useState([]);
 
   const toggleAddon = (addon) => {
+    if (!addon || !addon.name) return;
+    const targetKey = addon.name.trim().toLowerCase();
     setSelectedAddons((prev) => {
-      const exists = prev.some((a) => a.name === addon.name);
+      const exists = prev.some((a) => a?.name?.trim().toLowerCase() === targetKey);
       if (exists) {
-        return prev.filter((a) => a.name !== addon.name);
+        return prev.filter((a) => a?.name?.trim().toLowerCase() !== targetKey);
       } else {
         return [...prev, addon];
       }
@@ -265,14 +267,11 @@ export const DishDetail = () => {
 
   const groupedFoodAddons = useMemo(() => {
     if (!Array.isArray(food?.addons) || food.addons.length === 0) return [];
-    const hasGroups = food.addons.some((a) => a.group && a.group.trim());
-    if (!hasGroups) {
-      return [{ groupName: null, items: food.addons }];
-    }
 
     const groupMap = new Map();
     food.addons.forEach((addon) => {
-      const gName = addon.group?.trim() || "Other Extras";
+      if (!addon || !addon.name) return;
+      const gName = addon.group?.trim() || "";
       if (!groupMap.has(gName)) {
         groupMap.set(gName, []);
       }
@@ -280,7 +279,7 @@ export const DishDetail = () => {
     });
 
     return Array.from(groupMap.entries()).map(([groupName, items]) => ({
-      groupName,
+      groupName: groupName || null,
       items,
     }));
   }, [food?.addons]);
@@ -487,13 +486,15 @@ export const DishDetail = () => {
                       </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {group.items.map((addon) => {
+                      {group.items.map((addon, aIdx) => {
                         const isChecked = selectedAddons.some(
-                          (a) => a.name === addon.name,
+                          (a) =>
+                            a?.name?.trim().toLowerCase() ===
+                            addon?.name?.trim().toLowerCase(),
                         );
                         return (
                           <button
-                            key={addon.name}
+                            key={addon.name || aIdx}
                             type="button"
                             onClick={() => toggleAddon(addon)}
                             className={`p-3 rounded-none border text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left ${
