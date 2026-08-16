@@ -266,6 +266,50 @@ export const DishDetail = () => {
     }
   }, [cartItem, selectedVariation]);
 
+  const groupedFoodAddons = useMemo(() => {
+    if (!Array.isArray(food?.addons) || food.addons.length === 0) return [];
+
+    const groupMap = new Map();
+    food.addons.forEach((rawAddon) => {
+      if (!rawAddon) return;
+      const name =
+        typeof rawAddon === "string"
+          ? rawAddon
+          : rawAddon.name || rawAddon.title || "";
+      if (!name || !String(name).trim()) return;
+
+      const cleanName = String(name).trim();
+      const price =
+        typeof rawAddon === "object" &&
+        rawAddon.price !== undefined &&
+        rawAddon.price !== null
+          ? Number(rawAddon.price) || 0
+          : 0;
+      const group =
+        typeof rawAddon === "object" && rawAddon.group
+          ? String(rawAddon.group).trim()
+          : "";
+
+      const normalizedAddon = {
+        name: cleanName,
+        price,
+        group,
+        image: typeof rawAddon === "object" ? rawAddon.image || "" : "",
+      };
+
+      const gName = group || "";
+      if (!groupMap.has(gName)) {
+        groupMap.set(gName, []);
+      }
+      groupMap.get(gName).push(normalizedAddon);
+    });
+
+    return Array.from(groupMap.entries()).map(([groupName, items]) => ({
+      groupName: groupName || null,
+      items,
+    }));
+  }, [food?.addons]);
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -320,50 +364,6 @@ export const DishDetail = () => {
   );
   const totalActivePrice = activePrice + addonsPriceTotal;
   const totalDiscountedPrice = discountedPrice + addonsPriceTotal;
-
-  const groupedFoodAddons = useMemo(() => {
-    if (!Array.isArray(food?.addons) || food.addons.length === 0) return [];
-
-    const groupMap = new Map();
-    food.addons.forEach((rawAddon) => {
-      if (!rawAddon) return;
-      const name =
-        typeof rawAddon === "string"
-          ? rawAddon
-          : rawAddon.name || rawAddon.title || "";
-      if (!name || !String(name).trim()) return;
-
-      const cleanName = String(name).trim();
-      const price =
-        typeof rawAddon === "object" &&
-        rawAddon.price !== undefined &&
-        rawAddon.price !== null
-          ? Number(rawAddon.price) || 0
-          : 0;
-      const group =
-        typeof rawAddon === "object" && rawAddon.group
-          ? String(rawAddon.group).trim()
-          : "";
-
-      const normalizedAddon = {
-        name: cleanName,
-        price,
-        group,
-        image: typeof rawAddon === "object" ? rawAddon.image || "" : "",
-      };
-
-      const gName = group || "";
-      if (!groupMap.has(gName)) {
-        groupMap.set(gName, []);
-      }
-      groupMap.get(gName).push(normalizedAddon);
-    });
-
-    return Array.from(groupMap.entries()).map(([groupName, items]) => ({
-      groupName: groupName || null,
-      items,
-    }));
-  }, [food?.addons]);
 
   const displayImage = selectedVariation?.image || food.image || "";
 
