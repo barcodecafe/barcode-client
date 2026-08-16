@@ -923,10 +923,12 @@ export const DishDetail = () => {
               pagination={{ clickable: true }}
               className="!px-4 !pb-8"
             >
-              {recommendedFoods.map((recFood) => {
-                const favorited = isFavorite(recFood.id);
+              {recommendedFoods.map((recFood, rIdx) => {
+                if (!recFood) return null;
+                const recId = recFood.id || recFood._id || rIdx;
+                const favorited = isFavorite(recId);
                 return (
-                  <SwiperSlide key={recFood.id}>
+                  <SwiperSlide key={recId}>
                     <FoodCard
                       food={recFood}
                       branchId={branchId}
@@ -942,11 +944,13 @@ export const DishDetail = () => {
 
           {/* Desktop & Tablet View: Grid */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {recommendedFoods.map((recFood) => {
-              const favorited = isFavorite(recFood.id);
+            {recommendedFoods.map((recFood, rIdx) => {
+              if (!recFood) return null;
+              const recId = recFood.id || recFood._id || rIdx;
+              const favorited = isFavorite(recId);
               return (
                 <FoodCard
-                  key={recFood.id}
+                  key={recId}
                   food={recFood}
                   branchId={branchId}
                   favorited={favorited}

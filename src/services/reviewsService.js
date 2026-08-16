@@ -10,7 +10,8 @@ export async function getFoodReviews(foodId) {
   };
   if (!foodId) return fallback;
   try {
-    const res = await apiClient.get(`/reviews/food/${Number(foodId)}`);
+    const idParam = Number.isFinite(Number(foodId)) ? Number(foodId) : foodId;
+    const res = await apiClient.get(`/reviews/food/${idParam}`);
     return res || fallback;
   } catch (err) {
     console.warn(`Could not load reviews for food ${foodId}:`, err?.message || err);
@@ -20,8 +21,9 @@ export async function getFoodReviews(foodId) {
 
 /** POST /api/reviews — Submit or update a review for a food item (Protected) */
 export async function submitReview({ foodId, rating, comment }) {
+  const idParam = Number.isFinite(Number(foodId)) ? Number(foodId) : foodId;
   return apiClient.post('/reviews', {
-    foodId: Number(foodId),
+    foodId: idParam,
     rating: Number(rating),
     comment: comment || '',
   });
