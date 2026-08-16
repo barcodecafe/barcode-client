@@ -794,8 +794,8 @@ export const AdminOrders = () => {
     /* 🎯 Dynamic A5 Scale: Triggered automatically when A5 paper (width <= 175mm / 620px) is chosen */
     @media print and (max-width: 175mm), (max-width: 620px) {
       html, body {
-        font-size: 9px !important;
-        line-height: 1.25 !important;
+        font-size: 8.5px !important;
+        line-height: 1.2 !important;
       }
       .invoice-container {
         padding: 3mm 5mm 2mm 5mm !important;
@@ -809,69 +809,94 @@ export const AdminOrders = () => {
         margin-top: 2px !important;
       }
       .invoice-content {
-        gap: 5px !important;
+        gap: 4px !important;
       }
       .bill-to-box {
-        padding: 6px 9px !important;
-        font-size: 8.5px !important;
-        border-radius: 7px !important;
-        gap: 10px !important;
+        padding: 5px 8px !important;
+        font-size: 8px !important;
+        border-radius: 6px !important;
+        gap: 8px !important;
       }
       .bill-to-right {
-        width: 175px !important;
+        width: 165px !important;
       }
       .bill-label {
-        width: 72px !important;
-        font-size: 8.5px !important;
+        width: 68px !important;
+        font-size: 8px !important;
       }
       .bill-value {
-        font-size: 8.5px !important;
+        font-size: 8px !important;
       }
       table.invoice-table {
-        font-size: 8.5px !important;
+        font-size: 8px !important;
       }
       table.invoice-table thead tr {
-        font-size: 7.5px !important;
+        font-size: 7px !important;
       }
       table.invoice-table th {
-        padding: 3.5px 4px !important;
+        padding: 2.5px 3px !important;
       }
       table.invoice-table td {
-        padding: 3px 4px !important;
+        padding: 2.5px 3px !important;
+        font-size: 8px !important;
       }
       .col-price {
+        font-size: 8px !important;
+      }
+      .col-qty {
         font-size: 8px !important;
       }
       .col-disc {
         font-size: 8px !important;
       }
+      .col-vat {
+        font-size: 8px !important;
+      }
       .col-total {
-        font-size: 8.5px !important;
+        font-size: 8px !important;
       }
       .promo-badge {
         font-size: 6px !important;
         padding: 1px 3px !important;
       }
       .addons-list {
-        font-size: 7px !important;
+        font-size: 6.5px !important;
       }
       .summary-box {
-        width: 215px !important;
-        font-size: 8.5px !important;
+        width: 200px !important;
+        font-size: 8px !important;
+      }
+      .summary-box * {
+        font-size: 8px !important;
       }
       .summary-row {
-        padding: 1.5px 0 !important;
-      }
-      .summary-row.total-row {
-        font-size: 10px !important;
-        padding: 2.5px 0 !important;
-      }
-      .words-section {
+        padding: 1px 0 !important;
         font-size: 8px !important;
+      }
+      .summary-row span {
+        font-size: 8px !important;
+      }
+      .summary-row input {
+        font-size: 8px !important;
+        width: 45px !important;
+        padding: 0 !important;
+        height: auto !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .summary-row.total-row,
+      .summary-row.total-row span {
+        font-size: 9.5px !important;
+        font-weight: 900 !important;
+        padding: 2px 0 !important;
+      }
+      .words-section,
+      .words-section span {
+        font-size: 7.5px !important;
         padding-top: 1px !important;
       }
       .invoice-footer img {
-        max-height: 40px !important;
+        max-height: 38px !important;
       }
     }
     .no-print {
