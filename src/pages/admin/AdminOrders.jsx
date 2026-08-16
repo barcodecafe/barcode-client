@@ -470,7 +470,7 @@ export const AdminOrders = () => {
       toast.error("Please allow popups for this website to print.");
       return;
     }
-
+    WindowPrt.document.open();
     WindowPrt.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -480,37 +480,33 @@ export const AdminOrders = () => {
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @page {
-      size: A5 portrait;
-      margin: 0;
+      size: auto;
+      margin: 0 !important;
     }
     @media print {
       *, *::before, *::after {
         box-sizing: border-box !important;
       }
       html, body {
-        width: 148mm !important;
-        max-width: 148mm !important;
-        height: 210mm !important;
-        max-height: 210mm !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
         overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        font-size: 9.5px !important;
-        line-height: 1.25 !important;
       }
       .invoice-container {
         width: 100% !important;
-        max-width: 148mm !important;
-        height: 210mm !important;
-        max-height: 210mm !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
         box-sizing: border-box !important;
-        padding: 3mm 5mm 2mm 5mm !important;
+        padding: 4mm 7mm 3mm 7mm !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
         page-break-before: avoid !important;
@@ -521,37 +517,39 @@ export const AdminOrders = () => {
         width: 100% !important;
       }
       .invoice-header img {
-        max-height: 46px !important;
+        width: 100% !important;
+        max-height: 50px !important;
         object-fit: contain !important;
-        width: auto !important;
         margin: 0 auto !important;
+        display: block !important;
       }
       .invoice-content {
         flex-grow: 1 !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: flex-start !important;
-        gap: 3px !important;
+        gap: 6px !important;
         overflow: hidden !important;
       }
       .invoice-footer {
         flex-shrink: 0 !important;
         width: 100% !important;
         margin-top: auto !important;
+        padding-top: 4px !important;
         page-break-inside: avoid !important;
+        display: block !important;
+        visibility: visible !important;
       }
       .invoice-footer img {
-        max-height: 34px !important;
+        width: 100% !important;
+        max-height: 38px !important;
         object-fit: contain !important;
-        width: auto !important;
         margin: 0 auto !important;
+        display: block !important;
+        visibility: visible !important;
       }
       .no-print {
         display: none !important;
-      }
-      table th, table td {
-        padding: 2px 4px !important;
-        font-size: 8.5px !important;
       }
     }
     body {
@@ -565,23 +563,23 @@ export const AdminOrders = () => {
     }
     .invoice-container {
       width: 100%;
-      max-width: 148mm;
-      min-height: 210mm;
+      min-height: 100vh;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
-      padding: 4mm 6mm 3mm 6mm;
+      padding: 4mm 7mm 3mm 7mm;
     }
     .invoice-header {
       flex-shrink: 0;
       width: 100%;
     }
     .invoice-header img {
-      max-height: 50px;
+      max-height: 52px;
       object-fit: contain;
       margin: 0 auto;
+      display: block;
     }
     .invoice-content {
       flex-grow: 1;
@@ -590,11 +588,16 @@ export const AdminOrders = () => {
       flex-shrink: 0;
       width: 100%;
       margin-top: auto;
+      padding-top: 6px;
+      display: block;
+      visibility: visible;
     }
     .invoice-footer img {
-      max-height: 38px;
+      max-height: 40px;
       object-fit: contain;
       margin: 0 auto;
+      display: block;
+      visibility: visible;
     }
   </style>
 </head>
@@ -603,11 +606,24 @@ export const AdminOrders = () => {
 </body>
 </html>`);
     WindowPrt.document.close();
-    WindowPrt.focus();
-    setTimeout(() => {
-      WindowPrt.print();
-      WindowPrt.close();
-    }, 600);
+
+    const doPrint = () => {
+      try {
+        WindowPrt.focus();
+        WindowPrt.print();
+        WindowPrt.close();
+      } catch (err) {
+        console.error("Print error:", err);
+      }
+    };
+
+    // Wait for images to load before firing print
+    if (WindowPrt.document.readyState === "complete") {
+      setTimeout(doPrint, 300);
+    } else {
+      WindowPrt.onload = () => setTimeout(doPrint, 300);
+      setTimeout(doPrint, 800);
+    }
   };
 
   if (loading) {
@@ -1334,28 +1350,28 @@ export const AdminOrders = () => {
 
               <div
                 ref={invoiceRef}
-                className="invoice-container bg-white text-neutral-800 p-3 sm:p-5 flex flex-col justify-between max-w-[650px] mx-auto min-h-0 text-[10px] sm:text-xs font-sans"
+                className="invoice-container bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans"
               >
                 {/* 🎯 Invoice Header (Pinned at Top) */}
-                <div className="invoice-header w-full shrink-0 pb-1">
+                <div className="invoice-header w-full shrink-0 pb-2">
                   <img
                     src={invoiceHeaderImg}
                     alt="Barcode Restaurant Group Header"
-                    className="w-full h-auto max-h-[52px] object-contain block mx-auto"
+                    className="w-full h-auto max-h-[60px] object-contain block mx-auto"
                   />
-                  <div className="text-center font-bold text-xs sm:text-sm tracking-widest uppercase text-neutral-800 py-1 border-b border-neutral-200 mt-1">
+                  <div className="text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
                     Invoice
                   </div>
                 </div>
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
-                <div className="invoice-content flex-grow space-y-2.5 py-1.5">
-                  <div className="flex flex-col sm:flex-row justify-between gap-3 bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 text-[10px] leading-tight">
-                    <div className="space-y-1 flex-1">
-                      <p className="font-bold text-neutral-900 uppercase text-[10px] mb-1">
+                <div className="invoice-content flex-grow space-y-4 py-2">
+                  <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-6 bg-neutral-50 p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
+                    <div className="space-y-1.5 flex-1">
+                      <p className="font-bold text-neutral-900 uppercase text-[11px] mb-2">
                         Bill To:
                       </p>
-                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
+                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Customer Name
                         </span>
@@ -1366,7 +1382,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
+                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Mobile
                         </span>
@@ -1377,7 +1393,7 @@ export const AdminOrders = () => {
                             "N/A"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[85px_1fr] gap-x-1.5">
+                      <div className="grid grid-cols-[100px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Address
                         </span>
@@ -1395,8 +1411,8 @@ export const AdminOrders = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-1 w-full sm:w-52 pt-2 sm:pt-0">
-                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
+                    <div className="space-y-1.5 w-full sm:w-56 pt-3 sm:pt-0">
+                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Invoice Date
                         </span>
@@ -1409,7 +1425,7 @@ export const AdminOrders = () => {
                           }
                         </span>
                       </div>
-                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
+                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Invoice #
                         </span>
@@ -1420,7 +1436,7 @@ export const AdminOrders = () => {
                           )?.slice(-10)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[75px_1fr] gap-x-1.5">
+                      <div className="grid grid-cols-[90px_1fr] gap-x-2">
                         <span className="text-neutral-500 font-medium">
                           Payment
                         </span>
@@ -1433,25 +1449,25 @@ export const AdminOrders = () => {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[10px] text-left border-collapse border border-neutral-300">
+                    <table className="w-full text-xs text-left border-collapse border border-neutral-300">
                       <thead>
-                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[9px] border-b border-neutral-300">
-                          <th className="py-1.5 px-2 border-r border-neutral-300">
+                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
+                          <th className="p-2.5 border-r border-neutral-300">
                             Items
                           </th>
-                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
+                          <th className="p-2.5 border-r border-neutral-300 text-right">
                             Unit Price
                           </th>
-                          <th className="py-1.5 px-2 border-r border-neutral-300 text-center">
+                          <th className="p-2.5 border-r border-neutral-300 text-center">
                             Quantity
                           </th>
-                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
+                          <th className="p-2.5 border-r border-neutral-300 text-right">
                             Discount
                           </th>
-                          <th className="py-1.5 px-2 border-r border-neutral-300 text-right">
+                          <th className="p-2.5 border-r border-neutral-300 text-right">
                             Vat
                           </th>
-                          <th className="py-1.5 px-2 text-right">Total</th>
+                          <th className="p-2.5 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1468,7 +1484,7 @@ export const AdminOrders = () => {
 
                           return (
                             <tr key={idx} className="border-b border-neutral-200">
-                              <td className="py-1.5 px-2 border-r border-neutral-300 font-semibold">
+                              <td className="p-2.5 border-r border-neutral-300 font-semibold">
                                 <div className="text-neutral-850">
                                   {item.name}{" "}
                                   {item.selectedSize
@@ -1477,34 +1493,34 @@ export const AdminOrders = () => {
                                 </div>
                                 {promoBadge && (
                                   <span
-                                    className={`inline-block mt-0.5 px-1.5 py-0.2 rounded border text-[8.5px] font-black uppercase tracking-wider ${promoBadgeColor}`}
+                                    className={`inline-block mt-1 px-1.5 py-0.2 rounded border text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
                                   >
                                     {promoBadge}
                                   </span>
                                 )}
                                 {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                                  <div className="text-[9px] text-emerald-700 font-normal mt-0.5">
+                                  <div className="text-[10px] text-emerald-700 font-normal mt-0.5">
                                     {item.selectedAddons
                                       .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
                                       .join(", ")}
                                   </div>
                                 )}
                               </td>
-                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-medium">
+                              <td className="p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
                                 ৳{origUnitPrice.toFixed(2)}
                               </td>
-                              <td className="py-1.5 px-2 border-r border-neutral-300 text-center font-bold">
+                              <td className="p-2.5 border-r border-neutral-300 text-center font-bold">
                                 {qty}
                               </td>
-                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-bold text-emerald-600">
+                              <td className="p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
                                 {totalItemDiscount > 0
                                   ? `-৳${totalItemDiscount.toFixed(2)}`
                                   : "0.00"}
                               </td>
-                              <td className="py-1.5 px-2 border-r border-neutral-300 text-right font-medium">
+                              <td className="p-2.5 border-r border-neutral-300 text-right font-medium">
                                 0.00
                               </td>
-                              <td className="py-1.5 px-2 text-right font-extrabold text-neutral-900">
+                              <td className="p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
                                 ৳{lineTotal.toFixed(2)}
                               </td>
                             </tr>
@@ -1514,56 +1530,56 @@ export const AdminOrders = () => {
                     </table>
                   </div>
 
-                  <div className="flex justify-end pt-1">
-                    <div className="w-full sm:w-72 space-y-1 text-[10px]">
-                      {/* 🎯 Subtotal Breakdown: Add-ons থাকলে সুন্দর স্প্লিট, না থাকলে As It Is */}
+                  <div className="flex justify-end pt-2">
+                    <div className="w-full sm:w-80 space-y-1.5 text-xs">
+                      {/* 🎯 Subtotal Breakdown */}
                       {orderAddonsTotal > 0 ? (
                         <>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                          <div className="flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Dishes Base Total:</span>
                             <span className="font-semibold text-neutral-800">
                               ৳{orderDishesBaseTotal.toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200 text-emerald-700 font-semibold">
+                          <div className="flex justify-between py-1 border-b border-neutral-200 text-emerald-700 font-semibold">
                             <span>Extras & Add-ons:</span>
                             <span>+৳{orderAddonsTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                          <div className="flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                          <div className="flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1 rounded">
+                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1.5 py-1 rounded">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                          <div className="flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total SD:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                          <div className="flex justify-between py-1 border-b border-neutral-200">
                             <span className="text-neutral-500">Total Vat:</span>
                             <span className="font-medium">0.00</span>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-neutral-200 font-extrabold text-neutral-900">
+                          <div className="flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
                             <span>Sub Total (Including Tax):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
                       )}
 
-                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                      <div className="flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Service Charge:</span>
                         <span className="font-medium">0.00</span>
                       </div>
-                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                      <div className="flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Shipping Charge:</span>
                         <span className="font-medium">
                           ৳{deliveryCharge.toFixed(2)}
@@ -1571,7 +1587,7 @@ export const AdminOrders = () => {
                       </div>
 
                       {couponDiscount > 0 && (
-                        <div className="flex justify-between py-0.5 border-b border-neutral-200 font-bold text-emerald-600">
+                        <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
                           <span>
                             Coupon Discount{" "}
                             {couponCodeApplied ? `(${couponCodeApplied})` : ""}:
@@ -1581,7 +1597,7 @@ export const AdminOrders = () => {
                       )}
 
                       {pointsDiscount > 0 && (
-                        <div className="flex justify-between py-0.5 border-b border-neutral-200 font-bold text-emerald-600">
+                        <div className="flex justify-between py-1 border-b border-neutral-200 font-bold text-emerald-600">
                           <span>
                             Points ({selectedOrderDetails.pointsRedeemed} pts):
                           </span>
@@ -1589,7 +1605,7 @@ export const AdminOrders = () => {
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center py-0.5 border-b border-neutral-200">
+                      <div className="flex justify-between items-center py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Adjustment:</span>
                         <input
                           type="number"
@@ -1605,21 +1621,21 @@ export const AdminOrders = () => {
                             });
                           }}
                           placeholder="0.00"
-                          className="w-20 px-1.5 py-0.5 text-right border border-neutral-300 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 print:border-none print:bg-transparent"
+                          className="w-24 px-2 py-0.5 text-right border border-neutral-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 print:border-none print:bg-transparent"
                         />
                       </div>
 
-                      <div className="flex justify-between py-1 border-b-2 border-neutral-800 font-black text-xs text-neutral-900">
+                      <div className="flex justify-between py-1.5 border-b-2 border-neutral-800 font-black text-sm text-neutral-900">
                         <span>Total:</span>
                         <span>৳{grandTotal.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between py-0.5 border-b border-neutral-200">
+                      <div className="flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Advance Amount:</span>
                         <span className="font-semibold text-neutral-800">
                           ৳{advanceAmount.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between py-0.5 font-black text-neutral-900">
+                      <div className="flex justify-between py-1 font-black text-neutral-900">
                         <span>Remaining Amount:</span>
                         <span className={remainingAmount > 0 ? "text-rose-600" : "text-emerald-600"}>
                           ৳{remainingAmount.toFixed(2)}
@@ -1628,7 +1644,7 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="pt-1 text-[9px] text-neutral-600 font-medium">
+                  <div className="pt-2 text-xs text-neutral-600 font-medium">
                     Amount in Words (BDT):{" "}
                     <span className="italic font-bold text-neutral-800 uppercase">
                       BDT {grandTotal.toFixed(0)} Taka Only
@@ -1637,11 +1653,11 @@ export const AdminOrders = () => {
                 </div>
 
                 {/* 🎯 Invoice Footer (Pinned at Bottom) */}
-                <div className="invoice-footer w-full shrink-0 mt-auto pt-2">
+                <div className="invoice-footer w-full shrink-0 mt-auto pt-6">
                   <img
                     src={invoiceFooterImg}
                     alt="Barcode Restaurant Group Footer"
-                    className="w-full h-auto max-h-[38px] object-contain block mx-auto"
+                    className="w-full h-auto max-h-[50px] object-contain block mx-auto"
                   />
                 </div>
               </div>
