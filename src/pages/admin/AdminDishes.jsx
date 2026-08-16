@@ -476,6 +476,13 @@ export const AdminDishes = () => {
   };
 
   // 🎯 Centralized Addon Dynamic Groups & Library Handlers
+  const validAddonGroups = useMemo(() => {
+    if (!Array.isArray(addonGroups)) return [];
+    return addonGroups.filter(
+      (g) => g && typeof g === "object" && typeof g.title === "string" && g.title.trim(),
+    );
+  }, [addonGroups]);
+
   const handleOpenCreateGroup = () => {
     setEditingGroup(null);
     setGroupFormData({
@@ -486,14 +493,15 @@ export const AdminDishes = () => {
   };
 
   const handleOpenEditGroup = (group) => {
+    if (!group) return;
     setEditingGroup(group);
     setGroupFormData({
       title: group.title || "",
       items:
         Array.isArray(group.items) && group.items.length > 0
           ? group.items.map((i) => ({
-              name: i.name || "",
-              price: i.price !== undefined && i.price !== null ? i.price : "",
+              name: i?.name || "",
+              price: i?.price !== undefined && i?.price !== null ? i.price : "",
             }))
           : [{ name: "", price: "" }],
     });
@@ -534,14 +542,14 @@ export const AdminDishes = () => {
 
   const handleSaveGroup = async (e) => {
     if (e) e.preventDefault();
-    const title = groupFormData.title.trim();
+    const title = groupFormData?.title?.trim() || "";
     if (!title) {
       alert("Please enter a group name (e.g. Extra Cheese, Premium Add-ons)");
       return;
     }
 
-    const validItems = (groupFormData.items || [])
-      .filter((i) => i.name && i.name.trim())
+    const validItems = (groupFormData?.items || [])
+      .filter((i) => i && i.name && i.name.trim())
       .map((i) => ({
         name: i.name.trim(),
         price: Number(i.price) || 0,
@@ -570,10 +578,11 @@ export const AdminDishes = () => {
   };
 
   const handleDeleteGroup = async (groupId) => {
+    if (!groupId) return;
     if (!window.confirm("Are you sure you want to delete this entire add-on group?")) return;
     try {
       await deleteAddonGroup(groupId);
-      setAddonGroups((prev) => prev.filter((g) => (g._id || g.id) !== groupId));
+      await fetchCentralAddons();
     } catch (err) {
       alert("Failed to delete group: " + (err.response?.data?.message || err.message));
     }
@@ -593,8 +602,8 @@ export const AdminDishes = () => {
   const openAddonPicker = () => {
     const currentKeys = new Set(
       (formData.addons || [])
-        .map((a) => a.name?.trim().toLowerCase())
-        .filter(Boolean)
+        .map((a) => a?.name?.trim().toLowerCase())
+        .filter(Boolean),
     );
     setSelectedPickerItemNames(currentKeys);
     setPickerSearch("");
@@ -602,6 +611,7 @@ export const AdminDishes = () => {
   };
 
   const togglePickerItem = (itemName) => {
+    if (!itemName) return;
     const key = itemName.trim().toLowerCase();
     setSelectedPickerItemNames((prev) => {
       const next = new Set(prev);
@@ -615,9 +625,11 @@ export const AdminDishes = () => {
   };
 
   const togglePickerGroupAll = (group, isAllSelected) => {
+    if (!group) return;
     setSelectedPickerItemNames((prev) => {
       const next = new Set(prev);
       (group.items || []).forEach((item) => {
+        if (!item?.name) return;
         const key = item.name.trim().toLowerCase();
         if (isAllSelected) {
           next.delete(key);
@@ -631,14 +643,15 @@ export const AdminDishes = () => {
 
   const handleApplyPickerAddons = () => {
     const chosenList = [];
-    addonGroups.forEach((group) => {
-      (group.items || []).forEach((item) => {
+    validAddonGroups.forEach((group) => {
+      (group?.items || []).forEach((item) => {
+        if (!item?.name) return;
         const key = item.name.trim().toLowerCase();
         if (selectedPickerItemNames.has(key)) {
           chosenList.push({
             name: item.name.trim(),
-            price: item.price,
-            group: group.title,
+            price: Number(item.price) || 0,
+            group: group?.title || "",
           });
         }
       });
@@ -646,7 +659,7 @@ export const AdminDishes = () => {
 
     setFormData((prev) => {
       const existingMap = new Map(
-        (prev.addons || []).map((a) => [a.name?.trim().toLowerCase(), a])
+        (prev.addons || []).map((a) => [a?.name?.trim().toLowerCase(), a]),
       );
 
       const mergedAddons = chosenList.map((chosen) => {
@@ -664,12 +677,12 @@ export const AdminDishes = () => {
 
       // Also preserve any custom manual add-ons not in library
       const allLibraryKeys = new Set(
-        addonGroups.flatMap((g) =>
-          (g.items || []).map((i) => i.name.trim().toLowerCase())
-        )
+        validAddonGroups.flatMap((g) =>
+          (g?.items || []).map((i) => i?.name?.trim().toLowerCase()).filter(Boolean),
+        ),
       );
       (prev.addons || []).forEach((existing) => {
-        const key = existing.name?.trim().toLowerCase();
+        const key = existing?.name?.trim().toLowerCase();
         if (key && !allLibraryKeys.has(key) && !existingMap.has(key)) {
           mergedAddons.push(existing);
         }
@@ -849,7 +862,7 @@ export const AdminDishes = () => {
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all cursor-pointer shadow-xs"
           >
             <Layers className="w-4 h-4 text-primary-500" />
-            <span className="hidden sm:inline">Central</span> Add-ons ({addonGroups.length})
+            <span className="hidden sm:inline">Central</span> Add-ons ({validAddonGroups.length})
           </button>
           <button
             onClick={handleManualRefresh}
@@ -1927,7 +1940,7 @@ export const AdminDishes = () => {
 
               {/* Body: Grouped Addons */}
               <div className="p-5 overflow-y-auto space-y-5 flex-1">
-                {addonGroups.length === 0 ? (
+                {validAddonGroups.length === 0 ? (
                   <div className="py-12 text-center space-y-3">
                     <Layers className="w-10 h-10 text-neutral-400 mx-auto opacity-50" />
                     <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
@@ -1954,19 +1967,19 @@ export const AdminDishes = () => {
                     </div>
                   </div>
                 ) : (
-                  addonGroups.map((group) => {
-                    const filteredItems = (group.items || []).filter((item) =>
+                  validAddonGroups.map((group) => {
+                    const filteredItems = (group?.items || []).filter((item) =>
                       !pickerSearch ||
-                      item.name?.toLowerCase().includes(pickerSearch.toLowerCase())
+                      item?.name?.toLowerCase().includes(pickerSearch.toLowerCase()),
                     );
 
                     if (filteredItems.length === 0) return null;
 
-                    const allGroupKeys = (group.items || []).map((i) =>
-                      i.name.trim().toLowerCase()
-                    );
+                    const allGroupKeys = (group?.items || [])
+                      .map((i) => i?.name?.trim().toLowerCase())
+                      .filter(Boolean);
                     const selectedCountInGroup = allGroupKeys.filter((k) =>
-                      selectedPickerItemNames.has(k)
+                      selectedPickerItemNames.has(k),
                     ).length;
                     const isAllGroupSelected =
                       selectedCountInGroup === allGroupKeys.length &&
@@ -1974,16 +1987,16 @@ export const AdminDishes = () => {
 
                     return (
                       <div
-                        key={group._id || group.id || group.title}
+                        key={group?._id || group?.id || group?.title}
                         className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 space-y-3"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold text-xs uppercase tracking-wider text-neutral-800 dark:text-white">
-                              {group.title}
+                              {group?.title || "Add-on Group"}
                             </span>
                             <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[10px] font-bold">
-                              {selectedCountInGroup}/{group.items?.length || 0}
+                              {selectedCountInGroup}/{group?.items?.length || 0}
                             </span>
                           </div>
                           <button
@@ -1998,15 +2011,15 @@ export const AdminDishes = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {filteredItems.map((item) => {
+                          {filteredItems.map((item, idx) => {
                             const isChecked = selectedPickerItemNames.has(
-                              item.name.trim().toLowerCase()
+                              item?.name?.trim().toLowerCase(),
                             );
                             return (
                               <button
-                                key={item._id || item.id || item.name}
+                                key={item?._id || item?.id || item?.name || idx}
                                 type="button"
-                                onClick={() => togglePickerItem(item.name)}
+                                onClick={() => togglePickerItem(item?.name)}
                                 className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer text-left ${
                                   isChecked
                                     ? "bg-primary-50 dark:bg-primary-955/30 border-primary-500 text-neutral-900 dark:text-white shadow-xs"
@@ -2019,10 +2032,10 @@ export const AdminDishes = () => {
                                   ) : (
                                     <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
                                   )}
-                                  <span className="truncate">{item.name}</span>
+                                  <span className="truncate">{item?.name}</span>
                                 </div>
                                 <span className="font-bold text-primary-500 shrink-0 ml-2">
-                                  ৳{item.price}
+                                  ৳{item?.price}
                                 </span>
                               </button>
                             );
@@ -2102,7 +2115,7 @@ export const AdminDishes = () => {
 
               {/* Body: Groups Cards */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                {addonGroups.length === 0 ? (
+                {validAddonGroups.length === 0 ? (
                   <div className="py-16 text-center space-y-3">
                     <Layers className="w-12 h-12 text-neutral-400 mx-auto opacity-50" />
                     <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200">
@@ -2132,7 +2145,7 @@ export const AdminDishes = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
-                        Saved Groups ({addonGroups.length})
+                        Saved Groups ({validAddonGroups.length})
                       </span>
                       <button
                         type="button"
@@ -2143,18 +2156,18 @@ export const AdminDishes = () => {
                       </button>
                     </div>
 
-                    {addonGroups.map((group) => (
+                    {validAddonGroups.map((group) => (
                       <div
-                        key={group._id || group.id || group.title}
+                        key={group?._id || group?.id || group?.title}
                         className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs space-y-3"
                       >
                         <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2.5">
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold text-sm text-neutral-900 dark:text-white">
-                              {group.title}
+                              {group?.title || "Add-on Group"}
                             </span>
                             <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[11px] font-bold">
-                              {group.items?.length || 0} items
+                              {group?.items?.length || 0} items
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
@@ -2167,7 +2180,7 @@ export const AdminDishes = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteGroup(group._id || group.id)}
+                              onClick={() => handleDeleteGroup(group?._id || group?.id)}
                               className="p-1.5 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/30 rounded-lg transition-colors cursor-pointer"
                               title="Delete group"
                             >
@@ -2178,16 +2191,16 @@ export const AdminDishes = () => {
 
                         {/* Items in this group */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                          {(group.items || []).map((item, idx) => (
+                          {(group?.items || []).map((item, idx) => (
                             <div
                               key={idx}
                               className="p-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/40 flex items-center justify-between gap-2"
                             >
                               <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                                {item.name}
+                                {item?.name}
                               </span>
                               <span className="text-xs font-bold text-primary-500 shrink-0">
-                                ৳{item.price}
+                                ৳{item?.price}
                               </span>
                             </div>
                           ))}
@@ -2227,7 +2240,9 @@ export const AdminDishes = () => {
               <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
                 <div>
                   <h2 className="text-lg font-black text-neutral-800 dark:text-white">
-                    {editingGroup ? `Edit Group: ${editingGroup.title}` : "Create New Add-on Group"}
+                    {editingGroup && editingGroup.title
+                      ? `Edit Group: ${editingGroup.title}`
+                      : "Create New Add-on Group"}
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                     Define the group name and add all item names and prices under it.
@@ -2253,7 +2268,7 @@ export const AdminDishes = () => {
                     <input
                       type="text"
                       placeholder="e.g. Extra Cheese, Premium Add-ons, Sauces"
-                      value={groupFormData.title}
+                      value={groupFormData?.title || ""}
                       onChange={(e) =>
                         setGroupFormData({ ...groupFormData, title: e.target.value })
                       }
