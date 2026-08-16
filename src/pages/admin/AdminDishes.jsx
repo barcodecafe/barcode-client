@@ -2054,40 +2054,11 @@ export const AdminDishes = () => {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Group Selection */}
-                    <div>
-                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
-                        Group / Category
-                      </label>
-                      {isCreatingNewGroup ? (
-                        <input
-                          type="text"
-                          placeholder="e.g. Dipping Sauces"
-                          value={customGroupName}
-                          onChange={(e) => setCustomGroupName(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold"
-                          required
-                        />
-                      ) : (
-                        <select
-                          value={newCentralGroup}
-                          onChange={(e) => setNewCentralGroup(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold cursor-pointer"
-                        >
-                          {distinctCentralGroups.map((g) => (
-                            <option key={g} value={g}>
-                              {g}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                     {/* Addon Name */}
                     <div>
-                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
-                        Add-on Name
+                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
+                        Add-on Name *
                       </label>
                       <input
                         type="text"
@@ -2099,33 +2070,69 @@ export const AdminDishes = () => {
                       />
                     </div>
 
-                    {/* Addon Price */}
+                    {/* Price */}
                     <div>
-                      <label className="text-[11px] font-bold text-neutral-500 block mb-1">
-                        Price (৳)
+                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
+                        Price (৳) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
+                          ৳
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="e.g. 50"
+                          value={newCentralPrice}
+                          onChange={(e) => setNewCentralPrice(e.target.value)}
+                          className="w-full pl-6 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Group Selection / Quick Chips */}
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300 block mb-1">
+                        Group Tag (Optional)
                       </label>
                       <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 font-bold">
-                            ৳
-                          </span>
+                        {isCreatingNewGroup ? (
                           <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="e.g. 50"
-                            value={newCentralPrice}
-                            onChange={(e) => setNewCentralPrice(e.target.value)}
-                            className="w-full pl-6 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold text-primary-500"
-                            required
+                            type="text"
+                            placeholder="Type new group name..."
+                            value={customGroupName}
+                            onChange={(e) => setCustomGroupName(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold"
                           />
-                        </div>
+                        ) : (
+                          <select
+                            value={newCentralGroup}
+                            onChange={(e) => {
+                              if (e.target.value === "__new__") {
+                                setIsCreatingNewGroup(true);
+                                setCustomGroupName("");
+                              } else {
+                                setNewCentralGroup(e.target.value);
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none font-semibold cursor-pointer"
+                          >
+                            {distinctCentralGroups.map((g) => (
+                              <option key={g} value={g}>
+                                {g}
+                              </option>
+                            ))}
+                            <option value="__new__">+ New Custom Group...</option>
+                          </select>
+                        )}
                         <button
                           type="submit"
                           disabled={isSubmittingCentralAddon}
                           className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
                         >
-                          Add
+                          + Add
                         </button>
                       </div>
                     </div>

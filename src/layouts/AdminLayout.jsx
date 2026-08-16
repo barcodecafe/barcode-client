@@ -45,7 +45,6 @@ import resW from '../assets/Barcode_restaurant_groupW.png';
 
 const navItems = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
-  { name: 'Categories', path: '/admin/categories', icon: MenuIcon },
   { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
   { name: 'Brands', path: '/admin/brands', icon: Store },
   { name: 'Regions', path: '/admin/regions', icon: Map },
