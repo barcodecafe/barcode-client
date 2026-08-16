@@ -455,33 +455,45 @@ export const AdminOrders = () => {
     }
   };
 
-  const handlePrint = (e) => {
-    if (e) e.preventDefault();
+  const handlePrint = () => {
     const printContent = invoiceRef.current;
     if (!printContent) return;
 
-    const invoiceNumber = (selectedOrderDetails?.id || selectedOrderDetails?._id || '').slice(-10).toUpperCase();
-    const WindowPrt = window.open(
-      "",
-      "_blank",
-      "left=0,top=0,width=850,height=950",
-    );
-    if (!WindowPrt) {
-      toast.error("Please allow popups for this website to print.");
-      return;
-    }
-    const printStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-      .map((el) => el.outerHTML)
-      .join("\n");
+    const invoiceNumber = (
+      selectedOrderDetails?.id || selectedOrderDetails?._id || ""
+    )
+      .slice(-10)
+      .toUpperCase();
 
-    WindowPrt.document.open();
-    WindowPrt.document.write(`<!DOCTYPE html>
+    // Create a hidden iframe for seamless printing without popup blocker issues
+    let printFrame = document.getElementById("invoice-print-frame");
+    if (printFrame) {
+      document.body.removeChild(printFrame);
+    }
+
+    printFrame = document.createElement("iframe");
+    printFrame.id = "invoice-print-frame";
+    printFrame.style.position = "fixed";
+    printFrame.style.right = "0";
+    printFrame.style.bottom = "0";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "0";
+    printFrame.style.zIndex = "-9999";
+    document.body.appendChild(printFrame);
+
+    const frameDoc =
+      printFrame.contentWindow ||
+      printFrame.contentDocument.document ||
+      printFrame.contentDocument;
+
+    frameDoc.document.open();
+    frameDoc.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice - ${invoiceNumber}</title>
-  ${printStyles}
   <style>
     @page {
       size: auto;
@@ -489,6 +501,8 @@ export const AdminOrders = () => {
     }
     *, *::before, *::after {
       box-sizing: border-box !important;
+      margin: 0;
+      padding: 0;
     }
     html, body {
       width: 100% !important;
@@ -512,11 +526,12 @@ export const AdminOrders = () => {
       flex-direction: column !important;
       justify-content: space-between !important;
       box-sizing: border-box !important;
-      padding: 5mm 8mm 4mm 8mm !important;
+      padding: 4mm 6mm 3mm 6mm !important;
       overflow: hidden !important;
       page-break-after: avoid !important;
       page-break-inside: avoid !important;
       page-break-before: avoid !important;
+      background: #ffffff !important;
     }
     .invoice-header {
       flex-shrink: 0 !important;
@@ -526,8 +541,9 @@ export const AdminOrders = () => {
     }
     .invoice-header img {
       width: 100% !important;
-      max-height: 54px !important;
-      object-fit: contain !important;
+      height: auto !important;
+      max-height: 70px !important;
+      object-fit: fill !important;
       margin: 0 auto !important;
       display: block !important;
     }
@@ -547,7 +563,7 @@ export const AdminOrders = () => {
       display: flex !important;
       flex-direction: column !important;
       justify-content: flex-start !important;
-      gap: 8px !important;
+      gap: 7px !important;
       overflow: hidden !important;
     }
     .bill-to-box {
@@ -557,7 +573,7 @@ export const AdminOrders = () => {
       align-items: flex-start !important;
       gap: 16px !important;
       background-color: #f9fafb !important;
-      padding: 10px 14px !important;
+      padding: 9px 13px !important;
       border-radius: 10px !important;
       border: 1px solid #e5e7eb !important;
       font-size: 11px !important;
@@ -619,7 +635,7 @@ export const AdminOrders = () => {
     }
     table.invoice-table th {
       display: table-cell !important;
-      padding: 6px 8px !important;
+      padding: 5px 8px !important;
       border-right: 1px solid #d1d5db !important;
       text-align: left !important;
       vertical-align: middle !important;
@@ -703,8 +719,9 @@ export const AdminOrders = () => {
     }
     .invoice-footer img {
       width: 100% !important;
-      max-height: 42px !important;
-      object-fit: contain !important;
+      height: auto !important;
+      max-height: 46px !important;
+      object-fit: fill !important;
       margin: 0 auto !important;
       display: block !important;
       visibility: visible !important;
@@ -718,25 +735,16 @@ export const AdminOrders = () => {
   ${printContent.outerHTML}
 </body>
 </html>`);
-    WindowPrt.document.close();
+    frameDoc.document.close();
 
-    const doPrint = () => {
+    setTimeout(() => {
       try {
-        WindowPrt.focus();
-        WindowPrt.print();
-        WindowPrt.close();
+        frameDoc.focus();
+        frameDoc.print();
       } catch (err) {
         console.error("Print error:", err);
       }
-    };
-
-    // Wait for images to load before firing print
-    if (WindowPrt.document.readyState === "complete") {
-      setTimeout(doPrint, 300);
-    } else {
-      WindowPrt.onload = () => setTimeout(doPrint, 300);
-      setTimeout(doPrint, 800);
-    }
+    }, 450);
   };
 
   if (loading) {
@@ -1470,7 +1478,7 @@ export const AdminOrders = () => {
                   <img
                     src={invoiceHeaderImg}
                     alt="Barcode Restaurant Group Header"
-                    className="w-full h-auto max-h-[60px] object-contain block mx-auto"
+                    className="w-full h-auto max-h-[75px] object-fill block mx-auto"
                   />
                   <div className="invoice-title text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
                     Invoice
