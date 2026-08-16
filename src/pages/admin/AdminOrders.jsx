@@ -55,6 +55,69 @@ const formatShortOrderId = (id) => {
   return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
 };
 
+export const numberToWords = (num) => {
+  if (!num || isNaN(num) || num <= 0) return "Zero Taka Only";
+
+  const a = [
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen"
+  ];
+  const b = [
+    "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"
+  ];
+
+  const convertGroup = (n) => {
+    let str = "";
+    if (n >= 100) {
+      str += a[Math.floor(n / 100)] + " Hundred ";
+      n %= 100;
+    }
+    if (n >= 20) {
+      str += b[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + a[n % 10] : "") + " ";
+    } else if (n > 0) {
+      str += a[n] + " ";
+    }
+    return str;
+  };
+
+  const integerPart = Math.floor(num);
+  const decimalPart = Math.round((num - integerPart) * 100);
+
+  if (integerPart === 0 && decimalPart === 0) return "Zero Taka Only";
+
+  let result = "";
+  let n = integerPart;
+  const crore = Math.floor(n / 10000000);
+  n %= 10000000;
+  const lakh = Math.floor(n / 100000);
+  n %= 100000;
+  const thousand = Math.floor(n / 1000);
+  n %= 1000;
+  const remainder = n;
+
+  if (crore > 0) {
+    result += convertGroup(crore) + "Crore ";
+  }
+  if (lakh > 0) {
+    result += convertGroup(lakh) + "Lakh ";
+  }
+  if (thousand > 0) {
+    result += convertGroup(thousand) + "Thousand ";
+  }
+  if (remainder > 0) {
+    result += convertGroup(remainder);
+  }
+
+  result = result.trim() + " Taka";
+
+  if (decimalPart > 0) {
+    result += " and " + convertGroup(decimalPart).trim() + " Paisa";
+  }
+
+  return result + " Only";
+};
+
 export const computeInvoiceItemDetails = (item) => {
   const qty = Number(item.quantity) || 1;
   const rawPrice = Number(item.price) || 0;
@@ -635,38 +698,40 @@ export const AdminOrders = () => {
     }
     table.invoice-table th {
       display: table-cell !important;
-      padding: 5px 8px !important;
+      padding: 5px 6px !important;
       border-right: 1px solid #d1d5db !important;
       text-align: left !important;
       vertical-align: middle !important;
+      overflow: hidden !important;
     }
     table.invoice-table th:last-child {
       border-right: none !important;
     }
     table.invoice-table td {
       display: table-cell !important;
-      padding: 5px 8px !important;
+      padding: 4px 6px !important;
       border-right: 1px solid #d1d5db !important;
       border-bottom: 1px solid #e5e7eb !important;
       vertical-align: middle !important;
       word-break: break-word !important;
+      overflow: hidden !important;
     }
     table.invoice-table td:last-child {
       border-right: none !important;
     }
-    .col-items { width: 36% !important; text-align: left !important; font-weight: 600 !important; }
-    .col-price { width: 14% !important; text-align: right !important; font-weight: 500 !important; }
-    .col-qty   { width: 8% !important; text-align: center !important; font-weight: 700 !important; }
-    .col-disc  { width: 14% !important; text-align: right !important; font-weight: 700 !important; color: #059669 !important; }
+    .col-items { width: 32% !important; text-align: left !important; font-weight: 600 !important; }
+    .col-price { width: 15% !important; text-align: right !important; font-weight: 500 !important; font-size: 10.5px !important; white-space: nowrap !important; }
+    .col-qty   { width: 10% !important; text-align: center !important; font-weight: 700 !important; }
+    .col-disc  { width: 15% !important; text-align: right !important; font-weight: 700 !important; color: #059669 !important; font-size: 10.5px !important; white-space: nowrap !important; }
     .col-vat   { width: 10% !important; text-align: right !important; }
-    .col-total { width: 18% !important; text-align: right !important; font-weight: 800 !important; color: #111827 !important; }
+    .col-total { width: 18% !important; text-align: right !important; font-weight: 800 !important; color: #111827 !important; font-size: 11px !important; white-space: nowrap !important; }
     
     .promo-badge {
       display: inline-block !important;
       margin-top: 2px !important;
-      padding: 1px 5px !important;
-      border-radius: 4px !important;
-      font-size: 8px !important;
+      padding: 1px 4px !important;
+      border-radius: 3px !important;
+      font-size: 7.5px !important;
       font-weight: 800 !important;
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
@@ -1572,10 +1637,10 @@ export const AdminOrders = () => {
                   <div className="invoice-table-wrap w-full overflow-hidden">
                     <table className="invoice-table w-full text-xs text-left border-collapse border border-neutral-300 table-fixed">
                       <colgroup>
-                        <col className="w-[36%]" style={{ width: "36%" }} />
-                        <col className="w-[14%]" style={{ width: "14%" }} />
-                        <col className="w-[8%]" style={{ width: "8%" }} />
-                        <col className="w-[14%]" style={{ width: "14%" }} />
+                        <col className="w-[32%]" style={{ width: "32%" }} />
+                        <col className="w-[15%]" style={{ width: "15%" }} />
+                        <col className="w-[10%]" style={{ width: "10%" }} />
+                        <col className="w-[15%]" style={{ width: "15%" }} />
                         <col className="w-[10%]" style={{ width: "10%" }} />
                         <col className="w-[18%]" style={{ width: "18%" }} />
                       </colgroup>
@@ -1683,7 +1748,7 @@ export const AdminOrders = () => {
                             <span className="font-medium">0.00</span>
                           </div>
                           <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900 bg-neutral-50 px-1.5 py-1 rounded">
-                            <span>Sub Total (Including Tax):</span>
+                            <span>Sub Total (Including Vat):</span>
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
@@ -1698,7 +1763,7 @@ export const AdminOrders = () => {
                             <span className="font-medium">0.00</span>
                           </div>
                           <div className="summary-row flex justify-between py-1 border-b border-neutral-200 font-extrabold text-neutral-900">
-                            <span>Sub Total (Including Tax):</span>
+                            <span>Sub Total (Including Vat):</span> 
                             <span>৳{subTotal.toFixed(2)}</span>
                           </div>
                         </>
@@ -1774,9 +1839,9 @@ export const AdminOrders = () => {
                   </div>
 
                   <div className="words-section pt-2 text-xs text-neutral-600 font-medium">
-                    Amount in Words (BDT):{" "}
-                    <span className="italic font-bold text-neutral-800 uppercase">
-                      BDT {grandTotal.toFixed(0)} Taka Only
+                    Amount in Words:{" "}
+                    <span className="italic font-bold text-neutral-800 capitalize">
+                      {numberToWords(grandTotal)}
                     </span>
                   </div>
                 </div>
@@ -1786,7 +1851,7 @@ export const AdminOrders = () => {
                   <img
                     src={invoiceFooterImg}
                     alt="Barcode Restaurant Group Footer"
-                    className="w-full h-auto max-h-[50px] object-contain block mx-auto"
+                    className="w-full h-auto max-h-[50px] object-fill block mx-auto"
                   />
                 </div>
               </div>
