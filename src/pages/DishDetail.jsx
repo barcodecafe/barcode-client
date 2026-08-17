@@ -168,11 +168,8 @@ export const DishDetail = () => {
         if (cancelled) return;
 
         setFood(foodData);
-        if (foodData && Array.isArray(foodData.variations) && foodData.variations.length > 0) {
-          setSelectedVariation(foodData.variations[0]);
-        } else {
-          setSelectedVariation(null);
-        }
+        // Do not auto-select any variant so the main dish image is shown by default
+        setSelectedVariation(null);
       } catch (err) {
         console.error("Error loading dish detail:", err);
         if (!cancelled) setFood(null);
@@ -524,7 +521,7 @@ export const DishDetail = () => {
                       <button
                         key={v.name || vIdx}
                         type="button"
-                        onClick={() => setSelectedVariation(v)}
+                        onClick={() => setSelectedVariation((prev) => (prev?.name === v.name ? null : v))}
                         className={`px-3.5 py-2 rounded-none border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20"
