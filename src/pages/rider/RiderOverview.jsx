@@ -14,6 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getAllOrders } from "../../services/ordersService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import { isAssignedToMe } from "../../layouts/RiderLayout";
+import { riderCommissionFor } from "../../utils/settlement";
 
 export const RiderOverview = () => {
   const { user } = useAuth();
@@ -92,7 +93,7 @@ export const RiderOverview = () => {
       return true;
     });
 
-    const totalEarnings = filtered.reduce((sum, o) => sum + (o.deliveryCharge || 0), 0);
+    const totalEarnings = filtered.reduce((sum, o) => sum + riderCommissionFor(o), 0);
     const totalFoodPrice = filtered.reduce(
       (sum, o) => sum + (o.total - (o.deliveryCharge || 0) || 0),
       0

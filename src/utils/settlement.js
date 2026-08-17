@@ -16,11 +16,18 @@ const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
  */
 const isSnapshotted = (order) => !!order?.deliveredAt;
 
-/** What the rider earns for a delivery — currently the whole delivery charge. */
-export const riderCommissionFor = (order) =>
-  isSnapshotted(order) && Number.isFinite(order?.riderCommission)
-    ? round2(order.riderCommission)
-    : round2(order?.deliveryCharge || 0);
+/** What the rider earns for a delivery — area delivery charge for permanent, % of food cost for freelance. */
+export const riderCommissionFor = (order) => {
+  if (isSnapshotted(order) && Number.isFinite(order?.riderCommission)) {
+    return round2(order.riderCommission);
+  }
+  if (order?.riderEmploymentType === "freelance") {
+    const rate = Number(order?.riderCommissionRate) > 0 ? Number(order.riderCommissionRate) : 15;
+    const foodCost = Number(order?.subtotal) || 0;
+    return round2(foodCost * (rate / 100));
+  }
+  return round2(order?.deliveryCharge || 0);
+};
 
 /**
  * Cash actually taken from the customer at the door.

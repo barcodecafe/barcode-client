@@ -20,6 +20,21 @@ export async function updateRiderStatus(id, newStatus) {
   return apiClient.patch(`/riders/${id}/status`, { status: newStatus });
 }
 
+/** POST /api/riders/manual-create (admin only) */
+export async function createRiderManual(payload) {
+  return apiClient.post('/riders/manual-create', payload);
+}
+
+/** PATCH /api/riders/:id/profile (admin only) */
+export async function updateRiderProfile(id, payload) {
+  return apiClient.patch(`/riders/${id}/profile`, payload);
+}
+
+/** DELETE /api/riders/:id (admin only) */
+export async function deleteRider(id) {
+  return apiClient.delete(`/riders/${id}`);
+}
+
 /**
  * Dedicated rider signup (multipart). fields: name, email, password, phone,
  * address, nid, experience, expYears + photo (image) + license (PDF).
