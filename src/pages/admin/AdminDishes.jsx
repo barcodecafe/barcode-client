@@ -1607,8 +1607,7 @@ export const AdminDishes = () => {
                   <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">
                     Available Branches
                     <span className="normal-case text-amber-600 dark:text-amber-400 ml-2 font-semibold">
-                      (কোনো ব্রাঞ্চ সিলেক্ট না করলে বাই-ডিফল্ট সব ব্রাঞ্চে শো
-                      করবে)
+                      (If no branch is selected, all branches will be displayed by default)
                     </span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
