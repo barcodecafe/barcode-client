@@ -108,7 +108,7 @@ export const RidersFleetOverview = ({
     try {
       setSubmitting(true);
       await createRiderManual(formData);
-      toast.success(`🎉 Rider ${formData.name} successfully created!`);
+      toast.success(`Rider ${formData.name} created successfully!`);
       setIsAddModalOpen(false);
       resetForm();
       if (onRefresh) onRefresh();
@@ -126,7 +126,7 @@ export const RidersFleetOverview = ({
     try {
       setSubmitting(true);
       await updateRiderProfile(selectedRider.id, formData);
-      toast.success(`✅ Rider ${formData.name} updated successfully!`);
+      toast.success(`Rider ${formData.name} updated successfully!`);
       setIsEditModalOpen(false);
       resetForm();
       if (onRefresh) onRefresh();
@@ -160,7 +160,7 @@ export const RidersFleetOverview = ({
     }
   };
 
-  // 🎯 রাইডারের পারফর্মেন্স ও ক্যাশ সেটেলমেন্ট হিসাব করার লজিক
+  // Performance stats calculation
   const getRiderPerformanceStats = (riderId) => {
     const todayKey = businessDateKey(new Date());
     const riderOrders = orders.filter((o) => o.riderId === riderId);
@@ -314,7 +314,7 @@ export const RidersFleetOverview = ({
                         </span>
                       </div>
                       <span className="block text-[10px] text-neutral-400 mt-0.5 truncate">
-                        📱 {r.phone} {r.vehicle ? `· 🛵 ${r.vehicle}` : ""}
+                        Phone: {r.phone} {r.vehicle ? `· ${r.vehicle}` : ""}
                       </span>
                     </div>
 
@@ -481,7 +481,7 @@ export const RidersFleetOverview = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEditModal(r)}
-                      title="Edit Rider & Compensation"
+                      title="Edit Rider Profile & Compensation"
                       className="p-1 rounded-md text-neutral-400 hover:text-neutral-800 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -527,10 +527,10 @@ export const RidersFleetOverview = ({
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-sm text-neutral-900 dark:text-white">
-                    Add New Rider (ম্যানুয়ালি রাইডার তৈরি করুন)
+                    Add New Rider
                   </h3>
                   <p className="text-[11px] text-neutral-400">
-                    Create instant active rider account with login access
+                    Create active rider account with instant login credentials
                   </p>
                 </div>
               </div>
@@ -600,7 +600,7 @@ export const RidersFleetOverview = ({
 
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Login Password (ডিফল্ট: 123456)
+                    Login Password (Default: 123456)
                   </label>
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -618,7 +618,7 @@ export const RidersFleetOverview = ({
               {/* 🎯 Employment Model Selector */}
               <div className="space-y-2 pt-1">
                 <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300">
-                  Employment Model & Compensation * (রাইডারের ধরণ ও আর্নিং মডেল)
+                  Employment Model & Compensation *
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -644,7 +644,7 @@ export const RidersFleetOverview = ({
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      এরিয়া ভিত্তিক নির্ধারিত ডেলিভারি চার্জ (যেমন ৳৬০) রাইডারের আয় হবে।
+                      Earns standard area-based delivery fee (e.g. ৳60).
                     </p>
                   </label>
 
@@ -670,7 +670,7 @@ export const RidersFleetOverview = ({
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      খাবারের মোট মূল্যের (Food Cost) ওপর নির্দিষ্ট % কমিশন পাবে।
+                      Earns percentage commission on total food cost.
                     </p>
                   </label>
                 </div>
@@ -730,10 +730,10 @@ export const RidersFleetOverview = ({
                     onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}
                     className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-hidden"
                   >
-                    <option value="Motorbike">Motorbike (মোটরসাইকেল)</option>
-                    <option value="Bicycle">Bicycle (সাইকেল)</option>
-                    <option value="Scooter">Scooter (স্কুটার)</option>
-                    <option value="Electric Bike">Electric Bike (ই-বাইক)</option>
+                    <option value="Motorbike">Motorbike</option>
+                    <option value="Bicycle">Bicycle</option>
+                    <option value="Scooter">Scooter</option>
+                    <option value="Electric Bike">Electric Bike</option>
                     <option value="Van">Delivery Van</option>
                   </select>
                 </div>
@@ -791,7 +791,7 @@ export const RidersFleetOverview = ({
                     Edit Rider Profile: {selectedRider.name}
                   </h3>
                   <p className="text-[11px] text-neutral-400">
-                    Update employment model, commission rate, and phone/vehicle
+                    Update employment model, commission rate, vehicle, or password
                   </p>
                 </div>
               </div>
@@ -860,7 +860,7 @@ export const RidersFleetOverview = ({
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      এরিয়া ভিত্তিক ডেলিভারি ফি আর্নিং হিসেবে গণ্য হবে।
+                      Earns standard area-based delivery fee.
                     </p>
                   </label>
 
@@ -885,7 +885,7 @@ export const RidersFleetOverview = ({
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      খাবারের মোট মূল্যের (Food Cost) ওপর % কমিশন পাবে।
+                      Earns percentage commission on total food cost.
                     </p>
                   </label>
                 </div>
@@ -948,7 +948,7 @@ export const RidersFleetOverview = ({
 
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Reset Password (ঐচ্ছিক)
+                    Reset Password (Optional)
                   </label>
                   <input
                     type="password"
