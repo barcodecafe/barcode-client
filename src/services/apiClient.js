@@ -139,12 +139,8 @@ async function request(path, { method = 'GET', body, headers = {}, timeoutMs } =
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        // [SORTING-FIX] Prevent browser caching of JSON responses so fresh order is served on reload
-        ...(method === 'GET' ? { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } : {}),
         ...headers,
       },
-      // [SORTING-FIX] Ensure fetch bypasses stale browser HTTP cache
-      ...(method === 'GET' ? { cache: 'no-store' } : {}),
       body: body ? JSON.stringify(body) : undefined,
     },
     timeoutMs,

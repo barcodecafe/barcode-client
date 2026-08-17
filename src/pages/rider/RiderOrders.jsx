@@ -123,7 +123,7 @@ export const RiderOrders = () => {
 
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
-    getAllOrders()
+    getAllOrders({ active: true })
       .then((data) => {
         const orderList = Array.isArray(data) ? data : data?.data || [];
         const assigned = orderList.filter((o) => isAssignedToMe(o) && o.status !== "Delivered" && o.status !== "Rejected");
