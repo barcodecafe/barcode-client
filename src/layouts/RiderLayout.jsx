@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { getAllOrders } from "../services/ordersService";
+import { updateRiderStatus } from "../services/ridersService";
 import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -17,6 +19,7 @@ import {
   Volume2,
   ClipboardList,
   ShoppingBag as ToastIcon,
+  Power,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../context/AuthContext";
@@ -33,7 +36,7 @@ const navItems = [
 ];
 
 // 🎯 FIX: অর্ডারটি এই রাইডারের কি না তা চেক করার জন্য বুলেটপ্রুফ গ্লোবাল ফাংশন
-const isAssignedToMe = (orderOrData, user) => {
+export const isAssignedToMe = (orderOrData, user) => {
   if (!user || !orderOrData) return false;
   
   const uId = String(user.id || user._id || "").trim();
@@ -56,7 +59,7 @@ const isAssignedToMe = (orderOrData, user) => {
 
 export const RiderLayout = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +68,8 @@ export const RiderLayout = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
+  const [isDutyUpdating, setIsDutyUpdating] = useState(false);
+  const riderStatus = user?.riderStatus || 'Available';
 
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
@@ -357,6 +362,26 @@ export const RiderLayout = () => {
     </>
   );
 
+  const handleToggleDuty = async () => {
+    if (!user) return;
+    const nextStatus = riderStatus === 'Available' ? 'Busy' : 'Available';
+    try {
+      setIsDutyUpdating(true);
+      await updateRiderStatus(user.id || user._id, nextStatus);
+      await refreshUser();
+      toast.success(
+        nextStatus === 'Available'
+          ? '🟢 You are now Online (Available for deliveries)'
+          : '🔴 You are now Offline / Busy (On Break)',
+        { duration: 4000 }
+      );
+    } catch (err) {
+      toast.error('Failed to change status: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsDutyUpdating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 transition-colors duration-300 relative">
       <AnimatePresence>
@@ -453,7 +478,28 @@ export const RiderLayout = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Duty Availability Toggle */}
+            <button
+              onClick={handleToggleDuty}
+              disabled={isDutyUpdating}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
+                riderStatus === "Available"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+              }`}
+              title="Click to toggle Online / Offline Duty Status"
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  riderStatus === "Available"
+                    ? "bg-emerald-500 animate-pulse"
+                    : "bg-amber-500"
+                }`}
+              />
+              <span>{riderStatus === "Available" ? "Online" : "On Break"}</span>
+            </button>
+
             <button
               onClick={playLoudNotificationChime}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
@@ -511,8 +557,14 @@ export const RiderLayout = () => {
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
                   {user?.name || "Rider"}
                 </p>
-                <p className="text-[10px] text-emerald-500 font-bold uppercase">
-                  Delivery Hero
+                <p
+                  className={`text-[10px] font-bold uppercase ${
+                    riderStatus === "Available"
+                      ? "text-emerald-500"
+                      : "text-amber-500"
+                  }`}
+                >
+                  {riderStatus === "Available" ? "Active Hero" : "On Break"}
                 </p>
               </div>
             </div>

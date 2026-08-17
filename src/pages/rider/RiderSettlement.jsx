@@ -13,12 +13,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
-import { buildDailySettlementLog, formatDateKey } from "../../utils/settlement";
+import { buildDailySettlementLog, formatDateKey, orderSettlementDate } from "../../utils/settlement";
 import {
   getAllOrders,
   submitRiderDailyCash,
 } from "../../services/ordersService";
 import { socket } from "../../services/socket";
+import { isAssignedToMe } from "../../layouts/RiderLayout";
 
 export const RiderSettlement = () => {
   const { user } = useAuth();
@@ -31,11 +32,8 @@ export const RiderSettlement = () => {
     if (!user) return;
     getAllOrders()
       .then((data) => {
-        const assigned = (data || []).filter(
-          (o) =>
-            o.riderId === user.id ||
-            o.riderName?.toLowerCase() === user.name?.toLowerCase()
-        );
+        const orderList = Array.isArray(data) ? data : data?.data || [];
+        const assigned = orderList.filter((o) => isAssignedToMe(o, user));
         setOrders(assigned);
         setLoading(false);
       })
@@ -146,9 +144,9 @@ export const RiderSettlement = () => {
             {dailyLog.map((log, index) => {
               // 🎯 আপডেট: ওই নির্দিষ্ট তারিখের ডেলিভারি এবং রিজেক্ট হওয়া সব অর্ডারই ফিল্টার করে নিয়ে আসা
               const dayOrders = orders.filter((o) => {
-                const orderDateKey = new Date(o.createdAt || o.updatedAt).toISOString().split("T")[0];
+                const orderDateKey = orderSettlementDate(o);
                 const isTargetDate = orderDateKey === log.dateKey;
-                const isRelevantStatus = o.riderAcceptStatus === "rejected" || o.status === "Delivered" || o.status === "Rejected";
+                const isRelevantStatus = o.riderAcceptStatus === "rejected" || o.status === "Delivered" || o.status === "Rejected" || !!o.deliveredAt;
                 return isTargetDate && isRelevantStatus;
               });
 

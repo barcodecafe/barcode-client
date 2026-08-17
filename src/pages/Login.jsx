@@ -89,6 +89,30 @@ export const Login = ({ variant = 'user' }) => {
 
       // Role Check Logic
       if (loggedInUser.role !== cfg.role) {
+        if (variant === 'rider' && loggedInUser.riderApprovalStatus === 'pending') {
+          await logout();
+          Swal.fire({
+            icon: 'info',
+            title: 'Application Under Review',
+            text: 'Your rider application has been submitted and is currently under review by our admin team. You will be able to access the Rider Portal once approved.',
+            confirmButtonText: 'Understood',
+            confirmButtonColor: '#f59e0b',
+          });
+          return;
+        }
+
+        if (variant === 'rider' && loggedInUser.riderApprovalStatus === 'rejected') {
+          await logout();
+          Swal.fire({
+            icon: 'error',
+            title: 'Application Not Approved',
+            text: 'Your rider application was not approved. Please contact Barcode support for further assistance or apply again.',
+            confirmButtonText: 'Understood',
+            confirmButtonColor: '#ef4444',
+          });
+          return;
+        }
+
         if (variant === 'user' && (loggedInUser.role === 'rider' || loggedInUser.role === 'admin')) {
           const targetPortal = loggedInUser.role === 'rider' ? '/rider' : '/admin';
           

@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { getAllOrders } from "../../services/ordersService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
+import { isAssignedToMe } from "../../layouts/RiderLayout";
 
 export const RiderOverview = () => {
   const { user } = useAuth();
@@ -28,11 +29,8 @@ export const RiderOverview = () => {
     if (!user) return;
     getAllOrders()
       .then((data) => {
-        const assigned = (data || []).filter(
-          (o) =>
-            o.riderId === user.id ||
-            o.riderName?.toLowerCase() === user.name?.toLowerCase()
-        );
+        const orderList = Array.isArray(data) ? data : data?.data || [];
+        const assigned = orderList.filter((o) => isAssignedToMe(o, user));
         setOrders(assigned);
         setLoading(false);
       })

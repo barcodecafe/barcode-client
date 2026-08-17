@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   ShieldAlert,
   Phone,
@@ -12,6 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import {
   getAllOrders,
+  getOrderById,
   updateOrderStatus,
   addChatMessage,
   acceptRiderOrder,
@@ -51,8 +53,50 @@ export const RiderOrders = () => {
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   
-  const chatOrder = orders.find((o) => (o._id || o.id) === activeChatOrderId);
+  const chatOrder = orders.find((o) => String(o._id || o.id) === String(activeChatOrderId));
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
+
+  // 💬 লাইভ চ্যাট হিস্ট্রি ব্যাকএন্ড থেকে ফেচ করা
+  useEffect(() => {
+    if (!activeChatOrderId) return;
+    getOrderById(activeChatOrderId)
+      .then((fullOrder) => {
+        if (fullOrder && fullOrder.chatHistory) {
+          setOrders((prev) =>
+            prev.map((o) =>
+              String(o._id || o.id) === String(activeChatOrderId)
+                ? { ...o, chatHistory: fullOrder.chatHistory }
+                : o
+            )
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to load full chat history:", err));
+  }, [activeChatOrderId]);
+
+  // ⚡ লাইভ চ্যাট মেসেজ সকেট লিসেনার
+  useEffect(() => {
+    const handleNewChatMessage = (data) => {
+      const targetId = String(data?.orderId || "");
+      const msg = data?.message;
+      if (!targetId || !msg) return;
+
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (String(o._id || o.id) === targetId) {
+            const existing = o.chatHistory || [];
+            return { ...o, chatHistory: [...existing, msg] };
+          }
+          return o;
+        })
+      );
+    };
+
+    socket.on("new_chat_message", handleNewChatMessage);
+    return () => {
+      socket.off("new_chat_message", handleNewChatMessage);
+    };
+  }, []);
 
   const isAssignedToMe = useCallback((orderData) => {
     if (!user || !orderData) return false;
