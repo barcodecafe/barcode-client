@@ -23,7 +23,7 @@ const VARIANTS = {
     icon: ShieldCheck,
     badge: 'Administrator',
     title: 'Admin Portal',
-    subtitle: 'Sign in with your email to manage the Barcode dashboard.',
+    subtitle: 'Sign in with your email or mobile number to manage the Barcode dashboard.',
     standalone: true,
     signupPrompt: null,
   },
@@ -32,7 +32,7 @@ const VARIANTS = {
     icon: Bike,
     badge: 'Delivery Rider',
     title: 'Rider Portal',
-    subtitle: 'Sign in with your email to view and manage your deliveries.',
+    subtitle: 'Sign in with your email or mobile number to view and manage your deliveries.',
     standalone: true,
     signupPrompt: 'Want to ride with us?',
     signupTo: '/rider-application',
@@ -81,14 +81,24 @@ export const Login = ({ variant = 'user' }) => {
     const sanitizedIdentifier = identifier.trim();
 
     try {
-      const payload = cfg.role === 'user'
-        ? { phone: sanitizedIdentifier.replace(/\s+/g, ''), password }
-        : { email: sanitizedIdentifier.toLowerCase(), password };
+      const isEmail = sanitizedIdentifier.includes('@');
+      const payload = isEmail
+        ? { email: sanitizedIdentifier.toLowerCase(), password }
+        : { phone: sanitizedIdentifier.replace(/\s+/g, ''), password };
 
       const loggedInUser = await login(payload);
 
+      const isActorAdmin = ['admin', 'super_admin', 'superadmin'].includes(
+        String(loggedInUser?.role || '').toLowerCase()
+      );
+
+      const hasAccess =
+        (cfg.role === 'admin' && isActorAdmin) ||
+        (cfg.role === 'rider' && loggedInUser.role === 'rider') ||
+        (cfg.role === 'user' && loggedInUser.role === 'user');
+
       // Role Check Logic
-      if (loggedInUser.role !== cfg.role) {
+      if (!hasAccess) {
         if (variant === 'rider' && loggedInUser.riderApprovalStatus === 'pending') {
           await logout();
           Swal.fire({
@@ -113,13 +123,13 @@ export const Login = ({ variant = 'user' }) => {
           return;
         }
 
-        if (variant === 'user' && (loggedInUser.role === 'rider' || loggedInUser.role === 'admin')) {
+        if (variant === 'user' && (loggedInUser.role === 'rider' || isActorAdmin)) {
           const targetPortal = loggedInUser.role === 'rider' ? '/rider' : '/admin';
           
           Swal.fire({
             icon: 'info',
             title: 'Redirecting...',
-            text: `Welcome! Redirecting you to the ${loggedInUser.role.toUpperCase()} portal.`,
+            text: `Welcome! Redirecting you to the ${isActorAdmin ? 'ADMIN' : 'RIDER'} portal.`,
             timer: 1200,
             showConfirmButton: false,
           });
@@ -129,8 +139,9 @@ export const Login = ({ variant = 'user' }) => {
         }
 
         await logout();
-        const doorMsg = wrongDoorMessage(loggedInUser.role);
-        setWrongDoor({ message: doorMsg, to: LOGIN_ROUTE[loggedInUser.role] || '/login' });
+        const roleLabel = isActorAdmin ? 'admin' : loggedInUser.role;
+        const doorMsg = wrongDoorMessage(roleLabel);
+        setWrongDoor({ message: doorMsg, to: LOGIN_ROUTE[roleLabel] || '/login' });
 
         Swal.fire({
           icon: 'warning',
@@ -144,11 +155,10 @@ export const Login = ({ variant = 'user' }) => {
 
       // Success Path
       const searchRedirect = new URLSearchParams(location.search).get('redirect');
-      const isUserAdmin = ['admin', 'super_admin', 'superadmin'].includes(String(loggedInUser.role || '').toLowerCase());
-      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : isUserAdmin ? '/admin' : '/';
+      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : isActorAdmin ? '/admin' : '/';
       let redirectTo = searchRedirect || location.state?.from || defaultHome;
 
-      if (isUserAdmin && !redirectTo.startsWith('/admin')) {
+      if (isActorAdmin && !redirectTo.startsWith('/admin')) {
         redirectTo = '/admin';
       } else if (loggedInUser.role === 'rider' && !redirectTo.startsWith('/rider')) {
         redirectTo = '/rider';
@@ -245,18 +255,18 @@ export const Login = ({ variant = 'user' }) => {
           ) : (
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                Email Address
+                Email or Mobile Number
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
                   id="email"
-                  type="email"
-                  autoComplete="email"
+                  type="text"
+                  autoComplete="username"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="e.g. name@example.com or 018XXXXXXXX"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
                 />
               </div>
