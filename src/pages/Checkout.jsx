@@ -36,9 +36,10 @@ import {
 } from "../services/couponsService";
 import { createOrder } from "../services/ordersService";
 import { getAllRegions } from "../services/regionsService";
-import { getRegionDeliveryCharge } from "../services/deliveryService";
+import { getRegionDeliveryCharge, checkFreeDeliveryEligibility } from "../services/deliveryService";
 import { initPayment, MIN_ONLINE_AMOUNT } from "../services/paymentsService";
 import { getAuthErrorMessage } from "../services/authService";
+import { useSettings } from "../context/SettingsContext";
 import { socket } from "../services/socket";
 
 // ---------------------------------------------------------------------------
@@ -210,9 +211,16 @@ export const Checkout = () => {
     0,
     Math.min(availablePoints, Math.floor(afterCoupon)),
   );
-  const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
-  const deliveryCharge = getRegionDeliveryCharge(region, area);
-  const orderTotal = afterCoupon - pointsDiscount + deliveryCharge;
+  const { settings } = useSettings();
+  const standardDeliveryCharge = getRegionDeliveryCharge(region, area);
+  const isFreeDelivery = checkFreeDeliveryEligibility(settings, {
+    subtotal: cartTotal,
+    cartItems: cart,
+    area,
+    region,
+  });
+  const deliveryCharge = isFreeDelivery ? 0 : standardDeliveryCharge;
+  const orderTotal = Math.max(0, afterCoupon - pointsDiscount + deliveryCharge);
   const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
 
   // 💡 Coupon Auto-Apply Handler Function
@@ -912,8 +920,22 @@ export const Checkout = () => {
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs">
                 <span className="flex items-center gap-1">
                   <Truck className="w-3.5 h-3.5" /> Delivery ({area || "Other"})
+                  {isFreeDelivery && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-[9px] tracking-wider uppercase ml-1">
+                      Campaign FREE
+                    </span>
+                  )}
                 </span>
-                <span>৳{deliveryCharge.toFixed(2)}</span>
+                {isFreeDelivery ? (
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="line-through text-neutral-400 font-normal">
+                      ৳{standardDeliveryCharge.toFixed(2)}
+                    </span>
+                    <span className="text-emerald-500 font-extrabold uppercase">FREE</span>
+                  </div>
+                ) : (
+                  <span>৳{deliveryCharge.toFixed(2)}</span>
+                )}
               </div>
               <div className="flex justify-between font-bold text-base text-neutral-800 dark:text-white pt-1.5 border-t border-neutral-100 dark:border-neutral-800 mt-1">
                 <span>Total</span>

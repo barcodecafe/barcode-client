@@ -7,7 +7,9 @@ import {
   SlidersHorizontal,
   Gift,
   Tag,
+  Truck,
 } from "lucide-react";
+import { useSettings } from "../context/SettingsContext";
 import {
   hasFoodDiscount,
   applyFoodDiscount,
@@ -27,6 +29,7 @@ const FoodCard = ({
   variants,
 }) => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   // 🎯 Branch-based Price Adjustment Logic
   let rawBasePrice = Number(food?.price) || 0;
@@ -108,6 +111,16 @@ const FoodCard = ({
             {foodDiscountLabel(food)}
           </span>
         ) : null}
+
+        {/* 🚚 Free Delivery Dish Badge */}
+        {settings?.freeDeliveryEnabled &&
+          (settings?.freeDeliveryScope === "dishes"
+            ? (settings?.freeDeliveryDishIds || []).map(Number).includes(Number(foodId))
+            : settings?.freeDeliveryScope === "all") && (
+            <span className="pointer-events-none absolute left-0 bottom-0 z-10 flex items-center gap-1 rounded-none bg-amber-500 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">
+              <Truck className="h-2.5 w-2.5" /> Free Delivery
+            </span>
+          )}
 
         {/* Favorite Button */}
         <button

@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2, Gift, Sparkles } from 'lucide-react';
+import { ShoppingBag, Check, X, ArrowRight, Minus, Plus, Trash2, Gift, Sparkles, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useSettings } from '../context/SettingsContext';
+import { checkFreeDeliveryEligibility } from '../services/deliveryService';
 
 export const CartDrawer = () => {
   const {
@@ -14,8 +16,18 @@ export const CartDrawer = () => {
     removeFromCart,
     getCartItemLineTotal,
   } = useCart();
+  const { settings } = useSettings();
 
   const navigate = useNavigate();
+
+  const isFreeDeliveryEligible = checkFreeDeliveryEligibility(settings, {
+    subtotal: cartTotal,
+    cartItems: cart,
+  });
+
+  const isMinAmountCampaign = settings?.freeDeliveryEnabled && settings?.freeDeliveryScope === 'min_amount' && settings?.freeDeliveryMinOrder > 0;
+  const neededForFreeDelivery = isMinAmountCampaign ? Math.max(0, Number(settings.freeDeliveryMinOrder) - cartTotal) : 0;
+  const progressPct = isMinAmountCampaign && settings.freeDeliveryMinOrder > 0 ? Math.min(100, Math.max(0, (cartTotal / Number(settings.freeDeliveryMinOrder)) * 100)) : 0;
 
   const goToCheckout = () => {
     closeCart();
@@ -281,6 +293,29 @@ export const CartDrawer = () => {
                         </span>
                       </div>
                     )}
+
+                    {/* 🚚 Free Delivery Campaign Notice / Progress */}
+                    {isFreeDeliveryEligible ? (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold">
+                        <Truck className="w-4 h-4 shrink-0 animate-bounce" />
+                        <span>🎉 FREE Delivery applied to this order!</span>
+                      </div>
+                    ) : isMinAmountCampaign && neededForFreeDelivery > 0 ? (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+                        <div className="flex justify-between text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                          <span className="flex items-center gap-1">
+                            <Truck className="w-3.5 h-3.5" /> Add ৳{neededForFreeDelivery.toFixed(0)} more for FREE Delivery!
+                          </span>
+                          <span>{progressPct.toFixed(0)}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex items-baseline justify-between font-bold text-base text-neutral-800 dark:text-white pt-2 border-t border-neutral-100 dark:border-neutral-800">

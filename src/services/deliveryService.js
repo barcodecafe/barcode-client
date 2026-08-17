@@ -51,3 +51,48 @@ export function getRegionDeliveryCharge(region, areaName) {
   }
   return getDeliveryCharge(areaName);
 }
+
+/**
+ * 🚚 Check if an order is eligible for Free Delivery under current Campaign Settings
+ *
+ * @param {object} settings - Global site settings from SettingsContext
+ * @param {object} params - { subtotal: number, cartItems: Array, area: string, region: object }
+ * @returns {boolean}
+ */
+export function checkFreeDeliveryEligibility(settings, { subtotal = 0, cartItems = [], area = '' } = {}) {
+  if (!settings || !settings.freeDeliveryEnabled) return false;
+
+  const scope = settings.freeDeliveryScope || 'all';
+
+  if (scope === 'all') {
+    const min = Number(settings.freeDeliveryMinOrder) || 0;
+    return min > 0 ? subtotal >= min : true;
+  }
+
+  if (scope === 'min_amount') {
+    const min = Number(settings.freeDeliveryMinOrder) || 0;
+    return subtotal >= min;
+  }
+
+  if (scope === 'dishes') {
+    const targetIds = (settings.freeDeliveryDishIds || []).map((id) => Number(id));
+    if (targetIds.length > 0) {
+      return (cartItems || []).some((item) => {
+        const itemId = Number(item.id ?? item._id ?? item.foodId);
+        return targetIds.includes(itemId);
+      });
+    }
+    return true;
+  }
+
+  if (scope === 'areas') {
+    const targetAreas = (settings.freeDeliveryAreas || []).map((a) => String(a).trim().toLowerCase());
+    if (targetAreas.length > 0) {
+      const currentArea = String(area || '').trim().toLowerCase();
+      return targetAreas.includes(currentArea);
+    }
+    return true;
+  }
+
+  return false;
+}

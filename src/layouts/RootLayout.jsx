@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Navbar } from '../components/Navbar';
+import { FreeDeliveryBanner } from '../components/FreeDeliveryBanner';
 import { Footer } from '../components/Footer';
 import { CartDrawer } from '../components/CartDrawer';
 import { useAuth } from '../context/AuthContext'; // 👈 AuthContext ইমপোর্ট
@@ -97,6 +98,9 @@ export const RootLayout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-300">
+      {/* Top Free Delivery Announcement Banner */}
+      <FreeDeliveryBanner />
+
       {/* Sticky Navbar */}
       <Navbar />
 

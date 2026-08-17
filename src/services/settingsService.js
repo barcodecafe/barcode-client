@@ -21,6 +21,15 @@ export const DEFAULT_SETTINGS = {
   footerFacebook: 'https://facebook.com',
   footerInstagram: 'https://instagram.com',
   footerTwitter: 'https://twitter.com',
+
+  // 🚚 Free Delivery Campaign Defaults
+  freeDeliveryEnabled: false,
+  freeDeliveryScope: 'all', // 'all' | 'min_amount' | 'dishes' | 'areas'
+  freeDeliveryMinOrder: 0,
+  freeDeliveryDishIds: [],
+  freeDeliveryAreas: [],
+  freeDeliveryBannerText: '🎉 Special Offer: Free Delivery on all orders today!',
+  freeDeliveryShowBanner: true,
 };
 
 /** GET /api/settings — falls back to defaults if the API is unreachable. */
