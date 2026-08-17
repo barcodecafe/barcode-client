@@ -1671,13 +1671,18 @@ export const AdminDishes = () => {
                 {/* Variants Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                      Size / Weight / Custom Variants
-                    </label>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
+                        Size / Weight / Custom Variants
+                      </label>
+                      <span className="text-[11px] text-neutral-400">
+                        Optional variant-specific image. If empty, main dish image will be used.
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={handleAddVariation}
-                      className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg cursor-pointer"
+                      className="text-xs px-2.5 py-1 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg cursor-pointer transition-colors"
                     >
                       + Add Variant
                     </button>
@@ -1688,10 +1693,54 @@ export const AdminDishes = () => {
                         key={index}
                         className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm"
                       >
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                          {/* Variant Image Preview / Upload Button */}
+                          <div className="shrink-0">
+                            {v.image ? (
+                              <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-primary-500/40 bg-neutral-100 dark:bg-neutral-800 shadow-xs">
+                                <img
+                                  src={v.image}
+                                  alt={v.name || "Variant"}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleVariationChange(index, "image", "")}
+                                  className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold cursor-pointer"
+                                  title="Remove variant image"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <label
+                                className="h-10 px-2.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/50 flex items-center gap-1.5 text-[11px] font-medium cursor-pointer transition-colors"
+                                title="Upload variant-specific image (optional)"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">+ Image</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        handleVariationChange(index, "image", reader.result);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </div>
+
                           <input
                             type="text"
-                            placeholder="Variant name"
+                            placeholder="Variant name (e.g. Regular / Large)"
                             value={v.name}
                             onChange={(e) =>
                               handleVariationChange(
@@ -1700,29 +1749,35 @@ export const AdminDishes = () => {
                                 e.target.value,
                               )
                             }
-                            className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none"
+                            className="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                             required
                           />
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="Price"
-                            value={v.price}
-                            onChange={(e) =>
-                              handleVariationChange(
-                                index,
-                                "price",
-                                e.target.value,
-                              )
-                            }
-                            className="w-28 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            required
-                          />
+                          <div className="relative w-24 sm:w-28">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">
+                              ৳
+                            </span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="Price"
+                              value={v.price}
+                              onChange={(e) =>
+                                handleVariationChange(
+                                  index,
+                                  "price",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full pl-6 pr-2.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
+                              required
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleRemoveVariation(index)}
-                            className="p-1.5 text-red-500"
+                            className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                            title="Delete variant"
                           >
                             ✕
                           </button>

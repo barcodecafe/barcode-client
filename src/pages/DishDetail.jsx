@@ -525,13 +525,20 @@ export const DishDetail = () => {
                         key={v.name || vIdx}
                         type="button"
                         onClick={() => setSelectedVariation(v)}
-                        className={`px-4 py-2.5 rounded-none border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                        className={`px-3.5 py-2 rounded-none border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20"
                             : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300"
                         }`}
                       >
-                        {v.name} (৳{Number(vPrice || 0).toFixed(0)})
+                        {v.image && (
+                          <img
+                            src={v.image}
+                            alt={v.name}
+                            className="w-5 h-5 rounded-xs object-cover shrink-0"
+                          />
+                        )}
+                        <span>{v.name} (৳{Number(vPrice || 0).toFixed(0)})</span>
                         {isSelected && (
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         )}
