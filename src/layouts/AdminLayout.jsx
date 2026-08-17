@@ -25,6 +25,7 @@ import {
   Bell,
   ShieldCheck,
   MessageSquarePlus,
+  UserPlus,
 } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
@@ -51,6 +52,7 @@ const navItems = [
   { name: 'Branches', path: '/admin/branches', icon: Building2 },
   { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
   { name: 'Rider Fleet', path: '/admin/fleet-overview', icon: Bike },
+  { name: 'Add Rider', path: '/admin/add-rider', icon: UserPlus },
   { name: 'Customers', path: '/admin/customers', icon: Users },
   { name: 'Customer Reviews', path: '/admin/reviews', icon: MessageSquarePlus },
   { name: 'Coupons', path: '/admin/coupons', icon: Tag },

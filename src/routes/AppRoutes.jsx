@@ -52,6 +52,7 @@ const AdminReviews = lazy(() => import('../pages/admin/AdminReviews').then((m) =
 const AdminRiders = lazy(() => import('../pages/admin/AdminRiders').then((m) => ({ default: m.AdminRiders })));
 const AdminSettings = lazy(() => import('../pages/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
 const AdminRidersFleet = lazy(() => import('../pages/admin/AdminRidersFleet'));
+const AdminAddRider = lazy(() => import('../pages/admin/AdminAddRider'));
 
 import { CartProvider } from '../context/CartContext';
 import { BranchProvider } from '../context/BranchContext';
@@ -169,6 +170,7 @@ export const AppRoutes = () => {
                     <Route path="branches" element={<AdminBranches />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="fleet-overview" element={<AdminRidersFleet />} />
+                    <Route path="add-rider" element={<AdminAddRider />} />
                     <Route path="customers" element={<AdminCustomers />} />
                     <Route path="reviews" element={<AdminReviews />} />
                     <Route path="coupons" element={<AdminCoupons />} />

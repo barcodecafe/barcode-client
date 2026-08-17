@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Bike,
   CheckCircle2,
@@ -230,12 +231,12 @@ export const RidersFleetOverview = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
+        <Link
+          to="/admin/add-rider"
           className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-primary-500/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[3]" /> Add New Rider
-        </button>
+        </Link>
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -554,7 +555,7 @@ export const RidersFleetOverview = ({
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Shakib Ahmed"
+                      placeholder="e.g. Sajib Khan"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full pl-8 pr-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-hidden"
