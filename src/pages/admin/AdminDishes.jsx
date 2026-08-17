@@ -72,7 +72,6 @@ export const AdminDishes = () => {
   const [editingCategory, setEditingCategory] = useState(null); // null for create, object for edit
   const [categoryFormData, setCategoryFormData] = useState({
     name: "",
-    description: "",
   });
   const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
@@ -94,7 +93,6 @@ export const AdminDishes = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
-  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [isCustomVariantLabel, setIsCustomVariantLabel] = useState(false);
 
   const [imagePreview, setImagePreview] = useState(null);
@@ -382,7 +380,6 @@ export const AdminDishes = () => {
 
   const openCreateModal = () => {
     setEditingFood(null);
-    setIsCustomCategory(false);
     setIsCustomVariantLabel(false);
     setImagePreview(null);
     setFormData({
@@ -413,13 +410,6 @@ export const AdminDishes = () => {
 
   const openEditModal = (food) => {
     setEditingFood(food);
-    const isCustomCat =
-      food.category &&
-      !sortedCategories
-        .map((sc) => sc.toLowerCase())
-        .includes(food.category.trim().toLowerCase());
-    setIsCustomCategory(isCustomCat);
-
     const isCustomVarLabel =
       food.variantLabel &&
       !standardVariantLabels
@@ -691,7 +681,7 @@ export const AdminDishes = () => {
   // 🎯 Centralized Category Modal Handlers
   const handleOpenCreateCategory = () => {
     setEditingCategory(null);
-    setCategoryFormData({ name: "", description: "" });
+    setCategoryFormData({ name: "" });
     setIsCategoryEditorOpen(true);
   };
 
@@ -702,12 +692,11 @@ export const AdminDishes = () => {
         ? cat
         : centralCategories.find(
             (c) => c.name?.toLowerCase() === catName.toLowerCase(),
-          ) || { name: catName, description: "" };
+          ) || { name: catName };
 
     setEditingCategory(catObj);
     setCategoryFormData({
       name: catObj.name || catName,
-      description: catObj.description || "",
     });
     setIsCategoryEditorOpen(true);
   };
@@ -724,21 +713,14 @@ export const AdminDishes = () => {
     try {
       if (editingCategory && (editingCategory._id || editingCategory.id)) {
         const id = editingCategory._id || editingCategory.id;
-        await updateCategory(id, {
-          name,
-          description: categoryFormData.description,
-        });
+        await updateCategory(id, { name });
       } else {
-        await createCategory({
-          name,
-          description: categoryFormData.description,
-        });
+        await createCategory({ name });
       }
 
       // If Dish Form is currently open, automatically select this new category for the dish
       if (isModalOpen) {
         setFormData((prev) => ({ ...prev, category: name }));
-        setIsCustomCategory(false);
       }
 
       await syncFromServer();
@@ -1480,11 +1462,7 @@ export const AdminDishes = () => {
                     />
                   </div>
 
-                  <div
-                    className={
-                      isCustomCategory ? "col-span-2 space-y-2" : "col-span-1"
-                    }
-                  >
+                  <div className="col-span-1">
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400">
                         Category *
@@ -1500,27 +1478,22 @@ export const AdminDishes = () => {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <select
-                        value={isCustomCategory ? "Custom" : formData.category}
-                        onChange={(e) => {
-                          if (e.target.value === "Custom") {
-                            setIsCustomCategory(true);
-                            setFormData({ ...formData, category: "" });
-                          } else {
-                            setIsCustomCategory(false);
-                            setFormData({
-                              ...formData,
-                              category: e.target.value,
-                            });
-                          }
-                        }}
+                        value={formData.category}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            category: e.target.value,
+                          })
+                        }
                         className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer flex-1"
+                        required
                       >
+                        <option value="" disabled>Select Category...</option>
                         {sortedCategories.map((cat) => (
                           <option key={cat} value={cat}>
                             {cat}
                           </option>
                         ))}
-                        <option value="Custom">+ Other (Type custom...)</option>
                       </select>
                       <button
                         type="button"
@@ -1531,41 +1504,9 @@ export const AdminDishes = () => {
                         <FolderPlus className="w-4 h-4 text-primary-500" />
                       </button>
                     </div>
-                    {isCustomCategory && (
-                      <div className="flex gap-2 items-center mt-2">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Enter custom category"
-                          value={formData.category}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              category: e.target.value,
-                            })
-                          }
-                          className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomCategory(false);
-                            setFormData({
-                              ...formData,
-                              category: sortedCategories[0] || "",
-                            });
-                          }}
-                          className="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-1 cursor-pointer"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                    )}
                   </div>
 
-                  <div
-                    className={isCustomCategory ? "col-span-2" : "col-span-1"}
-                  >
+                  <div className="col-span-1">
                     <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
                       Base Price (৳) *
                     </label>
@@ -2943,24 +2884,6 @@ export const AdminDishes = () => {
                       autoFocus
                       required
                       className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm focus:outline-none font-bold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Brief note or description about this category..."
-                      value={categoryFormData?.description || ""}
-                      onChange={(e) =>
-                        setCategoryFormData({
-                          ...categoryFormData,
-                          description: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none resize-none"
                     />
                   </div>
                 </div>
