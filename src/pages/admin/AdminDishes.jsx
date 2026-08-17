@@ -34,6 +34,13 @@ import {
   updateFoodOrder,
   updateCategoryOrder,
 } from "../../services/foodsService";
+import {
+  getAllCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  reorderCategories,
+} from "../../services/categoriesService";
 import { getAllBranches } from "../../services/branchesService";
 import { getAllCoupons } from "../../services/couponsService";
 import {
@@ -57,6 +64,18 @@ export const AdminDishes = () => {
 
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
+
+  // 🎯 Centralized Categories Management States
+  const [centralCategories, setCentralCategories] = useState([]);
+  const [isCentralCategoriesModalOpen, setIsCentralCategoriesModalOpen] = useState(false);
+  const [isCategoryEditorOpen, setIsCategoryEditorOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null); // null for create, object for edit
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: "",
+    description: "",
+  });
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
 
   // 🎯 Centralized Add-ons Group Management States
   const [addonGroups, setAddonGroups] = useState([]);
@@ -107,10 +126,38 @@ export const AdminDishes = () => {
 
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
 
-  const processCategories = (loadedFoods) => {
+  // 🎯 Category Dishes Count for smart badges & safe deletions
+  const categoryDishesCount = useMemo(() => {
+    const counts = {};
+    (foods || []).forEach((f) => {
+      if (f.category?.trim()) {
+        const lower = f.category.trim().toLowerCase();
+        counts[lower] = (counts[lower] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [foods]);
+
+  const processCategories = (loadedFoods, loadedCentralCats = []) => {
     const categoryMap = new Map();
 
-    loadedFoods.forEach((f) => {
+    // 1. Seed from centralCategories first (preserves ordering & empty categories)
+    (loadedCentralCats || []).forEach((c, idx) => {
+      if (c?.name?.trim()) {
+        const catName = c.name.trim();
+        const lowerName = catName.toLowerCase();
+        const orderVal = typeof c.order === "number" ? c.order : idx + 1;
+        categoryMap.set(lowerName, {
+          name: catName,
+          order: orderVal,
+          id: c._id || c.id,
+          description: c.description || "",
+        });
+      }
+    });
+
+    // 2. Also incorporate categories present in food items
+    (loadedFoods || []).forEach((f) => {
       if (f.category?.trim()) {
         const catName = f.category.trim();
         const lowerName = catName.toLowerCase();
@@ -120,8 +167,9 @@ export const AdminDishes = () => {
         if (!categoryMap.has(lowerName)) {
           categoryMap.set(lowerName, { name: catName, order: orderVal });
         } else {
-          if (orderVal < categoryMap.get(lowerName).order) {
-            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          const existing = categoryMap.get(lowerName);
+          if (typeof existing.order !== "number" || existing.order === 999) {
+            existing.order = orderVal;
           }
         }
       }
@@ -153,6 +201,21 @@ export const AdminDishes = () => {
     });
   };
 
+  const fetchCentralCategories = useCallback(async () => {
+    try {
+      const data = await getAllCategories();
+      const list = Array.isArray(data) ? data : [];
+      setCentralCategories(list);
+      setSortedCategories((prevCats) => {
+        return processCategories(foods, list);
+      });
+      return list;
+    } catch (err) {
+      console.error("Error loading central categories:", err);
+      return [];
+    }
+  }, [foods]);
+
   const fetchCentralAddons = useCallback(async () => {
     try {
       const data = await getAllAddonGroups();
@@ -163,16 +226,24 @@ export const AdminDishes = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddonGroups()])
-      .then(([foodsData, branchesData, couponsData, addonGroupsData]) => {
+    Promise.all([
+      getAllFoods(),
+      getAllBranches(),
+      getAllCoupons(),
+      getAllAddonGroups(),
+      getAllCategories(),
+    ])
+      .then(([foodsData, branchesData, couponsData, addonGroupsData, categoriesData]) => {
         const loadedFoods = cleanExpiredOffers(foodsData || []);
+        const loadedCats = Array.isArray(categoriesData) ? categoriesData : [];
         setFoods(loadedFoods);
         setBranches(branchesData || []);
         setCoupons(couponsData || []);
         setAddonGroups(Array.isArray(addonGroupsData) ? addonGroupsData : []);
+        setCentralCategories(loadedCats);
         setIsLoading(false);
 
-        const orderedCats = processCategories(loadedFoods);
+        const orderedCats = processCategories(loadedFoods, loadedCats);
         setSortedCategories(orderedCats);
       })
       .catch((err) => {
@@ -183,15 +254,23 @@ export const AdminDishes = () => {
 
   const syncFromServer = useCallback(
     () =>
-      Promise.all([getAllFoods(), getAllBranches(), getAllCoupons(), getAllAddonGroups()])
-        .then(([foodsData, branchesData, couponsData, addonGroupsData]) => {
+      Promise.all([
+        getAllFoods(),
+        getAllBranches(),
+        getAllCoupons(),
+        getAllAddonGroups(),
+        getAllCategories(),
+      ])
+        .then(([foodsData, branchesData, couponsData, addonGroupsData, categoriesData]) => {
           const loadedFoods = cleanExpiredOffers(foodsData || []);
+          const loadedCats = Array.isArray(categoriesData) ? categoriesData : [];
           setFoods(loadedFoods);
           setBranches(branchesData || []);
           setCoupons(couponsData || []);
           setAddonGroups(Array.isArray(addonGroupsData) ? addonGroupsData : []);
+          setCentralCategories(loadedCats);
 
-          const orderedCats = processCategories(loadedFoods);
+          const orderedCats = processCategories(loadedFoods, loadedCats);
           setSortedCategories(orderedCats);
         })
         .catch((err) => console.error("Background sync failed:", err)),
@@ -201,7 +280,13 @@ export const AdminDishes = () => {
   // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling বন্ধ থাকবে যেন server overwrite না করে
   useVisiblePolling(syncFromServer, {
     intervalMs: 60000,
-    enabled: !isModalOpen && !isCentralAddonsModalOpen && !isAddonPickerModalOpen && !reorderCooldown,
+    enabled:
+      !isModalOpen &&
+      !isCentralAddonsModalOpen &&
+      !isCentralCategoriesModalOpen &&
+      !isCategoryEditorOpen &&
+      !isAddonPickerModalOpen &&
+      !reorderCooldown,
   });
 
   const handleManualRefresh = () => {
@@ -243,13 +328,18 @@ export const AdminDishes = () => {
     if (categoryReorderTimeoutRef.current) clearTimeout(categoryReorderTimeoutRef.current);
     categoryReorderTimeoutRef.current = setTimeout(async () => {
       try {
-        if (typeof updateCategoryOrder === "function") {
-          await updateCategoryOrder(finalUniqueOrder);
-        }
+        await reorderCategories(finalUniqueOrder);
       } catch (err) {
         console.error("Error updating category order on server:", err);
-        setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
-        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
+        try {
+          if (typeof updateCategoryOrder === "function") {
+            await updateCategoryOrder(finalUniqueOrder);
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback category order update failed:", fallbackErr);
+          setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
+          setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
+        }
       }
     }, 300);
   };
@@ -598,6 +688,116 @@ export const AdminDishes = () => {
     }
   };
 
+  // 🎯 Centralized Category Modal Handlers
+  const handleOpenCreateCategory = () => {
+    setEditingCategory(null);
+    setCategoryFormData({ name: "", description: "" });
+    setIsCategoryEditorOpen(true);
+  };
+
+  const handleOpenEditCategory = (cat) => {
+    const catName = typeof cat === "string" ? cat : cat?.name || "";
+    const catObj =
+      typeof cat === "object" && cat !== null && (cat._id || cat.id)
+        ? cat
+        : centralCategories.find(
+            (c) => c.name?.toLowerCase() === catName.toLowerCase(),
+          ) || { name: catName, description: "" };
+
+    setEditingCategory(catObj);
+    setCategoryFormData({
+      name: catObj.name || catName,
+      description: catObj.description || "",
+    });
+    setIsCategoryEditorOpen(true);
+  };
+
+  const handleSaveCategory = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const name = categoryFormData?.name?.trim();
+    if (!name) {
+      alert("Please enter a category name (e.g. Burgers, Sides, Beverages)");
+      return;
+    }
+
+    setIsSavingCategory(true);
+    try {
+      if (editingCategory && (editingCategory._id || editingCategory.id)) {
+        const id = editingCategory._id || editingCategory.id;
+        await updateCategory(id, {
+          name,
+          description: categoryFormData.description,
+        });
+      } else {
+        await createCategory({
+          name,
+          description: categoryFormData.description,
+        });
+      }
+
+      // If Dish Form is currently open, automatically select this new category for the dish
+      if (isModalOpen) {
+        setFormData((prev) => ({ ...prev, category: name }));
+        setIsCustomCategory(false);
+      }
+
+      await syncFromServer();
+      setIsCategoryEditorOpen(false);
+    } catch (err) {
+      alert(
+        "Failed to save category: " +
+          (err.response?.data?.message || err.message),
+      );
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (cat) => {
+    const catName = typeof cat === "string" ? cat : cat?.name;
+    const catId = typeof cat === "object" && cat ? cat._id || cat.id : null;
+    if (!catName) return;
+
+    const lowerName = catName.toLowerCase();
+    const dishCount = categoryDishesCount[lowerName] || 0;
+
+    let confirmMsg = `Are you sure you want to delete category "${catName}"?`;
+    if (dishCount > 0) {
+      confirmMsg += `\n\n⚠️ Warning: There are ${dishCount} dish(es) currently assigned to this category. Deleting this category will delete all associated dishes from the menu!`;
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const targetId =
+        catId ||
+        centralCategories.find(
+          (c) => c.name?.toLowerCase() === lowerName,
+        )?._id;
+
+      if (targetId) {
+        await deleteCategory(targetId, dishCount > 0);
+      } else {
+        const foodsToDelete = foods.filter(
+          (f) => f.category?.trim().toLowerCase() === lowerName,
+        );
+        await Promise.all(foodsToDelete.map((f) => deleteFood(f.id || f._id)));
+      }
+
+      // If current selected category was deleted, reset filter to All
+      if (selectedCategory.toLowerCase() === lowerName) {
+        setSelectedCategory("All");
+      }
+
+      await syncFromServer();
+    } catch (err) {
+      alert(
+        "Failed to delete category: " +
+          (err.response?.data?.message || err.message),
+      );
+    }
+  };
+
   // 🎯 1-Click Add-on Picker Handlers (for Dish Form)
   const openAddonPicker = () => {
     const currentKeys = new Set(
@@ -858,6 +1058,17 @@ export const AdminDishes = () => {
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => {
+              fetchCentralCategories();
+              setIsCentralCategoriesModalOpen(true);
+            }}
+            title="Manage Centralized Category Library & Display Order"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 font-bold text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all cursor-pointer shadow-xs"
+          >
+            <Tag className="w-4 h-4 text-primary-500" />
+            <span className="hidden sm:inline">Central</span> Categories ({sortedCategories.length})
+          </button>
+          <button
+            onClick={() => {
               fetchCentralAddons();
               setIsCentralAddonsModalOpen(true);
             }}
@@ -909,10 +1120,10 @@ export const AdminDishes = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
               >
-                <option value="All">All Categories</option>
+                <option value="All">All Categories ({foods.length})</option>
                 {sortedCategories.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {cat} ({categoryDishesCount[cat.toLowerCase()] || 0})
                   </option>
                 ))}
               </select>
@@ -954,14 +1165,23 @@ export const AdminDishes = () => {
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                💡 Drag, Rename or Delete Categories:
+                💡 Categories ({sortedCategories.length}):
               </p>
-              <button
-                onClick={() => setIsSortOpen(false)}
-                className="text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenCreateCategory}
+                  className="text-primary-500 hover:text-primary-600 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> + New
+                </button>
+                <button
+                  onClick={() => setIsSortOpen(false)}
+                  className="text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             <Reorder.Group
@@ -978,71 +1198,25 @@ export const AdminDishes = () => {
                 >
                   <span className="flex items-center gap-2 truncate">
                     <GripVertical className="w-4 h-4 text-neutral-400 shrink-0" />
-                    {cat}
+                    <span className="truncate">{cat}</span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px] font-semibold text-neutral-500 shrink-0">
+                      {categoryDishesCount[cat.toLowerCase()] || 0}
+                    </span>
                   </span>
 
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={async () => {
-                        const newCatName = prompt(
-                          `Rename category "${cat}" to:`,
-                          cat,
-                        );
-                        if (
-                          newCatName &&
-                          newCatName.trim() &&
-                          newCatName.trim() !== cat
-                        ) {
-                          const trimmed = newCatName.trim();
-                          const updatedFoods = foods.map((f) =>
-                            f.category === cat
-                              ? { ...f, category: trimmed }
-                              : f,
-                          );
-                          setFoods(updatedFoods);
-
-                          const foodsToUpdate = foods.filter(
-                            (f) => f.category === cat,
-                          );
-                          await Promise.all(
-                            foodsToUpdate.map((f) =>
-                              updateFood(f.id || f._id, { category: trimmed }),
-                            ),
-                          );
-                          setSortedCategories((prev) =>
-                            prev.map((c) => (c === cat ? trimmed : c)),
-                          );
-                        }
-                      }}
+                      onClick={() => handleOpenEditCategory(cat)}
                       className="p-1 text-neutral-400 hover:text-blue-500 rounded cursor-pointer"
-                      title="Rename Category"
+                      title="Edit Category"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
 
                     <button
                       type="button"
-                      onClick={async () => {
-                        if (
-                          confirm(
-                            `Delete category "${cat}" and all associated dishes?`,
-                          )
-                        ) {
-                          const foodsToDelete = foods.filter(
-                            (f) => f.category === cat,
-                          );
-                          await Promise.all(
-                            foodsToDelete.map((f) => deleteFood(f.id || f._id)),
-                          );
-                          setFoods((prev) =>
-                            prev.filter((f) => f.category !== cat),
-                          );
-                          setSortedCategories((prev) =>
-                            prev.filter((c) => c !== cat),
-                          );
-                        }
-                      }}
+                      onClick={() => handleDeleteCategory(cat)}
                       className="p-1 text-neutral-400 hover:text-red-500 rounded cursor-pointer"
                       title="Delete Category"
                     >
@@ -1311,32 +1485,52 @@ export const AdminDishes = () => {
                       isCustomCategory ? "col-span-2 space-y-2" : "col-span-1"
                     }
                   >
-                    <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 block mb-1">
-                      Category *
-                    </label>
-                    <select
-                      value={isCustomCategory ? "Custom" : formData.category}
-                      onChange={(e) => {
-                        if (e.target.value === "Custom") {
-                          setIsCustomCategory(true);
-                          setFormData({ ...formData, category: "" });
-                        } else {
-                          setIsCustomCategory(false);
-                          setFormData({
-                            ...formData,
-                            category: e.target.value,
-                          });
-                        }
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer"
-                    >
-                      {sortedCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="Custom">Other (Type custom...)</option>
-                    </select>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400">
+                        Category *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateCategory}
+                        className="text-[11px] font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer flex items-center gap-1"
+                        title="Create new category in central library"
+                      >
+                        <Plus className="w-3 h-3" /> + New Category
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={isCustomCategory ? "Custom" : formData.category}
+                        onChange={(e) => {
+                          if (e.target.value === "Custom") {
+                            setIsCustomCategory(true);
+                            setFormData({ ...formData, category: "" });
+                          } else {
+                            setIsCustomCategory(false);
+                            setFormData({
+                              ...formData,
+                              category: e.target.value,
+                            });
+                          }
+                        }}
+                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none cursor-pointer flex-1"
+                      >
+                        {sortedCategories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                        <option value="Custom">+ Other (Type custom...)</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateCategory}
+                        title="Quick Create New Category"
+                        className="p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition-colors cursor-pointer shrink-0"
+                      >
+                        <FolderPlus className="w-4 h-4 text-primary-500" />
+                      </button>
+                    </div>
                     {isCustomCategory && (
                       <div className="flex gap-2 items-center mt-2">
                         <input
@@ -2525,6 +2719,268 @@ export const AdminDishes = () => {
                   >
                     <Check className="w-4 h-4" />
                     {isSavingGroup ? "Saving Group..." : "💾 Save Group"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 Central Categories Library & Ordering Modal */}
+      <AnimatePresence>
+        {isCentralCategoriesModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col max-h-[88vh]"
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <div>
+                  <h2 className="text-lg font-black text-neutral-800 dark:text-white flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-primary-500" />
+                    Central Categories Library
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Create, rename, reorder, or delete food categories centrally across the menu.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateCategory}
+                    className="px-3.5 py-1.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> + Create Category
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCentralCategoriesModalOpen(false)}
+                    className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Search filter for categories */}
+              {sortedCategories.length > 5 && (
+                <div className="p-3.5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                    <input
+                      type="text"
+                      placeholder="Filter categories..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Body: Reorderable List */}
+              <div className="p-5 overflow-y-auto space-y-3 flex-1">
+                {sortedCategories.length === 0 ? (
+                  <div className="py-16 text-center space-y-3">
+                    <Tag className="w-12 h-12 text-neutral-400 mx-auto opacity-50" />
+                    <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200">
+                      No Categories Found
+                    </h3>
+                    <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                      Click "+ Create Category" to add your first menu category (e.g. Burgers, Pizza, Beverages).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateCategory}
+                      className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold cursor-pointer"
+                    >
+                      + Create Category
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">
+                        Drag handle (⋮⋮) to reorder display position
+                      </span>
+                      <span className="text-[11px] font-bold text-neutral-500">
+                        {sortedCategories.length} Categories Total
+                      </span>
+                    </div>
+
+                    <Reorder.Group
+                      axis="y"
+                      values={sortedCategories}
+                      onReorder={handleCategoryReorder}
+                      className="space-y-2"
+                    >
+                      {sortedCategories
+                        .filter((cat) =>
+                          !categorySearch ||
+                          cat.toLowerCase().includes(categorySearch.toLowerCase()),
+                        )
+                        .map((cat) => {
+                          const count = categoryDishesCount[cat.toLowerCase()] || 0;
+                          return (
+                            <Reorder.Item
+                              key={cat}
+                              value={cat}
+                              className="flex items-center justify-between p-3.5 bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xs hover:border-neutral-300 dark:hover:border-neutral-700 cursor-grab active:cursor-grabbing transition-all select-none"
+                            >
+                              <div className="flex items-center gap-3 truncate">
+                                <GripVertical className="w-4 h-4 text-neutral-400 shrink-0" />
+                                <div className="truncate">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-extrabold text-sm text-neutral-900 dark:text-white truncate">
+                                      {cat}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[11px] font-bold shrink-0">
+                                      {count} {count === 1 ? "dish" : "dishes"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditCategory(cat)}
+                                  className="px-2.5 py-1 text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCategory(cat)}
+                                  className="p-1.5 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/30 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete category"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </Reorder.Item>
+                          );
+                        })}
+                    </Reorder.Group>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <button
+                  type="button"
+                  onClick={handleOpenCreateCategory}
+                  className="text-xs font-bold text-primary-500 hover:text-primary-600 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> + Add Another Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCentralCategoriesModalOpen(false)}
+                  className="px-5 py-2 rounded-xl bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-900 text-xs font-bold cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 Create / Edit Category Modal */}
+      <AnimatePresence>
+        {isCategoryEditorOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                <div>
+                  <h2 className="text-lg font-black text-neutral-800 dark:text-white">
+                    {editingCategory && editingCategory.name
+                      ? `Edit Category: ${editingCategory.name}`
+                      : "Create New Category"}
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Define the category name to organize dishes across the restaurant menu.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryEditorOpen(false)}
+                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleSaveCategory} className="flex flex-col flex-1">
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">
+                      Category Name *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Burgers, Sides, Beverages, Desserts"
+                      value={categoryFormData?.name || ""}
+                      onChange={(e) =>
+                        setCategoryFormData({
+                          ...categoryFormData,
+                          name: e.target.value,
+                        })
+                      }
+                      autoFocus
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm focus:outline-none font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1">
+                      Description (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Brief note or description about this category..."
+                      value={categoryFormData?.description || ""}
+                      onChange={(e) =>
+                        setCategoryFormData({
+                          ...categoryFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer with Save Button */}
+                <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-end gap-2 shrink-0 bg-neutral-50/50 dark:bg-neutral-950/40">
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryEditorOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingCategory}
+                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    {isSavingCategory ? "Saving Category..." : "💾 Save Category"}
                   </button>
                 </div>
               </form>
