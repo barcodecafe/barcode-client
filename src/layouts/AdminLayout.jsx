@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   MessageSquarePlus,
   UserPlus,
+  Truck,
 } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
@@ -56,6 +57,7 @@ const navItems = [
   { name: 'Customers', path: '/admin/customers', icon: Users },
   { name: 'Customer Reviews', path: '/admin/reviews', icon: MessageSquarePlus },
   { name: 'Coupons', path: '/admin/coupons', icon: Tag },
+  { name: 'Free Delivery', path: '/admin/free-delivery', icon: Truck },
   { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
   { name: 'About Info', path: '/admin/about', icon: Info },
   { name: 'Policies & Terms', path: '/admin/policies', icon: ShieldCheck },
