@@ -145,7 +145,7 @@ export const AdminLayout = () => {
         ),
         {
           duration: 10000,
-          id: `cash-handover-${payload?.riderId || 'sub'}-${Date.now()}`,
+          id: `cash-handover-${payload?.riderId || 'sub'}-${payload?.date || 'today'}`,
         }
       );
     };

@@ -77,8 +77,9 @@ export const AdminRidersFleet = () => {
     try {
       setConfirmingRiderId(riderId);
       await confirmRiderCashSettlement(riderId, dateKey);
-      socket.emit("rider_cash_settled", { riderId, riderName, dateKey });
-      toast.success(`✅ Cash settlement verified & confirmed for ${riderName} (${formatDateKey(dateKey)})!`);
+      toast.success(`✅ Cash settlement verified & confirmed for ${riderName} (${formatDateKey(dateKey)})!`, {
+        id: `confirm-settlement-${riderId}-${dateKey}`,
+      });
       fetchOrdersAndFleet();
     } catch (err) {
       toast.error("❌ Settlement failed: " + (err.response?.data?.message || err.message));

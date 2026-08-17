@@ -260,8 +260,12 @@ export const RiderLayout = () => {
     const handleCashSettled = (payload) => {
       scheduleRefetch();
       const targetRiderId = payload?.riderId;
-      if (!targetRiderId || String(targetRiderId) === String(user?.id || user?._id)) {
-        toast.success(`💰 Admin confirmed your cash settlement for ${payload?.date || "today"}!`, { duration: 6000 });
+      const currentRiderId = String(user?.id || user?._id || "");
+      if (!targetRiderId || String(targetRiderId) === currentRiderId) {
+        toast.success(`💰 Admin confirmed your cash settlement for ${payload?.date || "today"}!`, {
+          duration: 6000,
+          id: `rider-cash-settled-${targetRiderId || currentRiderId}-${payload?.date || "today"}`,
+        });
       }
     };
 

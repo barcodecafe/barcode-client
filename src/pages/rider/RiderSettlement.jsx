@@ -86,14 +86,10 @@ export const RiderSettlement = () => {
     try {
       setSubmittingCashDate(dateKey);
       await submitRiderDailyCash(dateKey);
-      
-      socket.emit("rider_cash_submitted", {
-        riderId: user?._id || user?.id,
-        riderName: user?.name || "Rider",
-        date: label
-      });
 
-      toast.success(`💰 Cash handover request submitted for ${label}! Awaiting admin confirmation.`);
+      toast.success(`💰 Cash handover request submitted for ${label}! Awaiting admin confirmation.`, {
+        id: `submit-cash-${dateKey}`,
+      });
       fetchRiderOrders();
     } catch (err) {
       toast.error("Failed to submit cash: " + (err.response?.data?.message || err.message));
