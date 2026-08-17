@@ -98,11 +98,11 @@ export const RootLayout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-300">
-      {/* Top Free Delivery Announcement Banner */}
-      <FreeDeliveryBanner />
-
       {/* Sticky Navbar */}
       <Navbar />
+
+      {/* Promotional / Free Delivery Announcement Banner (Directly below Navbar & above Hero) */}
+      <FreeDeliveryBanner />
 
       {/* Main Page Content */}
       <main className="flex-grow w-full">
