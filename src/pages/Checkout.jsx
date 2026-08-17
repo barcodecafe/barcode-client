@@ -211,6 +211,7 @@ export const Checkout = () => {
     0,
     Math.min(availablePoints, Math.floor(afterCoupon)),
   );
+  const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
   const { settings } = useSettings();
   const standardDeliveryCharge = getRegionDeliveryCharge(region, area);
   const isFreeDelivery = checkFreeDeliveryEligibility(settings, {
