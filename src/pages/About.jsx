@@ -3,11 +3,8 @@ import { motion } from 'framer-motion';
 import {
   Target,
   Eye,
-  MapPin,
-  Calendar,
   UtensilsCrossed,
-  Building2,
-  Quote,
+  Sparkles,
 } from 'lucide-react';
 import { getAboutData } from '../services/aboutService';
 
@@ -16,9 +13,6 @@ export const About = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // .catch/.finally: without them a failed request never clears isLoading and
-    // the public About page shows a spinner forever. Same class of bug as the
-    // admin pages — this one just sits on the customer-facing site.
     getAboutData()
       .then((data) => setAboutData(data))
       .catch((err) => console.error('Failed to load about page:', err))
@@ -33,7 +27,89 @@ export const About = () => {
     );
   }
 
-  const { timeline, leadership, mission, vision, stats } = aboutData;
+  // Fallbacks with robust defaults
+  const heroBadge = aboutData?.heroBadge || 'About Barcode Group';
+  const heroTitle = aboutData?.heroTitle || 'Good Food, \nRun Like a Promise';
+  const heroHighlightText = aboutData?.heroHighlightText || 'Promise';
+  const heroDescription =
+    aboutData?.heroDescription ||
+    'From a single kitchen to six thriving branches, Barcode has stayed true to one core philosophy: every dish should meet the exact same culinary standard. Every single time. Everywhere.';
+  const heroImageMain =
+    aboutData?.heroImageMain ||
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80';
+  const heroImageSecondary1 =
+    aboutData?.heroImageSecondary1 ||
+    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+  const heroImageSecondary2 =
+    aboutData?.heroImageSecondary2 ||
+    'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&w=400&q=80';
+  const heroNetworkBadgeTitle = aboutData?.heroNetworkBadgeTitle || 'Group Network';
+  const heroNetworkBadgeSubtitle = aboutData?.heroNetworkBadgeSubtitle || 'Barcode Hospitality';
+
+  const heroStat1Value = aboutData?.heroStat1Value || '6';
+  const heroStat1Label = aboutData?.heroStat1Label || 'Active Branches';
+  const heroStat2Value = aboutData?.heroStat2Value || '100%';
+  const heroStat2Label = aboutData?.heroStat2Label || 'Consistency';
+  const heroStat3Value = aboutData?.heroStat3Value || '1';
+  const heroStat3Label = aboutData?.heroStat3Label || 'Uncompromising Taste';
+
+  const storyBadge = aboutData?.storyBadge || 'Our Story';
+  const storyTitle = aboutData?.storyTitle || 'How We Got Here';
+  const storyDescription =
+    aboutData?.storyDescription ||
+    'Barcode started as one restaurant with a clear point of view: dining out should feel considered, not complicated. That same standard now travels across every branch we open.';
+  const storyImage =
+    aboutData?.storyImage ||
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80';
+  const storyImageCaption = aboutData?.storyImageCaption || '';
+  const timeline = Array.isArray(aboutData?.timeline) ? aboutData.timeline : [];
+
+  const missionTitle = aboutData?.missionTitle || 'Our Mission';
+  const mission =
+    aboutData?.mission ||
+    'To serve thoughtfully sourced, carefully prepared food in a space that feels welcoming rather than formal — and to hold that standard at every branch, every day, for every guest.';
+  const visionTitle = aboutData?.visionTitle || 'Our Vision';
+  const vision =
+    aboutData?.vision ||
+    "To grow into a name people trust before they've even sat down — known branch after branch for the same quality, the same care, and a dining experience worth returning to.";
+
+  const stats = {
+    founded: aboutData?.stats?.founded || '2022',
+    foundedLabel: aboutData?.stats?.foundedLabel || 'Founded',
+    branchesCount: aboutData?.stats?.branchesCount || '6',
+    branchesCountLabel: aboutData?.stats?.branchesCountLabel || 'Branches',
+    standard: aboutData?.stats?.standard || '100%',
+    standardLabel: aboutData?.stats?.standardLabel || 'Standard',
+  };
+
+  const leadershipBadge = aboutData?.leadershipBadge || 'Leadership';
+  const leadershipTitle = aboutData?.leadershipTitle || 'Owner & Executive Team';
+  const leadershipSubtitle =
+    aboutData?.leadershipSubtitle ||
+    'The people responsible for keeping every branch on the same standard.';
+  const leadership = Array.isArray(aboutData?.leadership) ? aboutData.leadership : [];
+
+  const renderTitle = (title, highlight) => {
+    if (!highlight || !title.toLowerCase().includes(highlight.toLowerCase())) {
+      return <span className="whitespace-pre-line">{title}</span>;
+    }
+    const regex = new RegExp(`(${highlight})`, 'gi');
+    const parts = title.split(regex);
+    return (
+      <span className="whitespace-pre-line">
+        {parts.map((part, i) =>
+          part.toLowerCase() === highlight.toLowerCase() ? (
+            <span key={i} className="text-primary-500 relative inline-block">
+              {part}
+              <span className="absolute bottom-1.5 left-0 w-full h-[6px] bg-primary-200/60 dark:bg-primary-500/20 -z-10 rounded-full" />
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="w-full">
@@ -46,17 +122,19 @@ export const About = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* Left Column: Brand Story & Scale */}
             <div className="lg:col-span-6 space-y-6 text-left">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-100/50 dark:bg-primary-950/30 border border-primary-200/50 dark:border-primary-800/40 backdrop-blur-sm"
-              >
-                <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
-                <span className="text-primary-700 dark:text-primary-400 font-semibold uppercase tracking-widest text-[10px] sm:text-xs">
-                  About Barcode Group
-                </span>
-              </motion.div>
+              {heroBadge && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-100/50 dark:bg-primary-950/30 border border-primary-200/50 dark:border-primary-800/40 backdrop-blur-sm"
+                >
+                  <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
+                  <span className="text-primary-700 dark:text-primary-400 font-semibold uppercase tracking-widest text-[10px] sm:text-xs">
+                    {heroBadge}
+                  </span>
+                </motion.div>
+              )}
 
               <motion.h1
                 initial={{ opacity: 0, y: 25 }}
@@ -64,11 +142,7 @@ export const About = () => {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-neutral-900 dark:text-white leading-[1.15]"
               >
-                Good Food, <br />
-                Run Like a <span className="text-primary-500 relative inline-block">
-                  Promise
-                  <span className="absolute bottom-1.5 left-0 w-full h-[6px] bg-primary-200/60 dark:bg-primary-500/20 -z-10 rounded-full" />
-                </span>
+                {renderTitle(heroTitle, heroHighlightText)}
               </motion.h1>
 
               <motion.p
@@ -77,9 +151,7 @@ export const About = () => {
                 transition={{ duration: 0.6, delay: 0.25 }}
                 className="text-neutral-600 dark:text-neutral-400 text-base sm:text-lg font-light leading-relaxed max-w-xl tracking-wide"
               >
-                From a single kitchen to six thriving branches, Barcode has stayed true to
-                one core philosophy: every dish should meet the exact same culinary standard.
-                Every single time. Everywhere.
+                {heroDescription}
               </motion.p>
 
               {/* Dynamic trust signals built directly into the layout */}
@@ -89,20 +161,30 @@ export const About = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="pt-4 flex flex-wrap items-center gap-y-4 gap-x-6 text-neutral-500 dark:text-neutral-400 text-sm font-medium border-t border-neutral-200/60 dark:border-neutral-800/60"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">6</span>
-                  <span className="tracking-wide">Active Branches</span>
-                </div>
-                <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
-                <div className="flex items-center gap-2">
-                  <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">100%</span>
-                  <span className="tracking-wide">Consistency</span>
-                </div>
-                <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
-                <div className="flex items-center gap-2">
-                  <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">1</span>
-                  <span className="tracking-wide">Uncompromising Taste</span>
-                </div>
+                {heroStat1Value && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat1Value}</span>
+                    <span className="tracking-wide">{heroStat1Label}</span>
+                  </div>
+                )}
+                {heroStat2Value && (
+                  <>
+                    <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat2Value}</span>
+                      <span className="tracking-wide">{heroStat2Label}</span>
+                    </div>
+                  </>
+                )}
+                {heroStat3Value && (
+                  <>
+                    <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat3Value}</span>
+                      <span className="tracking-wide">{heroStat3Label}</span>
+                    </div>
+                  </>
+                )}
               </motion.div>
             </div>
 
@@ -116,7 +198,7 @@ export const About = () => {
               >
                 <div className="col-span-7 row-span-12 relative z-10 group overflow-hidden rounded-3xl shadow-xl shadow-neutral-900/5 dark:shadow-black/40 border-4 border-white dark:border-neutral-900">
                   <img
-                    src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80"
+                    src={heroImageMain}
                     alt="Signature Premium Dish"
                     className="w-full aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
@@ -124,14 +206,14 @@ export const About = () => {
                 <div className="col-span-5 space-y-4 self-center">
                   <div className="overflow-hidden rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
                     <img
-                      src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80"
+                      src={heroImageSecondary1}
                       alt="Restaurant Live Ambiance"
                       className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <div className="overflow-hidden rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
                     <img
-                      src="https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&w=400&q=80"
+                      src={heroImageSecondary2}
                       alt="Master chef plating professional dish"
                       className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -139,17 +221,27 @@ export const About = () => {
                 </div>
 
                 {/* Floating Group Network Badge */}
-                <div className="glass absolute -bottom-4 left-4 lg:-left-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 z-20">
-                  <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
-                    </svg>
+                {(heroNetworkBadgeTitle || heroNetworkBadgeSubtitle) && (
+                  <div className="glass absolute -bottom-4 left-4 lg:-left-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 z-20">
+                    <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
+                      </svg>
+                    </div>
+                    <div>
+                      {heroNetworkBadgeTitle && (
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider leading-none mb-1">
+                          {heroNetworkBadgeTitle}
+                        </p>
+                      )}
+                      {heroNetworkBadgeSubtitle && (
+                        <p className="text-xs sm:text-sm font-extrabold text-neutral-800 dark:text-white leading-none">
+                          {heroNetworkBadgeSubtitle}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider leading-none mb-1">Group Network</p>
-                    <p className="text-xs sm:text-sm font-extrabold text-neutral-800 dark:text-white leading-none">Barcode Hospitality</p>
-                  </div>
-                </div>
+                )}
               </motion.div>
             </div>
           </div>
@@ -170,33 +262,33 @@ export const About = () => {
           >
             <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-neutral-200 dark:bg-neutral-800">
               <img
-                src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80"
+                src={storyImage}
                 alt="Inside a Barcode restaurant branch"
                 className="w-full h-full object-cover"
               />
             </div>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-center">
-              Placeholder image — swap for real branch photography
-            </p>
+            {storyImageCaption && (
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-center">
+                {storyImageCaption}
+              </p>
+            )}
           </motion.div>
 
           <div>
             <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">
-              Our Story
+              {storyBadge}
             </span>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 mb-5">
-              How We Got Here
+              {storyTitle}
             </h2>
             <p className="text-neutral-500 dark:text-neutral-400 font-light leading-relaxed mb-10">
-              Barcode started as one restaurant with a clear point of view:
-              dining out should feel considered, not complicated. That same
-              standard now travels across every branch we open.
+              {storyDescription}
             </p>
 
             <div className="space-y-8">
               {timeline.map((item, idx) => (
                 <motion.div
-                  key={item.year + idx}
+                  key={item._id || item.id || item.year + idx}
                   initial={{ opacity: 0, y: 15 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -252,7 +344,7 @@ export const About = () => {
                 <Target className="w-7 h-7 text-primary-500" />
               </div>
               <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
-                Our Mission
+                {missionTitle}
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 font-light leading-relaxed">
                 {mission}
@@ -270,7 +362,7 @@ export const About = () => {
                 <Eye className="w-7 h-7 text-primary-500" />
               </div>
               <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
-                Our Vision
+                {visionTitle}
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 font-light leading-relaxed">
                 {vision}
@@ -283,19 +375,19 @@ export const About = () => {
             <div>
               <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.founded}</div>
               <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
-                Founded
+                {stats.foundedLabel || 'Founded'}
               </div>
             </div>
             <div className="border-x border-neutral-700">
               <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.branchesCount}</div>
               <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
-                Branches
+                {stats.branchesCountLabel || 'Branches'}
               </div>
             </div>
             <div>
               <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.standard}</div>
               <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
-                Standard
+                {stats.standardLabel || 'Standard'}
               </div>
             </div>
           </div>
@@ -308,32 +400,38 @@ export const About = () => {
       <section className="site-container py-16 sm:py-24">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">
-            Leadership
+            {leadershipBadge}
           </span>
           <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">
-            Owner &amp; Executive Team
+            {leadershipTitle}
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400 font-light mt-3">
-            The people responsible for keeping every branch on the same standard.
+            {leadershipSubtitle}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {leadership.map((person, idx) => (
             <motion.div
-              key={idx}
+              key={person._id || person.id || idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: idx * 0.08 }}
               className="group rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
             >
-              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
-                <img
-                  src={person.image}
-                  alt={person.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                {person.image ? (
+                  <img
+                    src={person.image}
+                    alt={person.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                    <UtensilsCrossed className="w-12 h-12 opacity-30" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>
               <div className="p-5">
