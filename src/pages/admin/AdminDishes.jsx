@@ -1669,122 +1669,229 @@ export const AdminDishes = () => {
                 </div>
 
                 {/* Variants Section */}
-                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
+                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3.5">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
-                        Size / Weight / Custom Variants
+                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider block">
+                        Dish Variations & Pricing Options
                       </label>
                       <span className="text-[11px] text-neutral-400">
-                        Optional variant-specific image. If empty, main dish image will be used.
+                        Define options based on Size, Weight, Portion, or custom criteria.
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={handleAddVariation}
-                      className="text-xs px-2.5 py-1 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg cursor-pointer transition-colors"
+                      className="text-xs px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-xs flex items-center gap-1"
                     >
                       + Add Variant
                     </button>
                   </div>
-                  <div className="space-y-2.5 pt-1">
-                    {formData.variations.map((v, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm"
-                      >
-                        <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
-                          {/* Variant Image Preview / Upload Button */}
-                          <div className="shrink-0">
-                            {v.image ? (
-                              <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-primary-500/40 bg-neutral-100 dark:bg-neutral-800 shadow-xs">
-                                <img
-                                  src={v.image}
-                                  alt={v.name || "Variant"}
-                                  className="w-full h-full object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleVariationChange(index, "image", "")}
-                                  className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold cursor-pointer"
-                                  title="Remove variant image"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <label
-                                className="h-10 px-2.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/50 flex items-center gap-1.5 text-[11px] font-medium cursor-pointer transition-colors"
-                                title="Upload variant-specific image (optional)"
-                              >
-                                <ImageIcon className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">+ Image</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        handleVariationChange(index, "image", reader.result);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            )}
-                          </div>
 
-                          <input
-                            type="text"
-                            placeholder="Variant name (e.g. Regular / Large)"
-                            value={v.name}
-                            onChange={(e) =>
-                              handleVariationChange(
-                                index,
-                                "name",
-                                e.target.value,
-                              )
-                            }
-                            className="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            required
-                          />
-                          <div className="relative w-24 sm:w-28">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">
-                              ৳
-                            </span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="Price"
-                              value={v.price}
-                              onChange={(e) =>
-                                handleVariationChange(
-                                  index,
-                                  "price",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full pl-6 pr-2.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
-                              required
-                            />
-                          </div>
+                  {/* 🎯 Variant Basis / Type Selector */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
+                        Variant Basis / Label:
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {standardVariantLabels.map((lbl) => (
                           <button
+                            key={lbl}
                             type="button"
-                            onClick={() => handleRemoveVariation(index)}
-                            className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Delete variant"
+                            onClick={() => {
+                              setIsCustomVariantLabel(false);
+                              setFormData((prev) => ({ ...prev, variantLabel: lbl }));
+                            }}
+                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                              !isCustomVariantLabel && (formData.variantLabel || "Size") === lbl
+                                ? "bg-primary-500 text-white border-primary-500 shadow-xs"
+                                : "bg-neutral-50 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                            }`}
                           >
-                            ✕
+                            {lbl}
                           </button>
-                        </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomVariantLabel(true);
+                            if (standardVariantLabels.includes(formData.variantLabel)) {
+                              setFormData((prev) => ({ ...prev, variantLabel: "" }));
+                            }
+                          }}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                            isCustomVariantLabel
+                              ? "bg-primary-500 text-white border-primary-500 shadow-xs"
+                              : "bg-neutral-50 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                          }`}
+                        >
+                          + Custom
+                        </button>
                       </div>
-                    ))}
+                    </div>
+
+                    {isCustomVariantLabel && (
+                      <div className="pt-1">
+                        <input
+                          type="text"
+                          placeholder="Enter custom label (e.g. Flavor, Crust, Package Size)"
+                          value={formData.variantLabel}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              variantLabel: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
+                          required={formData.variations.length > 0}
+                        />
+                      </div>
+                    )}
                   </div>
+
+                  {/* Variants List */}
+                  {formData.variations.length === 0 ? (
+                    <div className="p-3 text-center rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        No {formData.variantLabel || "Size"} variants added. Dish will sell at standard base price (৳{formData.price || 0}).
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 pt-1">
+                      {formData.variations.map((v, index) => {
+                        const getPlaceholder = (label) => {
+                          const clean = String(label || "").trim().toLowerCase();
+                          if (clean === "weight") return "e.g. 250g / 500g / 1kg";
+                          if (clean === "portion") return "e.g. 1:1 / 1:2 / Full Portion";
+                          if (clean === "piece") return "e.g. 4 Pcs / 6 Pcs / 12 Pcs";
+                          if (clean === "flavor") return "e.g. Vanilla / Chocolate / Strawberry";
+                          if (clean === "crust") return "e.g. Thin Crust / Cheese Burst";
+                          return "e.g. Regular / Medium / Large";
+                        };
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex flex-col gap-2 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 shadow-sm"
+                          >
+                            <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                              {/* Variant Image Preview / Upload Button */}
+                              <div className="shrink-0">
+                                {v.image ? (
+                                  <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-primary-500/40 bg-neutral-100 dark:bg-neutral-800 shadow-xs">
+                                    <img
+                                      src={v.image}
+                                      alt={v.name || "Variant"}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                      <label
+                                        className="p-1 text-white hover:text-primary-400 cursor-pointer"
+                                        title="Change image"
+                                      >
+                                        <Upload className="w-3 h-3" />
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              const reader = new FileReader();
+                                              reader.onloadend = () => {
+                                                handleVariationChange(index, "image", reader.result);
+                                              };
+                                              reader.readAsDataURL(file);
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleVariationChange(index, "image", "")}
+                                        className="p-1 text-white hover:text-red-400 cursor-pointer"
+                                        title="Remove image"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <label
+                                    className="h-10 px-2.5 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/50 flex items-center gap-1.5 text-[11px] font-medium cursor-pointer transition-colors"
+                                    title="Upload variant-specific image (optional)"
+                                  >
+                                    <ImageIcon className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">+ Image</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            handleVariationChange(index, "image", reader.result);
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+
+                              <input
+                                type="text"
+                                placeholder={getPlaceholder(formData.variantLabel)}
+                                value={v.name}
+                                onChange={(e) =>
+                                  handleVariationChange(
+                                    index,
+                                    "name",
+                                    e.target.value,
+                                  )
+                                }
+                                className="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                required
+                              />
+                              <div className="relative w-24 sm:w-28">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">
+                                  ৳
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Price"
+                                  value={v.price}
+                                  onChange={(e) =>
+                                    handleVariationChange(
+                                      index,
+                                      "price",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full pl-6 pr-2.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
+                                  required
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveVariation(index)}
+                                className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Delete variant"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* 🎯 Add-ons & Extras Section */}
