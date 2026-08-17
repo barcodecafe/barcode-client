@@ -49,9 +49,21 @@ export const Login = ({ variant = 'user' }) => {
   const cfg = VARIANTS[variant] || VARIANTS.user;
   const Icon = cfg.icon;
 
-  const { login, logout } = useAuth();
+  const { login, logout, user, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      } else if (user?.role === 'rider') {
+        navigate('/rider', { replace: true });
+      } else if (variant === 'user') {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [isAuthenticated, isAdmin, user, navigate, variant]);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -108,8 +120,15 @@ export const Login = ({ variant = 'user' }) => {
 
       // Success Path
       const searchRedirect = new URLSearchParams(location.search).get('redirect');
-      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : loggedInUser.role === 'admin' ? '/admin' : '/';
-      const redirectTo = searchRedirect || location.state?.from || defaultHome;
+      const isUserAdmin = ['admin', 'super_admin', 'superadmin'].includes(String(loggedInUser.role || '').toLowerCase());
+      const defaultHome = loggedInUser.role === 'rider' ? '/rider' : isUserAdmin ? '/admin' : '/';
+      let redirectTo = searchRedirect || location.state?.from || defaultHome;
+
+      if (isUserAdmin && !redirectTo.startsWith('/admin')) {
+        redirectTo = '/admin';
+      } else if (loggedInUser.role === 'rider' && !redirectTo.startsWith('/rider')) {
+        redirectTo = '/rider';
+      }
 
       Swal.fire({
         icon: 'success',

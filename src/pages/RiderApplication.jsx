@@ -185,7 +185,7 @@ export const RiderApplication = () => {
         tint="bg-indigo-500/10"
         title="Administrator account"
         text="Admins review rider applications directly from the Admin Dashboard."
-        cta={{ to: '/admin/riders', label: 'Review Applications' }}
+        cta={{ to: '/admin/rider-applications', label: 'Review Applications' }}
       />
     );
   }

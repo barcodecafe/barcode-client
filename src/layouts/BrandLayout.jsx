@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, Link, Outlet, useParams, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun,
   Moon,
@@ -55,10 +55,19 @@ const Avatar = ({ name, size = "sm" }) => {
 export const BrandLayout = () => {
   const { slug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { cartItemCount, openCart } = useCart();
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const isRider = user?.role === "rider";
+
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin', { replace: true });
+    } else if (user?.role === 'rider') {
+      navigate('/rider', { replace: true });
+    }
+  }, [isAdmin, user, navigate]);
 
   const [brand, setBrand] = useState(null);
   const [loading, setLoading] = useState(true);

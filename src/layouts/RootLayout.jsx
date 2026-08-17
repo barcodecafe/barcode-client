@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'; // 👈 AuthContext ইমপ�
 import { socket } from '../services/socket';
 
 export const RootLayout = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,7 +17,11 @@ export const RootLayout = () => {
     if (user?.role === 'rider' && !location.pathname.startsWith('/rider')) {
       navigate('/rider', { replace: true });
     }
-  }, [user, navigate, location]);
+    // 🛡️ Admin কাস্টমারদের পেজে চলে আসলে স্বয়ংক্রিয়ভাবে admin dashboard-এ পাঠিয়ে দেবে
+    if (isAdmin && !location.pathname.startsWith('/admin')) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, isAdmin, navigate, location]);
 
   // 🔔 Global Delivery Toast Listener for logged in customers
   useEffect(() => {

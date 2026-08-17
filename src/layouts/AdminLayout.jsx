@@ -220,7 +220,7 @@ export const AdminLayout = () => {
 
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
         <Link
-          to="/"
+          to="/admin"
           onClick={onNavigate}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500 transition-all duration-200"
         >
@@ -290,7 +290,7 @@ export const AdminLayout = () => {
               <MenuIcon className="w-4 h-4" />
             </button>
             <Link
-              to="/"
+              to="/admin"
               className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
