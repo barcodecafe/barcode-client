@@ -1,36 +1,114 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import * as settingsService from '../services/settingsService';
 import { DEFAULT_SETTINGS } from '../services/settingsService';
+import { socket } from '../services/socket';
 
 const SettingsContext = createContext(null);
+const CACHED_SETTINGS_KEY = 'site_settings_cache';
 
-// Async-safe (audit N12): start from DEFAULT_SETTINGS so Footer/logo render
-// sensible values immediately, then hydrate from the API. update/reset await
-// the server and store the returned object — never a pending Promise.
+const getInitialSettings = () => {
+  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+  try {
+    const cached = localStorage.getItem(CACHED_SETTINGS_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+  } catch (err) {
+    console.warn('Failed to parse cached settings:', err);
+  }
+  return DEFAULT_SETTINGS;
+};
+
 export const SettingsProvider = ({ children }) => {
-  const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [settings, setSettingsState] = useState(getInitialSettings);
+  const [isLoaded, setIsLoaded] = useState(true);
+
+  // Sync state to localStorage cache
+  const updateLocalCache = (newSettings) => {
+    try {
+      if (typeof window !== 'undefined' && newSettings) {
+        localStorage.setItem(CACHED_SETTINGS_KEY, JSON.stringify(newSettings));
+      }
+    } catch (err) {
+      console.warn('Failed to cache settings:', err);
+    }
+  };
 
   useEffect(() => {
-    // .catch/.finally: without them a failed settings request left
-    // isSettingsLoaded false forever, and anything gated on it never rendered.
+    // 1. Initial hydration from backend
     settingsService
       .getSettings()
-      .then((s) => setSettingsState(s || DEFAULT_SETTINGS))
+      .then((s) => {
+        if (s) {
+          const merged = { ...DEFAULT_SETTINGS, ...s };
+          setSettingsState(merged);
+          updateLocalCache(merged);
+        }
+      })
       .catch((err) => console.error('Failed to load site settings:', err))
       .finally(() => setIsLoaded(true));
+
+    // 2. ⚡ Real-time WebSocket listener for instant zero-latency broadcast
+    const handleSettingsUpdated = (incomingSettings) => {
+      if (incomingSettings) {
+        setSettingsState((prev) => {
+          const updated = { ...prev, ...incomingSettings };
+          updateLocalCache(updated);
+          return updated;
+        });
+      }
+    };
+
+    socket.on('settings_updated', handleSettingsUpdated);
+    socket.on('free_delivery_updated', handleSettingsUpdated);
+
+    return () => {
+      socket.off('settings_updated', handleSettingsUpdated);
+      socket.off('free_delivery_updated', handleSettingsUpdated);
+    };
   }, []);
 
   const updateSettings = useCallback(async (newSettings) => {
-    const updated = await settingsService.saveSettings(newSettings);
-    setSettingsState(updated);
-    return updated;
+    // ⚡ Optimistic UI update (Instant 0ms response in Admin and Client UI)
+    setSettingsState((prev) => {
+      const optimistic = { ...prev, ...newSettings };
+      updateLocalCache(optimistic);
+      return optimistic;
+    });
+
+    try {
+      const updated = await settingsService.saveSettings(newSettings);
+      if (updated) {
+        const merged = { ...DEFAULT_SETTINGS, ...updated };
+        setSettingsState(merged);
+        updateLocalCache(merged);
+        return merged;
+      }
+    } catch (err) {
+      console.error('Failed to save settings to server:', err);
+      throw err;
+    }
   }, []);
 
   const resetSettings = useCallback(async () => {
-    const reset = await settingsService.resetSettings();
-    setSettingsState(reset);
-    return reset;
+    // ⚡ Optimistic reset
+    setSettingsState(DEFAULT_SETTINGS);
+    updateLocalCache(DEFAULT_SETTINGS);
+
+    try {
+      const reset = await settingsService.resetSettings();
+      if (reset) {
+        const merged = { ...DEFAULT_SETTINGS, ...reset };
+        setSettingsState(merged);
+        updateLocalCache(merged);
+        return merged;
+      }
+      return DEFAULT_SETTINGS;
+    } catch (err) {
+      console.error('Failed to reset settings on server:', err);
+      throw err;
+    }
   }, []);
 
   return (
@@ -47,3 +125,5 @@ export const useSettings = () => {
   }
   return context;
 };
+
+export default SettingsContext;
