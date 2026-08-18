@@ -561,8 +561,8 @@ export const AdminFreeDelivery = () => {
                     </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <div className="relative w-full sm:w-64">
+                  <div className="flex items-center">
+                    <div className="relative w-full max-w-sm">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
                         ৳
                       </span>
@@ -579,24 +579,6 @@ export const AdminFreeDelivery = () => {
                         placeholder="0 (No minimum)"
                         className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                       />
-                    </div>
-
-                    {/* Quick Presets */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[0, 300, 500, 1000, 1500].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setFreeDeliveryMinOrder(preset)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            freeDeliveryMinOrder === preset
-                              ? "bg-amber-500 text-white shadow-xs"
-                              : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                          }`}
-                        >
-                          {preset === 0 ? "No Min (৳0)" : `৳${preset}`}
-                        </button>
-                      ))}
                     </div>
                   </div>
 
