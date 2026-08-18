@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Store, Upload, ExternalLink, Eye, EyeOff, GripVertical, CheckCircle2, Loader2 } from "lucide-react";
 import {
   getAllBrandsAdmin,
   createBrand,
@@ -8,6 +8,7 @@ import {
   deleteBrand,
   updateBrandOrder, // 🎯 রি-অর্ডার এপিআই সার্ভিস
 } from "../../services/brandsService";
+import { socket } from "../../services/socket";
 
 const BLANK = {
   name: "", slug: "", tagline: "", description: "",
@@ -23,35 +24,73 @@ export const AdminBrands = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
+  const [orderSyncStatus, setOrderSyncStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'error'
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
-  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
+  const reorderTimeoutRef = useRef(null);
+  const latestOrderedIdsRef = useRef([]);
 
   const load = () => {
     getAllBrandsAdmin()
-      .then((data) => setBrands(data || []))
+      .then((data) => {
+        const sorted = Array.isArray(data)
+          ? [...data].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+          : [];
+        setBrands(sorted);
+      })
       .catch((e) => console.error("Failed to load brands:", e))
       .finally(() => setLoading(false));
   };
-  useEffect(load, []);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Rollback + Debounce)
-  // [SORTING-FIX] API fail হলে আগের order-এ rollback করা হবে এবং দ্রুত ড্র্যাগিং এ রেইস কন্ডিশন ঠেকাতে debounce করা হবে
-  const handleBrandReorder = (reorderedBrands) => {
-    const previousBrands = brands; // [SORTING-FIX] rollback এর জন্য আগের state save
-    setBrands(reorderedBrands);
-    const orderedIds = reorderedBrands.map((b) => String(b.id || b._id));
+  useEffect(() => {
+    load();
 
-    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
-    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
-    reorderTimeoutRef.current = setTimeout(() => {
-      if (typeof updateBrandOrder === "function") {
-        updateBrandOrder(orderedIds).catch((err) => {
-          console.error("Failed to sync brand order on server:", err);
-          setBrands(previousBrands); // [SORTING-FIX] ❌ API fail → আগের order restore
-        });
+    // ⚡ Socket listener for real-time brand updates
+    const handleBrandsSync = () => {
+      // Only reload if we are not actively in the middle of reordering
+      if (orderSyncStatus === "idle") {
+        load();
       }
-    }, 300);
+    };
+
+    socket.on("brands_updated", handleBrandsSync);
+
+    // Flush any pending sync if user suddenly refreshes or leaves tab
+    const handleBeforeUnload = () => {
+      if (latestOrderedIdsRef.current.length > 0) {
+        updateBrandOrder(latestOrderedIdsRef.current).catch(() => {});
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      socket.off("brands_updated", handleBrandsSync);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [orderSyncStatus]);
+
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Fast Sync + Rollback Protection)
+  const handleBrandReorder = (reorderedBrands) => {
+    const previousBrands = brands;
+    setBrands(reorderedBrands);
+    const orderedIds = reorderedBrands.map((b) => (b.id !== undefined && b.id !== null ? b.id : b._id));
+    latestOrderedIdsRef.current = orderedIds;
+
+    setOrderSyncStatus("saving");
+
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        await updateBrandOrder(orderedIds);
+        setOrderSyncStatus("saved");
+        latestOrderedIdsRef.current = [];
+        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+      } catch (err) {
+        console.error("Failed to sync brand order on server:", err);
+        setOrderSyncStatus("error");
+        setBrands(previousBrands);
+      }
+    }, 150); // Fast 150ms debounce
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
@@ -109,9 +148,26 @@ export const AdminBrands = () => {
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
-            Brands
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
+              Brands
+            </h1>
+            {orderSyncStatus === "saving" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse border border-amber-500/20">
+                <Loader2 className="w-3 h-3 animate-spin" /> Saving order...
+              </span>
+            )}
+            {orderSyncStatus === "saved" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-500/20">
+                <CheckCircle2 className="w-3 h-3 text-green-500" /> Order saved
+              </span>
+            )}
+            {orderSyncStatus === "error" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold border border-red-500/20">
+                Failed to save order
+              </span>
+            )}
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             The group's brands — drag cards up/down to reorder display sequence.
           </p>
