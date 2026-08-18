@@ -77,6 +77,12 @@ export const AdminBranches = () => {
   const [formError, setFormError] = useState("");
   const [mapLinkInput, setMapLinkInput] = useState("");
   const isSelfReorderingRef = useRef(false);
+  const orderSyncStatusRef = useRef("idle");
+
+  const setSyncStatus = (status) => {
+    orderSyncStatusRef.current = status;
+    setOrderSyncStatus(status);
+  };
 
   const fetchBranchesData = useCallback(async (showLoading = false) => {
     try {
@@ -114,11 +120,9 @@ export const AdminBranches = () => {
 
     // ⚡ Real-Time WebSocket Listener for branches (Silent background sync)
     const handleBranchesSync = () => {
-      // If we ourselves just reordered, ignore the echo socket event to prevent visual reloads
-      if (isSelfReorderingRef.current) return;
-      if (orderSyncStatus === "idle") {
-        fetchBranchesData(false);
-      }
+      // If we ourselves just reordered or are saving, NEVER refetch from server to prevent self-shuffling!
+      if (isSelfReorderingRef.current || orderSyncStatusRef.current !== "idle") return;
+      fetchBranchesData(false);
     };
 
     socket.on("branches_updated", handleBranchesSync);
@@ -134,7 +138,7 @@ export const AdminBranches = () => {
       socket.off("branches_updated", handleBranchesSync);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [fetchBranchesData, orderSyncStatus]);
+  }, [fetchBranchesData]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -160,18 +164,18 @@ export const AdminBranches = () => {
 
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
     reorderTimeoutRef.current = setTimeout(async () => {
-      setOrderSyncStatus("saving");
+      setSyncStatus("saving");
       try {
         await updateBranchOrder(orderedIds);
-        setOrderSyncStatus("saved");
+        setSyncStatus("saved");
         latestOrderedIdsRef.current = [];
         setTimeout(() => {
-          setOrderSyncStatus("idle");
+          setSyncStatus("idle");
           isSelfReorderingRef.current = false;
         }, 2500);
       } catch (err) {
         console.error("Background sync error for branch order:", err);
-        setOrderSyncStatus("error");
+        setSyncStatus("error");
         isSelfReorderingRef.current = false;
       }
     }, 300);

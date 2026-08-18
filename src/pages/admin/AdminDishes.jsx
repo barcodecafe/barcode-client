@@ -67,6 +67,13 @@ export const AdminDishes = () => {
   const [orderSyncStatus, setOrderSyncStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'error'
   const latestOrderedFoodIdsRef = useRef([]);
   const latestOrderedCategoryOrderRef = useRef([]);
+  const isSelfReorderingRef = useRef(false);
+  const orderSyncStatusRef = useRef("idle");
+
+  const setSyncStatus = (status) => {
+    orderSyncStatusRef.current = status;
+    setOrderSyncStatus(status);
+  };
 
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -296,9 +303,11 @@ export const AdminDishes = () => {
   // ⚡ Real-Time WebSocket Listeners for Dishes & Categories
   useEffect(() => {
     const handleDishesSync = () => {
-      if (orderSyncStatus === "idle" && !reorderCooldown) {
-        syncFromServer();
+      // If we ourselves just reordered or are saving, NEVER refetch from server to prevent self-shuffling!
+      if (isSelfReorderingRef.current || orderSyncStatusRef.current !== "idle" || reorderCooldown) {
+        return;
       }
+      syncFromServer();
     };
 
     socket.on("foods_updated", handleDishesSync);
@@ -319,7 +328,7 @@ export const AdminDishes = () => {
       socket.off("categories_updated", handleDishesSync);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [orderSyncStatus, reorderCooldown, syncFromServer]);
+  }, [reorderCooldown, syncFromServer]);
 
   const handleManualRefresh = () => {
     setIsRefreshing(true);
@@ -331,6 +340,7 @@ export const AdminDishes = () => {
 
   // [SORTING-FIX] Category reorder-এ rollback + cooldown + Fast Debounce + Live Status + Order Guard
   const handleCategoryReorder = async (newOrder) => {
+    isSelfReorderingRef.current = true;
     const orderMap = new Map();
     newOrder.forEach((cat) => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
@@ -361,29 +371,36 @@ export const AdminDishes = () => {
 
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
-    setOrderSyncStatus("saving");
 
     if (categoryReorderTimeoutRef.current) clearTimeout(categoryReorderTimeoutRef.current);
     categoryReorderTimeoutRef.current = setTimeout(async () => {
+      setSyncStatus("saving");
       try {
         await reorderCategories(finalUniqueOrder);
-        setOrderSyncStatus("saved");
+        setSyncStatus("saved");
         latestOrderedCategoryOrderRef.current = [];
-        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+        setTimeout(() => {
+          setSyncStatus("idle");
+          isSelfReorderingRef.current = false;
+        }, 2500);
       } catch (err) {
         console.error("Error updating category order on server:", err);
         try {
           if (typeof updateCategoryOrder === "function") {
             await updateCategoryOrder(finalUniqueOrder);
-            setOrderSyncStatus("saved");
+            setSyncStatus("saved");
             latestOrderedCategoryOrderRef.current = [];
-            setTimeout(() => setOrderSyncStatus("idle"), 2500);
+            setTimeout(() => {
+              setSyncStatus("idle");
+              isSelfReorderingRef.current = false;
+            }, 2500);
           }
         } catch (fallbackErr) {
           console.error("Fallback category order update failed:", fallbackErr);
-          setOrderSyncStatus("error");
+          setSyncStatus("error");
           setSortedCategories(previousCategories);
           setFoods(previousFoods);
+          isSelfReorderingRef.current = false;
         }
       }
     }, 250);
@@ -391,6 +408,7 @@ export const AdminDishes = () => {
 
   // [SORTING-FIX] Food reorder-এ rollback + cooldown + Fast Debounce + Live Status + Order Guard
   const handleFoodReorder = async (reorderedFoods) => {
+    isSelfReorderingRef.current = true;
     const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
     const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
     const merged = [...reorderedFoods, ...untouched];
@@ -413,21 +431,25 @@ export const AdminDishes = () => {
 
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
-    setOrderSyncStatus("saving");
 
     if (foodReorderTimeoutRef.current) clearTimeout(foodReorderTimeoutRef.current);
     foodReorderTimeoutRef.current = setTimeout(async () => {
+      setSyncStatus("saving");
       try {
         if (typeof updateFoodOrder === "function") {
           await updateFoodOrder(orderedIds);
         }
-        setOrderSyncStatus("saved");
+        setSyncStatus("saved");
         latestOrderedFoodIdsRef.current = [];
-        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+        setTimeout(() => {
+          setSyncStatus("idle");
+          isSelfReorderingRef.current = false;
+        }, 2500);
       } catch (err) {
         console.error("Error updating food order on server:", err);
-        setOrderSyncStatus("error");
+        setSyncStatus("error");
         setFoods(previousFoods);
+        isSelfReorderingRef.current = false;
       }
     }, 250);
   };

@@ -30,6 +30,12 @@ export const AdminBrands = () => {
   const reorderTimeoutRef = useRef(null);
   const latestOrderedIdsRef = useRef([]);
   const isSelfReorderingRef = useRef(false);
+  const orderSyncStatusRef = useRef("idle");
+
+  const setSyncStatus = (status) => {
+    orderSyncStatusRef.current = status;
+    setOrderSyncStatus(status);
+  };
 
   const load = () => {
     getAllBrandsAdmin()
@@ -48,10 +54,9 @@ export const AdminBrands = () => {
 
     // ⚡ Socket listener for real-time brand updates
     const handleBrandsSync = () => {
-      if (isSelfReorderingRef.current) return;
-      if (orderSyncStatus === "idle") {
-        load();
-      }
+      // If we ourselves just reordered or are saving, NEVER refetch from server to prevent self-shuffling!
+      if (isSelfReorderingRef.current || orderSyncStatusRef.current !== "idle") return;
+      load();
     };
 
     socket.on("brands_updated", handleBrandsSync);
@@ -68,7 +73,7 @@ export const AdminBrands = () => {
       socket.off("brands_updated", handleBrandsSync);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [orderSyncStatus]);
+  }, []);
 
   // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Debounced Server Sync)
   const handleBrandReorder = (reorderedBrands) => {
@@ -84,18 +89,18 @@ export const AdminBrands = () => {
 
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
     reorderTimeoutRef.current = setTimeout(async () => {
-      setOrderSyncStatus("saving");
+      setSyncStatus("saving");
       try {
         await updateBrandOrder(orderedIds);
-        setOrderSyncStatus("saved");
+        setSyncStatus("saved");
         latestOrderedIdsRef.current = [];
         setTimeout(() => {
-          setOrderSyncStatus("idle");
+          setSyncStatus("idle");
           isSelfReorderingRef.current = false;
         }, 2500);
       } catch (err) {
         console.error("Failed to sync brand order on server:", err);
-        setOrderSyncStatus("error");
+        setSyncStatus("error");
         isSelfReorderingRef.current = false;
       }
     }, 300);
