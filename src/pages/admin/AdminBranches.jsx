@@ -432,14 +432,15 @@ export const AdminBranches = () => {
           axis="y"
           values={search.trim() ? filtered : branches}
           onReorder={handleBranchReorder}
-          className="flex flex-col gap-3.5 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl"
+          className="flex flex-col gap-3.5 max-w-4xl"
         >
-          {filtered.map((branch) => {
+          {(search.trim() ? filtered : branches).map((branch) => {
             const rev = revenueMap[branch.id];
             return (
               <Reorder.Item
-                key={branch.id || branch._id}
+                key={String(branch.id || branch._id)}
                 value={branch}
+                style={{ position: "relative", touchAction: "none" }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
               >
                 <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
