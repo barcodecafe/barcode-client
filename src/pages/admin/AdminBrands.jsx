@@ -73,7 +73,11 @@ export const AdminBrands = () => {
   const handleBrandReorder = (reorderedBrands) => {
     const previousBrands = brands;
     setBrands(reorderedBrands);
-    const orderedIds = reorderedBrands.map((b) => (b.id !== undefined && b.id !== null ? b.id : b._id));
+    const orderedIds = reorderedBrands.map((b) => {
+      const rawId = b.id !== undefined && b.id !== null ? b.id : b._id;
+      const numId = Number(rawId);
+      return Number.isFinite(numId) ? numId : rawId;
+    });
     latestOrderedIdsRef.current = orderedIds;
 
     setOrderSyncStatus("saving");
