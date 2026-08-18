@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Navbar } from '../components/Navbar';
 import { FreeDeliveryBanner } from '../components/FreeDeliveryBanner';
+import { NoticeTicker } from '../components/NoticeTicker';
 import { Footer } from '../components/Footer';
 import { CartDrawer } from '../components/CartDrawer';
 import { useAuth } from '../context/AuthContext'; // 👈 AuthContext ইমপোর্ট
@@ -101,7 +102,10 @@ export const RootLayout = () => {
       {/* Sticky Navbar */}
       <Navbar />
 
-      {/* Promotional / Free Delivery Announcement Banner (Directly below Navbar & above Hero) */}
+      {/* 📢 Global Maintenance / System Announcement Notice Ticker */}
+      <NoticeTicker />
+
+      {/* 🚚 Promotional / Free Delivery Campaign Announcement Banner */}
       <FreeDeliveryBanner />
 
       {/* Main Page Content */}

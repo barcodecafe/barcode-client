@@ -25,7 +25,6 @@ import { socket } from "../services/socket";
 
 // 💡 Global FoodCard Import
 import FoodCard from "../components/FoodCard";
-import NoticeTicker from "../components/NoticeTicker";
 
 // Import Swiper styles
 import "swiper/css";
@@ -244,9 +243,6 @@ export const Home = () => {
 
   return (
     <div className="w-full">
-      {/* 📢 DYNAMIC TV / NEWS HEADLINE NOTICE TICKER */}
-      <NoticeTicker />
-
       {/* 1. HERO BANNER CAROUSEL */}
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
         {heroSlides.length > 0 ? (
