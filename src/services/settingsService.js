@@ -24,8 +24,9 @@ export const DEFAULT_SETTINGS = {
 
   // 🚚 Free Delivery Campaign Defaults
   freeDeliveryEnabled: false,
-  freeDeliveryScope: 'all', // 'all' | 'min_amount' | 'dishes' | 'areas'
+  freeDeliveryScope: 'all', // 'all' | 'min_amount' | 'categories' | 'dishes' | 'areas'
   freeDeliveryMinOrder: 0,
+  freeDeliveryCategories: [],
   freeDeliveryDishIds: [],
   freeDeliveryAreas: [],
   freeDeliveryBannerText: '🎉 Special Offer: Free Delivery on all orders today!',

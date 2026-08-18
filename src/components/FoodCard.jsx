@@ -114,9 +114,16 @@ const FoodCard = ({
 
         {/* 🚚 Free Delivery Dish Badge */}
         {settings?.freeDeliveryEnabled &&
-          (settings?.freeDeliveryScope === "dishes"
-            ? (settings?.freeDeliveryDishIds || []).map(Number).includes(Number(foodId))
-            : settings?.freeDeliveryScope === "all") && (
+          (settings?.freeDeliveryScope === "all" ||
+            settings?.freeDeliveryScope === "min_amount" ||
+            (settings?.freeDeliveryScope === "categories" &&
+              (settings?.freeDeliveryCategories || [])
+                .map((c) => String(c).trim().toLowerCase())
+                .includes(String(food.category || "").trim().toLowerCase())) ||
+            (settings?.freeDeliveryScope === "dishes" &&
+              (settings?.freeDeliveryDishIds || [])
+                .map(Number)
+                .includes(Number(foodId)))) && (
             <span className="pointer-events-none absolute left-0 bottom-0 z-10 flex items-center gap-1 rounded-none bg-amber-500 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">
               <Truck className="h-2.5 w-2.5" /> Free Delivery
             </span>

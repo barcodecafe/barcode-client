@@ -45,12 +45,14 @@ export const FreeDeliveryBanner = memo(
       : settings?.freeDeliveryMinOrder;
 
     let scopeBadge = "All Orders";
-    if (scope === "min_amount" && minOrder > 0) {
-      scopeBadge = `Orders ৳${minOrder}+`;
+    if (scope === "categories") {
+      scopeBadge = minOrder > 0 ? `৳${minOrder}+ (Selected Categories)` : "Selected Categories";
     } else if (scope === "dishes") {
-      scopeBadge = "Selected Dishes";
+      scopeBadge = minOrder > 0 ? `৳${minOrder}+ (Selected Dishes)` : "Selected Dishes";
     } else if (scope === "areas") {
-      scopeBadge = "Selected Areas";
+      scopeBadge = minOrder > 0 ? `৳${minOrder}+ (Selected Areas)` : "Selected Areas";
+    } else if (minOrder > 0) {
+      scopeBadge = `Orders ৳${minOrder}+`;
     }
 
     if (!isEnabled || !bannerText) {

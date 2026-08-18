@@ -62,16 +62,30 @@ export function getRegionDeliveryCharge(region, areaName) {
 export function checkFreeDeliveryEligibility(settings, { subtotal = 0, cartItems = [], area = '' } = {}) {
   if (!settings || !settings.freeDeliveryEnabled) return false;
 
-  const scope = settings.freeDeliveryScope || 'all';
-
-  if (scope === 'all') {
-    const min = Number(settings.freeDeliveryMinOrder) || 0;
-    return min > 0 ? subtotal >= min : true;
+  // 1. Mandatory Minimum Order Check
+  const min = Number(settings.freeDeliveryMinOrder) || 0;
+  if (min > 0 && subtotal < min) {
+    return false;
   }
 
-  if (scope === 'min_amount') {
-    const min = Number(settings.freeDeliveryMinOrder) || 0;
-    return subtotal >= min;
+  // 2. Scope Evaluation
+  const scope = settings.freeDeliveryScope || 'all';
+
+  if (scope === 'all' || scope === 'min_amount') {
+    return true;
+  }
+
+  if (scope === 'categories') {
+    const targetCategories = (settings.freeDeliveryCategories || []).map((c) =>
+      String(c).trim().toLowerCase(),
+    );
+    if (targetCategories.length > 0) {
+      return (cartItems || []).some((item) => {
+        const itemCat = String(item.category || '').trim().toLowerCase();
+        return targetCategories.includes(itemCat);
+      });
+    }
+    return true;
   }
 
   if (scope === 'dishes') {
@@ -86,7 +100,9 @@ export function checkFreeDeliveryEligibility(settings, { subtotal = 0, cartItems
   }
 
   if (scope === 'areas') {
-    const targetAreas = (settings.freeDeliveryAreas || []).map((a) => String(a).trim().toLowerCase());
+    const targetAreas = (settings.freeDeliveryAreas || []).map((a) =>
+      String(a).trim().toLowerCase(),
+    );
     if (targetAreas.length > 0) {
       const currentArea = String(area || '').trim().toLowerCase();
       return targetAreas.includes(currentArea);
