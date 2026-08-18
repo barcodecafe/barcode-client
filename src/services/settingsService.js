@@ -30,6 +30,11 @@ export const DEFAULT_SETTINGS = {
   freeDeliveryAreas: [],
   freeDeliveryBannerText: '🎉 Special Offer: Free Delivery on all orders today!',
   freeDeliveryShowBanner: true,
+
+  // 📢 Global Maintenance / Announcement Ticker Notice Defaults
+  maintenanceNoticeEnabled: true,
+  maintenanceNoticeText:
+    '⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!',
 };
 
 /** GET /api/settings — falls back to defaults if the API is unreachable. */

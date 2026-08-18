@@ -18,8 +18,10 @@ import {
   Truck,
   ArrowRight,
   Sparkles,
+  Megaphone,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
+import NoticeTicker from "../../components/NoticeTicker";
 
 export const AdminSettings = () => {
   const { settings, isSettingsLoaded, updateSettings, resetSettings } =
@@ -51,6 +53,16 @@ export const AdminSettings = () => {
     settings.paymentBanner || ""
   );
 
+  // 📢 Maintenance / Announcement Ticker states
+  const [maintenanceNoticeEnabled, setMaintenanceNoticeEnabled] = useState(
+    settings.maintenanceNoticeEnabled !== undefined
+      ? Boolean(settings.maintenanceNoticeEnabled)
+      : true
+  );
+  const [maintenanceNoticeText, setMaintenanceNoticeText] = useState(
+    settings.maintenanceNoticeText || ""
+  );
+
   // UI States
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -68,6 +80,12 @@ export const AdminSettings = () => {
     setLogoLight(settings.logoLight || "");
     setLogoDark(settings.logoDark || "");
     setPaymentBanner(settings.paymentBanner || "");
+    setMaintenanceNoticeEnabled(
+      settings.maintenanceNoticeEnabled !== undefined
+        ? Boolean(settings.maintenanceNoticeEnabled)
+        : true
+    );
+    setMaintenanceNoticeText(settings.maintenanceNoticeText || "");
   }, [isSettingsLoaded, settings]);
 
   const handleLogoLightUpload = (e) => {
@@ -133,6 +151,8 @@ export const AdminSettings = () => {
         footerFacebook: footerFacebook.trim(),
         footerInstagram: footerInstagram.trim(),
         footerTwitter: footerTwitter.trim(),
+        maintenanceNoticeEnabled: Boolean(maintenanceNoticeEnabled),
+        maintenanceNoticeText: maintenanceNoticeText.trim(),
       };
 
       await updateSettings(payload);
@@ -172,6 +192,12 @@ export const AdminSettings = () => {
       setLogoLight(defaults.logoLight || "");
       setLogoDark(defaults.logoDark || "");
       setPaymentBanner(defaults.paymentBanner || "");
+      setMaintenanceNoticeEnabled(
+        defaults.maintenanceNoticeEnabled !== undefined
+          ? Boolean(defaults.maintenanceNoticeEnabled)
+          : true
+      );
+      setMaintenanceNoticeText(defaults.maintenanceNoticeText || "");
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -190,7 +216,7 @@ export const AdminSettings = () => {
             Website Site Settings
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Manage brand logos, SSL payment gateway banners, footer contact info, and social networks.
+            Manage brand logos, SSL payment gateway banners, live announcement tickers, footer contact info, and social networks.
           </p>
         </div>
 
@@ -250,6 +276,91 @@ export const AdminSettings = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 📢 Global Announcement & Maintenance Ticker (TV / News Marquee) */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-5 sm:p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-100 dark:border-neutral-800/60">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-extrabold text-sm text-neutral-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Megaphone className="w-4 h-4 text-amber-500" />
+                  Live Announcement & Maintenance Ticker (TV / Breaking News Bar)
+                </h2>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    maintenanceNoticeEnabled
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+                      : "bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20"
+                  }`}
+                >
+                  {maintenanceNoticeEnabled ? "🟢 Visible on Home" : "⚪ Hidden / OFF"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Continuous right-to-left scrolling headline bar on the homepage. Control visibility and customize the notice message anytime.
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <label className="relative inline-flex items-center cursor-pointer select-none self-start sm:self-auto shrink-0">
+              <input
+                type="checkbox"
+                checked={maintenanceNoticeEnabled}
+                onChange={(e) => setMaintenanceNoticeEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-hidden rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-600 peer-checked:bg-amber-500"></div>
+              <span className="ml-2 text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                {maintenanceNoticeEnabled ? "Active (ON)" : "Disabled (OFF)"}
+              </span>
+            </label>
+          </div>
+
+          {/* Notice Textarea */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              Notice / Announcement Message
+            </label>
+            <textarea
+              rows={3}
+              value={maintenanceNoticeText}
+              onChange={(e) => setMaintenanceNoticeText(e.target.value)}
+              placeholder="e.g. ⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes)..."
+              disabled={!maintenanceNoticeEnabled}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 focus:outline-hidden focus:ring-1 focus:ring-amber-500 text-xs disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-900 transition-all"
+            />
+            <p className="text-[11px] text-neutral-400">
+              💡 Tip: Keep it informative and concise. It will automatically loop smoothly without gaps across all screen sizes.
+            </p>
+          </div>
+
+          {/* Live Preview Container */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Live Preview (What visitors will see)
+              </span>
+              {maintenanceNoticeEnabled && (
+                <span className="text-[10px] text-neutral-400">Hover over preview to pause</span>
+              )}
+            </div>
+
+            <div className="rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950">
+              {maintenanceNoticeEnabled && maintenanceNoticeText.trim() ? (
+                <NoticeTicker
+                  isPreview={true}
+                  previewEnabled={maintenanceNoticeEnabled}
+                  previewText={maintenanceNoticeText}
+                />
+              ) : (
+                <div className="py-4 text-center text-xs text-neutral-400 italic">
+                  Notice bar is currently turned off or empty. No ticker will appear on the homepage.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* 1. Logos customization */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-5 sm:p-6 space-y-4">
           <h2 className="font-display font-extrabold text-sm text-neutral-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">

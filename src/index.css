@@ -192,3 +192,27 @@
   line-height: 1;
   color: var(--color-primary-500);
 }
+
+/* ---------------------------------------------------------------------
+   Continuous Marquee / TV News Ticker Animation
+------------------------------------------------------------------------ */
+@keyframes ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-ticker {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker-marquee 30s linear infinite;
+  will-change: transform;
+}
+
+.group:hover .animate-ticker,
+.animate-ticker:hover {
+  animation-play-state: paused;
+}

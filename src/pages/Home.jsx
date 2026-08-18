@@ -24,6 +24,7 @@ import { getAllBrands } from "../services/brandsService";
 
 // 💡 Global FoodCard Import
 import FoodCard from "../components/FoodCard";
+import NoticeTicker from "../components/NoticeTicker";
 
 // Import Swiper styles
 import "swiper/css";
@@ -193,12 +194,8 @@ export const Home = () => {
 
   return (
     <div className="w-full">
-      {/* GLOBAL MAINTENANCE NOTICE LINE */}
-      <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-primary-600 text-white text-center py-2 px-4 text-xs font-semibold uppercase tracking-wider select-none">
-        ⚠️ Notice: Our displayed products are not for sale (uploaded strictly
-        for experimental purposes). Also, we are updating our server system
-        right now, so some features might be slower than usual!
-      </div>
+      {/* 📢 DYNAMIC TV / NEWS HEADLINE NOTICE TICKER */}
+      <NoticeTicker />
 
       {/* 1. HERO BANNER CAROUSEL */}
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
