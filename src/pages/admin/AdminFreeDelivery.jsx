@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Truck,
   Sparkles,
   Search,
   Check,
-  Percent,
   DollarSign,
   UtensilsCrossed,
   MapPin,
@@ -13,16 +13,15 @@ import {
   CheckCircle2,
   AlertCircle,
   Megaphone,
-  Layers,
   ArrowRight,
   Info,
   CheckSquare,
   Square,
   Tag,
-  Building2,
   Filter,
   Eye,
-  Sliders,
+  ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import { getAllFoods } from "../../services/foodsService";
@@ -41,7 +40,9 @@ export const AdminFreeDelivery = () => {
     Boolean(settings.freeDeliveryEnabled)
   );
   const [freeDeliveryMinOrder, setFreeDeliveryMinOrder] = useState(
-    settings.freeDeliveryMinOrder !== undefined ? settings.freeDeliveryMinOrder : 0
+    settings.freeDeliveryMinOrder !== undefined
+      ? settings.freeDeliveryMinOrder
+      : 0
   );
   const [freeDeliveryScope, setFreeDeliveryScope] = useState(
     settings.freeDeliveryScope || "all"
@@ -132,7 +133,8 @@ export const AdminFreeDelivery = () => {
         if (Array.isArray(catsData)) {
           catsData.forEach((c) => {
             const name = typeof c === "string" ? c : c?.name;
-            if (name && name.trim()) catMap.set(name.trim().toLowerCase(), name.trim());
+            if (name && name.trim())
+              catMap.set(name.trim().toLowerCase(), name.trim());
           });
         }
         foodsList.forEach((f) => {
@@ -315,7 +317,9 @@ export const AdminFreeDelivery = () => {
 
   const handleSelectAllVisibleDishes = () => {
     const visibleIds = filteredFoods.map((f) => Number(f.id || f._id));
-    setFreeDeliveryDishIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    setFreeDeliveryDishIds((prev) =>
+      Array.from(new Set([...prev, ...visibleIds]))
+    );
   };
 
   const handleClearAllDishes = () => {
@@ -329,7 +333,9 @@ export const AdminFreeDelivery = () => {
           String(f.category || "").toLowerCase() === catName.toLowerCase()
       )
       .map((f) => Number(f.id || f._id));
-    setFreeDeliveryDishIds((prev) => Array.from(new Set([...prev, ...catDishes])));
+    setFreeDeliveryDishIds((prev) =>
+      Array.from(new Set([...prev, ...catDishes]))
+    );
   };
 
   // Area Toggles
@@ -375,7 +381,9 @@ export const AdminFreeDelivery = () => {
             ? (freeDeliveryDishIds || []).map(Number)
             : [],
         freeDeliveryAreas:
-          computedScope === "areas" ? (freeDeliveryAreas || []).map(String) : [],
+          computedScope === "areas"
+            ? (freeDeliveryAreas || []).map(String)
+            : [],
         freeDeliveryBannerText: freeDeliveryBannerText.trim(),
         freeDeliveryShowBanner: Boolean(freeDeliveryShowBanner),
       };
@@ -456,7 +464,7 @@ export const AdminFreeDelivery = () => {
             Free Delivery Campaign & Service
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Configure promotional free delivery campaigns, mandatory purchase amounts, category/dish exemptions, delivery zones, and announcement banners.
+            Step-by-step promotional campaign configuration: set minimum order amount, targeting scope, and announcement ticker.
           </p>
         </div>
 
@@ -476,7 +484,10 @@ export const AdminFreeDelivery = () => {
       {success && (
         <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-3 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-semibold animate-fade-in shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-          <span>Settings saved! Customers will now receive free delivery according to your configured campaign rules.</span>
+          <span>
+            Settings saved! Customers will now receive free delivery according to
+            your configured campaign rules.
+          </span>
         </div>
       )}
 
@@ -488,20 +499,22 @@ export const AdminFreeDelivery = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* STEP 1: MASTER SWITCH & MINIMUM ORDER AMOUNT */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
+        {/* =================================================================== */}
+        {/* STEP 1: MASTER SWITCH & MINIMUM ORDER AMOUNT                        */}
+        {/* =================================================================== */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider">
-                  Step 1
+                  Master Switch
                 </span>
                 <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                  Master Campaign Toggle
+                  Enable Free Delivery Campaign
                 </h2>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Turn on the campaign to activate free delivery for eligible customer orders.
+                Turn on the master switch to configure minimum order purchase and campaign target rules.
               </p>
             </div>
 
@@ -514,633 +527,777 @@ export const AdminFreeDelivery = () => {
               />
               <div className="w-14 h-7 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-neutral-700 peer-checked:bg-amber-500 shadow-inner"></div>
               <span className="ml-3 text-sm font-bold text-neutral-800 dark:text-neutral-200">
-                {freeDeliveryEnabled ? "Campaign Active" : "Campaign Disabled"}
+                {freeDeliveryEnabled ? "Campaign ON" : "Campaign OFF"}
               </span>
             </label>
           </div>
 
-          {/* Mandatory Minimum Purchase Amount Box */}
-          {freeDeliveryEnabled && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <label className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  Mandatory Minimum Purchase Amount (৳)
-                </label>
-                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/50 px-2 py-0.5 rounded-md">
-                  Applies to all qualifying orders
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="relative w-full sm:w-64">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
-                    ৳
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="10"
-                    value={freeDeliveryMinOrder}
-                    onChange={(e) =>
-                      setFreeDeliveryMinOrder(
-                        Math.max(0, parseFloat(e.target.value) || 0)
-                      )
-                    }
-                    placeholder="0 (No minimum)"
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                  />
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {[0, 300, 500, 1000, 1500].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setFreeDeliveryMinOrder(preset)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        freeDeliveryMinOrder === preset
-                          ? "bg-amber-500 text-white shadow-xs"
-                          : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      }`}
-                    >
-                      {preset === 0 ? "No Min (৳0)" : `৳${preset}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                <span>
-                  {freeDeliveryMinOrder > 0
-                    ? `Customers must order at least ৳${freeDeliveryMinOrder} of eligible items before Free Delivery is unlocked.`
-                    : "No minimum purchase required. Free delivery unlocks immediately on qualifying items/zones."}
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* STEP 2: CAMPAIGN TARGET & SCOPE SELECTION */}
-        {freeDeliveryEnabled && (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider">
-                  Step 2
-                </span>
-                <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                  Select Campaign Target Type & Scope
-                </h2>
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Choose whether this free delivery campaign applies to menu items / categories or specific delivery zones.
-              </p>
-            </div>
-
-            {/* Top Level Mode Tabs: Items vs Zones */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setCampaignMode("items")}
-                className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
-                  campaignMode === "items"
-                    ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/20"
-                    : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
-                }`}
+          {/* 🎯 Progressive Disclosure: Step 1 Minimum Order revealed when Master Switch is ON */}
+          <AnimatePresence>
+            {freeDeliveryEnabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: 10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden pt-2"
               >
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    campaignMode === "items"
-                      ? "bg-amber-500 text-white"
-                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-                  }`}
-                >
-                  <UtensilsCrossed className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
-                    Menu & Item Based Campaign
-                  </h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Target all menu items, specific categories, or individual dishes.
-                  </p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCampaignMode("zones")}
-                className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
-                  campaignMode === "zones"
-                    ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/20"
-                    : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
-                }`}
-              >
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    campaignMode === "zones"
-                      ? "bg-amber-500 text-white"
-                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-                  }`}
-                >
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
-                    Delivery Zone / Area Based Campaign
-                  </h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Target all delivery zones or specific regional areas.
-                  </p>
-                </div>
-              </button>
-            </div>
-
-            {/* BRANCH 1: MENU / ITEM BASED CONFIG */}
-            {campaignMode === "items" && (
-              <div className="space-y-5 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                    Select Item Target Scope:
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Option 1.1: All Menu Items */}
-                  <button
-                    type="button"
-                    onClick={() => setItemSubScope("all")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      itemSubScope === "all"
-                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100"
-                        : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-bold text-xs sm:text-sm">All Menu Items</span>
-                      {itemSubScope === "all" && (
-                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Free delivery on all categories & dishes.
-                    </p>
-                  </button>
-
-                  {/* Option 1.2: By Category */}
-                  <button
-                    type="button"
-                    onClick={() => setItemSubScope("categories")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      itemSubScope === "categories"
-                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100"
-                        : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-bold text-xs sm:text-sm">By Category</span>
-                      {itemSubScope === "categories" && (
-                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Select all categories or individual categories.
-                    </p>
-                  </button>
-
-                  {/* Option 1.3: Specific Dishes */}
-                  <button
-                    type="button"
-                    onClick={() => setItemSubScope("dishes")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      itemSubScope === "dishes"
-                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100"
-                        : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-bold text-xs sm:text-sm">Specific Dishes</span>
-                      {itemSubScope === "dishes" && (
-                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Pick individual dishes or filter by category.
-                    </p>
-                  </button>
-                </div>
-
-                {/* Sub-panel: By Category Selector */}
-                {itemSubScope === "categories" && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <Tag className="w-4 h-4 text-amber-500" />
-                          Select Eligible Categories ({freeDeliveryCategories.length} selected)
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                          Orders containing dishes from these categories qualify for free delivery.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllCategories}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
-                        >
-                          Select All Categories
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearAllCategories}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
-                        >
-                          Clear
-                        </button>
-                      </div>
+                <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-3.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
+                        Step 1
+                      </span>
+                      <label className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        Minimum Order Purchase Amount (৳)
+                      </label>
                     </div>
 
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-md">
+                      {freeDeliveryMinOrder > 0
+                        ? `Required: ৳${freeDeliveryMinOrder}+`
+                        : "No Minimum (৳0)"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="relative w-full sm:w-64">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
+                        ৳
+                      </span>
                       <input
-                        type="text"
-                        placeholder="Search categories..."
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={freeDeliveryMinOrder}
+                        onChange={(e) =>
+                          setFreeDeliveryMinOrder(
+                            Math.max(0, parseFloat(e.target.value) || 0)
+                          )
+                        }
+                        placeholder="0 (No minimum)"
+                        className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-64 overflow-y-auto pr-1">
-                      {filteredCategories.map((cat) => {
-                        const isSelected = freeDeliveryCategories.includes(cat);
-                        const count = categoryDishCount[cat.toLowerCase()] || 0;
-
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => handleToggleCategory(cat)}
-                            className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                              isSelected
-                                ? "bg-amber-500 text-white border-amber-500 shadow-xs font-bold"
-                                : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:border-neutral-300 font-medium"
-                            }`}
-                          >
-                            <span className="text-xs truncate">{cat}</span>
-                            <span
-                              className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono shrink-0 ${
-                                isSelected
-                                  ? "bg-white/20 text-white"
-                                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-                              }`}
-                            >
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    {/* Quick Presets */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[0, 300, 500, 1000, 1500].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setFreeDeliveryMinOrder(preset)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            freeDeliveryMinOrder === preset
+                              ? "bg-amber-500 text-white shadow-xs"
+                              : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                          }`}
+                        >
+                          {preset === 0 ? "No Min (৳0)" : `৳${preset}`}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
 
-                {/* Sub-panel: Specific Dishes Selector */}
-                {itemSubScope === "dishes" && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <UtensilsCrossed className="w-4 h-4 text-amber-500" />
-                          Select Eligible Dishes ({freeDeliveryDishIds.length} selected)
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                          Filter by category or search individual dishes to attach free delivery.
-                        </p>
-                      </div>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                    <span>
+                      {freeDeliveryMinOrder > 0
+                        ? `Customers must order at least ৳${freeDeliveryMinOrder} to unlock free delivery on the selected target criteria below.`
+                        : "Any order amount qualifies for free delivery once matching the target criteria below."}
+                    </span>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllVisibleDishes}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
-                        >
-                          Select All Visible
-                        </button>
-                        {dishCategoryFilter !== "All" && (
-                          <button
-                            type="button"
-                            onClick={() => handleSelectCategoryDishes(dishCategoryFilter)}
-                            className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-100 cursor-pointer"
-                          >
-                            + All in "{dishCategoryFilter}"
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handleClearAllDishes}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
-                        >
-                          Clear
-                        </button>
-                      </div>
+        {/* =================================================================== */}
+        {/* STEP 2: CAMPAIGN TARGET & SCOPE SELECTION (Progressive Disclosure)   */}
+        {/* =================================================================== */}
+        <AnimatePresence>
+          {freeDeliveryEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: 15 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -15 }}
+              transition={{ duration: 0.35, delay: 0.05 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
+                      Step 2
+                    </span>
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
+                      Select Campaign Target Scope
+                    </h2>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Choose whether this free delivery promotion is Menu/Item-based or Delivery Zone-based.
+                  </p>
+                </div>
+
+                {/* Top Level Mode Tabs: Items vs Zones */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCampaignMode("items")}
+                    className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
+                      campaignMode === "items"
+                        ? "bg-amber-50/60 dark:bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/20"
+                        : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        campaignMode === "items"
+                          ? "bg-amber-500 text-white"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                      }`}
+                    >
+                      <UtensilsCrossed className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
+                        Menu & Item Based Campaign
+                      </h3>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        Target all menu items, specific categories, or individual dishes.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCampaignMode("zones")}
+                    className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
+                      campaignMode === "zones"
+                        ? "bg-amber-50/60 dark:bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/20"
+                        : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        campaignMode === "zones"
+                          ? "bg-amber-500 text-white"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                      }`}
+                    >
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
+                        Delivery Zone / Area Based Campaign
+                      </h3>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        Target all delivery zones or specific regional areas.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                {/* ============================================================= */}
+                {/* BRANCH A: MENU / ITEM BASED CONFIG (Progressive disclosure)   */}
+                {/* ============================================================= */}
+                {campaignMode === "items" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-5 pt-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Choose Item Scope:
+                      </span>
                     </div>
 
-                    {/* Filter & Search Toolbar */}
-                    <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Option A.1: All Menu Items */}
+                      <button
+                        type="button"
+                        onClick={() => setItemSubScope("all")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          itemSubScope === "all"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100 shadow-xs"
+                            : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs sm:text-sm">
+                            All Menu Items
+                          </span>
+                          {itemSubScope === "all" && (
+                            <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Free delivery on all categories & dishes.
+                        </p>
+                      </button>
+
+                      {/* Option A.2: By Category */}
+                      <button
+                        type="button"
+                        onClick={() => setItemSubScope("categories")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          itemSubScope === "categories"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100 shadow-xs"
+                            : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs sm:text-sm">
+                            By Category
+                          </span>
+                          {itemSubScope === "categories" && (
+                            <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Select all categories or individual categories.
+                        </p>
+                      </button>
+
+                      {/* Option A.3: Specific Dishes */}
+                      <button
+                        type="button"
+                        onClick={() => setItemSubScope("dishes")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          itemSubScope === "dishes"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100 shadow-xs"
+                            : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs sm:text-sm">
+                            Specific Dishes
+                          </span>
+                          {itemSubScope === "dishes" && (
+                            <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Pick individual dishes or filter by category.
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Sub-panel: Category Selector (Revealed when 'categories' chosen) */}
+                    <AnimatePresence>
+                      {itemSubScope === "categories" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                  <Tag className="w-4 h-4 text-amber-500" />
+                                  Select Categories ({freeDeliveryCategories.length} selected)
+                                </h4>
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                  Orders containing items from these categories qualify for free delivery.
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleSelectAllCategories}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
+                                >
+                                  Select All Categories
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleClearAllCategories}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                              <input
+                                type="text"
+                                placeholder="Search categories..."
+                                value={categorySearch}
+                                onChange={(e) => setCategorySearch(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                              {filteredCategories.map((cat) => {
+                                const isSelected =
+                                  freeDeliveryCategories.includes(cat);
+                                const count =
+                                  categoryDishCount[cat.toLowerCase()] || 0;
+
+                                return (
+                                  <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => handleToggleCategory(cat)}
+                                    className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "bg-amber-500 text-white border-amber-500 shadow-xs font-bold"
+                                        : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:border-neutral-300 font-medium"
+                                    }`}
+                                  >
+                                    <span className="text-xs truncate">{cat}</span>
+                                    <span
+                                      className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono shrink-0 ${
+                                        isSelected
+                                          ? "bg-white/20 text-white"
+                                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                                      }`}
+                                    >
+                                      {count}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Sub-panel: Specific Dishes Selector (Revealed when 'dishes' chosen) */}
+                    <AnimatePresence>
+                      {itemSubScope === "dishes" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                  <UtensilsCrossed className="w-4 h-4 text-amber-500" />
+                                  Select Dishes ({freeDeliveryDishIds.length} selected)
+                                </h4>
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                  Filter by category or search individual dishes to attach free delivery.
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={handleSelectAllVisibleDishes}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
+                                >
+                                  Select All Visible
+                                </button>
+                                {dishCategoryFilter !== "All" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleSelectCategoryDishes(dishCategoryFilter)
+                                    }
+                                    className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-100 cursor-pointer"
+                                  >
+                                    + All in "{dishCategoryFilter}"
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={handleClearAllDishes}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Filter & Search Toolbar */}
+                            <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                              <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Search dish by name..."
+                                  value={dishSearch}
+                                  onChange={(e) => setDishSearch(e.target.value)}
+                                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                />
+                              </div>
+
+                              <div className="relative min-w-[180px]">
+                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+                                <select
+                                  value={dishCategoryFilter}
+                                  onChange={(e) =>
+                                    setDishCategoryFilter(e.target.value)
+                                  }
+                                  className="w-full pl-8 pr-8 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 font-medium focus:outline-none cursor-pointer appearance-none"
+                                >
+                                  <option value="All">
+                                    All Categories ({availableFoods.length})
+                                  </option>
+                                  {availableCategories.map((c) => (
+                                    <option key={c} value={c}>
+                                      {c} ({categoryDishCount[c.toLowerCase()] || 0})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Dish Cards Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto pr-1">
+                              {filteredFoods.map((f) => {
+                                const numId = Number(f.id || f._id);
+                                const isSelected =
+                                  freeDeliveryDishIds.includes(numId);
+
+                                return (
+                                  <div
+                                    key={numId}
+                                    onClick={() => handleToggleDish(numId)}
+                                    className={`p-2.5 rounded-xl border flex items-center gap-3 transition-all cursor-pointer select-none ${
+                                      isSelected
+                                        ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500/50"
+                                        : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300"
+                                    }`}
+                                  >
+                                    <div className="relative w-11 h-11 rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-hidden shrink-0">
+                                      {f.image ? (
+                                        <img
+                                          src={f.image}
+                                          alt={f.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                                          <UtensilsCrossed className="w-4 h-4" />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-semibold truncate block max-w-fit">
+                                        {f.category}
+                                      </span>
+                                      <h5 className="font-bold text-xs text-neutral-900 dark:text-white truncate">
+                                        {f.name}
+                                      </h5>
+                                      <span className="text-[11px] font-black text-primary-500">
+                                        ৳{f.price}
+                                      </span>
+                                    </div>
+
+                                    <div className="shrink-0">
+                                      {isSelected ? (
+                                        <CheckSquare className="w-4 h-4 text-amber-500" />
+                                      ) : (
+                                        <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-700" />
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+
+                {/* ============================================================= */}
+                {/* BRANCH B: ZONE / AREA BASED CONFIG (Progressive disclosure)   */}
+                {/* ============================================================= */}
+                {campaignMode === "zones" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-5 pt-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Choose Zone Scope:
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option B.1: All Delivery Zones */}
+                      <button
+                        type="button"
+                        onClick={() => setZoneSubScope("all_zones")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          zoneSubScope === "all_zones"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100 shadow-xs"
+                            : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs sm:text-sm">
+                            All Delivery Zones
+                          </span>
+                          {zoneSubScope === "all_zones" && (
+                            <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Free delivery across all branch delivery zones.
+                        </p>
+                      </button>
+
+                      {/* Option B.2: Specific Delivery Zones */}
+                      <button
+                        type="button"
+                        onClick={() => setZoneSubScope("specific_zones")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          zoneSubScope === "specific_zones"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100 shadow-xs"
+                            : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs sm:text-sm">
+                            Specific Delivery Zones
+                          </span>
+                          {zoneSubScope === "specific_zones" && (
+                            <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Select specific regional delivery areas eligible for free delivery.
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Sub-panel: Specific Zones Selector (Revealed when 'specific_zones' chosen) */}
+                    <AnimatePresence>
+                      {zoneSubScope === "specific_zones" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                  <MapPin className="w-4 h-4 text-amber-500" />
+                                  Select Delivery Zones ({freeDeliveryAreas.length} selected)
+                                </h4>
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                  Customers ordering to these specific areas get free delivery.
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleSelectAllAreas}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
+                                >
+                                  Select All Zones
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleClearAllAreas}
+                                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                              <input
+                                type="text"
+                                placeholder="Search delivery zones/areas..."
+                                value={areaSearch}
+                                onChange={(e) => setAreaSearch(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                              {filteredAreas.map((area) => {
+                                const isSelected =
+                                  freeDeliveryAreas.includes(area);
+
+                                return (
+                                  <button
+                                    key={area}
+                                    type="button"
+                                    onClick={() => handleToggleArea(area)}
+                                    className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "bg-amber-500 text-white border-amber-500 shadow-xs font-bold"
+                                        : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:border-neutral-300 font-medium"
+                                    }`}
+                                  >
+                                    <span className="text-xs truncate">{area}</span>
+                                    {isSelected ? (
+                                      <Check className="w-3.5 h-3.5 shrink-0" />
+                                    ) : null}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* =================================================================== */}
+        {/* STEP 3: HEADER TICKER & ANNOUNCEMENT BANNER (Progressive disclosure) */}
+        {/* =================================================================== */}
+        <AnimatePresence>
+          {freeDeliveryEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: 15 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -15 }}
+              transition={{ duration: 0.35, delay: 0.1 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
+                        Step 3
+                      </span>
+                      <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
+                        Header Ticker & Announcement Banner
+                      </h2>
+                    </div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      Broadcast this campaign on a continuous top marquee ticker on the website.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={freeDeliveryShowBanner}
+                      onChange={(e) => setFreeDeliveryShowBanner(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-12 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-700 peer-checked:bg-amber-500 shadow-inner"></div>
+                    <span className="ml-2.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                      {freeDeliveryShowBanner ? "Banner Visible" : "Banner Hidden"}
+                    </span>
+                  </label>
+                </div>
+
+                <AnimatePresence>
+                  {freeDeliveryShowBanner && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="space-y-3 pt-2 overflow-hidden"
+                    >
+                      <div>
+                        <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1.5">
+                          Ticker Announcement Text
+                        </label>
                         <input
                           type="text"
-                          placeholder="Search dish by name..."
-                          value={dishSearch}
-                          onChange={(e) => setDishSearch(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                          value={freeDeliveryBannerText}
+                          onChange={(e) => setFreeDeliveryBannerText(e.target.value)}
+                          placeholder="e.g. 🎉 Special Offer: Free Delivery on orders ৳500+ today!"
+                          className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                         />
                       </div>
 
-                      <div className="relative min-w-[180px]">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-                        <select
-                          value={dishCategoryFilter}
-                          onChange={(e) => setDishCategoryFilter(e.target.value)}
-                          className="w-full pl-8 pr-8 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 font-medium focus:outline-none cursor-pointer appearance-none"
-                        >
-                          <option value="All">All Categories ({availableFoods.length})</option>
-                          {availableCategories.map((c) => (
-                            <option key={c} value={c}>
-                              {c} ({categoryDishCount[c.toLowerCase()] || 0})
-                            </option>
-                          ))}
-                        </select>
+                      {/* Live Banner Preview */}
+                      <div className="space-y-1.5 pt-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                          <Eye className="w-3.5 h-3.5 text-amber-500" />
+                          Live Website Ticker Preview:
+                        </div>
+                        <div className="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-xs">
+                          <FreeDeliveryBanner
+                            isPreview
+                            previewEnabled={freeDeliveryEnabled}
+                            previewText={freeDeliveryBannerText}
+                            previewScope={computedScope}
+                            previewMinOrder={freeDeliveryMinOrder}
+                          />
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Dish Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto pr-1">
-                      {filteredFoods.map((f) => {
-                        const numId = Number(f.id || f._id);
-                        const isSelected = freeDeliveryDishIds.includes(numId);
-
-                        return (
-                          <div
-                            key={numId}
-                            onClick={() => handleToggleDish(numId)}
-                            className={`p-2.5 rounded-xl border flex items-center gap-3 transition-all cursor-pointer select-none ${
-                              isSelected
-                                ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-1 ring-amber-500/50"
-                                : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300"
-                            }`}
-                          >
-                            <div className="relative w-11 h-11 rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-hidden shrink-0">
-                              {f.image ? (
-                                <img
-                                  src={f.image}
-                                  alt={f.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                                  <UtensilsCrossed className="w-4 h-4" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-semibold truncate block max-w-fit">
-                                {f.category}
-                              </span>
-                              <h5 className="font-bold text-xs text-neutral-900 dark:text-white truncate">
-                                {f.name}
-                              </h5>
-                              <span className="text-[11px] font-black text-primary-500">
-                                ৳{f.price}
-                              </span>
-                            </div>
-
-                            <div className="shrink-0">
-                              {isSelected ? (
-                                <CheckSquare className="w-4 h-4 text-amber-500" />
-                              ) : (
-                                <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-700" />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* BRANCH 2: ZONE / AREA BASED CONFIG */}
-            {campaignMode === "zones" && (
-              <div className="space-y-5 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                    Select Delivery Zone Scope:
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Option 2.1: All Delivery Zones */}
-                  <button
-                    type="button"
-                    onClick={() => setZoneSubScope("all_zones")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      zoneSubScope === "all_zones"
-                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100"
-                        : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-bold text-xs sm:text-sm">All Delivery Zones</span>
-                      {zoneSubScope === "all_zones" && (
-                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Free delivery to all customers across all branch delivery zones.
-                    </p>
-                  </button>
-
-                  {/* Option 2.2: Specific Zones */}
-                  <button
-                    type="button"
-                    onClick={() => setZoneSubScope("specific_zones")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      zoneSubScope === "specific_zones"
-                        ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500 ring-1 ring-amber-500 text-amber-900 dark:text-amber-100"
-                        : "bg-neutral-50/50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800 hover:bg-white text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-bold text-xs sm:text-sm">Specific Delivery Zones</span>
-                      {zoneSubScope === "specific_zones" && (
-                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Select specific regional delivery areas eligible for free delivery.
-                    </p>
-                  </button>
-                </div>
-
-                {/* Sub-panel: Specific Zones Selector */}
-                {zoneSubScope === "specific_zones" && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4 text-amber-500" />
-                          Select Eligible Delivery Zones ({freeDeliveryAreas.length} selected)
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                          Customers ordering to these specific areas get free delivery.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllAreas}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 cursor-pointer"
-                        >
-                          Select All Zones
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearAllAreas}
-                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-red-500 cursor-pointer"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-                      <input
-                        type="text"
-                        placeholder="Search delivery zones/areas..."
-                        value={areaSearch}
-                        onChange={(e) => setAreaSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-64 overflow-y-auto pr-1">
-                      {filteredAreas.map((area) => {
-                        const isSelected = freeDeliveryAreas.includes(area);
-
-                        return (
-                          <button
-                            key={area}
-                            type="button"
-                            onClick={() => handleToggleArea(area)}
-                            className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                              isSelected
-                                ? "bg-amber-500 text-white border-amber-500 shadow-xs font-bold"
-                                : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:border-neutral-300 font-medium"
-                            }`}
-                          >
-                            <span className="text-xs truncate">{area}</span>
-                            {isSelected ? (
-                              <Check className="w-3.5 h-3.5 shrink-0" />
-                            ) : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* STEP 3: ANNOUNCEMENT BANNER & TICKER SETTINGS */}
-        {freeDeliveryEnabled && (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider">
-                    Step 3
-                  </span>
-                  <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                    Header Ticker & Announcement Banner
-                  </h2>
-                </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Broadcast this campaign on a continuous top marquee ticker on the website.
-                </p>
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={freeDeliveryShowBanner}
-                  onChange={(e) => setFreeDeliveryShowBanner(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-12 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-700 peer-checked:bg-amber-500 shadow-inner"></div>
-                <span className="ml-2.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                  {freeDeliveryShowBanner ? "Banner Visible" : "Banner Hidden"}
+        {/* =================================================================== */}
+        {/* ACTION BAR & SAVE BUTTON                                            */}
+        {/* =================================================================== */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-200/70 dark:border-neutral-800/70">
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+            {freeDeliveryEnabled ? (
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Configured:{" "}
+                <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                  {freeDeliveryMinOrder > 0
+                    ? `৳${freeDeliveryMinOrder}+ Min Order`
+                    : "No Min"}
+                </span>{" "}
+                • Target:{" "}
+                <span className="font-bold text-neutral-800 dark:text-neutral-200 capitalize">
+                  {computedScope === "all"
+                    ? "All Menu Items"
+                    : computedScope === "categories"
+                      ? `${freeDeliveryCategories.length} Categories`
+                      : computedScope === "dishes"
+                        ? `${freeDeliveryDishIds.length} Dishes`
+                        : `${freeDeliveryAreas.length} Delivery Zones`}
                 </span>
-              </label>
-            </div>
-
-            {freeDeliveryShowBanner && (
-              <div className="space-y-3 pt-2">
-                <div>
-                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 block mb-1.5">
-                    Ticker Announcement Text
-                  </label>
-                  <input
-                    type="text"
-                    value={freeDeliveryBannerText}
-                    onChange={(e) => setFreeDeliveryBannerText(e.target.value)}
-                    placeholder="e.g. 🎉 Special Offer: Free Delivery on orders ৳500+ today!"
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                  />
-                </div>
-
-                {/* Live Banner Preview */}
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                    <Eye className="w-3.5 h-3.5 text-amber-500" />
-                    Live Website Ticker Preview:
-                  </div>
-                  <div className="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-xs">
-                    <FreeDeliveryBanner
-                      isPreview
-                      previewEnabled={freeDeliveryEnabled}
-                      previewText={freeDeliveryBannerText}
-                      previewScope={computedScope}
-                      previewMinOrder={freeDeliveryMinOrder}
-                    />
-                  </div>
-                </div>
-              </div>
+              </span>
+            ) : (
+              <span>Campaign is currently inactive</span>
             )}
           </div>
-        )}
 
-        {/* Save Bar */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200/70 dark:border-neutral-800/70">
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-black text-sm shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-60 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-black text-sm shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-60 transition-all cursor-pointer w-full sm:w-auto justify-center"
           >
             <Save className="w-4 h-4" />
-            {saving ? "Saving Campaign Settings..." : "Save Free Delivery Settings"}
+            {saving
+              ? "Saving Campaign Settings..."
+              : "Save Free Delivery Settings"}
           </button>
         </div>
       </form>
