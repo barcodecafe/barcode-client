@@ -151,7 +151,7 @@ export const RiderSettlement = () => {
           Daily Performance & Settlement Track Log
         </h1>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
-          Track daily earnings, total collected cash, paid to admin vs pending orders, and delivery locations.
+          Track daily earnings, cash collected, admin received payments, and pending payable orders.
         </p>
       </div>
 
@@ -285,7 +285,7 @@ export const RiderSettlement = () => {
                           <span>{dayOrders.length} Orders Total</span>
                           <span>•</span>
                           <span className="text-primary-500 font-bold">
-                            Click to track individual order payments
+                            Click to view order breakdown & status
                           </span>
                         </span>
                       </div>
@@ -321,6 +321,7 @@ export const RiderSettlement = () => {
                         </span>
                       </div>
 
+                      {/* 1. Cash Collected */}
                       <div>
                         <span className="text-neutral-400 text-[10px] block font-semibold uppercase">
                           Cash Collected
@@ -330,6 +331,23 @@ export const RiderSettlement = () => {
                         </span>
                       </div>
 
+                      {/* 2. Admin Received (Paid to Admin) */}
+                      <div>
+                        <span className="text-neutral-400 text-[10px] block font-semibold uppercase">
+                          Admin Received
+                        </span>
+                        <span
+                          className={`font-black ${
+                            (log.paidToAdmin || 0) > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-neutral-400"
+                          }`}
+                        >
+                          ৳{(log.paidToAdmin || 0).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* 3. Payable to Admin (Due) */}
                       <div>
                         <span className="text-neutral-400 text-[10px] block font-semibold uppercase">
                           Payable to Admin
@@ -351,9 +369,9 @@ export const RiderSettlement = () => {
                           <span className="text-neutral-400 font-medium text-[10px]">
                             N/A
                           </span>
-                        ) : log.isSettled ? (
+                        ) : log.outstandingNetPayable === 0 ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl shadow-xs">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Settled with Admin
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Fully Settled
                           </span>
                         ) : log.isSubmitted ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-xl shadow-xs">
@@ -368,7 +386,9 @@ export const RiderSettlement = () => {
                             <Clock3 className="w-3.5 h-3.5 animate-pulse" />
                             {submittingCashDate === log.dateKey
                               ? "Submitting..."
-                              : "Pay Day Cash to Admin"}
+                              : (log.paidToAdmin || 0) > 0
+                                ? "Pay Remaining Cash"
+                                : "Pay Day Cash to Admin"}
                           </button>
                         )}
                       </div>
@@ -610,7 +630,7 @@ export const RiderSettlement = () => {
                                 </div>
 
                                 {/* Individual Order Money Matrix */}
-                                <div className="grid grid-cols-2 gap-1.5 text-[10px] pt-1 border-t border-neutral-200/60 dark:border-neutral-800 font-medium">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] pt-1.5 border-t border-neutral-200/60 dark:border-neutral-800 font-medium">
                                   <div>
                                     <span className="text-neutral-400 text-[9px] block">
                                       Order Total
@@ -620,7 +640,7 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-right">
+                                  <div>
                                     <span className="text-neutral-400 text-[9px] block">
                                       Your Commission
                                     </span>
@@ -646,22 +666,37 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-right">
+                                  <div>
                                     <span className="text-neutral-400 text-[9px] block">
-                                      Payable to Admin
+                                      Admin Received
                                     </span>
                                     <span
                                       className={`font-black ${
                                         isOrderSettledByAdmin
-                                          ? "text-emerald-600 line-through opacity-70"
-                                          : orderPayable > 0
-                                            ? "text-amber-600 dark:text-amber-400"
-                                            : "text-neutral-400"
+                                          ? "text-emerald-600 dark:text-emerald-400"
+                                          : "text-neutral-400"
                                       }`}
                                     >
                                       {isOrderSettledByAdmin
-                                        ? `৳0 (Settled)`
-                                        : `৳${orderPayable.toFixed(2)}`}
+                                        ? `৳${orderPayable.toFixed(2)} ✓`
+                                        : "৳0.00"}
+                                    </span>
+                                  </div>
+
+                                  <div className="sm:col-span-2 text-right sm:text-left">
+                                    <span className="text-neutral-400 text-[9px] block">
+                                      Payable to Admin (Due)
+                                    </span>
+                                    <span
+                                      className={`font-black ${
+                                        !isOrderSettledByAdmin && orderPayable > 0
+                                          ? "text-amber-600 dark:text-amber-400"
+                                          : "text-neutral-400"
+                                      }`}
+                                    >
+                                      {!isOrderSettledByAdmin && orderPayable > 0
+                                        ? `৳${orderPayable.toFixed(2)}`
+                                        : "৳0.00 (Settled)"}
                                     </span>
                                   </div>
                                 </div>

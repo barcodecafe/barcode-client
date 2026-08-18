@@ -116,6 +116,10 @@ export const buildDailySettlementLog = (orders) => {
         onlinePaid: 0,
         outstandingCash: 0,
         outstandingCommission: 0,
+        settledCash: 0,
+        settledCommission: 0,
+        settledCount: 0,
+        pendingCount: 0,
         isSubmitted: true,
         isSettled: true,
         hasCash: false,
@@ -158,9 +162,14 @@ export const buildDailySettlementLog = (orders) => {
       order.isCashSubmitted
     );
 
-    if (!isSettledByAdmin) {
+    if (isSettledByAdmin) {
+      row.settledCash = round2(row.settledCash + cash);
+      row.settledCommission = round2(row.settledCommission + commission);
+      row.settledCount += 1;
+    } else {
       row.outstandingCash = round2(row.outstandingCash + cash);
       row.outstandingCommission = round2(row.outstandingCommission + commission);
+      row.pendingCount += 1;
       row.isSettled = false;
       if (!isSubmittedToAdmin) row.isSubmitted = false;
     }
@@ -170,6 +179,7 @@ export const buildDailySettlementLog = (orders) => {
     .map((row) => ({
       ...row,
       netPayable: round2(row.cashCollected - row.riderCommission),
+      paidToAdmin: round2(row.settledCash - row.settledCommission),
       outstandingNetPayable: round2(row.outstandingCash - row.outstandingCommission),
     }))
     .sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1));

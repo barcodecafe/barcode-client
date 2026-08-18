@@ -180,6 +180,7 @@ export const RidersFleetOverview = ({
         foodDelivered: today?.foodPrice || 0,
         income: today?.riderCommission || 0,
         cashCollected: today?.cashCollected || 0,
+        paidToAdmin: today?.paidToAdmin || 0,
         onlinePaid: today?.onlinePaid || 0,
         payable: today?.outstandingNetPayable || 0,
         deliveredCount: today?.delivered || 0,
@@ -390,17 +391,30 @@ export const RidersFleetOverview = ({
                           ৳{stats.daily.income.toFixed(0)}
                         </span>
                       </div>
+                      {stats.daily.paidToAdmin > 0 && (
+                        <div className="col-span-2 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800 flex items-baseline justify-between text-[10px]">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[9px]">
+                            ✓ Paid to Admin:
+                          </span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                            ৳{stats.daily.paidToAdmin.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="col-span-2 pt-1.5 mt-0.5 border-t border-dashed border-neutral-200 dark:border-neutral-800 flex items-baseline justify-between">
                         <span className="text-neutral-400 text-[9px]">
                           {stats.daily.payable < 0
                             ? "You owe rider"
-                            : "Payable to admin"}
+                            : "Payable to admin (Due)"}
                         </span>
                         <span
                           className={`font-black text-[11px] ${
                             stats.daily.payable < 0
                               ? "text-blue-500"
-                              : "text-amber-600 dark:text-amber-400"
+                              : stats.daily.payable === 0
+                                ? "text-emerald-600"
+                                : "text-amber-600 dark:text-amber-400"
                           }`}
                         >
                           ৳{Math.abs(stats.daily.payable).toFixed(0)}
