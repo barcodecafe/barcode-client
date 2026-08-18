@@ -16,7 +16,7 @@ const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
  */
 const isSnapshotted = (order) => !!order?.deliveredAt;
 
-/** What the rider earns for a delivery — area delivery charge for permanent, % of food cost for freelance. */
+/** What the rider earns for a delivery — 0 for permanent (salary based), % of food cost for freelance. */
 export const riderCommissionFor = (order) => {
   if (isSnapshotted(order) && Number.isFinite(order?.riderCommission)) {
     return round2(order.riderCommission);
@@ -26,7 +26,8 @@ export const riderCommissionFor = (order) => {
     const foodCost = Number(order?.subtotal) || 0;
     return round2(foodCost * (rate / 100));
   }
-  return round2(order?.deliveryCharge || 0);
+  // Permanent: Receives fixed salary; hands over 100% of collected cash (delivery charge + food bill) to admin
+  return 0;
 };
 
 /**

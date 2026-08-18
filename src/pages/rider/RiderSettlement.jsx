@@ -642,10 +642,14 @@ export const RiderSettlement = () => {
 
                                   <div>
                                     <span className="text-neutral-400 text-[9px] block">
-                                      Your Commission
+                                      {ord.riderEmploymentType === "freelance"
+                                        ? "Your Commission"
+                                        : "Employment Model"}
                                     </span>
                                     <span className="font-black text-emerald-600 dark:text-emerald-400">
-                                      +৳{commission.toFixed(2)}
+                                      {ord.riderEmploymentType === "freelance"
+                                        ? `+৳${commission.toFixed(2)} (${ord.riderCommissionRate || 15}%)`
+                                        : "Permanent Staff (Salary)"}
                                     </span>
                                   </div>
 
