@@ -356,14 +356,14 @@ export const AdminFreeDelivery = () => {
   };
 
   // -------------------------------------------------------------------------
-  // SEQUENTIAL STEP-BY-STEP FUNNEL GATING
+  // STRICT SEQUENTIAL PROGRESSIVE VISIBILITY CHECKS
   // -------------------------------------------------------------------------
-  // 1. Minimum Purchase Amount appears when Campaign Switch is ON
+  // 1. Minimum Purchase Amount appears ONLY when Campaign Switch is ON
   const isMinOrderVisible = Boolean(freeDeliveryEnabled);
 
-  // 2. Select Campaign Target appears when Minimum Purchase Amount is filled
+  // 2. Select Campaign Target appears ONLY when Minimum Purchase Amount is filled
   const isTargetScopeVisible = Boolean(
-    freeDeliveryEnabled &&
+    isMinOrderVisible &&
       freeDeliveryMinOrder !== "" &&
       freeDeliveryMinOrder !== null &&
       freeDeliveryMinOrder !== undefined &&
@@ -403,7 +403,7 @@ export const AdminFreeDelivery = () => {
     freeDeliveryAreas,
   ]);
 
-  // 4. Header Ticker & Announcement Banner appears ONLY AFTER Target Scope Workflow is completed
+  // 4. Header Ticker & Announcement Banner appears ONLY AFTER Target Scope Workflow is fully completed
   const isBannerVisible = isTargetWorkflowCompleted;
 
   // Compute final effective scope for saving
@@ -551,9 +551,9 @@ export const AdminFreeDelivery = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* =================================================================== */}
-        {/* 1. CAMPAIGN MASTER SWITCH                                           */}
+        {/* 1. CAMPAIGN MASTER SWITCH CARD                                      */}
         {/* =================================================================== */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
@@ -577,71 +577,76 @@ export const AdminFreeDelivery = () => {
               </span>
             </label>
           </div>
-
-          {/* =================================================================== */}
-          {/* 2. MINIMUM PURCHASE AMOUNT (Revealed when Switch is ON)             */}
-          {/* =================================================================== */}
-          <AnimatePresence>
-            {isMinOrderVisible && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, y: 10 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden pt-2"
-              >
-                <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-3.5">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <label className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      Minimum Purchase Amount (৳)
-                    </label>
-
-                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-md">
-                      {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
-                        ? `Required: ৳${freeDeliveryMinOrder}+`
-                        : "No Minimum (৳0)"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <div className="relative w-full max-w-sm">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
-                        ৳
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="10"
-                        value={freeDeliveryMinOrder}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFreeDeliveryMinOrder(
-                            val === "" ? "" : Math.max(0, parseFloat(val) || 0)
-                          );
-                        }}
-                        placeholder="0 (Enter 0 for no minimum amount)"
-                        className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                    <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                    <span>
-                      {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
-                        ? `Customers must order at least ৳${freeDeliveryMinOrder} to unlock free delivery on the selected target criteria below.`
-                        : "Enter 0 if any order amount qualifies for free delivery on the selected criteria below."}
-                    </span>
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* =================================================================== */}
-        {/* 3. CAMPAIGN TARGET SCOPE (Revealed AFTER Min Order is entered)      */}
+        {/* 2. MINIMUM PURCHASE AMOUNT CARD (Conditional on Switch ON)          */}
+        {/* =================================================================== */}
+        <AnimatePresence>
+          {isMinOrderVisible && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: 15 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="space-y-0.5">
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display flex items-center gap-1.5">
+                      <DollarSign className="w-5 h-5 text-amber-500" />
+                      Minimum Purchase Amount (৳)
+                    </h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      Set the required minimum order subtotal that customers must reach to qualify for free delivery.
+                    </p>
+                  </div>
+
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-1 rounded-lg">
+                    {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
+                      ? `Threshold: ৳${freeDeliveryMinOrder}+`
+                      : "No Minimum (৳0)"}
+                  </span>
+                </div>
+
+                <div className="flex items-center pt-1">
+                  <div className="relative w-full max-w-sm">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
+                      ৳
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="10"
+                      value={freeDeliveryMinOrder}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFreeDeliveryMinOrder(
+                          val === "" ? "" : Math.max(0, parseFloat(val) || 0)
+                        );
+                      }}
+                      placeholder="0 (Enter 0 for no minimum amount)"
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                  <span>
+                    {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
+                      ? `Customers must order at least ৳${freeDeliveryMinOrder} to unlock free delivery on the selected target criteria below.`
+                      : "Enter 0 if any order amount qualifies for free delivery on the selected criteria below."}
+                  </span>
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* =================================================================== */}
+        {/* 3. CAMPAIGN TARGET CARD (Conditional on Min Order filled)           */}
         {/* =================================================================== */}
         <AnimatePresence>
           {isTargetScopeVisible && (
@@ -895,7 +900,7 @@ export const AdminFreeDelivery = () => {
                             {freeDeliveryCategories.length === 0 && (
                               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
                                 <Info className="w-4 h-4 shrink-0" />
-                                Please select at least one category above to finish target setup.
+                                Please select at least one category above to proceed to Header Ticker & Banner settings.
                               </p>
                             )}
                           </div>
@@ -1046,7 +1051,7 @@ export const AdminFreeDelivery = () => {
                             {freeDeliveryDishIds.length === 0 && (
                               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
                                 <Info className="w-4 h-4 shrink-0" />
-                                Please select at least one dish above to finish target setup.
+                                Please select at least one dish above to proceed to Header Ticker & Banner settings.
                               </p>
                             )}
                           </div>
@@ -1199,7 +1204,7 @@ export const AdminFreeDelivery = () => {
                             {freeDeliveryAreas.length === 0 && (
                               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
                                 <Info className="w-4 h-4 shrink-0" />
-                                Please select at least one delivery zone above to finish target setup.
+                                Please select at least one delivery zone above to proceed to Header Ticker & Banner settings.
                               </p>
                             )}
                           </div>
@@ -1214,7 +1219,7 @@ export const AdminFreeDelivery = () => {
         </AnimatePresence>
 
         {/* =================================================================== */}
-        {/* 4. HEADER TICKER & BANNER (Revealed ONLY AFTER Target is Completed) */}
+        {/* 4. HEADER TICKER & BANNER (Conditional on Target Workflow Done)     */}
         {/* =================================================================== */}
         <AnimatePresence>
           {isBannerVisible && (
@@ -1297,50 +1302,60 @@ export const AdminFreeDelivery = () => {
         </AnimatePresence>
 
         {/* =================================================================== */}
-        {/* ACTION BAR & SAVE BUTTON                                            */}
+        {/* 5. ACTION BAR & SAVE BUTTON (Conditional on Finished Workflow)       */}
         {/* =================================================================== */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-200/70 dark:border-neutral-800/70">
-          <div className="text-xs text-neutral-500 dark:text-neutral-400">
-            {freeDeliveryEnabled ? (
-              <span className="inline-flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                Configured:{" "}
-                <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                  {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
-                    ? `৳${freeDeliveryMinOrder}+ Min Order`
-                    : "No Min"}
-                </span>{" "}
-                • Target:{" "}
-                <span className="font-bold text-neutral-800 dark:text-neutral-200 capitalize">
-                  {computedScope === "all"
-                    ? "All Menu Items"
-                    : computedScope === "categories"
-                      ? `${freeDeliveryCategories.length} Categories`
-                      : computedScope === "dishes"
-                        ? `${freeDeliveryDishIds.length} Dishes`
-                        : `${freeDeliveryAreas.length} Delivery Zones`}
-                </span>
-                {" "}• Banner:{" "}
-                <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                  {freeDeliveryShowBanner ? "Visible" : "Hidden"}
-                </span>
-              </span>
-            ) : (
-              <span>Campaign is currently inactive</span>
-            )}
-          </div>
+        <AnimatePresence>
+          {(isBannerVisible || !freeDeliveryEnabled) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-200/70 dark:border-neutral-800/70"
+            >
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                {freeDeliveryEnabled ? (
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    Configured:{" "}
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                      {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
+                        ? `৳${freeDeliveryMinOrder}+ Min Order`
+                        : "No Min"}
+                    </span>{" "}
+                    • Target:{" "}
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200 capitalize">
+                      {computedScope === "all"
+                        ? "All Menu Items"
+                        : computedScope === "categories"
+                          ? `${freeDeliveryCategories.length} Categories`
+                          : computedScope === "dishes"
+                            ? `${freeDeliveryDishIds.length} Dishes`
+                            : `${freeDeliveryAreas.length} Delivery Zones`}
+                    </span>
+                    {" "}• Banner:{" "}
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200">
+                      {freeDeliveryShowBanner ? "Visible" : "Hidden"}
+                    </span>
+                  </span>
+                ) : (
+                  <span>Campaign is currently inactive</span>
+                )}
+              </div>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-black text-sm shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-60 transition-all cursor-pointer w-full sm:w-auto justify-center"
-          >
-            <Save className="w-4 h-4" />
-            {saving
-              ? "Saving Campaign Settings..."
-              : "Save Free Delivery Settings"}
-          </button>
-        </div>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-black text-sm shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-60 transition-all cursor-pointer w-full sm:w-auto justify-center"
+              >
+                <Save className="w-4 h-4" />
+                {saving
+                  ? "Saving Campaign Settings..."
+                  : "Save Free Delivery Settings"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </form>
     </div>
   );
