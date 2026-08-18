@@ -356,12 +356,12 @@ export const AdminFreeDelivery = () => {
   };
 
   // -------------------------------------------------------------------------
-  // SEQUENTIAL PROGRESSIVE VISIBILITY CHECKS
+  // SEQUENTIAL STEP-BY-STEP FUNNEL GATING
   // -------------------------------------------------------------------------
   // 1. Minimum Purchase Amount appears when Campaign Switch is ON
   const isMinOrderVisible = Boolean(freeDeliveryEnabled);
 
-  // 2. Campaign Target section appears when Minimum Purchase Amount field has a value
+  // 2. Select Campaign Target appears when Minimum Purchase Amount is filled
   const isTargetScopeVisible = Boolean(
     freeDeliveryEnabled &&
       freeDeliveryMinOrder !== "" &&
@@ -370,13 +370,41 @@ export const AdminFreeDelivery = () => {
       !isNaN(Number(freeDeliveryMinOrder))
   );
 
-  // 3. Header Ticker & Announcement Banner appears after target options are configured
-  const isBannerVisible = Boolean(
-    isTargetScopeVisible &&
-      campaignMode &&
-      ((campaignMode === "items" && Boolean(itemSubScope)) ||
-        (campaignMode === "zones" && Boolean(zoneSubScope)))
-  );
+  // 3. Target Scope Workflow Completion Check:
+  // ONLY becomes true when the user actually finishes selecting their options in Campaign Target:
+  // - Menu Items: 'all' OR 'categories' (with >= 1 category selected) OR 'dishes' (with >= 1 dish selected)
+  // - Zones: 'all_zones' OR 'specific_zones' (with >= 1 zone selected)
+  const isTargetWorkflowCompleted = useMemo(() => {
+    if (!isTargetScopeVisible || !campaignMode) return false;
+
+    if (campaignMode === "items") {
+      if (!itemSubScope) return false;
+      if (itemSubScope === "all") return true;
+      if (itemSubScope === "categories") return freeDeliveryCategories.length > 0;
+      if (itemSubScope === "dishes") return freeDeliveryDishIds.length > 0;
+      return false;
+    }
+
+    if (campaignMode === "zones") {
+      if (!zoneSubScope) return false;
+      if (zoneSubScope === "all_zones") return true;
+      if (zoneSubScope === "specific_zones") return freeDeliveryAreas.length > 0;
+      return false;
+    }
+
+    return false;
+  }, [
+    isTargetScopeVisible,
+    campaignMode,
+    itemSubScope,
+    zoneSubScope,
+    freeDeliveryCategories,
+    freeDeliveryDishIds,
+    freeDeliveryAreas,
+  ]);
+
+  // 4. Header Ticker & Announcement Banner appears ONLY AFTER Target Scope Workflow is completed
+  const isBannerVisible = isTargetWorkflowCompleted;
 
   // Compute final effective scope for saving
   const computedScope = useMemo(() => {
@@ -863,6 +891,13 @@ export const AdminFreeDelivery = () => {
                                 );
                               })}
                             </div>
+
+                            {freeDeliveryCategories.length === 0 && (
+                              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
+                                <Info className="w-4 h-4 shrink-0" />
+                                Please select at least one category above to finish target setup.
+                              </p>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -1007,6 +1042,13 @@ export const AdminFreeDelivery = () => {
                                 );
                               })}
                             </div>
+
+                            {freeDeliveryDishIds.length === 0 && (
+                              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
+                                <Info className="w-4 h-4 shrink-0" />
+                                Please select at least one dish above to finish target setup.
+                              </p>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -1153,6 +1195,13 @@ export const AdminFreeDelivery = () => {
                                 );
                               })}
                             </div>
+
+                            {freeDeliveryAreas.length === 0 && (
+                              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
+                                <Info className="w-4 h-4 shrink-0" />
+                                Please select at least one delivery zone above to finish target setup.
+                              </p>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -1165,7 +1214,7 @@ export const AdminFreeDelivery = () => {
         </AnimatePresence>
 
         {/* =================================================================== */}
-        {/* 4. HEADER TICKER & ANNOUNCEMENT BANNER                              */}
+        {/* 4. HEADER TICKER & BANNER (Revealed ONLY AFTER Target is Completed) */}
         {/* =================================================================== */}
         <AnimatePresence>
           {isBannerVisible && (
