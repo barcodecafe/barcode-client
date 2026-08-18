@@ -20,6 +20,7 @@ import {
   Tag,
   Filter,
   Eye,
+  Edit3,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import { getAllFoods } from "../../services/foodsService";
@@ -70,27 +71,37 @@ export const AdminFreeDelivery = () => {
       : true
   );
 
-  // Campaign Target Mode: 'items' (Menu / Dish Based) vs 'zones' (Zone / Area Based)
-  const [campaignMode, setCampaignMode] = useState(
-    settings.freeDeliveryScope === "areas" ? "zones" : "items"
+  // 🎯 Step Confirmation State (Guarantees progressive conditional opening)
+  const [isMinOrderConfirmed, setIsMinOrderConfirmed] = useState(
+    Boolean(settings.freeDeliveryEnabled)
   );
 
-  // Sub-selection states
-  // For items: 'all' | 'categories' | 'dishes'
-  // For zones: 'all_zones' | 'specific_zones'
+  // Campaign Target Mode: 'items' vs 'zones' (null if not chosen yet)
+  const [campaignMode, setCampaignMode] = useState(
+    settings.freeDeliveryEnabled
+      ? settings.freeDeliveryScope === "areas"
+        ? "zones"
+        : "items"
+      : null
+  );
+
+  // Sub-selection states (null if not chosen yet)
   const [itemSubScope, setItemSubScope] = useState(
-    settings.freeDeliveryScope === "categories"
-      ? "categories"
-      : settings.freeDeliveryScope === "dishes"
-        ? "dishes"
-        : "all"
+    settings.freeDeliveryEnabled
+      ? settings.freeDeliveryScope === "categories"
+        ? "categories"
+        : settings.freeDeliveryScope === "dishes"
+          ? "dishes"
+          : "all"
+      : null
   );
   const [zoneSubScope, setZoneSubScope] = useState(
-    settings.freeDeliveryScope === "areas" &&
-      Array.isArray(settings.freeDeliveryAreas) &&
-      settings.freeDeliveryAreas.length > 0
-      ? "specific_zones"
-      : "all_zones"
+    settings.freeDeliveryEnabled && settings.freeDeliveryScope === "areas"
+      ? Array.isArray(settings.freeDeliveryAreas) &&
+        settings.freeDeliveryAreas.length > 0
+        ? "specific_zones"
+        : "all_zones"
+      : null
   );
 
   // External data states for pickers
@@ -196,27 +207,36 @@ export const AdminFreeDelivery = () => {
         ? settings.freeDeliveryMinOrder
         : 0
     );
+    setIsMinOrderConfirmed(isEnabled);
 
     const scope = settings.freeDeliveryScope || "all";
     setFreeDeliveryScope(scope);
 
-    if (scope === "areas") {
-      setCampaignMode("zones");
-      setZoneSubScope(
-        Array.isArray(settings.freeDeliveryAreas) &&
-          settings.freeDeliveryAreas.length > 0
-          ? "specific_zones"
-          : "all_zones"
-      );
+    if (isEnabled) {
+      if (scope === "areas") {
+        setCampaignMode("zones");
+        setZoneSubScope(
+          Array.isArray(settings.freeDeliveryAreas) &&
+            settings.freeDeliveryAreas.length > 0
+            ? "specific_zones"
+            : "all_zones"
+        );
+        setItemSubScope(null);
+      } else {
+        setCampaignMode("items");
+        setItemSubScope(
+          scope === "categories"
+            ? "categories"
+            : scope === "dishes"
+              ? "dishes"
+              : "all"
+        );
+        setZoneSubScope(null);
+      }
     } else {
-      setCampaignMode("items");
-      setItemSubScope(
-        scope === "categories"
-          ? "categories"
-          : scope === "dishes"
-            ? "dishes"
-            : "all"
-      );
+      setCampaignMode(null);
+      setItemSubScope(null);
+      setZoneSubScope(null);
     }
 
     setFreeDeliveryCategories(
@@ -244,6 +264,23 @@ export const AdminFreeDelivery = () => {
         : true
     );
   }, [isSettingsLoaded, settings]);
+
+  // Master Switch Toggle Handler
+  const handleToggleMasterSwitch = (enabled) => {
+    setFreeDeliveryEnabled(enabled);
+    if (enabled) {
+      // When turning ON, require setting/confirming the min order first
+      setIsMinOrderConfirmed(false);
+      setCampaignMode(null);
+      setItemSubScope(null);
+      setZoneSubScope(null);
+    } else {
+      setIsMinOrderConfirmed(false);
+      setCampaignMode(null);
+      setItemSubScope(null);
+      setZoneSubScope(null);
+    }
+  };
 
   // Dishes Count per Category
   const categoryDishCount = useMemo(() => {
@@ -356,26 +393,27 @@ export const AdminFreeDelivery = () => {
   };
 
   // -------------------------------------------------------------------------
-  // STRICT SEQUENTIAL PROGRESSIVE VISIBILITY CHECKS
+  // STRICT PROGRESSIVE VISIBILITY GATING (Zero-leak step progression)
   // -------------------------------------------------------------------------
   // 1. Minimum Purchase Amount appears ONLY when Campaign Switch is ON
-  const isMinOrderVisible = Boolean(freeDeliveryEnabled);
+  const isMinOrderCardVisible = Boolean(freeDeliveryEnabled);
 
-  // 2. Select Campaign Target appears ONLY when Minimum Purchase Amount is filled
-  const isTargetScopeVisible = Boolean(
-    isMinOrderVisible &&
+  // 2. Select Campaign Target appears ONLY AFTER Minimum Purchase Amount is explicitly set/confirmed
+  const isTargetScopeCardVisible = Boolean(
+    isMinOrderCardVisible &&
+      isMinOrderConfirmed &&
       freeDeliveryMinOrder !== "" &&
       freeDeliveryMinOrder !== null &&
       freeDeliveryMinOrder !== undefined &&
       !isNaN(Number(freeDeliveryMinOrder))
   );
 
-  // 3. Target Scope Workflow Completion Check:
-  // ONLY becomes true when the user actually finishes selecting their options in Campaign Target:
-  // - Menu Items: 'all' OR 'categories' (with >= 1 category selected) OR 'dishes' (with >= 1 dish selected)
-  // - Zones: 'all_zones' OR 'specific_zones' (with >= 1 zone selected)
+  // 3. Target Scope Workflow Completion:
+  // Evaluates to TRUE ONLY WHEN the user has actually finished selecting target options:
+  // - Menu items: 'all' OR 'categories' (with >= 1 category) OR 'dishes' (with >= 1 dish)
+  // - Zones: 'all_zones' OR 'specific_zones' (with >= 1 zone)
   const isTargetWorkflowCompleted = useMemo(() => {
-    if (!isTargetScopeVisible || !campaignMode) return false;
+    if (!isTargetScopeCardVisible || !campaignMode) return false;
 
     if (campaignMode === "items") {
       if (!itemSubScope) return false;
@@ -394,7 +432,7 @@ export const AdminFreeDelivery = () => {
 
     return false;
   }, [
-    isTargetScopeVisible,
+    isTargetScopeCardVisible,
     campaignMode,
     itemSubScope,
     zoneSubScope,
@@ -403,15 +441,17 @@ export const AdminFreeDelivery = () => {
     freeDeliveryAreas,
   ]);
 
-  // 4. Header Ticker & Announcement Banner appears ONLY AFTER Target Scope Workflow is fully completed
-  const isBannerVisible = isTargetWorkflowCompleted;
+  // 4. Header Ticker & Announcement Banner appears ONLY AFTER Target Scope is completely finished
+  const isBannerCardVisible = Boolean(
+    isTargetScopeCardVisible && isTargetWorkflowCompleted
+  );
 
   // Compute final effective scope for saving
   const computedScope = useMemo(() => {
     if (campaignMode === "zones") {
       return zoneSubScope === "specific_zones" ? "areas" : "all";
     }
-    return itemSubScope; // 'all' | 'categories' | 'dishes'
+    return itemSubScope || "all"; // 'all' | 'categories' | 'dishes'
   }, [campaignMode, zoneSubScope, itemSubScope]);
 
   const handleSubmit = async (e) => {
@@ -480,6 +520,10 @@ export const AdminFreeDelivery = () => {
 
       await updateSettings(payload);
       setFreeDeliveryEnabled(false);
+      setIsMinOrderConfirmed(false);
+      setCampaignMode(null);
+      setItemSubScope(null);
+      setZoneSubScope(null);
       setFreeDeliveryScope("all");
       setFreeDeliveryMinOrder(0);
       setFreeDeliveryCategories([]);
@@ -489,9 +533,6 @@ export const AdminFreeDelivery = () => {
         "🎉 Special Offer: Free Delivery on all orders today!"
       );
       setFreeDeliveryShowBanner(true);
-      setCampaignMode("items");
-      setItemSubScope("all");
-      setZoneSubScope("all_zones");
 
       setSuccess(true);
       toast.success("Free Delivery campaign reset to default inactive state.");
@@ -568,7 +609,7 @@ export const AdminFreeDelivery = () => {
               <input
                 type="checkbox"
                 checked={freeDeliveryEnabled}
-                onChange={(e) => setFreeDeliveryEnabled(e.target.checked)}
+                onChange={(e) => handleToggleMasterSwitch(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-14 h-7 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-neutral-700 peer-checked:bg-amber-500 shadow-inner"></div>
@@ -583,7 +624,7 @@ export const AdminFreeDelivery = () => {
         {/* 2. MINIMUM PURCHASE AMOUNT CARD (Conditional on Switch ON)          */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {isMinOrderVisible && (
+          {isMinOrderCardVisible && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: 15 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -610,7 +651,7 @@ export const AdminFreeDelivery = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
                   <div className="relative w-full max-w-sm">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
                       ৳
@@ -630,6 +671,26 @@ export const AdminFreeDelivery = () => {
                       className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                     />
                   </div>
+
+                  {!isMinOrderConfirmed ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsMinOrderConfirmed(true)}
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap active:scale-95"
+                    >
+                      <span>Continue to Target Selection</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsMinOrderConfirmed(false)}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-neutral-500 hover:text-amber-600 dark:hover:text-amber-400 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Amount</span>
+                    </button>
+                  )}
                 </div>
 
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
@@ -646,10 +707,10 @@ export const AdminFreeDelivery = () => {
         </AnimatePresence>
 
         {/* =================================================================== */}
-        {/* 3. CAMPAIGN TARGET CARD (Conditional on Min Order filled)           */}
+        {/* 3. CAMPAIGN TARGET CARD (Conditional on Min Order set & confirmed)  */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {isTargetScopeVisible && (
+          {isTargetScopeCardVisible && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: 15 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -671,7 +732,10 @@ export const AdminFreeDelivery = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     type="button"
-                    onClick={() => setCampaignMode("items")}
+                    onClick={() => {
+                      setCampaignMode("items");
+                      setItemSubScope(null);
+                    }}
                     className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
                       campaignMode === "items"
                         ? "bg-amber-50/60 dark:bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/20 shadow-xs"
@@ -699,7 +763,10 @@ export const AdminFreeDelivery = () => {
 
                   <button
                     type="button"
-                    onClick={() => setCampaignMode("zones")}
+                    onClick={() => {
+                      setCampaignMode("zones");
+                      setZoneSubScope(null);
+                    }}
                     className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
                       campaignMode === "zones"
                         ? "bg-amber-50/60 dark:bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/20 shadow-xs"
@@ -734,7 +801,7 @@ export const AdminFreeDelivery = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="space-y-5 pt-2"
+                    className="space-y-5 pt-2 border-t border-neutral-100 dark:border-neutral-800"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
@@ -1069,7 +1136,7 @@ export const AdminFreeDelivery = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="space-y-5 pt-2"
+                    className="space-y-5 pt-2 border-t border-neutral-100 dark:border-neutral-800"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
@@ -1222,7 +1289,7 @@ export const AdminFreeDelivery = () => {
         {/* 4. HEADER TICKER & BANNER (Conditional on Target Workflow Done)     */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {isBannerVisible && (
+          {isBannerCardVisible && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: 15 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -1305,7 +1372,7 @@ export const AdminFreeDelivery = () => {
         {/* 5. ACTION BAR & SAVE BUTTON (Conditional on Finished Workflow)       */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {(isBannerVisible || !freeDeliveryEnabled) && (
+          {(isBannerCardVisible || !freeDeliveryEnabled) && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
