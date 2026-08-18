@@ -69,8 +69,14 @@ export const AdminBrands = () => {
     };
   }, [orderSyncStatus]);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Fast Sync + Rollback Protection)
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Fast Sync + Rollback Protection + Order Guard)
   const handleBrandReorder = (reorderedBrands) => {
+    const currentIds = brands.map((b) => b.id || b._id).join(",");
+    const newIds = reorderedBrands.map((b) => b.id || b._id).join(",");
+    if (currentIds === newIds) {
+      return; // Order didn't change, avoid redundant saves & false badges
+    }
+
     const previousBrands = brands;
     setBrands(reorderedBrands);
     const orderedIds = reorderedBrands.map((b) => {
@@ -94,7 +100,7 @@ export const AdminBrands = () => {
         setOrderSyncStatus("error");
         setBrands(previousBrands);
       }
-    }, 150); // Fast 150ms debounce
+    }, 250);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };

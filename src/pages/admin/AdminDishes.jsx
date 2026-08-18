@@ -329,16 +329,22 @@ export const AdminDishes = () => {
   const foodReorderTimeoutRef = useRef(null);
   const categoryReorderTimeoutRef = useRef(null);
 
-  // [SORTING-FIX] Category reorder-এ rollback + cooldown + Fast Debounce + Live Status
+  // [SORTING-FIX] Category reorder-এ rollback + cooldown + Fast Debounce + Live Status + Order Guard
   const handleCategoryReorder = async (newOrder) => {
-    const previousCategories = sortedCategories;
-    const previousFoods = foods;
-
     const orderMap = new Map();
     newOrder.forEach((cat) => {
       if (cat) orderMap.set(cat.trim().toLowerCase(), cat.trim());
     });
     const finalUniqueOrder = Array.from(orderMap.values());
+
+    const currentCats = sortedCategories.join(",");
+    const newCats = finalUniqueOrder.join(",");
+    if (currentCats === newCats) {
+      return; // No order change, do not trigger false saves
+    }
+
+    const previousCategories = sortedCategories;
+    const previousFoods = foods;
 
     setSortedCategories(finalUniqueOrder);
     latestOrderedCategoryOrderRef.current = finalUniqueOrder;
@@ -380,16 +386,22 @@ export const AdminDishes = () => {
           setFoods(previousFoods);
         }
       }
-    }, 150);
+    }, 250);
   };
 
-  // [SORTING-FIX] Food reorder-এ rollback + cooldown + Fast Debounce + Live Status
+  // [SORTING-FIX] Food reorder-এ rollback + cooldown + Fast Debounce + Live Status + Order Guard
   const handleFoodReorder = async (reorderedFoods) => {
-    const previousFoods = foods;
-
     const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
     const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
     const merged = [...reorderedFoods, ...untouched];
+
+    const currentIds = foods.map((f) => f.id || f._id).join(",");
+    const newIds = merged.map((f) => f.id || f._id).join(",");
+    if (currentIds === newIds) {
+      return; // No order change, do not trigger false saves
+    }
+
+    const previousFoods = foods;
     setFoods(merged);
 
     const orderedIds = merged.map((b) => {
@@ -417,7 +429,7 @@ export const AdminDishes = () => {
         setOrderSyncStatus("error");
         setFoods(previousFoods);
       }
-    }, 150);
+    }, 250);
   };
 
   const formatForDateTimeInput = (dateStr) => {

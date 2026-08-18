@@ -143,13 +143,25 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Fast Debounce
+  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Fast Debounce + Order-change guard
   const handleBranchReorder = (reorderedBranches) => {
-    const previousBranches = branches;
+    const isSearching = search.trim().length > 0;
+    let merged = reorderedBranches;
 
-    const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
-    const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
-    const merged = [...reorderedBranches, ...untouched];
+    if (isSearching) {
+      const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
+      const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
+      merged = [...reorderedBranches, ...untouched];
+    }
+
+    // 🎯 1. Order changed check: if identical, do nothing (prevents "Order saved" on initial render!)
+    const currentIds = branches.map((b) => b.id || b._id).join(",");
+    const newIds = merged.map((b) => b.id || b._id).join(",");
+    if (currentIds === newIds) {
+      return;
+    }
+
+    const previousBranches = branches;
     setBranches(merged);
 
     const orderedIds = merged.map((b) => {
@@ -173,7 +185,7 @@ export const AdminBranches = () => {
         setOrderSyncStatus("error");
         setBranches(previousBranches);
       }
-    }, 150);
+    }, 250);
   };
 
   const openAddModal = () => {
@@ -418,7 +430,7 @@ export const AdminBranches = () => {
       ) : (
         <Reorder.Group
           axis="y"
-          values={filtered}
+          values={search.trim() ? filtered : branches}
           onReorder={handleBranchReorder}
           className="flex flex-col gap-3.5 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl"
         >
