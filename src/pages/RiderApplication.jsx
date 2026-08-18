@@ -116,6 +116,7 @@ export const RiderApplication = () => {
       fd.append('nid', form.nid.trim());
       fd.append('experience', form.experience.trim());
       fd.append('expYears', form.expYears);
+      fd.append('employmentType', 'permanent'); // 🎯 Direct application recruits are Permanent In-House Riders
       fd.append('photo', photo);
       fd.append('license', license);
 
@@ -125,7 +126,7 @@ export const RiderApplication = () => {
       Swal.fire({
         icon: 'success',
         title: 'Application Submitted!',
-        text: 'Your application has been received successfully. Our admin team will review it shortly.',
+        text: 'Your application for Permanent Rider has been received successfully. Our admin team will review it shortly.',
         confirmButtonText: 'Go to Home',
         confirmButtonColor: '#10b981', // Emerald Color
         allowOutsideClick: false,
@@ -198,14 +199,17 @@ export const RiderApplication = () => {
     /* 🎯 Global site-container class applied */
     <div className="site-container max-w-3xl py-12">
       <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-3">
+          <Briefcase className="w-3.5 h-3.5" /> Permanent In-House Fleet Position
+        </div>
         <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
           <Bike className="w-7 h-7 text-primary-500" />
         </div>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-white">
-          Become a Barcode Rider
+          Become a Permanent Barcode Rider
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2 max-w-md mx-auto">
-          Fill in your details and upload your documents. An admin will review and approve your application shortly.
+          Join our dedicated in-house delivery team as a permanent salaried staff. Fill in your details and upload your documents for admin review.
         </p>
       </div>
 

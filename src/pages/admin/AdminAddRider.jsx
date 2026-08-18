@@ -197,15 +197,15 @@ export const AdminAddRider = () => {
                       className="text-emerald-600 focus:ring-emerald-500"
                     />
                     <span className="font-extrabold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-emerald-500" /> Permanent Rider
+                      <Building2 className="w-4 h-4 text-emerald-500" /> Permanent In-House Staff
                     </span>
                   </div>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                    Earns the standard area-based delivery charge (e.g. ৳60 or zone rate) as their fixed delivery fee.
+                    Direct salaried employee (applied via website or direct hire). Hands over 100% of collected cash (food bill + delivery charges) to admin without commission deduction.
                   </p>
                 </div>
                 <div className="mt-3 pt-2 border-t border-dashed border-emerald-500/20 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                  ✓ Fixed Area Rate Payout
+                  ✓ Monthly Salary • 100% Cash Handover to Admin
                 </div>
               </label>
 
@@ -228,15 +228,15 @@ export const AdminAddRider = () => {
                       className="text-blue-600 focus:ring-blue-500"
                     />
                     <span className="font-extrabold text-xs sm:text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <Percent className="w-4 h-4 text-blue-500" /> Freelance / Agency
+                      <Percent className="w-4 h-4 text-blue-500" /> Agency / Freelance Rider
                     </span>
                   </div>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                    Earns a percentage commission on the total food cost of each delivered order (default 15%).
+                    Hired via 3rd-party logistics agency. Earns % commission on food bill (default 15%), retains commission from collected cash, and hands over net balance to admin.
                   </p>
                 </div>
                 <div className="mt-3 pt-2 border-t border-dashed border-blue-500/20 text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                  ✓ % Commission on Food Subtotal
+                  ✓ % Food Commission • Retains Earning on Handover
                 </div>
               </label>
             </div>
