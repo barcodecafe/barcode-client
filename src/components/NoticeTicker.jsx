@@ -43,18 +43,18 @@ export const NoticeTicker = memo(
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="group relative w-full bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white shadow-xs border-b border-white/10 select-none overflow-hidden z-25"
+          className="group relative w-full bg-gradient-to-r from-primary-800 via-primary-600 to-primary-700 text-white shadow-xs border-b border-white/10 select-none overflow-hidden z-25"
           role="region"
           aria-label="Announcement Notice Ticker"
         >
           <div className="flex items-center w-full min-h-[36px] sm:min-h-[38px]">
             {/* Fixed Left Breaking/Notice Badge */}
-            <div className="shrink-0 z-10 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-black/40 backdrop-blur-xs border-r border-white/15 text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-sm">
+            <div className="shrink-0 z-10 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-black/35 backdrop-blur-xs border-r border-white/15 text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-sm">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
               </span>
-              <Megaphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <Megaphone className="w-3.5 h-3.5 text-red-200 shrink-0" />
               <span className="font-extrabold tracking-wide text-white">
                 NOTICE
               </span>
