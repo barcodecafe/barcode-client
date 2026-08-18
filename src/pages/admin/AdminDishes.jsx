@@ -25,6 +25,8 @@ import {
   Square,
   Sparkles,
   FolderPlus,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import {
   getAllFoods,
@@ -50,6 +52,7 @@ import {
   deleteAddonGroup,
   seedDefaultAddons,
 } from "../../services/addonsService";
+import { socket } from "../../services/socket";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
@@ -61,6 +64,9 @@ export const AdminDishes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [reorderCooldown, setReorderCooldown] = useState(false); // [SORTING-FIX] reorder-এর পরে কিছুক্ষণ polling বন্ধ রাখা
+  const [orderSyncStatus, setOrderSyncStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'error'
+  const latestOrderedFoodIdsRef = useRef([]);
+  const latestOrderedCategoryOrderRef = useRef([]);
 
   const [sortedCategories, setSortedCategories] = useState([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -287,18 +293,46 @@ export const AdminDishes = () => {
       !reorderCooldown,
   });
 
+  // ⚡ Real-Time WebSocket Listeners for Dishes & Categories
+  useEffect(() => {
+    const handleDishesSync = () => {
+      if (orderSyncStatus === "idle" && !reorderCooldown) {
+        syncFromServer();
+      }
+    };
+
+    socket.on("foods_updated", handleDishesSync);
+    socket.on("categories_updated", handleDishesSync);
+
+    const handleBeforeUnload = () => {
+      if (latestOrderedFoodIdsRef.current.length > 0) {
+        updateFoodOrder(latestOrderedFoodIdsRef.current).catch(() => {});
+      }
+      if (latestOrderedCategoryOrderRef.current.length > 0) {
+        reorderCategories(latestOrderedCategoryOrderRef.current).catch(() => {});
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      socket.off("foods_updated", handleDishesSync);
+      socket.off("categories_updated", handleDishesSync);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [orderSyncStatus, reorderCooldown, syncFromServer]);
+
   const handleManualRefresh = () => {
     setIsRefreshing(true);
     syncFromServer().finally(() => setIsRefreshing(false));
   };
 
-  const foodReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for food reordering
-  const categoryReorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref for category reordering
+  const foodReorderTimeoutRef = useRef(null);
+  const categoryReorderTimeoutRef = useRef(null);
 
-  // [SORTING-FIX] Category reorder-এ rollback + cooldown + debounce যোগ করা হয়েছে
+  // [SORTING-FIX] Category reorder-এ rollback + cooldown + Fast Debounce + Live Status
   const handleCategoryReorder = async (newOrder) => {
-    const previousCategories = sortedCategories; // [SORTING-FIX] rollback এর জন্য save
-    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য save
+    const previousCategories = sortedCategories;
+    const previousFoods = foods;
 
     const orderMap = new Map();
     newOrder.forEach((cat) => {
@@ -307,6 +341,7 @@ export const AdminDishes = () => {
     const finalUniqueOrder = Array.from(orderMap.values());
 
     setSortedCategories(finalUniqueOrder);
+    latestOrderedCategoryOrderRef.current = finalUniqueOrder;
 
     const orderLookup = new Map(
       finalUniqueOrder.map((cat, idx) => [cat.toLowerCase(), idx + 1]),
@@ -318,56 +353,71 @@ export const AdminDishes = () => {
       })),
     );
 
-    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
+    setOrderSyncStatus("saving");
 
-    // [SORTING-FIX] Debounce category API call (300ms)
     if (categoryReorderTimeoutRef.current) clearTimeout(categoryReorderTimeoutRef.current);
     categoryReorderTimeoutRef.current = setTimeout(async () => {
       try {
         await reorderCategories(finalUniqueOrder);
+        setOrderSyncStatus("saved");
+        latestOrderedCategoryOrderRef.current = [];
+        setTimeout(() => setOrderSyncStatus("idle"), 2500);
       } catch (err) {
         console.error("Error updating category order on server:", err);
         try {
           if (typeof updateCategoryOrder === "function") {
             await updateCategoryOrder(finalUniqueOrder);
+            setOrderSyncStatus("saved");
+            latestOrderedCategoryOrderRef.current = [];
+            setTimeout(() => setOrderSyncStatus("idle"), 2500);
           }
         } catch (fallbackErr) {
           console.error("Fallback category order update failed:", fallbackErr);
-          setSortedCategories(previousCategories); // [SORTING-FIX] ❌ API fail → আগের category order restore
-          setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের food order restore
+          setOrderSyncStatus("error");
+          setSortedCategories(previousCategories);
+          setFoods(previousFoods);
         }
       }
-    }, 300);
+    }, 150);
   };
 
+  // [SORTING-FIX] Food reorder-এ rollback + cooldown + Fast Debounce + Live Status
   const handleFoodReorder = async (reorderedFoods) => {
-    const previousFoods = foods; // [SORTING-FIX] rollback এর জন্য আগের state save
+    const previousFoods = foods;
 
     const reorderedIds = new Set(reorderedFoods.map((f) => f.id || f._id));
     const untouched = foods.filter((f) => !reorderedIds.has(f.id || f._id));
     const merged = [...reorderedFoods, ...untouched];
     setFoods(merged);
 
-    const orderedIds = merged.map((b) => String(b.id || b._id));
+    const orderedIds = merged.map((b) => {
+      const rawId = b.id !== undefined && b.id !== null ? b.id : b._id;
+      const numId = Number(rawId);
+      return Number.isFinite(numId) ? numId : rawId;
+    });
+    latestOrderedFoodIdsRef.current = orderedIds;
 
-    // [SORTING-FIX] reorder-এর পরে ৫ সেকেন্ড polling pause
     setReorderCooldown(true);
     setTimeout(() => setReorderCooldown(false), 5000);
+    setOrderSyncStatus("saving");
 
-    // [SORTING-FIX] Debounce food API call (300ms)
     if (foodReorderTimeoutRef.current) clearTimeout(foodReorderTimeoutRef.current);
     foodReorderTimeoutRef.current = setTimeout(async () => {
       try {
         if (typeof updateFoodOrder === "function") {
           await updateFoodOrder(orderedIds);
         }
+        setOrderSyncStatus("saved");
+        latestOrderedFoodIdsRef.current = [];
+        setTimeout(() => setOrderSyncStatus("idle"), 2500);
       } catch (err) {
         console.error("Error updating food order on server:", err);
-        setFoods(previousFoods); // [SORTING-FIX] ❌ API fail → আগের order restore
+        setOrderSyncStatus("error");
+        setFoods(previousFoods);
       }
-    }, 300);
+    }, 150);
   };
 
   const formatForDateTimeInput = (dateStr) => {
@@ -1030,9 +1080,26 @@ export const AdminDishes = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
-            Manage Menu Items
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
+              Manage Menu Items
+            </h1>
+            {orderSyncStatus === "saving" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse border border-amber-500/20">
+                <Loader2 className="w-3 h-3 animate-spin" /> Saving order...
+              </span>
+            )}
+            {orderSyncStatus === "saved" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-500/20">
+                <CheckCircle2 className="w-3 h-3 text-green-500" /> Order saved
+              </span>
+            )}
+            {orderSyncStatus === "error" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold border border-red-500/20">
+                Failed to save order
+              </span>
+            )}
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Total {foods.length} dishes registered
           </p>

@@ -11,6 +11,8 @@ import {
   Trash2,
   X,
   GripVertical,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import {
   getAllBranches,
@@ -22,6 +24,7 @@ import {
 import { getRevenueByBranch } from "../../services/analyticsService";
 import { getAllRegions } from "../../services/regionsService";
 import { getAllBrandsAdmin } from "../../services/brandsService";
+import { socket } from "../../services/socket";
 import LeafletMap from "../../components/LeafletMap";
 
 const parseLatLngFromUrl = (url) => {
@@ -45,6 +48,9 @@ export const AdminBranches = () => {
   const [revenueMap, setRevenueMap] = useState({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [orderSyncStatus, setOrderSyncStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'error'
+  const reorderTimeoutRef = useRef(null);
+  const latestOrderedIdsRef = useRef([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,7 +87,10 @@ export const AdminBranches = () => {
         getAllBrandsAdmin().catch(() => []),
       ]);
 
-      setBranches(branchData || []);
+      const sortedBranches = Array.isArray(branchData)
+        ? [...branchData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+        : [];
+      setBranches(sortedBranches);
       setRegions(Array.isArray(regionData) ? regionData : []);
       setBrands(Array.isArray(brandData) ? brandData : []);
 
@@ -101,7 +110,28 @@ export const AdminBranches = () => {
 
   useEffect(() => {
     fetchBranchesData();
-  }, [fetchBranchesData]);
+
+    // ⚡ Real-Time WebSocket Listener for branches
+    const handleBranchesSync = () => {
+      if (orderSyncStatus === "idle") {
+        fetchBranchesData();
+      }
+    };
+
+    socket.on("branches_updated", handleBranchesSync);
+
+    const handleBeforeUnload = () => {
+      if (latestOrderedIdsRef.current.length > 0) {
+        updateBranchOrder(latestOrderedIdsRef.current).catch(() => {});
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      socket.off("branches_updated", handleBranchesSync);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [fetchBranchesData, orderSyncStatus]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -113,32 +143,37 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  const reorderTimeoutRef = useRef(null); // [SORTING-FIX] Debounce ref to prevent multiple rapid requests
-
-  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Debounce
-  // আগে filter active থাকলে reorder করলে বাকি branches হারিয়ে যেত।
-  // এখন filtered items-এর নতুন order রেখে, বাকি untouched items merge করে পুরো list পাঠায়।
+  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Fast Debounce
   const handleBranchReorder = (reorderedBranches) => {
-    const previousBranches = branches; // [SORTING-FIX] rollback এর জন্য আগের state save
+    const previousBranches = branches;
 
-    // [SORTING-FIX] Filter active থাকলে: reordered items merge করো পুরো list-এ
     const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
     const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
     const merged = [...reorderedBranches, ...untouched];
     setBranches(merged);
 
-    const orderedIds = merged.map((b) => String(b.id || b._id));
+    const orderedIds = merged.map((b) => {
+      const rawId = b.id !== undefined && b.id !== null ? b.id : b._id;
+      const numId = Number(rawId);
+      return Number.isFinite(numId) ? numId : rawId;
+    });
+    latestOrderedIdsRef.current = orderedIds;
 
-    // [SORTING-FIX] Debounce API call (300ms) to ensure only final settled order is sent to DB
+    setOrderSyncStatus("saving");
+
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
-    reorderTimeoutRef.current = setTimeout(() => {
-      if (typeof updateBranchOrder === "function") {
-        updateBranchOrder(orderedIds).catch((err) => {
-          console.error("Background sync error for branch order:", err);
-          setBranches(previousBranches); // [SORTING-FIX] ❌ API fail → আগের order restore
-        });
+    reorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        await updateBranchOrder(orderedIds);
+        setOrderSyncStatus("saved");
+        latestOrderedIdsRef.current = [];
+        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+      } catch (err) {
+        console.error("Background sync error for branch order:", err);
+        setOrderSyncStatus("error");
+        setBranches(previousBranches);
       }
-    }, 300);
+    }, 150);
   };
 
   const openAddModal = () => {
@@ -328,9 +363,26 @@ export const AdminBranches = () => {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
-            Branches Management
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+              Branches Management
+            </h1>
+            {orderSyncStatus === "saving" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse border border-amber-500/20">
+                <Loader2 className="w-3 h-3 animate-spin" /> Saving order...
+              </span>
+            )}
+            {orderSyncStatus === "saved" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-500/20">
+                <CheckCircle2 className="w-3 h-3 text-green-500" /> Order saved
+              </span>
+            )}
+            {orderSyncStatus === "error" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold border border-red-500/20">
+                Failed to save order
+              </span>
+            )}
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             {branches.length} locations registered. Drag cards up and down to reorder list.
           </p>
