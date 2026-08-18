@@ -20,6 +20,7 @@ import {
 import { useSettings } from "../../context/SettingsContext";
 import { getAllFoods } from "../../services/foodsService";
 import { getAllRegions } from "../../services/regionsService";
+import FreeDeliveryBanner from "../../components/FreeDeliveryBanner";
 import toast from "react-hot-toast";
 
 export const AdminFreeDelivery = () => {
@@ -706,28 +707,20 @@ export const AdminFreeDelivery = () => {
           {/* Live Preview Box */}
           {freeDeliveryShowBanner && (
             <div className="space-y-1.5 pt-2">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
-                Live Top Banner Preview:
-              </span>
-              <div className="bg-linear-to-r from-amber-600 via-primary-500 to-amber-500 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl flex items-center justify-between shadow-md">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <Truck className="w-3 h-3" />
-                    {freeDeliveryScope === "min_amount"
-                      ? `Orders ৳${freeDeliveryMinOrder}+`
-                      : freeDeliveryScope === "dishes"
-                      ? "Selected Dishes"
-                      : freeDeliveryScope === "areas"
-                      ? "Selected Areas"
-                      : "All Orders"}
-                  </span>
-                  <span className="truncate font-bold">
-                    {freeDeliveryBannerText || "Free Delivery Active!"}
-                  </span>
-                </div>
-                <span className="text-[11px] font-black underline shrink-0 hidden sm:inline">
-                  Order Now →
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
+                  Live Top Banner Preview:
                 </span>
+                <span className="text-[10px] text-neutral-400">Hover over preview to pause</span>
+              </div>
+              <div className="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-md">
+                <FreeDeliveryBanner
+                  isPreview={true}
+                  previewEnabled={freeDeliveryEnabled && freeDeliveryShowBanner}
+                  previewText={freeDeliveryBannerText}
+                  previewScope={freeDeliveryScope}
+                  previewMinOrder={freeDeliveryMinOrder}
+                />
               </div>
             </div>
           )}
