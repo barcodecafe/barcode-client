@@ -871,11 +871,11 @@ export const RidersFleetOverview = ({
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
                       <span className="font-bold text-xs text-neutral-800 dark:text-white flex items-center gap-1">
-                        <Building2 className="w-3.5 h-3.5 text-emerald-500" /> Permanent
+                        <Building2 className="w-3.5 h-3.5 text-emerald-500" /> Permanent In-House Staff
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      Earns standard area-based delivery fee.
+                      Monthly salary based. Hands over 100% cash (food + delivery) to admin.
                     </p>
                   </label>
 
@@ -896,11 +896,11 @@ export const RidersFleetOverview = ({
                         className="text-blue-600 focus:ring-blue-500"
                       />
                       <span className="font-bold text-xs text-neutral-800 dark:text-white flex items-center gap-1">
-                        <Percent className="w-3.5 h-3.5 text-blue-500" /> Freelance / Agency
+                        <Percent className="w-3.5 h-3.5 text-blue-500" /> Agency / Freelance
                       </span>
                     </div>
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 pl-5 leading-tight">
-                      Earns percentage commission on total food cost.
+                      Agency rider. Retains % commission on food cost and hands over net balance.
                     </p>
                   </label>
                 </div>
