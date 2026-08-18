@@ -20,9 +20,6 @@ import {
   Tag,
   Filter,
   Eye,
-  ChevronRight,
-  SlidersHorizontal,
-  Lock,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import { getAllFoods } from "../../services/foodsService";
@@ -95,9 +92,6 @@ export const AdminFreeDelivery = () => {
       ? "specific_zones"
       : "all_zones"
   );
-
-  // Explicit tracking for whether Step 1 is set/confirmed
-  const [isMinOrderConfirmed, setIsMinOrderConfirmed] = useState(false);
 
   // External data states for pickers
   const [availableFoods, setAvailableFoods] = useState([]);
@@ -202,9 +196,6 @@ export const AdminFreeDelivery = () => {
         ? settings.freeDeliveryMinOrder
         : 0
     );
-    if (isEnabled) {
-      setIsMinOrderConfirmed(true);
-    }
 
     const scope = settings.freeDeliveryScope || "all";
     setFreeDeliveryScope(scope);
@@ -365,24 +356,23 @@ export const AdminFreeDelivery = () => {
   };
 
   // -------------------------------------------------------------------------
-  // STEP SEQUENTIAL GATING LOGIC
+  // SEQUENTIAL PROGRESSIVE VISIBILITY CHECKS
   // -------------------------------------------------------------------------
-  // Step 1 is unlocked when Master Switch is ON
-  const isStep1Visible = Boolean(freeDeliveryEnabled);
+  // 1. Minimum Purchase Amount appears when Campaign Switch is ON
+  const isMinOrderVisible = Boolean(freeDeliveryEnabled);
 
-  // Step 2 is unlocked ONLY AFTER Minimum Order Amount is confirmed/active
-  const isStep2Visible = Boolean(
+  // 2. Campaign Target section appears when Minimum Purchase Amount field has a value
+  const isTargetScopeVisible = Boolean(
     freeDeliveryEnabled &&
-      (isMinOrderConfirmed ||
-        (freeDeliveryMinOrder !== "" &&
-          freeDeliveryMinOrder !== null &&
-          freeDeliveryMinOrder !== undefined &&
-          !isNaN(Number(freeDeliveryMinOrder))))
+      freeDeliveryMinOrder !== "" &&
+      freeDeliveryMinOrder !== null &&
+      freeDeliveryMinOrder !== undefined &&
+      !isNaN(Number(freeDeliveryMinOrder))
   );
 
-  // Step 3 (Banner Settings) is unlocked ONLY AFTER Step 2 target scope is selected
-  const isStep3Visible = Boolean(
-    isStep2Visible &&
+  // 3. Header Ticker & Announcement Banner appears after target options are configured
+  const isBannerVisible = Boolean(
+    isTargetScopeVisible &&
       campaignMode &&
       ((campaignMode === "items" && Boolean(itemSubScope)) ||
         (campaignMode === "zones" && Boolean(zoneSubScope)))
@@ -462,7 +452,6 @@ export const AdminFreeDelivery = () => {
 
       await updateSettings(payload);
       setFreeDeliveryEnabled(false);
-      setIsMinOrderConfirmed(false);
       setFreeDeliveryScope("all");
       setFreeDeliveryMinOrder(0);
       setFreeDeliveryCategories([]);
@@ -498,7 +487,7 @@ export const AdminFreeDelivery = () => {
             Free Delivery Campaign & Service
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Sequential step-by-step setup: enable campaign, set minimum order threshold, select target scope, and configure ticker banner.
+            Configure promotional free delivery campaigns, minimum order thresholds, targeting criteria, and announcement banners.
           </p>
         </div>
 
@@ -534,21 +523,16 @@ export const AdminFreeDelivery = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* =================================================================== */}
-        {/* MASTER SWITCH                                                       */}
+        {/* 1. CAMPAIGN MASTER SWITCH                                           */}
         {/* =================================================================== */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider">
-                  Campaign Switch
-                </span>
-                <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                  Enable Free Delivery Campaign
-                </h2>
-              </div>
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
+                Enable Free Delivery Campaign
+              </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Turn on the master switch to configure minimum order purchase and campaign target rules.
+                Turn on the master switch to activate and configure free delivery campaign rules.
               </p>
             </div>
 
@@ -556,27 +540,21 @@ export const AdminFreeDelivery = () => {
               <input
                 type="checkbox"
                 checked={freeDeliveryEnabled}
-                onChange={(e) => {
-                  const val = e.target.checked;
-                  setFreeDeliveryEnabled(val);
-                  if (!val) {
-                    setIsMinOrderConfirmed(false);
-                  }
-                }}
+                onChange={(e) => setFreeDeliveryEnabled(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-14 h-7 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-neutral-700 peer-checked:bg-amber-500 shadow-inner"></div>
               <span className="ml-3 text-sm font-bold text-neutral-800 dark:text-neutral-200">
-                {freeDeliveryEnabled ? "Campaign ON" : "Campaign OFF"}
+                {freeDeliveryEnabled ? "Campaign Active" : "Campaign Disabled"}
               </span>
             </label>
           </div>
 
           {/* =================================================================== */}
-          {/* STEP 1: MINIMUM ORDER AMOUNT (Revealed when Switch is ON)           */}
+          {/* 2. MINIMUM PURCHASE AMOUNT (Revealed when Switch is ON)             */}
           {/* =================================================================== */}
           <AnimatePresence>
-            {isStep1Visible && (
+            {isMinOrderVisible && (
               <motion.div
                 initial={{ opacity: 0, height: 0, y: 10 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -586,24 +564,19 @@ export const AdminFreeDelivery = () => {
               >
                 <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-3.5">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
-                        Step 1
-                      </span>
-                      <label className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                        <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        Minimum Order Purchase Amount (৳)
-                      </label>
-                    </div>
+                    <label className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      Minimum Purchase Amount (৳)
+                    </label>
 
                     <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-md">
-                      {freeDeliveryMinOrder > 0
+                      {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
                         ? `Required: ৳${freeDeliveryMinOrder}+`
                         : "No Minimum (৳0)"}
                     </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="flex items-center">
                     <div className="relative w-full max-w-sm">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
                         ৳
@@ -618,29 +591,17 @@ export const AdminFreeDelivery = () => {
                           setFreeDeliveryMinOrder(
                             val === "" ? "" : Math.max(0, parseFloat(val) || 0)
                           );
-                          setIsMinOrderConfirmed(true);
                         }}
-                        placeholder="0 (No minimum)"
+                        placeholder="0 (Enter 0 for no minimum amount)"
                         className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                       />
                     </div>
-
-                    {!isMinOrderConfirmed && (
-                      <button
-                        type="button"
-                        onClick={() => setIsMinOrderConfirmed(true)}
-                        className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
-                      >
-                        <span>Set & Proceed to Step 2</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
                   </div>
 
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
                     <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
                     <span>
-                      {freeDeliveryMinOrder > 0
+                      {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
                         ? `Customers must order at least ৳${freeDeliveryMinOrder} to unlock free delivery on the selected target criteria below.`
                         : "Enter 0 if any order amount qualifies for free delivery on the selected criteria below."}
                     </span>
@@ -652,10 +613,10 @@ export const AdminFreeDelivery = () => {
         </div>
 
         {/* =================================================================== */}
-        {/* STEP 2: CAMPAIGN TARGET & SCOPE SELECTION (Revealed AFTER Step 1)   */}
+        {/* 3. CAMPAIGN TARGET SCOPE (Revealed AFTER Min Order is entered)      */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {isStep2Visible && (
+          {isTargetScopeVisible && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: 15 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -665,16 +626,11 @@ export const AdminFreeDelivery = () => {
             >
               <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
-                      Step 2
-                    </span>
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                      Select Campaign Target Scope
-                    </h2>
-                  </div>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
+                    Select Campaign Target
+                  </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Choose whether this free delivery promotion applies to Menu/Item-based or Delivery Zone-based orders.
+                    Choose whether this free delivery promotion applies to Menu/Item-based orders or Delivery Zone-based orders.
                   </p>
                 </div>
 
@@ -738,7 +694,7 @@ export const AdminFreeDelivery = () => {
                 </div>
 
                 {/* ============================================================= */}
-                {/* BRANCH A: MENU / ITEM BASED CONFIG                            */}
+                {/* MENU / ITEM BASED SUB-OPTIONS                                 */}
                 {/* ============================================================= */}
                 {campaignMode === "items" && (
                   <motion.div
@@ -749,7 +705,7 @@ export const AdminFreeDelivery = () => {
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                        Choose Item Scope:
+                        Choose Item Target:
                       </span>
                     </div>
 
@@ -1059,7 +1015,7 @@ export const AdminFreeDelivery = () => {
                 )}
 
                 {/* ============================================================= */}
-                {/* BRANCH B: ZONE / AREA BASED CONFIG                            */}
+                {/* ZONE / AREA BASED SUB-OPTIONS                                 */}
                 {/* ============================================================= */}
                 {campaignMode === "zones" && (
                   <motion.div
@@ -1070,7 +1026,7 @@ export const AdminFreeDelivery = () => {
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-                        Choose Zone Scope:
+                        Choose Zone Target:
                       </span>
                     </div>
 
@@ -1209,10 +1165,10 @@ export const AdminFreeDelivery = () => {
         </AnimatePresence>
 
         {/* =================================================================== */}
-        {/* STEP 3: HEADER TICKER & BANNER (Revealed AFTER Step 2)              */}
+        {/* 4. HEADER TICKER & ANNOUNCEMENT BANNER                              */}
         {/* =================================================================== */}
         <AnimatePresence>
-          {isStep3Visible && (
+          {isBannerVisible && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: 15 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -1223,14 +1179,9 @@ export const AdminFreeDelivery = () => {
               <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] uppercase tracking-wider">
-                        Step 3
-                      </span>
-                      <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
-                        Header Ticker & Announcement Banner
-                      </h2>
-                    </div>
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 font-display">
+                      Header Ticker & Announcement Banner
+                    </h2>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
                       Choose whether the promotional banner is visible or hidden, and customize the marquee announcement ticker text.
                     </p>
@@ -1284,7 +1235,7 @@ export const AdminFreeDelivery = () => {
                             previewEnabled={freeDeliveryEnabled}
                             previewText={freeDeliveryBannerText}
                             previewScope={computedScope}
-                            previewMinOrder={freeDeliveryMinOrder}
+                            previewMinOrder={Number(freeDeliveryMinOrder) || 0}
                           />
                         </div>
                       </div>
@@ -1306,7 +1257,7 @@ export const AdminFreeDelivery = () => {
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 Configured:{" "}
                 <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                  {freeDeliveryMinOrder > 0
+                  {freeDeliveryMinOrder !== "" && Number(freeDeliveryMinOrder) > 0
                     ? `৳${freeDeliveryMinOrder}+ Min Order`
                     : "No Min"}
                 </span>{" "}
