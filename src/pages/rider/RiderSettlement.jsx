@@ -464,13 +464,13 @@ export const RiderSettlement = () => {
                         </div>
                       </div>
 
-                      {/* Orders Grid */}
+                      {/* Orders List (Single full-width row per order) */}
                       {filteredDayOrders.length === 0 ? (
                         <p className="text-xs text-neutral-400 italic py-4 text-center">
                           No orders matching this filter for this date.
                         </p>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                        <div className="space-y-2.5">
                           {filteredDayOrders.map((ord, oIdx) => {
                             const isDelivered = ord.status === "Delivered";
                             const isRejected = ord.status === "Rejected";
@@ -526,113 +526,91 @@ export const RiderSettlement = () => {
                             return (
                               <div
                                 key={oIdx}
-                                className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                                className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 ${
                                   isOrderSettledByAdmin
-                                    ? "bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-200/80 dark:border-emerald-900/40"
+                                    ? "bg-emerald-50/20 dark:bg-emerald-950/10 border-emerald-200/70 dark:border-emerald-900/30"
                                     : !isOnlinePrepaid && isDelivered
-                                      ? "bg-amber-50/30 dark:bg-amber-950/10 border-amber-200/80 dark:border-amber-900/40"
-                                      : "bg-neutral-50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800"
-                                } shadow-2xs`}
+                                      ? "bg-amber-50/20 dark:bg-amber-950/10 border-amber-200/70 dark:border-amber-900/30"
+                                      : "bg-neutral-50/50 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800"
+                                } shadow-2xs hover:shadow-xs`}
                               >
-                                {/* Card Top: Order Number + Delivered Time + Delivery Status */}
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-black text-xs text-neutral-900 dark:text-white">
-                                      #{String(ord._id || ord.id).slice(-6).toUpperCase()}
-                                    </span>
+                                {/* Left Col: Order ID + Status + Customer + Location */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 xl:w-2/5 min-w-0">
+                                  <div className="shrink-0 space-y-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-black text-xs text-neutral-900 dark:text-white font-mono bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md">
+                                        #{String(ord._id || ord.id).slice(-6).toUpperCase()}
+                                      </span>
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                          isDelivered
+                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                            : "bg-red-500/10 text-red-500 border border-red-500/20"
+                                        }`}
+                                      >
+                                        {ord.status}
+                                      </span>
+                                    </div>
                                     {timeStr && (
-                                      <span className="text-[10px] text-neutral-400 font-medium">
-                                        • {timeStr}
+                                      <span className="text-[10px] text-neutral-400 font-medium block">
+                                        {timeStr}
                                       </span>
                                     )}
                                   </div>
 
-                                  <span
-                                    className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
-                                      isDelivered
-                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                        : "bg-red-500/10 text-red-500 border border-red-500/20"
-                                    }`}
-                                  >
-                                    {ord.status}
-                                  </span>
+                                  {/* Customer info & Delivery Address */}
+                                  <div className="min-w-0 flex-1 space-y-0.5 text-xs">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-bold text-neutral-900 dark:text-white truncate">
+                                        {ord.user?.name || ord.customerName || "Customer"}
+                                      </span>
+                                      <span className="text-neutral-400 font-mono text-[10px]">
+                                        {ord.user?.phone || ord.deliveryPhone || "N/A"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400 text-[11px]">
+                                      <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                                      <span className="truncate">
+                                        {ord.deliveryAddress || ord.deliveryArea || "No address provided"}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
 
-                                {/* 🎯 INDIVIDUAL ORDER ADMIN PAYMENT STATUS BADGE */}
-                                <div className="pt-0.5">
+                                {/* Center: Payment Method & Admin Settlement Status Badge */}
+                                <div className="shrink-0 xl:w-1/4">
                                   {isRejected ? (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 text-[10px] font-bold">
-                                      <XCircle className="w-3.5 h-3.5 text-red-500" />
-                                      <span>Order Cancelled / Rejected (৳0 Cash)</span>
+                                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 text-[10px] font-bold">
+                                      <XCircle className="w-3 h-3 text-red-500" />
+                                      <span>Cancelled / Rejected (৳0 Cash)</span>
                                     </div>
                                   ) : isOnlinePrepaid ? (
-                                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-bold">
-                                      <span className="flex items-center gap-1.5">
-                                        <CreditCard className="w-3.5 h-3.5 text-purple-600" />
-                                        <span>Online Paid (No Cash to Pay Admin)</span>
-                                      </span>
-                                      <span className="px-1.5 py-0.2 rounded bg-purple-200/60 dark:bg-purple-900/60 text-[9px]">
-                                        Prepaid
-                                      </span>
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-bold">
+                                      <CreditCard className="w-3.5 h-3.5 text-purple-600" />
+                                      <span>Online Paid (No Cash)</span>
                                     </div>
                                   ) : isOrderSettledByAdmin ? (
-                                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-[10px] font-bold">
-                                      <span className="flex items-center gap-1.5">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span>Paid to Admin (Settled)</span>
-                                      </span>
-                                      <span className="px-1.5 py-0.2 rounded bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[9px] font-black">
-                                        PAID ✓
-                                      </span>
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-[10px] font-bold">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>Paid to Admin (Settled ✓)</span>
                                     </div>
                                   ) : isOrderSubmittedToAdmin ? (
-                                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
-                                      <span className="flex items-center gap-1.5">
-                                        <Clock3 className="w-3.5 h-3.5 text-blue-600" />
-                                        <span>Cash Handover Submitted</span>
-                                      </span>
-                                      <span className="px-1.5 py-0.2 rounded bg-blue-200/60 dark:bg-blue-900/60 text-[9px]">
-                                        Awaiting Admin
-                                      </span>
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                                      <Clock3 className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>Submitted • Awaiting Admin</span>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[10px] font-bold">
-                                      <span className="flex items-center gap-1.5">
-                                        <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                                        <span>Cash Pending to Pay Admin</span>
-                                      </span>
-                                      <span className="px-1.5 py-0.2 rounded bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-100 text-[9px] font-black">
-                                        UNPAID
-                                      </span>
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[10px] font-bold">
+                                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>Pending to Pay Admin (Due)</span>
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Customer & Delivery Location Details */}
-                                <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-1 bg-white/70 dark:bg-neutral-900/70 p-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="font-bold truncate text-neutral-800 dark:text-neutral-100">
-                                      {ord.user?.name || ord.customerName || "Customer"}
-                                    </span>
-                                    <span className="text-neutral-400 font-mono text-[10px]">
-                                      {ord.user?.phone || ord.deliveryPhone || "N/A"}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-start gap-1.5 pt-0.5 text-neutral-500 dark:text-neutral-400">
-                                    <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                                    <span className="text-[10px] leading-tight line-clamp-2">
-                                      {ord.deliveryAddress ||
-                                        ord.deliveryArea ||
-                                        "No address provided"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Individual Order Money Matrix */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] pt-1.5 border-t border-neutral-200/60 dark:border-neutral-800 font-medium">
+                                {/* Right: Inline Financial Figures */}
+                                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-5 text-xs pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-100 dark:border-neutral-800">
                                   <div>
-                                    <span className="text-neutral-400 text-[9px] block">
+                                    <span className="text-neutral-400 text-[9px] block font-semibold uppercase">
                                       Order Total
                                     </span>
                                     <span className="font-bold text-neutral-900 dark:text-white">
@@ -641,37 +619,31 @@ export const RiderSettlement = () => {
                                   </div>
 
                                   <div>
-                                    <span className="text-neutral-400 text-[9px] block">
-                                      {ord.riderEmploymentType === "freelance"
-                                        ? "Your Commission"
-                                        : "Employment Model"}
+                                    <span className="text-neutral-400 text-[9px] block font-semibold uppercase">
+                                      {ord.riderEmploymentType === "freelance" ? "Commission" : "Model"}
                                     </span>
-                                    <span className="font-black text-emerald-600 dark:text-emerald-400">
+                                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                                       {ord.riderEmploymentType === "freelance"
                                         ? `+৳${commission.toFixed(2)} (${ord.riderCommissionRate || 15}%)`
-                                        : "Permanent Staff (Salary)"}
+                                        : "Permanent (Salary)"}
                                     </span>
                                   </div>
 
                                   <div>
-                                    <span className="text-neutral-400 text-[9px] block">
-                                      Collected Cash (COD)
+                                    <span className="text-neutral-400 text-[9px] block font-semibold uppercase">
+                                      Cash Collected
                                     </span>
                                     <span
                                       className={`font-black ${
-                                        cash > 0
-                                          ? "text-rose-500"
-                                          : "text-neutral-400"
+                                        cash > 0 ? "text-rose-500" : "text-neutral-400"
                                       }`}
                                     >
-                                      {cash > 0
-                                        ? `৳${cash.toFixed(2)}`
-                                        : "৳0.00 (Online)"}
+                                      {cash > 0 ? `৳${cash.toFixed(2)}` : "৳0.00"}
                                     </span>
                                   </div>
 
                                   <div>
-                                    <span className="text-neutral-400 text-[9px] block">
+                                    <span className="text-neutral-400 text-[9px] block font-semibold uppercase">
                                       Admin Received
                                     </span>
                                     <span
@@ -681,15 +653,13 @@ export const RiderSettlement = () => {
                                           : "text-neutral-400"
                                       }`}
                                     >
-                                      {isOrderSettledByAdmin
-                                        ? `৳${orderPayable.toFixed(2)} ✓`
-                                        : "৳0.00"}
+                                      {isOrderSettledByAdmin ? `৳${orderPayable.toFixed(2)} ✓` : "৳0.00"}
                                     </span>
                                   </div>
 
-                                  <div className="sm:col-span-2 text-right sm:text-left">
-                                    <span className="text-neutral-400 text-[9px] block">
-                                      Payable to Admin (Due)
+                                  <div>
+                                    <span className="text-neutral-400 text-[9px] block font-semibold uppercase">
+                                      Payable (Due)
                                     </span>
                                     <span
                                       className={`font-black ${
@@ -700,7 +670,7 @@ export const RiderSettlement = () => {
                                     >
                                       {!isOrderSettledByAdmin && orderPayable > 0
                                         ? `৳${orderPayable.toFixed(2)}`
-                                        : "৳0.00 (Settled)"}
+                                        : "৳0.00"}
                                     </span>
                                   </div>
                                 </div>
