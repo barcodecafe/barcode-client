@@ -415,23 +415,24 @@ export const AdminBranches = () => {
         </div>
       </motion.div>
 
-      {/* 🎯 Ultra-wide responsive container */}
+      {/* 🎯 Ultra-wide responsive container based on index.css breakpoints */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : search.trim() ? (
         /* Search Filtered List (Static View) */
-        <div className="flex flex-col gap-3.5 max-w-4xl">
+        <div className="flex flex-col gap-3.5 w-full max-w-4xl 2xl:max-w-5xl 3xl:max-w-6xl">
           {filtered.map((branch) => {
             const rev = revenueMap[branch.id];
             return (
               <div
                 key={String(branch.id || branch._id)}
-                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden flex flex-col sm:flex-row items-stretch justify-between select-none"
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:h-28 md:sm:h-32 select-none"
               >
-                <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
-                  <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center flex-1 min-w-0 h-full">
+                  {/* Image & Badges */}
+                  <div className="relative w-full sm:w-44 md:w-52 lg:w-56 h-36 sm:h-full shrink-0 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
                     <img
                       src={branch.image}
                       alt={branch.name}
@@ -445,48 +446,48 @@ export const AdminBranches = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
-                    <h3 className="font-display font-bold text-base sm:text-lg text-neutral-800 dark:text-neutral-100 truncate">
+                  {/* Branch Main Details */}
+                  <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center space-y-1 overflow-hidden">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 truncate">
                       {branch.name}
                     </h3>
-                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
                       <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500" />
                       <span className="truncate">{branch.location}</span>
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-primary-500" />
-                        {branch.contact}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                      <span className="flex items-center gap-1 truncate">
+                        <Phone className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                        <span className="truncate">{branch.contact}</span>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-primary-500" />
-                        {branch.hours}
+                      <span className="flex items-center gap-1 truncate">
+                        <Clock className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                        <span className="truncate">{branch.hours}</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 sm:p-5 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
-                  {rev && (
-                    <div className="text-left sm:text-right">
-                      <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
-                      <span className="text-sm sm:text-base font-extrabold text-neutral-800 dark:text-neutral-100">
-                        ৳{rev.revenue?.toLocaleString() || 0}
-                      </span>
-                    </div>
-                  )}
+                {/* Revenue & Action Buttons */}
+                <div className="p-3.5 sm:p-4 flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0 sm:w-36 md:w-44 text-right">
+                  <div className="text-left sm:text-right">
+                    <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-800 dark:text-neutral-100">
+                      ৳{(rev?.revenue || 0).toLocaleString()}
+                    </span>
+                  </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openEditModal(branch)}
-                      className="p-2 sm:p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
                       title="Edit Branch"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteClick(branch.id, branch.name)}
-                      className="p-2 sm:p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
                       title="Delete Branch"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -503,7 +504,7 @@ export const AdminBranches = () => {
           axis="y"
           values={branches}
           onReorder={handleBranchReorder}
-          className="flex flex-col gap-3.5 max-w-4xl"
+          className="flex flex-col gap-3.5 w-full max-w-4xl 2xl:max-w-5xl 3xl:max-w-6xl"
         >
           {branches.map((branch) => {
             const rev = revenueMap[branch.id];
@@ -511,11 +512,11 @@ export const AdminBranches = () => {
               <Reorder.Item
                 key={String(branch.id || branch._id)}
                 value={branch}
-                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:h-28 md:sm:h-32 cursor-grab active:cursor-grabbing select-none"
               >
-                <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center flex-1 min-w-0 h-full">
                   {/* Image & Grip */}
-                  <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
+                  <div className="relative w-full sm:w-44 md:w-52 lg:w-56 h-36 sm:h-full shrink-0 bg-neutral-100 dark:bg-neutral-950 overflow-hidden">
                     <img
                       src={branch.image}
                       alt={branch.name}
@@ -535,51 +536,49 @@ export const AdminBranches = () => {
                   </div>
 
                   {/* Branch Main Details */}
-                  <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
-                    <h3 className="font-display font-bold text-base sm:text-lg text-neutral-800 dark:text-neutral-100 truncate">
+                  <div className="p-3.5 sm:p-4 flex-1 min-w-0 flex flex-col justify-center space-y-1 overflow-hidden">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 truncate">
                       {branch.name}
                     </h3>
 
-                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
                       <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500" />
                       <span className="truncate">{branch.location}</span>
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-primary-500" />
-                        {branch.contact}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                      <span className="flex items-center gap-1 truncate">
+                        <Phone className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                        <span className="truncate">{branch.contact}</span>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-primary-500" />
-                        {branch.hours}
+                      <span className="flex items-center gap-1 truncate">
+                        <Clock className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                        <span className="truncate">{branch.hours}</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Revenue & Action Buttons */}
-                <div className="p-4 sm:p-5 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
-                  {rev && (
-                    <div className="text-left sm:text-right">
-                      <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
-                      <span className="text-sm sm:text-base font-extrabold text-neutral-800 dark:text-neutral-100">
-                        ৳{rev.revenue?.toLocaleString() || 0}
-                      </span>
-                    </div>
-                  )}
+                <div className="p-3.5 sm:p-4 flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-2 shrink-0 sm:w-36 md:w-44 text-right">
+                  <div className="text-left sm:text-right">
+                    <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-800 dark:text-neutral-100">
+                      ৳{(rev?.revenue || 0).toLocaleString()}
+                    </span>
+                  </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openEditModal(branch)}
-                      className="p-2 sm:p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
                       title="Edit Branch"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteClick(branch.id, branch.name)}
-                      className="p-2 sm:p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
                       title="Delete Branch"
                     >
                       <Trash2 className="w-4 h-4" />
