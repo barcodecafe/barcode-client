@@ -143,38 +143,20 @@ export const AdminBranches = () => {
     );
   }, [branches, search]);
 
-  // [SORTING-FIX] Filtered list reorder fix + API fail rollback + Fast Debounce + Order-change guard
-  const handleBranchReorder = (reorderedBranches) => {
-    const isSearching = search.trim().length > 0;
-    let merged = reorderedBranches;
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Brands-এর মতো হুবহু মসৃণ Optimistic UI + Debounced Server Sync)
+  const handleBranchReorder = (newBranches) => {
+    setBranches(newBranches);
 
-    if (isSearching) {
-      const reorderedIds = new Set(reorderedBranches.map((b) => b.id || b._id));
-      const untouched = branches.filter((b) => !reorderedIds.has(b.id || b._id));
-      merged = [...reorderedBranches, ...untouched];
-    }
-
-    // 🎯 1. Order changed check: if identical, do nothing (prevents "Order saved" on initial render!)
-    const currentIds = branches.map((b) => b.id || b._id).join(",");
-    const newIds = merged.map((b) => b.id || b._id).join(",");
-    if (currentIds === newIds) {
-      return;
-    }
-
-    const previousBranches = branches;
-    setBranches(merged);
-
-    const orderedIds = merged.map((b) => {
+    const orderedIds = newBranches.map((b) => {
       const rawId = b.id !== undefined && b.id !== null ? b.id : b._id;
       const numId = Number(rawId);
       return Number.isFinite(numId) ? numId : rawId;
     });
     latestOrderedIdsRef.current = orderedIds;
 
-    setOrderSyncStatus("saving");
-
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
     reorderTimeoutRef.current = setTimeout(async () => {
+      setOrderSyncStatus("saving");
       try {
         await updateBranchOrder(orderedIds);
         setOrderSyncStatus("saved");
@@ -183,9 +165,8 @@ export const AdminBranches = () => {
       } catch (err) {
         console.error("Background sync error for branch order:", err);
         setOrderSyncStatus("error");
-        setBranches(previousBranches);
       }
-    }, 250);
+    }, 300);
   };
 
   const openAddModal = () => {
@@ -427,20 +408,97 @@ export const AdminBranches = () => {
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : search.trim() ? (
+        /* Search Filtered List (Static View) */
+        <div className="flex flex-col gap-3.5 max-w-4xl">
+          {filtered.map((branch) => {
+            const rev = revenueMap[branch.id];
+            return (
+              <div
+                key={String(branch.id || branch._id)}
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden flex flex-col sm:flex-row items-stretch justify-between select-none"
+              >
+                <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
+                  <div className="relative w-full sm:w-48 lg:w-56 h-32 sm:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-950">
+                    <img
+                      src={branch.image}
+                      alt={branch.name}
+                      className="w-full h-full object-cover pointer-events-none"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-neutral-900/50 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-2 left-2.5 flex items-center gap-1 text-amber-400 text-xs font-semibold bg-neutral-900/70 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                      <Star className="w-3 h-3 fill-current" />
+                      {branch.rating}
+                    </div>
+                  </div>
+
+                  <div className="p-4 sm:p-5 flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
+                    <h3 className="font-display font-bold text-base sm:text-lg text-neutral-800 dark:text-neutral-100 truncate">
+                      {branch.name}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500" />
+                      <span className="truncate">{branch.location}</span>
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-primary-500" />
+                        {branch.contact}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-primary-500" />
+                        {branch.hours}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5 sm:pl-0 flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-neutral-100 dark:border-neutral-800/80 gap-3 shrink-0">
+                  {rev && (
+                    <div className="text-left sm:text-right">
+                      <span className="block text-[10px] uppercase font-bold text-neutral-400">Revenue</span>
+                      <span className="text-sm sm:text-base font-extrabold text-neutral-800 dark:text-neutral-100">
+                        ৳{rev.revenue?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(branch)}
+                      className="p-2 sm:p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+                      title="Edit Branch"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(branch.id, branch.name)}
+                      className="p-2 sm:p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 transition-colors cursor-pointer"
+                      title="Delete Branch"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* 🎯 ১ কলামে সিঙ্গেল লিস্টে স্মুথ ড্র্যাগ অ্যান্ড ড্রপ Reorder.Group (Brands-এর মতো হুবহু) */
         <Reorder.Group
           axis="y"
-          values={search.trim() ? filtered : branches}
+          values={branches}
           onReorder={handleBranchReorder}
           className="flex flex-col gap-3.5 max-w-4xl"
         >
-          {(search.trim() ? filtered : branches).map((branch) => {
+          {branches.map((branch) => {
             const rev = revenueMap[branch.id];
             return (
               <Reorder.Item
                 key={String(branch.id || branch._id)}
                 value={branch}
-                style={{ position: "relative", touchAction: "none" }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col sm:flex-row items-stretch justify-between cursor-grab active:cursor-grabbing select-none"
               >
                 <div className="flex flex-col sm:flex-row items-stretch flex-1 min-w-0">
