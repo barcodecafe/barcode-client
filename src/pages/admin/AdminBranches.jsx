@@ -76,10 +76,11 @@ export const AdminBranches = () => {
   });
   const [formError, setFormError] = useState("");
   const [mapLinkInput, setMapLinkInput] = useState("");
+  const isSelfReorderingRef = useRef(false);
 
-  const fetchBranchesData = useCallback(async () => {
+  const fetchBranchesData = useCallback(async (showLoading = false) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const [branchData, revenueData, regionData, brandData] = await Promise.all([
         getAllBranches().catch(() => []),
         getRevenueByBranch().catch(() => []),
@@ -109,12 +110,14 @@ export const AdminBranches = () => {
   }, []);
 
   useEffect(() => {
-    fetchBranchesData();
+    fetchBranchesData(true);
 
-    // ⚡ Real-Time WebSocket Listener for branches
+    // ⚡ Real-Time WebSocket Listener for branches (Silent background sync)
     const handleBranchesSync = () => {
+      // If we ourselves just reordered, ignore the echo socket event to prevent visual reloads
+      if (isSelfReorderingRef.current) return;
       if (orderSyncStatus === "idle") {
-        fetchBranchesData();
+        fetchBranchesData(false);
       }
     };
 
@@ -145,6 +148,7 @@ export const AdminBranches = () => {
 
   // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Brands-এর মতো হুবহু মসৃণ Optimistic UI + Debounced Server Sync)
   const handleBranchReorder = (newBranches) => {
+    isSelfReorderingRef.current = true;
     setBranches(newBranches);
 
     const orderedIds = newBranches.map((b) => {
@@ -161,10 +165,14 @@ export const AdminBranches = () => {
         await updateBranchOrder(orderedIds);
         setOrderSyncStatus("saved");
         latestOrderedIdsRef.current = [];
-        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+        setTimeout(() => {
+          setOrderSyncStatus("idle");
+          isSelfReorderingRef.current = false;
+        }, 2500);
       } catch (err) {
         console.error("Background sync error for branch order:", err);
         setOrderSyncStatus("error");
+        isSelfReorderingRef.current = false;
       }
     }, 300);
   };

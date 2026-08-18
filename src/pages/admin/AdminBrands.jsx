@@ -29,6 +29,7 @@ export const AdminBrands = () => {
   const coverInputRef = useRef(null);
   const reorderTimeoutRef = useRef(null);
   const latestOrderedIdsRef = useRef([]);
+  const isSelfReorderingRef = useRef(false);
 
   const load = () => {
     getAllBrandsAdmin()
@@ -47,7 +48,7 @@ export const AdminBrands = () => {
 
     // ⚡ Socket listener for real-time brand updates
     const handleBrandsSync = () => {
-      // Only reload if we are not actively in the middle of reordering
+      if (isSelfReorderingRef.current) return;
       if (orderSyncStatus === "idle") {
         load();
       }
@@ -69,16 +70,11 @@ export const AdminBrands = () => {
     };
   }, [orderSyncStatus]);
 
-  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Fast Sync + Rollback Protection + Order Guard)
+  // 🎯 ইনস্ট্যান্ট ড্র্যাগ অ্যান্ড ড্রপ হ্যান্ডলার (Optimistic UI + Debounced Server Sync)
   const handleBrandReorder = (reorderedBrands) => {
-    const currentIds = brands.map((b) => b.id || b._id).join(",");
-    const newIds = reorderedBrands.map((b) => b.id || b._id).join(",");
-    if (currentIds === newIds) {
-      return; // Order didn't change, avoid redundant saves & false badges
-    }
-
-    const previousBrands = brands;
+    isSelfReorderingRef.current = true;
     setBrands(reorderedBrands);
+
     const orderedIds = reorderedBrands.map((b) => {
       const rawId = b.id !== undefined && b.id !== null ? b.id : b._id;
       const numId = Number(rawId);
@@ -86,21 +82,23 @@ export const AdminBrands = () => {
     });
     latestOrderedIdsRef.current = orderedIds;
 
-    setOrderSyncStatus("saving");
-
     if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
     reorderTimeoutRef.current = setTimeout(async () => {
+      setOrderSyncStatus("saving");
       try {
         await updateBrandOrder(orderedIds);
         setOrderSyncStatus("saved");
         latestOrderedIdsRef.current = [];
-        setTimeout(() => setOrderSyncStatus("idle"), 2500);
+        setTimeout(() => {
+          setOrderSyncStatus("idle");
+          isSelfReorderingRef.current = false;
+        }, 2500);
       } catch (err) {
         console.error("Failed to sync brand order on server:", err);
         setOrderSyncStatus("error");
-        setBrands(previousBrands);
+        isSelfReorderingRef.current = false;
       }
-    }, 250);
+    }, 300);
   };
 
   const openCreate = () => { setEditing(null); setForm(BLANK); setIsModalOpen(true); };
