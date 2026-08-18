@@ -13,6 +13,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
 import { getFoodsByBranch, getPopularFoods, applyFoodDiscount, hasFoodDiscount } from "../services/foodsService";
+import { socket } from "../services/socket";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import FoodCard from "../components/FoodCard";
@@ -70,18 +71,50 @@ export const Menu = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    setLoading(true);
-    if (popularOnly) {
-      getPopularFoods(100)
-        .then((data) => setFoods(Array.isArray(data) ? data : []))
-        .catch(() => setFoods([]))
-        .finally(() => setLoading(false));
-    } else {
-      getFoodsByBranch(null)
-        .then((data) => setFoods(Array.isArray(data) ? data : []))
-        .catch(() => setFoods([]))
-        .finally(() => setLoading(false));
-    }
+    let isMounted = true;
+
+    const fetchMenuFoods = (showLoader = true) => {
+      if (showLoader) setLoading(true);
+      if (popularOnly) {
+        getPopularFoods(100)
+          .then((data) => {
+            if (isMounted) setFoods(Array.isArray(data) ? data : []);
+          })
+          .catch(() => {
+            if (isMounted) setFoods([]);
+          })
+          .finally(() => {
+            if (isMounted) setLoading(false);
+          });
+      } else {
+        getFoodsByBranch(null)
+          .then((data) => {
+            if (isMounted) setFoods(Array.isArray(data) ? data : []);
+          })
+          .catch(() => {
+            if (isMounted) setFoods([]);
+          })
+          .finally(() => {
+            if (isMounted) setLoading(false);
+          });
+      }
+    };
+
+    fetchMenuFoods(true);
+
+    // ⚡ Real-Time WebSocket Listeners for instant zero-refresh menu updates
+    const handleMenuSync = () => {
+      fetchMenuFoods(false);
+    };
+
+    socket.on("foods_updated", handleMenuSync);
+    socket.on("categories_updated", handleMenuSync);
+
+    return () => {
+      isMounted = false;
+      socket.off("foods_updated", handleMenuSync);
+      socket.off("categories_updated", handleMenuSync);
+    };
   }, [popularOnly]);
 
   const categories = useMemo(() => {

@@ -16,6 +16,7 @@ import {
   getAllFoods,
   applyFoodDiscount,
 } from "../services/foodsService";
+import { socket } from "../services/socket";
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -44,18 +45,63 @@ export const Brands = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
-    Promise.all([getAllBrands(), getAllBranches(), getAllFoods()])
-      .then(([b, br, f]) => {
-        // 🎯 ১. এডমিনের সেট করা ব্র্যান্ডের কাস্টম ড্র্যাগ অর্ডার বজায় রাখা
+    let isMounted = true;
+
+    const loadData = () => {
+      Promise.all([getAllBrands(), getAllBranches(), getAllFoods()])
+        .then(([b, br, f]) => {
+          if (!isMounted) return;
+          // 🎯 ১. এডমিনের সেট করা ব্র্যান্ডের কাস্টম ড্র্যাগ অর্ডার বজায় রাখা
+          const sortedBrands = Array.isArray(b)
+            ? [...b].sort((x, y) => (x.order ?? 999) - (y.order ?? 999))
+            : [];
+
+          setBrands(sortedBrands);
+          setBranches(br || []);
+          setAllFoods(f || []);
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    };
+
+    loadData();
+
+    // ⚡ Real-Time WebSocket Listeners
+    const handleBrandsUpdated = () => {
+      getAllBrands().then((b) => {
+        if (!isMounted) return;
         const sortedBrands = Array.isArray(b)
           ? [...b].sort((x, y) => (x.order ?? 999) - (y.order ?? 999))
           : [];
-
         setBrands(sortedBrands);
+      }).catch(() => {});
+    };
+
+    const handleBranchesUpdated = () => {
+      getAllBranches().then((br) => {
+        if (!isMounted) return;
         setBranches(br || []);
+      }).catch(() => {});
+    };
+
+    const handleFoodsUpdated = () => {
+      getAllFoods().then((f) => {
+        if (!isMounted) return;
         setAllFoods(f || []);
-      })
-      .finally(() => setLoading(false));
+      }).catch(() => {});
+    };
+
+    socket.on("brands_updated", handleBrandsUpdated);
+    socket.on("branches_updated", handleBranchesUpdated);
+    socket.on("foods_updated", handleFoodsUpdated);
+
+    return () => {
+      isMounted = false;
+      socket.off("brands_updated", handleBrandsUpdated);
+      socket.off("branches_updated", handleBranchesUpdated);
+      socket.off("foods_updated", handleFoodsUpdated);
+    };
   }, []);
 
   const branchCountByBrand = useMemo(() => {

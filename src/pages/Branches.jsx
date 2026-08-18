@@ -7,6 +7,7 @@ import { MapPin, Phone, ArrowRight, ChevronDown } from 'lucide-react';
 import { getAllBranches } from '../services/branchesService';
 import { getAllRegions } from '../services/regionsService';
 import { getAllFoods, applyFoodDiscount } from '../services/foodsService';
+import { socket } from '../services/socket';
 
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -37,17 +38,48 @@ export const Branches = () => {
 
   // 🚀 ১. সমান্তরাল নন-ব্লকিং ডাটা লোডিং (Superfast Parallel Request Processing)
   useEffect(() => {
+    let isMounted = true;
     setIsLoading(true);
-    Promise.all([
-      getAllBranches().catch(() => []),
-      getAllRegions().catch(() => []),
-      getAllFoods().catch(() => []),
-    ]).then(([branchData, regionData, foodsData]) => {
-      setBranches(Array.isArray(branchData) ? branchData : []);
-      setRegions(Array.isArray(regionData) ? regionData : []);
-      setAllFoods(Array.isArray(foodsData) ? foodsData : []);
-      setIsLoading(false);
-    });
+
+    const loadData = () => {
+      Promise.all([
+        getAllBranches().catch(() => []),
+        getAllRegions().catch(() => []),
+        getAllFoods().catch(() => []),
+      ]).then(([branchData, regionData, foodsData]) => {
+        if (!isMounted) return;
+        setBranches(Array.isArray(branchData) ? branchData : []);
+        setRegions(Array.isArray(regionData) ? regionData : []);
+        setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+        setIsLoading(false);
+      });
+    };
+
+    loadData();
+
+    // ⚡ Real-Time WebSocket Listeners
+    const handleBranchesUpdated = () => {
+      getAllBranches().then((branchData) => {
+        if (!isMounted) return;
+        setBranches(Array.isArray(branchData) ? branchData : []);
+      }).catch(() => {});
+    };
+
+    const handleFoodsUpdated = () => {
+      getAllFoods().then((foodsData) => {
+        if (!isMounted) return;
+        setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+      }).catch(() => {});
+    };
+
+    socket.on('branches_updated', handleBranchesUpdated);
+    socket.on('foods_updated', handleFoodsUpdated);
+
+    return () => {
+      isMounted = false;
+      socket.off('branches_updated', handleBranchesUpdated);
+      socket.off('foods_updated', handleFoodsUpdated);
+    };
   }, []);
 
   // Filters branches by selected region (by regionId)

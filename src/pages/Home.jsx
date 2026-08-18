@@ -21,6 +21,7 @@ import {
 } from "../services/foodsService";
 import { getAllSlides } from "../services/heroSlidesService";
 import { getAllBrands } from "../services/brandsService";
+import { socket } from "../services/socket";
 
 // 💡 Global FoodCard Import
 import FoodCard from "../components/FoodCard";
@@ -53,30 +54,79 @@ export const Home = () => {
     let isMounted = true;
     setIsLoading(true);
 
-    Promise.all([
-      getAllBrands().catch(() => []),
-      getAllBranches().catch(() => []),
-      getAllSlides().catch(() => []),
-      getAllFoods().catch(() => []),
-    ]).then(([brandsData, branchesData, slidesData, foodsData]) => {
-      if (!isMounted) return;
+    const loadAllData = () => {
+      Promise.all([
+        getAllBrands().catch(() => []),
+        getAllBranches().catch(() => []),
+        getAllSlides().catch(() => []),
+        getAllFoods().catch(() => []),
+      ]).then(([brandsData, branchesData, slidesData, foodsData]) => {
+        if (!isMounted) return;
 
-      const sortedBrands = Array.isArray(brandsData)
-        ? [...brandsData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
-        : [];
-      setBrands(sortedBrands);
-      
-      const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
-      setAllBranches(sortedBranches);
-      setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
+        const sortedBrands = Array.isArray(brandsData)
+          ? [...brandsData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+          : [];
+        setBrands(sortedBrands);
 
-      setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
-      setAllFoods(Array.isArray(foodsData) ? foodsData : []);
-      setIsLoading(false);
-    });
+        const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
+        setAllBranches(sortedBranches);
+        setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
+
+        setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
+        setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+        setIsLoading(false);
+      });
+    };
+
+    loadAllData();
+
+    // ⚡ Real-Time WebSocket Listeners for zero-refresh dynamic live sync
+    const handleBrandsUpdated = () => {
+      getAllBrands().then((brandsData) => {
+        if (!isMounted) return;
+        const sortedBrands = Array.isArray(brandsData)
+          ? [...brandsData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+          : [];
+        setBrands(sortedBrands);
+      }).catch(() => {});
+    };
+
+    const handleBranchesUpdated = () => {
+      getAllBranches().then((branchesData) => {
+        if (!isMounted) return;
+        const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
+        setAllBranches(sortedBranches);
+        setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
+      }).catch(() => {});
+    };
+
+    const handleFoodsUpdated = () => {
+      getAllFoods().then((foodsData) => {
+        if (!isMounted) return;
+        setAllFoods(Array.isArray(foodsData) ? foodsData : []);
+      }).catch(() => {});
+    };
+
+    const handleSlidesUpdated = () => {
+      getAllSlides().then((slidesData) => {
+        if (!isMounted) return;
+        setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
+      }).catch(() => {});
+    };
+
+    socket.on("brands_updated", handleBrandsUpdated);
+    socket.on("branches_updated", handleBranchesUpdated);
+    socket.on("foods_updated", handleFoodsUpdated);
+    socket.on("categories_updated", handleFoodsUpdated);
+    socket.on("slides_updated", handleSlidesUpdated);
 
     return () => {
       isMounted = false;
+      socket.off("brands_updated", handleBrandsUpdated);
+      socket.off("branches_updated", handleBranchesUpdated);
+      socket.off("foods_updated", handleFoodsUpdated);
+      socket.off("categories_updated", handleFoodsUpdated);
+      socket.off("slides_updated", handleSlidesUpdated);
     };
   }, []);
 
