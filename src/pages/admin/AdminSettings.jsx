@@ -494,17 +494,15 @@ export const AdminSettings = () => {
 
           <div className="space-y-4 pt-2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className={`w-full sm:w-64 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs ${
-                paymentBannerFit === "cover" ? "h-20" : "h-auto"
-              }`}>
+              <div className="h-20 w-full sm:w-64 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
                 <img
                   src={paymentBanner || sslBanner}
                   alt="Payment banner preview"
-                  className={`w-full ${
+                  className={
                     paymentBannerFit === "cover"
-                      ? "h-full object-cover"
-                      : "h-auto block object-contain"
-                  }`}
+                      ? "w-full h-full object-cover"
+                      : "h-full w-auto object-contain"
+                  }
                 />
               </div>
 
