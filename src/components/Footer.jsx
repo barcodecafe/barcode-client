@@ -58,12 +58,12 @@ export const Footer = () => {
   return (
     <footer className="w-full bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
       {/* 🎯 Global site-container class applied */}
-      <div className="site-container pt-12 pb-6 lg:pt-14 lg:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10">
+      <div className="site-container pt-8 pb-5 lg:pt-10 lg:pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-6">
           {/* 1 — Brand */}
-          <div className="lg:col-span-4 flex flex-col gap-5">
+          <div className="lg:col-span-4 flex flex-col gap-4">
             <Link to="/" className="w-fit">
-              <div className="h-12 w-fit flex items-center rounded-md px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-transform duration-300 hover:scale-[1.02]">
+              <div className="h-11 w-fit flex items-center rounded-md px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-transform duration-300 hover:scale-[1.02]">
                 <img
                   src={
                     theme === "dark"
@@ -71,21 +71,21 @@ export const Footer = () => {
                       : settings.logoLight || resB
                   }
                   alt="Barcode Cafe"
-                  className="h-9 w-auto object-contain"
+                  className="h-8 w-auto object-contain"
                 />
               </div>
             </Link>
             <p className="text-sm leading-relaxed max-w-sm">
               {settings.footerDescription}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {socialLinks.map((social, index) => (
                 <a
                   key={index}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg bg-neutral-800 flex items-center justify-center text-neutral-300 hover:bg-primary-500 hover:text-white hover:scale-105 active:scale-95 transition-all duration-300"
+                  className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center text-neutral-300 hover:bg-primary-500 hover:text-white hover:scale-105 active:scale-95 transition-all duration-300"
                   aria-label={social.label}
                 >
                   {social.icon}
@@ -96,10 +96,10 @@ export const Footer = () => {
 
           {/* 2 — Quick Links */}
           <div className="lg:col-span-2">
-            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-5">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-3.5">
               Quick Links
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               <li>
                 <Link
                   to="/"
@@ -113,7 +113,19 @@ export const Footer = () => {
                   Home
                 </Link>
               </li>
-             
+              <li>
+                <Link
+                  to="/brands"
+                  onClick={() => {
+                    if (location.pathname === "/brands") {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                  }}
+                  className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200"
+                >
+                  Our Brands
+                </Link>
+              </li>
               <li>
                 <Link
                   to="/branches"
@@ -142,12 +154,12 @@ export const Footer = () => {
           </div>
 
           {/* 3 — Payment Methods */}
-          <div className="lg:col-span-3 flex flex-col gap-3">
+          <div className="lg:col-span-3 flex flex-col gap-2.5">
             <h3 className="text-white font-semibold text-xs uppercase tracking-widest">
               Payment Methods
             </h3>
            
-            <div className="w-full h-40 bg-white p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="w-full h-20 bg-white p-1.5 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
@@ -158,18 +170,18 @@ export const Footer = () => {
 
           {/* 4 — Contact */}
           <div className="lg:col-span-3">
-            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-5">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-3.5">
               Contact Info
             </h3>
-            <ul className="space-y-4 text-sm">
+            <ul className="space-y-3 text-sm">
               <li className="flex gap-3 items-start">
-                <MapPin className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">
                   {settings.footerAddress}
                 </span>
               </li>
               <li className="flex gap-3 items-center">
-                <Phone className="w-5 h-5 text-primary-500 shrink-0" />
+                <Phone className="w-4 h-4 text-primary-500 shrink-0" />
                 <a
                   href={`tel:${String(settings.footerPhone || "").replace(/[^\d+]/g, "")}`}
                   className="hover:text-primary-500 transition-colors"
@@ -178,7 +190,7 @@ export const Footer = () => {
                 </a>
               </li>
               <li className="flex gap-3 items-center">
-                <Mail className="w-5 h-5 text-primary-500 shrink-0" />
+                <Mail className="w-4 h-4 text-primary-500 shrink-0" />
                 <a
                   href={`mailto:${settings.footerEmail || ""}`}
                   className="hover:text-primary-500 transition-colors break-all"
@@ -191,15 +203,15 @@ export const Footer = () => {
         </div>
 
         {/* Divider + copyright */}
-        <div className="border-t border-neutral-800 mt-8 pt-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-5 text-xs">
+        <div className="border-t border-neutral-800 mt-6 pt-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
             {/* Copyright */}
             <p className="order-1 md:order-0 text-neutral-400 shrink-0">
               © {currentYear} Barcode Restaurant. All rights reserved.
             </p>
 
             {/* Become a Rider */}
-            <div className="order-2 md:order-0 flex items-center justify-center gap-4 text-neutral-400">
+            <div className="order-2 md:order-0 flex items-center justify-center gap-3 text-neutral-400">
               <div className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-primary-500" />
                 <span className="font-semibold text-white">
@@ -215,7 +227,7 @@ export const Footer = () => {
             </div>
 
             {/* Quick Policy Links & Sitemap */}
-            <div className="order-3 md:order-0 flex gap-6 text-neutral-400 shrink-0">
+            <div className="order-3 md:order-0 flex gap-5 text-neutral-400 shrink-0">
               <Link to="/privacy-policy" className="hover:text-primary-500 transition-colors">
                 Privacy Policy
               </Link>
