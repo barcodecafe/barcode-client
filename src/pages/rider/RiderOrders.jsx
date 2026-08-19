@@ -143,22 +143,28 @@ export const RiderOrders = () => {
       setOrders((prev) => {
         const exists = prev.some((o) => String(o.id || o._id) === targetId);
 
-        if (isMyOrder && !isCompleted) {
-          if (exists) {
-            return prev.map((o) => String(o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o);
+        if (exists) {
+          if (isCompleted) {
+            return prev.filter((o) => String(o.id || o._id) !== targetId);
           }
+          return prev.map((o) =>
+            String(o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o
+          );
+        }
+
+        if (isMyOrder && !isCompleted) {
           needsFullFetch = true;
-          return [{ ...incomingOrder, id: incomingOrder.id || incomingOrder.orderId || targetId, createdAt: incomingOrder.createdAt || new Date().toISOString() }, ...prev];
-        } 
-        
-        const payloadKnowsRider =
-          incomingOrder.riderId !== undefined ||
-          incomingOrder.riderName !== undefined ||
-          incomingOrder.rider !== undefined;
+          return [
+            {
+              ...incomingOrder,
+              id: incomingOrder.id || incomingOrder.orderId || targetId,
+              createdAt: incomingOrder.createdAt || new Date().toISOString(),
+            },
+            ...prev,
+          ];
+        }
 
-        if (!payloadKnowsRider && !isCompleted) return prev;
-
-        return prev.filter((o) => String(o.id || o._id) !== targetId);
+        return prev;
       });
       
       if (needsFullFetch) {
@@ -404,23 +410,13 @@ export const RiderOrders = () => {
                             </div>
                           ) : (
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* Stage 1: Kitchen Cooking */}
+                              {/* Stage 1: Kitchen Cooking (Waiting for Restaurant to set Ready to Pick) */}
                               {(ord.status === "Placed" ||
                                 ord.status === "Accepted" ||
                                 ord.status === "Preparing") && (
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold animate-pulse">
-                                    <ChefHat className="w-3.5 h-3.5" /> Kitchen Cooking...
-                                  </span>
-                                  <button
-                                    onClick={() =>
-                                      handleStatusChange(safeOrderId, "Out for Delivery")
-                                    }
-                                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                                    title="Click to start delivery if food is already collected"
-                                  >
-                                    <Bike className="w-3.5 h-3.5" /> Start Delivery
-                                  </button>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold animate-pulse">
+                                  <ChefHat className="w-3.5 h-3.5" />
+                                  <span>Kitchen Cooking... (Waiting for Food Ready)</span>
                                 </div>
                               )}
 
