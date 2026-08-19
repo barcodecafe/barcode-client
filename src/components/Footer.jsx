@@ -96,10 +96,10 @@ export const Footer = () => {
 
           {/* 2 — Quick Links */}
           <div className="lg:col-span-2">
-            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-3.5">
+            <h3 className="text-white font-semibold text-xs uppercase tracking-widest mb-3">
               Quick Links
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 <Link
                   to="/"
@@ -159,7 +159,7 @@ export const Footer = () => {
               Payment Methods
             </h3>
            
-            <div className="w-full h-20 bg-white p-1.5 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="w-full h-20 sm:h-20 lg:h-20 xl:h-24 2xl:h-28 3xl:h-32 4xl:h-36 bg-white p-1.5 2xl:p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
