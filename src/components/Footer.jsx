@@ -115,6 +115,19 @@ export const Footer = () => {
               </li>
               <li>
                 <Link
+                  to="/"
+                  onClick={() => {
+                    if (location.pathname === "/brands") {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                  }}
+                  className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200"
+                >
+                  Our Brands
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/branches"
                   className="text-sm inline-block hover:text-primary-500 hover:translate-x-0.5 transition-all duration-200"
                 >
