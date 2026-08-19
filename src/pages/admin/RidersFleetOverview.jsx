@@ -20,6 +20,9 @@ import {
   LayoutList,
   LayoutGrid,
   FileSpreadsheet,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -52,6 +55,7 @@ export const RidersFleetOverview = ({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportInitialRiderId, setExportInitialRiderId] = useState("all");
   const [selectedRider, setSelectedRider] = useState(null);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Add/Edit Form State
@@ -1284,16 +1288,37 @@ export const RidersFleetOverview = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Reset Password (Optional)
+                  <label className="block text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <KeyRound className="w-3.5 h-3.5 text-primary-500" />
+                      Reset Password (Optional)
+                    </span>
+                    <span className="text-[10px] text-neutral-400 font-normal">
+                      Leave blank to keep current
+                    </span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="Leave blank to keep unchanged"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-hidden"
-                  />
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showEditPassword ? "text" : "password"}
+                      placeholder="Enter new 6+ char password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full pl-8 pr-9 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-0.5 cursor-pointer"
+                      title={showEditPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showEditPassword ? (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
