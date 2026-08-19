@@ -193,7 +193,7 @@ export const RiderOverview = () => {
           </div>
         </div>
 
-        {/* 2. Pending Accept */}
+        {/* 2. New Requests */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
             <ShieldAlert className="w-5 h-5" />
@@ -203,7 +203,7 @@ export const RiderOverview = () => {
               {pendingAcceptCount}
             </span>
             <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-              Pending Accept
+              New Requests
             </span>
           </div>
         </div>

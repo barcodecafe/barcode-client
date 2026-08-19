@@ -364,7 +364,7 @@ export const RiderOrders = () => {
                           >
                             {ord.riderAcceptStatus === "accepted"
                               ? "Accepted"
-                              : "Pending Accept"}
+                              : "New Request"}
                           </span>
                         </div>
                       </div>
