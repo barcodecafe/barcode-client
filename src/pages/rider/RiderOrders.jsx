@@ -19,6 +19,7 @@ import {
   acceptRiderOrder,
   rejectRiderOrder,
 } from "../../services/ordersService";
+import { isAssignedToMe } from "../../layouts/RiderLayout";
 
 import { socket } from "../../services/socket"; 
 
@@ -98,35 +99,12 @@ export const RiderOrders = () => {
     };
   }, []);
 
-  const isAssignedToMe = useCallback((orderData) => {
-    if (!user || !orderData) return false;
-    
-    const uId = String(user.id || user._id || "").trim();
-    const uName = String(user.name || "").trim().toLowerCase();
-
-    const targetOrder = orderData?.order || orderData;
-    if (!targetOrder || typeof targetOrder !== 'object') return false;
-
-    const oId1 = String(targetOrder.riderId || "").trim();
-    const oId2 = String(targetOrder.rider?._id || "").trim();
-    const oId3 = String(targetOrder.rider?.id || "").trim();
-    const oId4 = typeof targetOrder.rider === 'string' ? targetOrder.rider.trim() : ""; 
-
-    const oName1 = String(targetOrder.riderName || "").trim().toLowerCase();
-    const oName2 = String(targetOrder.rider?.name || "").trim().toLowerCase();
-
-    const idMatch = uId !== "" && (uId === oId1 || uId === oId2 || uId === oId3 || uId === oId4);
-    const nameMatch = uName !== "" && (uName === oName1 || uName === oName2);
-
-    return idMatch || nameMatch;
-  }, [user]);
-
   const fetchRiderOrders = useCallback(() => {
     if (!user) return;
     getAllOrders({ active: true })
       .then((data) => {
         const orderList = Array.isArray(data) ? data : data?.data || [];
-        const assigned = orderList.filter((o) => isAssignedToMe(o) && o.status !== "Delivered" && o.status !== "Rejected");
+        const assigned = orderList.filter((o) => isAssignedToMe(o, user) && o.status !== "Delivered" && o.status !== "Rejected");
         setOrders(assigned);
         setLoading(false);
       })
@@ -134,7 +112,7 @@ export const RiderOrders = () => {
         console.error("Failed to fetch orders:", err);
         setLoading(false);
       });
-  }, [user, isAssignedToMe]);
+  }, [user]);
 
   useEffect(() => {
     fetchRiderOrders();

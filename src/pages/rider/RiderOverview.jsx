@@ -107,11 +107,12 @@ export const RiderOverview = () => {
   };
 
   const filteredStats = getFilteredStats();
-  const activeOrdersCount = orders.filter(
+  const activeOrders = orders.filter(
     (o) => o.status !== "Delivered" && o.status !== "Rejected"
-  ).length;
-  const pendingAcceptCount = orders.filter(
-    (o) => o.riderAcceptStatus === "pending"
+  );
+  const activeOrdersCount = activeOrders.length;
+  const pendingAcceptCount = activeOrders.filter(
+    (o) => o.riderAcceptStatus === "pending" || !o.riderAcceptStatus
   ).length;
 
   if (loading) {
