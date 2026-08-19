@@ -41,9 +41,15 @@ export const SettingsProvider = ({ children }) => {
       .getSettings()
       .then((s) => {
         if (s) {
-          const merged = { ...DEFAULT_SETTINGS, ...s };
-          setSettingsState(merged);
-          updateLocalCache(merged);
+          setSettingsState((prev) => {
+            // Clean undefined values from s so they don't overwrite valid prev cached values
+            const cleanServerSettings = Object.fromEntries(
+              Object.entries(s).filter(([_, v]) => v !== undefined && v !== null)
+            );
+            const merged = { ...DEFAULT_SETTINGS, ...prev, ...cleanServerSettings };
+            updateLocalCache(merged);
+            return merged;
+          });
         }
       })
       .catch((err) => console.error('Failed to load site settings:', err))

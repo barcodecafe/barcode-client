@@ -138,6 +138,15 @@ export const AdminSettings = () => {
     }
   };
 
+  const handlePaymentBannerFitChange = async (fit) => {
+    setPaymentBannerFit(fit);
+    try {
+      await updateSettings({ paymentBannerFit: fit });
+    } catch (err) {
+      console.error("Failed to auto-save payment banner fit mode:", err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccess(false);
@@ -533,7 +542,7 @@ export const AdminSettings = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
                 <button
                   type="button"
-                  onClick={() => setPaymentBannerFit("contain")}
+                  onClick={() => handlePaymentBannerFitChange("contain")}
                   className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                     paymentBannerFit !== "cover"
                       ? "border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 text-neutral-900 dark:text-white ring-1 ring-primary-500/30"
@@ -563,7 +572,7 @@ export const AdminSettings = () => {
 
                 <button
                   type="button"
-                  onClick={() => setPaymentBannerFit("cover")}
+                  onClick={() => handlePaymentBannerFitChange("cover")}
                   className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                     paymentBannerFit === "cover"
                       ? "border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 text-neutral-900 dark:text-white ring-1 ring-primary-500/30"
