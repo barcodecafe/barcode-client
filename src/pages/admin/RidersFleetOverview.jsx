@@ -17,6 +17,8 @@ import {
   Phone,
   Lock,
   Mail,
+  LayoutList,
+  LayoutGrid,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -40,6 +42,7 @@ export const RidersFleetOverview = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all"); // 'all' | 'permanent' | 'freelance'
+  const [viewMode, setViewMode] = useState("rows"); // 'rows' | 'grid'
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -276,25 +279,303 @@ export const RidersFleetOverview = ({
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full md:w-64">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search rider, phone, agency..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-100/70 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
-          />
+        {/* View Mode Toggle & Search Bar */}
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* View Toggle (Rows / Grid) */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/60 p-1 rounded-xl shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode("rows")}
+              title="Row / List View"
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                viewMode === "rows"
+                  ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-xs"
+                  : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400"
+              }`}
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Rows</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              title="Cards Grid View"
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                viewMode === "grid"
+                  ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-xs"
+                  : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Grid</span>
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative flex-1 md:w-64">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search rider, phone, agency..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-100/70 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
         </div>
       </div>
 
-      {/* 🎯 Ultra-wide Grid */}
+      {/* 🎯 Riders Fleet List / Grid */}
       {filteredRiders.length === 0 ? (
         <div className="text-center py-12 text-neutral-400 text-xs font-medium bg-neutral-50/50 dark:bg-neutral-950/20 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800">
           No riders found matching the selected filter.
         </div>
+      ) : viewMode === "rows" ? (
+        /* ========================================================= */
+        /* 🚀 ROW-BASED COMPACT HIGH-DENSITY FLEET OVERVIEW           */
+        /* ========================================================= */
+        <div className="space-y-1.5">
+          {filteredRiders.map((r) => {
+            const stats = getRiderPerformanceStats(r.id);
+            const { cashStatus } = stats;
+            const isFreelance = r.employmentType === "freelance";
+
+            return (
+              <div
+                key={r.id}
+                className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 sm:gap-3 text-xs shadow-2xs hover:shadow-xs ${
+                  cashStatus.isConfirmedByAdmin
+                    ? "bg-emerald-50/15 dark:bg-emerald-950/10 border-emerald-200/60 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800"
+                    : cashStatus.isSubmittedByRider
+                      ? "bg-amber-50/20 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-800"
+                      : "bg-neutral-50/40 dark:bg-neutral-950/30 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                }`}
+              >
+                {/* Left Column: Rider Identity + Contact + Employment Model + Activity */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                  {/* Status dot / Avatar */}
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold font-display text-xs">
+                      {r.name?.charAt(0)?.toUpperCase() || "R"}
+                    </div>
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-neutral-900 ${
+                        r.status === "Available" ? "bg-emerald-500" : "bg-amber-500"
+                      }`}
+                      title={`Status: ${r.status}`}
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                        {r.name}
+                      </span>
+
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase tracking-wider ${
+                          r.status === "Available"
+                            ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                        }`}
+                      >
+                        {r.status}
+                      </span>
+
+                      {isFreelance ? (
+                        <span
+                          className="px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[9px] font-bold flex items-center gap-0.5 truncate max-w-[170px]"
+                          title={`Freelance Rider: ${r.commissionRate || 15}% Food Cost Commission`}
+                        >
+                          <Percent className="w-2.5 h-2.5 shrink-0" /> {r.commissionRate || 15}%
+                          {r.agencyName ? ` · ${r.agencyName}` : ""}
+                        </span>
+                      ) : (
+                        <span
+                          className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-bold flex items-center gap-0.5"
+                          title="Permanent Rider: Area Delivery Fee"
+                        >
+                          <Building2 className="w-2.5 h-2.5 shrink-0" /> Permanent
+                        </span>
+                      )}
+
+                      <span className="text-[9px] font-semibold ml-auto sm:ml-0">
+                        {r.activeOrders > 0 ? (
+                          <span className="text-rose-500 font-bold bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.2 rounded">
+                            🚴 {r.activeOrders} active
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400">Idle</span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 mt-0.5 truncate">
+                      <span className="font-mono">{r.phone}</span>
+                      {r.vehicle && <span>· {r.vehicle}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Column: Performance & Financial Breakdown */}
+                <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-4 shrink-0 text-right bg-neutral-100/60 dark:bg-neutral-800/40 xl:bg-transparent xl:dark:bg-transparent p-1.5 sm:p-0 rounded-lg">
+                  <div className="text-left sm:text-right">
+                    <span className="text-neutral-400 text-[8px] block uppercase font-bold tracking-wider leading-none">
+                      Delivered
+                    </span>
+                    <span className="font-bold text-neutral-900 dark:text-white text-[11px] leading-tight block mt-0.5">
+                      {stats.daily.deliveredCount} Orders
+                    </span>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-neutral-400 text-[8px] block uppercase font-bold tracking-wider leading-none">
+                      Cash Coll.
+                    </span>
+                    <span className="font-black text-rose-500 text-[11px] leading-tight block mt-0.5">
+                      ৳{stats.daily.cashCollected.toFixed(0)}
+                    </span>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-neutral-400 text-[8px] block uppercase font-bold tracking-wider leading-none">
+                      Rider Share
+                    </span>
+                    <span className="font-extrabold text-primary-500 text-[11px] leading-tight block mt-0.5">
+                      ৳{stats.daily.income.toFixed(0)}
+                    </span>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-neutral-400 text-[8px] block uppercase font-bold tracking-wider leading-none">
+                      Paid Admin
+                    </span>
+                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-[11px] leading-tight block mt-0.5">
+                      ৳{stats.daily.paidToAdmin.toFixed(0)}
+                    </span>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-neutral-400 text-[8px] block uppercase font-bold tracking-wider leading-none">
+                      Due to Admin
+                    </span>
+                    <span
+                      className={`font-black text-[11px] leading-tight block mt-0.5 ${
+                        stats.daily.payable < 0
+                          ? "text-blue-500"
+                          : stats.daily.payable === 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      ৳{Math.abs(stats.daily.payable).toFixed(0)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Column: Settlement Status, Past Due, and Management Actions */}
+                <div className="flex items-center justify-between xl:justify-end gap-2 shrink-0 flex-wrap">
+                  {/* Status Badge & Approve Button */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {!cashStatus.hasOrders ? (
+                      <span className="text-[10px] text-neutral-400 font-medium px-2 py-0.5 bg-neutral-100/70 dark:bg-neutral-800 rounded-lg">
+                        No Cash Today
+                      </span>
+                    ) : cashStatus.isConfirmedByAdmin ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                        <CheckCircle2 className="w-3 h-3" /> Settled ✓
+                      </span>
+                    ) : cashStatus.isSubmittedByRider ? (
+                      <div className="flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+                          <Clock3 className="w-3 h-3 animate-pulse" /> Submitted
+                        </span>
+                        <button
+                          onClick={() =>
+                            onConfirmCashSettlement(r.id, r.name, stats.dateKey)
+                          }
+                          disabled={confirmingRiderId === r.id}
+                          className="px-2 py-0.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                          {confirmingRiderId === r.id ? "..." : "Approve"}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-500 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-lg">
+                        <AlertCircle className="w-3 h-3" /> Unsubmitted
+                      </span>
+                    )}
+
+                    {/* Past Due days quick actions */}
+                    {stats.pastDue.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {stats.pastDue.slice(0, 1).map((day) => (
+                          <button
+                            key={day.dateKey}
+                            onClick={() =>
+                              onConfirmCashSettlement(r.id, r.name, day.dateKey)
+                            }
+                            disabled={confirmingRiderId === r.id}
+                            title={`Earlier Due: ${day.date} (৳${day.outstandingNetPayable.toFixed(0)})`}
+                            className={`px-1.5 py-0.5 rounded-md font-bold text-[9px] transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-0.5 ${
+                              day.isSubmitted
+                                ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                                : "bg-red-500/10 text-red-500 border border-red-500/20"
+                            }`}
+                          >
+                            <span>Past: ৳{day.outstandingNetPayable.toFixed(0)}</span>
+                            {day.isSubmitted && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                          </button>
+                        ))}
+                        {stats.pastDue.length > 1 && (
+                          <span className="text-[9px] font-bold text-red-400" title={`${stats.pastDue.length} past days unsettled`}>
+                            +{stats.pastDue.length - 1}d
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Controls: Availability Select + Edit + Delete */}
+                  <div className="flex items-center gap-1 pl-2 border-l border-neutral-200 dark:border-neutral-800">
+                    <select
+                      value={r.status}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value;
+                        await updateRiderStatus(r.id, newStatus);
+                        if (onRefresh) onRefresh();
+                      }}
+                      className="text-[9px] font-bold border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 rounded-md px-1 py-0.5 cursor-pointer"
+                    >
+                      <option value="Available">Available</option>
+                      <option value="Busy">Busy</option>
+                    </select>
+
+                    <button
+                      onClick={() => handleOpenEditModal(r)}
+                      title="Edit Rider Profile & Compensation"
+                      className="p-1 rounded-md text-neutral-400 hover:text-neutral-800 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRider(r)}
+                      title="Remove Rider"
+                      className="p-1 rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* ========================================================= */
+        /* 🎯 CARD GRID VIEW (Optional Alternate View)               */
+        /* ========================================================= */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-4">
           {filteredRiders.map((r) => {
             const stats = getRiderPerformanceStats(r.id);
