@@ -155,11 +155,11 @@ export const Footer = () => {
               Payment Methods
             </h3>
            
-            <div className="w-full 2xl:w-[70%] h-24 bg-white flex items-center justify-center overflow-hidden">
+            <div className={`w-full 2xl:w-[70%] bg-white flex items-center justify-center overflow-hidden ${settings.paymentBannerFit === "cover" ? "h-24" : "h-auto"}`}>
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
-                className={`w-full h-full ${settings.paymentBannerFit === "cover" ? "object-cover" : "object-contain"}`}
+                className={`w-full ${settings.paymentBannerFit === "cover" ? "h-full object-cover" : "h-auto block object-contain"}`}
               />
             </div>
           </div>
