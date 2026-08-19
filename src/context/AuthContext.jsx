@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as authService from '../services/authService';
+import { socket } from '../services/socket';
 
 // ---------------------------------------------------------------------------
 // AuthContext.jsx
@@ -126,10 +127,46 @@ export const AuthProvider = ({ children }) => {
   // Re-fetch the current user from the server (e.g. after an order changes the
   // loyalty points balance) so the UI reflects the latest values without a reload.
   const refreshUser = useCallback(async () => {
-    const current = await authService.getCurrentUser();
-    setUser(current);
-    return current;
+    try {
+      const current = await authService.getCurrentUser();
+      setUser(current);
+      return current;
+    } catch {
+      return null;
+    }
   }, []);
+
+  // ⚡ Live Real-time User & Points Sync across Customer UI without reload
+  useEffect(() => {
+    if (!user) return;
+
+    const handleRealtimeUserSync = (data) => {
+      const order = data?.order || data;
+      const orderUserId = order?.user?.id || order?.user?._id || order?.userId;
+      const orderPhone = order?.user?.phone || order?.deliveryPhone;
+      const currentUserId = user.id || user._id;
+      const currentPhone = user.phone;
+
+      const isMyOrder =
+        (orderUserId && currentUserId && String(orderUserId) === String(currentUserId)) ||
+        (orderPhone && currentPhone && String(orderPhone) === String(currentPhone));
+
+      // If user's order status changed (Delivered, Placed, etc.) or user update
+      if (isMyOrder || data?.userId === currentUserId || data?.type === 'user_updated') {
+        refreshUser();
+      }
+    };
+
+    socket.on('order_status_updated', handleRealtimeUserSync);
+    socket.on('order_updated', handleRealtimeUserSync);
+    socket.on('user_updated', handleRealtimeUserSync);
+
+    return () => {
+      socket.off('order_status_updated', handleRealtimeUserSync);
+      socket.off('order_updated', handleRealtimeUserSync);
+      socket.off('user_updated', handleRealtimeUserSync);
+    };
+  }, [user, refreshUser]);
 
   const logout = useCallback(async () => {
     await authService.logout();

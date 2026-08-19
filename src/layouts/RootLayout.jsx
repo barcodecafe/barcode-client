@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'; // 👈 AuthContext ইমপ�
 import { socket } from '../services/socket';
 
 export const RootLayout = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,37 +44,44 @@ export const RootLayout = () => {
         (orderUserId && currentUserId && String(orderUserId) === String(currentUserId)) ||
         (orderPhone && currentPhone && String(orderPhone) === String(currentPhone));
 
-      if (isMyOrder && !location.pathname.startsWith('/order-tracking')) {
-        const bId = order.branchId || order.branch?._id || '';
-        const bName = order.branchName || order.branch?.name || '';
-        const query = new URLSearchParams({ tab: 'reviews' });
-        if (bId) query.set('branchId', bId);
-        if (bName) query.set('branchName', bName);
-        const reviewUrl = `/profile?${query.toString()}`;
+      if (isMyOrder) {
+        if (typeof refreshUser === 'function') {
+          refreshUser().catch(() => {});
+        }
 
-        toast(
-          (t) => (
-            <div className="flex items-center justify-between gap-3 w-full py-0.5">
-              <div>
-                <p className="font-bold text-xs text-neutral-900 dark:text-white">
-                  🎉 Order Delivered!
-                </p>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  How was your food? Rate your dining experience!
-                </p>
+        if (!location.pathname.startsWith('/order-tracking')) {
+          const bId = order.branchId || order.branch?._id || '';
+          const bName = order.branchName || order.branch?.name || '';
+          const query = new URLSearchParams({ tab: 'reviews' });
+          if (bId) query.set('branchId', bId);
+          if (bName) query.set('branchName', bName);
+          const reviewUrl = `/profile?${query.toString()}`;
+
+          const earned = order.pointsEarned || Math.floor((Number(order.subtotal) || 0) / 100) * 5;
+
+          toast(
+            (t) => (
+              <div className="flex items-center justify-between gap-3 w-full py-0.5">
+                <div>
+                  <p className="font-bold text-xs text-neutral-900 dark:text-white">
+                    🎉 Order Delivered! {earned > 0 ? `(+${earned} pts 🪙)` : ''}
+                  </p>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    How was your food? Rate your dining experience!
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    navigate(reviewUrl);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs active:scale-95 transition-all shrink-0 cursor-pointer shadow-sm"
+                >
+                  Review Now
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  toast.dismiss(t.id);
-                  navigate(reviewUrl);
-                }}
-                className="px-3 py-1.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs active:scale-95 transition-all shrink-0 cursor-pointer shadow-sm"
-              >
-                Review Now
-              </button>
-            </div>
-          ),
-          {
+            ),
+            {
             duration: 9000,
             icon: '🍽️',
             style: {
@@ -85,6 +92,7 @@ export const RootLayout = () => {
             },
           }
         );
+        }
       }
     };
 
