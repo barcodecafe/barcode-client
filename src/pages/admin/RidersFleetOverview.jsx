@@ -19,6 +19,7 @@ import {
   Mail,
   LayoutList,
   LayoutGrid,
+  FileSpreadsheet,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -32,6 +33,7 @@ import {
   buildDailySettlementLog,
   businessDateKey,
 } from "../../utils/settlement";
+import { ExportEarningsModal } from "../../components/ExportEarningsModal";
 
 export const RidersFleetOverview = ({
   riders = [],
@@ -47,6 +49,8 @@ export const RidersFleetOverview = ({
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportInitialRiderId, setExportInitialRiderId] = useState("all");
   const [selectedRider, setSelectedRider] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -235,12 +239,27 @@ export const RidersFleetOverview = ({
           </p>
         </div>
 
-        <Link
-          to="/admin/add-rider"
-          className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-primary-500/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4 stroke-[3]" /> Add New Rider
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setExportInitialRiderId("all");
+              setIsExportModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Export Earnings to MS Excel / CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export to Excel</span>
+          </button>
+
+          <Link
+            to="/admin/add-rider"
+            className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-primary-500/20 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" /> Add New Rider
+          </Link>
+        </div>
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -553,6 +572,17 @@ export const RidersFleetOverview = ({
                     </select>
 
                     <button
+                      onClick={() => {
+                        setExportInitialRiderId(r.id);
+                        setIsExportModalOpen(true);
+                      }}
+                      title={`Export ${r.name}'s Earnings to Excel`}
+                      className="p-1 rounded-md text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
                       onClick={() => handleOpenEditModal(r)}
                       title="Edit Rider Profile & Compensation"
                       className="p-1 rounded-md text-neutral-400 hover:text-neutral-800 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
@@ -772,9 +802,20 @@ export const RidersFleetOverview = ({
                   </div>
                 </div>
 
-                {/* Footer Controls: Edit, Delete & Availability Selector */}
+                {/* Footer Controls: Export, Edit, Delete & Availability Selector */}
                 <div className="flex items-center justify-between pt-2 border-t border-neutral-150 dark:border-neutral-850 gap-2">
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setExportInitialRiderId(r.id);
+                        setIsExportModalOpen(true);
+                      }}
+                      title={`Export ${r.name}'s Earnings to Excel`}
+                      className="p-1 rounded-md text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                    </button>
+
                     <button
                       onClick={() => handleOpenEditModal(r)}
                       title="Edit Rider Profile & Compensation"
@@ -1277,6 +1318,16 @@ export const RidersFleetOverview = ({
           </div>
         </div>
       )}
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 📥 EXPORT EARNINGS TO EXCEL / CSV MODAL                    */}
+      {/* ────────────────────────────────────────────────────────── */}
+      <ExportEarningsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        riders={riders}
+        orders={orders}
+        initialRiderId={exportInitialRiderId}
+      />
     </div>
   );
 };
