@@ -1588,27 +1588,53 @@ export const AdminOrders = () => {
                 </button>
               </div>
 
-              <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between shrink-0">
-                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                  <BellRing className="w-3.5 h-3.5" /> Quick Kitchen Alert:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSendAdminMessage(
-                      null,
-                      "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant.",
-                    );
-                    handleStatusChange(
-                      currentChat.id || currentChat._id,
-                      "Ready to Pick",
-                    );
-                  }}
-                  className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
-                >
-                  Set Ready & Notify Rider
-                </button>
-              </div>
+              {/* Quick Kitchen Alert Banner: Only active during kitchen prep stages */}
+              {(() => {
+                const normChatStatus = String(currentChat.status || "").toLowerCase().replace(/_/g, " ");
+                const isPrepStage = ["placed", "pending", "accepted", "preparing"].includes(normChatStatus);
+                const isReadyStage = normChatStatus === "ready to pick";
+
+                if (isPrepStage) {
+                  return (
+                    <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between shrink-0 animate-in fade-in duration-150">
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                        <BellRing className="w-3.5 h-3.5" /> Quick Kitchen Alert:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSendAdminMessage(
+                            null,
+                            "🔔 Food is Ready / Ready to Pick! Please collect from the restaurant.",
+                          );
+                          handleStatusChange(
+                            currentChat.id || currentChat._id,
+                            "Ready to Pick",
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold uppercase active:scale-95 transition-all shadow-xs cursor-pointer"
+                      >
+                        Set Ready & Notify Rider
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (isReadyStage) {
+                  return (
+                    <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between shrink-0">
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> Food is Ready for Pickup (Rider Notified)
+                      </span>
+                      <span className="text-[10px] font-semibold text-neutral-400">
+                        Waiting for Rider
+                      </span>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
 
               <div
                 ref={chatContainerRef}
