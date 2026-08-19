@@ -130,6 +130,12 @@ const derivePaymentStatus = (order) => {
   if (order.paymentStatus) return order.paymentStatus;
   if (order.status === "Rejected") return "Cancelled";
   if (order.status === "Delivered") return "Paid";
+  if (
+    String(order.paymentMethod || "cod").toLowerCase() !== "cod" &&
+    Boolean(order.transactionId)
+  ) {
+    return "Paid";
+  }
   return "Pending";
 };
 

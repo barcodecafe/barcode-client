@@ -912,14 +912,22 @@ export const OrderTracking = () => {
                     <span>Payment Status:</span>
                     <span
                       className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase border ${
-                        order.paymentStatus === "Paid"
+                        order.paymentStatus === "Paid" ||
+                        (String(order.paymentMethod || "cod").toLowerCase() !== "cod" &&
+                          Boolean(order.transactionId)) ||
+                        order.status === "Delivered"
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
                           : paymentFailed
                           ? "bg-red-500/10 border-red-500/20 text-red-500"
                           : "bg-amber-500/10 border-amber-500/20 text-amber-500"
                       }`}
                     >
-                      {order.paymentStatus || "Pending"}
+                      {order.paymentStatus === "Paid" ||
+                      (String(order.paymentMethod || "cod").toLowerCase() !== "cod" &&
+                        Boolean(order.transactionId)) ||
+                      order.status === "Delivered"
+                        ? "Paid"
+                        : order.paymentStatus || "Pending"}
                     </span>
                   </div>
 
