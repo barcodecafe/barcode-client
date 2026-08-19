@@ -63,18 +63,12 @@ export const Footer = () => {
           {/* 1 — Brand */}
           <div className="lg:col-span-4 flex flex-col justify-between gap-4">
             <div>
-              <Link to="/" className="w-fit block">
-                <div className="h-12 w-fit flex items-center rounded-md px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-transform duration-300 hover:scale-[1.02]">
-                  <img
-                    src={
-                      theme === "dark"
-                        ? settings.logoDark || resW
-                        : settings.logoLight || resB
-                    }
-                    alt="Barcode Cafe"
-                    className="h-9 w-auto object-contain"
-                  />
-                </div>
+              <Link to="/" className="w-fit block group" aria-label="Barcode Cafe — Home">
+                <img
+                  src={settings.logoDark || resW}
+                  alt="Barcode Cafe"
+                  className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                />
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mt-3">
                 {settings.footerDescription}
@@ -161,7 +155,7 @@ export const Footer = () => {
               Payment Methods
             </h3>
            
-            <div className="w-3/4 h-24 bg-white p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="w-full 2xl:w-[70%] h-24 bg-white flex items-center justify-center overflow-hidden">
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
