@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Coins, Wallet, DollarSign, ShoppingBag, Building2, Star, Flame, User, Bike } from 'lucide-react';
+import {
+  Coins,
+  Wallet,
+  DollarSign,
+  ShoppingBag,
+  Building2,
+  Star,
+  Flame,
+  User,
+  Bike,
+  FileSpreadsheet,
+} from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
 import { ChartCard } from '../../components/admin/charts/ChartCard';
 import { BarChart } from '../../components/admin/charts/BarChart';
 import { PieChart } from '../../components/admin/charts/PieChart';
 import { LineChart } from '../../components/admin/charts/LineChart';
+import { ExportSalesModal } from '../../components/ExportSalesModal';
+import { getAllOrders } from '../../services/ordersService';
 
 import {
   getDashboardAll,
@@ -35,6 +48,9 @@ export const AdminDashboard = () => {
   const [topDishes, setTopDishes] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]);
   const [topRiders, setTopRiders] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -135,6 +151,21 @@ export const AdminDashboard = () => {
     );
   }
 
+  const handleOpenSalesExport = async () => {
+    if (orders.length === 0) {
+      try {
+        setIsFetchingOrders(true);
+        const data = await getAllOrders();
+        setOrders(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch orders for sales export:", err);
+      } finally {
+        setIsFetchingOrders(false);
+      }
+    }
+    setIsExportModalOpen(true);
+  };
+
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 8)
@@ -146,13 +177,30 @@ export const AdminDashboard = () => {
   return (
     <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
       {/* Header */}
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
-          Dashboard Overview
-        </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          A snapshot of performance across all {summary?.totalBranches || 0} Barcode branches.
-        </p>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeInUp}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+            Dashboard Overview
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            A snapshot of performance across all {summary?.totalBranches || 0} Barcode branches.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleOpenSalesExport}
+          disabled={isFetchingOrders}
+          className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>{isFetchingOrders ? "Loading Sales..." : "Export Sales to Excel"}</span>
+        </button>
       </motion.div>
 
       {/* 🎯 Stat Cards: 2xl, 3xl, 4xl ultra-wide support */}
@@ -330,6 +378,13 @@ export const AdminDashboard = () => {
           )}
         </div>
       </ChartCard>
+
+      {/* 📥 EXPORT SALES MODAL */}
+      <ExportSalesModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        orders={orders}
+      />
     </div>
   );
 };

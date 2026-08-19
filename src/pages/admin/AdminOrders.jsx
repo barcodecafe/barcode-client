@@ -9,8 +9,10 @@ import {
   RefreshCw,
   BellRing,
   Printer,
+  FileSpreadsheet,
 } from "lucide-react";
 import { ErrorBanner } from "../../components/ErrorBanner";
+import { ExportSalesModal } from "../../components/ExportSalesModal";
 import {
   getAllOrders,
   updateOrderStatus,
@@ -340,6 +342,7 @@ export const AdminOrders = () => {
   const [adminChatMessage, setAdminChatMessage] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [adjustments, setAdjustments] = useState({});
+  const [isExportSalesModalOpen, setIsExportSalesModalOpen] = useState(false);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -1247,6 +1250,15 @@ export const AdminOrders = () => {
             with customers/riders.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsExportSalesModalOpen(true)}
+          className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 self-start md:self-auto"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>Export Sales to Excel</span>
+        </button>
       </div>
 
       <ErrorBanner
@@ -2058,6 +2070,13 @@ export const AdminOrders = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 📥 EXPORT SALES MODAL */}
+      <ExportSalesModal
+        isOpen={isExportSalesModalOpen}
+        onClose={() => setIsExportSalesModalOpen(false)}
+        orders={orders}
+      />
     </div>
   );
 };
