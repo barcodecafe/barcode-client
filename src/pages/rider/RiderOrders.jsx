@@ -342,7 +342,7 @@ export const RiderOrders = () => {
                           >
                             {ord.riderAcceptStatus === "accepted"
                               ? "Accepted"
-                              : "New Request"}
+                              : "New Order"}
                           </span>
                         </div>
                       </div>

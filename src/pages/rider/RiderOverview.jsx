@@ -15,6 +15,7 @@ import { getAllOrders } from "../../services/ordersService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import { isAssignedToMe } from "../../layouts/RiderLayout";
 import { riderCommissionFor } from "../../utils/settlement";
+import { socket } from "../../services/socket";
 
 export const RiderOverview = () => {
   const { user } = useAuth();
@@ -43,6 +44,32 @@ export const RiderOverview = () => {
 
   useEffect(() => {
     fetchRiderOrders();
+  }, [fetchRiderOrders]);
+
+  // ⚡ Real-time instant sync when admin assigns/updates order
+  useEffect(() => {
+    let timer = null;
+    const handleRealtimeSync = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        fetchRiderOrders();
+      }, 300);
+    };
+
+    socket.on("rider_order_assigned", handleRealtimeSync);
+    socket.on("order_assigned", handleRealtimeSync);
+    socket.on("order_updated", handleRealtimeSync);
+    socket.on("order_status_updated", handleRealtimeSync);
+    socket.on("rider_order_updated", handleRealtimeSync);
+
+    return () => {
+      clearTimeout(timer);
+      socket.off("rider_order_assigned", handleRealtimeSync);
+      socket.off("order_assigned", handleRealtimeSync);
+      socket.off("order_updated", handleRealtimeSync);
+      socket.off("order_status_updated", handleRealtimeSync);
+      socket.off("rider_order_updated", handleRealtimeSync);
+    };
   }, [fetchRiderOrders]);
 
   // Was setInterval(…, 4000), which kept running in hidden tabs: one rider
@@ -194,7 +221,7 @@ export const RiderOverview = () => {
           </div>
         </div>
 
-        {/* 2. New Requests */}
+        {/* 2. New Orders */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
             <ShieldAlert className="w-5 h-5" />
@@ -204,7 +231,7 @@ export const RiderOverview = () => {
               {pendingAcceptCount}
             </span>
             <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-              New Requests
+              New Orders
             </span>
           </div>
         </div>
