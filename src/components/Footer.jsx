@@ -165,7 +165,7 @@ export const Footer = () => {
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
-                className="w-full h-full object-contain"
+                className={`w-full h-full ${settings.paymentBannerFit === "cover" ? "object-cover" : "object-contain"}`}
               />
             </div>
           </div>

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import NoticeTicker from "../../components/NoticeTicker";
+import sslBanner from "../../assets/ssldynamic.jpg";
 
 export const AdminSettings = () => {
   const { settings, isSettingsLoaded, updateSettings, resetSettings } =
@@ -52,6 +53,9 @@ export const AdminSettings = () => {
   const [paymentBanner, setPaymentBanner] = useState(
     settings.paymentBanner || ""
   );
+  const [paymentBannerFit, setPaymentBannerFit] = useState(
+    settings.paymentBannerFit || "contain"
+  );
 
   // 📢 Maintenance / Announcement Ticker states
   const [maintenanceNoticeEnabled, setMaintenanceNoticeEnabled] = useState(
@@ -80,6 +84,7 @@ export const AdminSettings = () => {
     setLogoLight(settings.logoLight || "");
     setLogoDark(settings.logoDark || "");
     setPaymentBanner(settings.paymentBanner || "");
+    setPaymentBannerFit(settings.paymentBannerFit || "contain");
     setMaintenanceNoticeEnabled(
       settings.maintenanceNoticeEnabled !== undefined
         ? Boolean(settings.maintenanceNoticeEnabled)
@@ -144,6 +149,7 @@ export const AdminSettings = () => {
         logoLight,
         logoDark,
         paymentBanner,
+        paymentBannerFit,
         footerDescription: footerDescription.trim(),
         footerAddress: footerAddress.trim(),
         footerPhone: footerPhone.trim(),
@@ -192,6 +198,7 @@ export const AdminSettings = () => {
       setLogoLight(defaults.logoLight || "");
       setLogoDark(defaults.logoDark || "");
       setPaymentBanner(defaults.paymentBanner || "");
+      setPaymentBannerFit(defaults.paymentBannerFit || "contain");
       setMaintenanceNoticeEnabled(
         defaults.maintenanceNoticeEnabled !== undefined
           ? Boolean(defaults.maintenanceNoticeEnabled)
@@ -476,20 +483,18 @@ export const AdminSettings = () => {
             footer or checkout trust areas.
           </p>
 
-          <div className="space-y-3 pt-2">
+          <div className="space-y-4 pt-2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="h-20 w-full sm:w-64 border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 rounded-xl flex items-center justify-center p-2 shrink-0 overflow-hidden">
-                {paymentBanner ? (
-                  <img
-                    src={paymentBanner}
-                    alt="Payment banner preview"
-                    className="max-h-full max-w-full object-contain"
-                  />
-                ) : (
-                  <span className="text-[10px] text-neutral-400">
-                    Default SSL / Dynamic Banner
-                  </span>
-                )}
+              <div className="h-20 w-full sm:w-64 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-xl flex items-center justify-center p-1.5 shrink-0 overflow-hidden shadow-xs">
+                <img
+                  src={paymentBanner || sslBanner}
+                  alt="Payment banner preview"
+                  className={`w-full h-full ${
+                    paymentBannerFit === "cover"
+                      ? "object-cover"
+                      : "object-contain"
+                  }`}
+                />
               </div>
 
               <div className="space-y-1.5 flex-1">
@@ -512,6 +517,79 @@ export const AdminSettings = () => {
                     Remove custom payment banner
                   </button>
                 )}
+                {!paymentBanner && (
+                  <p className="text-[11px] text-neutral-400">
+                    Using default SSL / Gateway banner
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Fit Mode (Contain vs Cover) Options */}
+            <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800/70">
+              <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider mb-2">
+                Image Display Fit (ইমেজ ডিসপ্লে ফিট)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                <button
+                  type="button"
+                  onClick={() => setPaymentBannerFit("contain")}
+                  className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                    paymentBannerFit !== "cover"
+                      ? "border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 text-neutral-900 dark:text-white ring-1 ring-primary-500/30"
+                      : "border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/40 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      paymentBannerFit !== "cover"
+                        ? "border-primary-500 bg-primary-500 text-white"
+                        : "border-neutral-300 dark:border-neutral-700"
+                    }`}
+                  >
+                    {paymentBannerFit !== "cover" && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                      Contain (পুরো ছবি দেখাবে)
+                    </div>
+                    <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      ছবি কোনো দিক দিয়ে কাটবে না, পুরো ব্যানারটি ফ্রেমের ভেতর ফিট থাকবে। (Default)
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentBannerFit("cover")}
+                  className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                    paymentBannerFit === "cover"
+                      ? "border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 text-neutral-900 dark:text-white ring-1 ring-primary-500/30"
+                      : "border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/40 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      paymentBannerFit === "cover"
+                        ? "border-primary-500 bg-primary-500 text-white"
+                        : "border-neutral-300 dark:border-neutral-700"
+                    }`}
+                  >
+                    {paymentBannerFit === "cover" && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                      Cover (বক্স পূরণ করবে)
+                    </div>
+                    <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      পুরো বক্স পূর্ণ করে দেখাবে, কোনো খালি সাদা জায়গা থাকবে না।
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
