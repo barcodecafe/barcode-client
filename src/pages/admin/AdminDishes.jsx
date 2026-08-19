@@ -152,39 +152,41 @@ export const AdminDishes = () => {
   const processCategories = (loadedFoods, loadedCentralCats = []) => {
     const categoryMap = new Map();
 
-    // 1. Seed from centralCategories first (preserves ordering & empty categories)
-    (loadedCentralCats || []).forEach((c, idx) => {
-      if (c?.name?.trim()) {
-        const catName = c.name.trim();
-        const lowerName = catName.toLowerCase();
-        const orderVal = typeof c.order === "number" ? c.order : idx + 1;
-        categoryMap.set(lowerName, {
-          name: catName,
-          order: orderVal,
-          id: c._id || c.id,
-          description: c.description || "",
-        });
-      }
-    });
+    // 1. If Central Categories exist in database, they are the authoritative Source of Truth
+    if (Array.isArray(loadedCentralCats) && loadedCentralCats.length > 0) {
+      loadedCentralCats.forEach((c, idx) => {
+        if (c?.name?.trim()) {
+          const catName = c.name.trim();
+          const lowerName = catName.toLowerCase();
+          const orderVal = typeof c.order === "number" ? c.order : idx + 1;
+          categoryMap.set(lowerName, {
+            name: catName,
+            order: orderVal,
+            id: c._id || c.id,
+            description: c.description || "",
+          });
+        }
+      });
+    } else {
+      // 2. Fallback only if Central Categories collection is completely empty
+      (loadedFoods || []).forEach((f) => {
+        if (f.category?.trim()) {
+          const catName = f.category.trim();
+          const lowerName = catName.toLowerCase();
+          const orderVal =
+            typeof f.categoryOrder === "number" ? f.categoryOrder : 999;
 
-    // 2. Also incorporate categories present in food items
-    (loadedFoods || []).forEach((f) => {
-      if (f.category?.trim()) {
-        const catName = f.category.trim();
-        const lowerName = catName.toLowerCase();
-        const orderVal =
-          typeof f.categoryOrder === "number" ? f.categoryOrder : 999;
-
-        if (!categoryMap.has(lowerName)) {
-          categoryMap.set(lowerName, { name: catName, order: orderVal });
-        } else {
-          const existing = categoryMap.get(lowerName);
-          if (typeof existing.order !== "number" || existing.order === 999) {
-            existing.order = orderVal;
+          if (!categoryMap.has(lowerName)) {
+            categoryMap.set(lowerName, { name: catName, order: orderVal });
+          } else {
+            const existing = categoryMap.get(lowerName);
+            if (typeof existing.order !== "number" || existing.order === 999) {
+              existing.order = orderVal;
+            }
           }
         }
-      }
-    });
+      });
+    }
 
     return Array.from(categoryMap.values())
       .sort((a, b) => a.order - b.order)
