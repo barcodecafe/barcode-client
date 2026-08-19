@@ -269,12 +269,23 @@ export const RiderLayout = () => {
       }
     };
 
+    // 👤 ৪. রাইডারের ডিউটি স্ট্যাটাস (Online/On Break) রিয়েল-টাইমে সিঙ্ক করা
+    const handleRiderStatusSync = (payload) => {
+      const targetRiderId = String(payload?.riderId || payload?._id || payload?.id || "");
+      const currentRiderId = String(user?.id || user?._id || "");
+      if (!targetRiderId || targetRiderId === currentRiderId) {
+        refreshUser();
+      }
+    };
+
     socket.on("rider_order_assigned", handleNewOrderAssigned);
     socket.on("order_assigned", handleNewOrderAssigned);
     socket.on("order_updated", handleSilentSync);
     socket.on("order_status_updated", handleSilentSync);
     socket.on("rider_order_updated", handleSilentSync);
     socket.on("rider_cash_settled", handleCashSettled);
+    socket.on("rider_status_changed", handleRiderStatusSync);
+    socket.on("rider_updated", handleRiderStatusSync);
 
     return () => {
       clearTimeout(refetchTimer);
@@ -284,8 +295,10 @@ export const RiderLayout = () => {
       socket.off("order_status_updated", handleSilentSync);
       socket.off("rider_order_updated", handleSilentSync);
       socket.off("rider_cash_settled", handleCashSettled);
+      socket.off("rider_status_changed", handleRiderStatusSync);
+      socket.off("rider_updated", handleRiderStatusSync);
     };
-  }, [user, navigate, settings?.logoLight]);
+  }, [user, navigate, refreshUser, settings?.logoLight]);
 
   useEffect(() => {
     if (pendingCount > 0) {
