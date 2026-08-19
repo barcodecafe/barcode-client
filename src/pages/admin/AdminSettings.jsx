@@ -541,7 +541,7 @@ export const AdminSettings = () => {
             {/* Fit Mode (Contain vs Cover) Options */}
             <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800/70">
               <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider mb-2">
-                Image Display Fit (ইমেজ ডিসপ্লে ফিট)
+                Image Display Fit Mode
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
                 <button
@@ -566,10 +566,10 @@ export const AdminSettings = () => {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                      Contain (পুরো ছবি দেখাবে)
+                      Contain (Fit Entire Image)
                     </div>
                     <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      ছবি কোনো দিক দিয়ে কাটবে না, পুরো ব্যানারটি ফ্রেমের ভেতর ফিট থাকবে। (Default)
+                      Preserves the full image without cropping any edges. (Default)
                     </div>
                   </div>
                 </button>
@@ -596,10 +596,10 @@ export const AdminSettings = () => {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                      Cover (বক্স পূরণ করবে)
+                      Cover (Fill Container)
                     </div>
                     <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      পুরো বক্স পূর্ণ করে দেখাবে, কোনো খালি সাদা জায়গা থাকবে না।
+                      Expands the image to fill the container box edge-to-edge.
                     </div>
                   </div>
                 </button>
