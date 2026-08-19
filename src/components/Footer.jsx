@@ -161,7 +161,7 @@ export const Footer = () => {
               Payment Methods
             </h3>
            
-            <div className="w-full h-24 bg-white p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="w-3/4 h-24 bg-white p-2 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
               <img
                 src={settings.paymentBanner || sslBanner}
                 alt="Payment Channels"
