@@ -1408,6 +1408,10 @@ export const AdminOrders = () => {
                             <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                               Cancelled
                             </span>
+                          ) : ord.status === "Delivered" ? (
+                            <span className="px-2.5 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wide inline-flex items-center gap-1 shadow-2xs">
+                              <Check className="w-3.5 h-3.5 stroke-[3]" /> Delivered
+                            </span>
                           ) : (
                             <div>
                               <select
