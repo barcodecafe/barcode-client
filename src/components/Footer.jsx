@@ -156,7 +156,7 @@ export const Footer = () => {
             </h3>
            
             <div
-              className={`w-full 2xl:w-[70%] bg-white flex items-center justify-center overflow-hidden ${
+              className={`w-full lg:w-[80%] 2xl:w-[60%] bg-white flex items-center justify-center overflow-hidden ${
                 settings.paymentBannerFit === "cover" ? "h-24" : "h-auto"
               }`}
             >
