@@ -8,6 +8,10 @@ import {
   MessageSquare,
   Send,
   X,
+  CheckCircle,
+  Bike,
+  ChefHat,
+  PackageCheck,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
@@ -387,31 +391,74 @@ export const RiderOrders = () => {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleAccept(safeOrderId)}
-                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                               >
-                                Accept Job
+                                <CheckCircle className="w-3.5 h-3.5" /> Accept Job
                               </button>
                               <button
                                 onClick={() => handleReject(safeOrderId)}
-                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                               >
-                                Reject Job
+                                <X className="w-3.5 h-3.5" /> Reject Job
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={ord.status}
-                                onChange={(e) =>
-                                  handleStatusChange(safeOrderId, e.target.value)
-                                }
-                                className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-[10px] uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
-                              >
-                                <option value="Preparing">Preparing</option>
-                                <option value="Ready to Pick">Ready to Pick</option>
-                                <option value="Out for Delivery">Out for Delivery</option>
-                                <option value="Delivered">Delivered</option>
-                              </select>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* Stage 1: Kitchen Cooking */}
+                              {(ord.status === "Placed" ||
+                                ord.status === "Accepted" ||
+                                ord.status === "Preparing") && (
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold animate-pulse">
+                                    <ChefHat className="w-3.5 h-3.5" /> Kitchen Cooking...
+                                  </span>
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(safeOrderId, "Out for Delivery")
+                                    }
+                                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                                    title="Click to start delivery if food is already collected"
+                                  >
+                                    <Bike className="w-3.5 h-3.5" /> Start Delivery
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Stage 2: Food Ready for Pickup at Restaurant Counter */}
+                              {ord.status === "Ready to Pick" && (
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-black animate-pulse">
+                                    <PackageCheck className="w-3.5 h-3.5" /> Food Ready!
+                                  </span>
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(safeOrderId, "Out for Delivery")
+                                    }
+                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 animate-bounce"
+                                  >
+                                    <Bike className="w-4 h-4" /> Pick Up & Start Delivery
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Stage 3: On The Way to Customer */}
+                              {ord.status === "Out for Delivery" && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(safeOrderId, "Delivered")
+                                  }
+                                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
+                                >
+                                  <CheckCircle className="w-4 h-4" /> Mark as Delivered
+                                </button>
+                              )}
+
+                              {/* Stage 4: Delivered or Finished */}
+                              {ord.status === "Delivered" && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 font-bold text-xs">
+                                  <CheckCircle className="w-3.5 h-3.5" /> Delivered
+                                </span>
+                              )}
                             </div>
                           )}
 

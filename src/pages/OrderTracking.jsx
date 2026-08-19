@@ -236,12 +236,20 @@ export const OrderTracking = () => {
   const steps = [
     { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
     { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
-    { key: "Preparing", label: "Preparing", desc: "Chefs are cooking your meal" },
+    {
+      key: "Preparing",
+      label: order.status === "Ready to Pick" ? "Food Ready" : "Preparing",
+      desc:
+        order.status === "Ready to Pick"
+          ? "Food packed & ready for courier pickup"
+          : "Chefs are cooking your meal",
+    },
     { key: "Out for Delivery", label: "On The Way", desc: "Rider is out for delivery" },
     { key: "Delivered", label: "Delivered", desc: "Handed over successfully" },
   ];
 
   const getStepIndex = (status) => {
+    if (status === "Ready to Pick") return 2;
     return steps.findIndex((s) => s.key === status);
   };
 
@@ -251,8 +259,9 @@ export const OrderTracking = () => {
   let riderT = 0.05;
   if (order.status === "Accepted") riderT = 0.08;
   else if (order.status === "Preparing") riderT = 0.15;
+  else if (order.status === "Ready to Pick") riderT = 0.22;
   else if (order.status === "Out for Delivery") {
-    riderT = 0.2 + ((Date.now() % 30000) / 30000) * 0.7;
+    riderT = 0.25 + ((Date.now() % 30000) / 30000) * 0.65;
   } else if (order.status === "Delivered") riderT = 0.95;
 
   const getBezierPoint = (t) => {
