@@ -1205,10 +1205,10 @@ export const AdminDishes = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm focus:outline-none font-medium cursor-pointer appearance-none"
               >
-                <option value="All">All Categories ({foods.length})</option>
+                <option value="All">All Categories</option>
                 {sortedCategories.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat} ({categoryDishesCount[cat.toLowerCase()] || 0})
+                    {cat}
                   </option>
                 ))}
               </select>
