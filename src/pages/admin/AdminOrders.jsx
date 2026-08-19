@@ -1752,11 +1752,11 @@ export const AdminOrders = () => {
                 ref={invoiceRef}
                 className="invoice-container relative bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans overflow-hidden"
               >
-                {/* ❌ VOID / CANCELLED Watermark Stamp for Rejected Orders */}
+                {/* ❌ CANCELLED Watermark Stamp for Rejected Orders */}
                 {isRejectedOrder && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden select-none">
-                    <div className="border-4 border-rose-500/30 text-rose-500/25 dark:border-rose-500/40 dark:text-rose-500/30 text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.2em] px-8 py-4 rotate-[-22deg] rounded-3xl text-center shadow-xs">
-                      VOID / CANCELLED
+                    <div className="border-4 border-rose-500/30 text-rose-500/25 dark:border-rose-500/40 dark:text-rose-500/30 text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-[0.2em] px-8 py-4 rotate-[-22deg] rounded-3xl text-center shadow-xs">
+                      CANCELLED
                       <span className="block text-[11px] sm:text-xs tracking-normal font-bold mt-1 text-rose-500/40">
                         (ORDER REJECTED BY RESTAURANT)
                       </span>
@@ -1774,7 +1774,7 @@ export const AdminOrders = () => {
                   <div className="invoice-title text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
                     {isRejectedOrder ? (
                       <span className="text-rose-600 font-extrabold flex items-center justify-center gap-1.5">
-                        <X className="w-4 h-4 stroke-[3]" /> Invoice (Voided / Cancelled)
+                        <X className="w-4 h-4 stroke-[3]" /> Invoice (Cancelled)
                       </span>
                     ) : (
                       "Invoice"
@@ -2084,7 +2084,7 @@ export const AdminOrders = () => {
                       <div className="summary-row flex justify-between py-1 font-black text-neutral-900">
                         <span>{isRejectedOrder ? "Remaining Due:" : "Remaining Amount:"}</span>
                         <span className={remainingAmount > 0 ? "text-rose-600" : isRejectedOrder ? "text-rose-600 font-bold" : "text-emerald-600"}>
-                          ৳{remainingAmount.toFixed(2)} {isRejectedOrder ? "(VOIDED)" : ""}
+                          ৳{remainingAmount.toFixed(2)} {isRejectedOrder ? "(CANCELLED)" : ""}
                         </span>
                       </div>
                     </div>
@@ -2093,14 +2093,14 @@ export const AdminOrders = () => {
                   <div className="words-section pt-2 text-xs text-neutral-600 font-medium">
                     Amount in Words:{" "}
                     <span className="italic font-bold text-neutral-800 capitalize">
-                      {isRejectedOrder ? "Zero Taka (Voided Invoice)" : numberToWords(grandTotal)}
+                      {isRejectedOrder ? "Zero Taka (Cancelled Invoice)" : numberToWords(grandTotal)}
                     </span>
                   </div>
 
-                  {/* 🚫 Official Notice for Voided Invoices */}
+                  {/* 🚫 Official Notice for Cancelled Invoices */}
                   {isRejectedOrder && (
                     <div className="p-3 mt-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-center text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                      ⚠️ NOTICE: This order was rejected and cancelled by restaurant administration. This invoice is officially VOID and invalid for food collection, delivery, or payment.
+                      ⚠️ NOTICE: This order was rejected and cancelled by restaurant administration. This invoice is officially CANCELLED and invalid for food collection, delivery, or payment.
                       {selectedOrderDetails.pointsRedeemed > 0 && (
                         <span className="block text-[10px] text-emerald-600 mt-0.5 font-bold">
                           🪙 {selectedOrderDetails.pointsRedeemed} Loyalty Points have been restored to customer account.
