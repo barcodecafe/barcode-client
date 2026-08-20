@@ -25,6 +25,7 @@ import { socket } from "../services/socket";
 
 // 💡 Global FoodCard Import
 import FoodCard from "../components/FoodCard";
+import usePreviewCount from "../hooks/usePreviewCount";
 
 // Import Swiper styles
 import "swiper/css";
@@ -32,11 +33,9 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-const PREVIEW_COUNT = 5;
-
 export const Home = () => {
+  const previewCount = usePreviewCount();
   const [brands, setBrands] = useState([]);
-  const [previewBranches, setPreviewBranches] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
   const [heroSlides, setHeroSlides] = useState([]);
@@ -69,7 +68,6 @@ export const Home = () => {
 
         const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
         setAllBranches(sortedBranches);
-        setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
 
         setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
         setAllFoods(Array.isArray(foodsData) ? foodsData : []);
@@ -95,7 +93,6 @@ export const Home = () => {
         if (!isMounted) return;
         const sortedBranches = Array.isArray(branchesData) ? branchesData : [];
         setAllBranches(sortedBranches);
-        setPreviewBranches(sortedBranches.slice(0, PREVIEW_COUNT));
       }).catch(() => {});
     };
 
@@ -163,8 +160,23 @@ export const Home = () => {
     return applyFoodDiscount(basePrice, food);
   };
 
-  const previewBrands = useMemo(() => brands.slice(0, PREVIEW_COUNT), [brands]);
-  const remainingBrands = useMemo(() => brands.slice(PREVIEW_COUNT), [brands]);
+  const previewBranches = useMemo(
+    () => allBranches.slice(0, previewCount),
+    [allBranches, previewCount],
+  );
+  const remainingBranches = useMemo(
+    () => allBranches.slice(previewCount),
+    [allBranches, previewCount],
+  );
+
+  const previewBrands = useMemo(
+    () => brands.slice(0, previewCount),
+    [brands, previewCount],
+  );
+  const remainingBrands = useMemo(
+    () => brands.slice(previewCount),
+    [brands, previewCount],
+  );
 
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
@@ -184,12 +196,12 @@ export const Home = () => {
   }, [allFoods, activeSort]);
 
   const previewPopularFoods = useMemo(
-    () => totalPopularFoods.slice(0, PREVIEW_COUNT),
-    [totalPopularFoods],
+    () => totalPopularFoods.slice(0, previewCount),
+    [totalPopularFoods, previewCount],
   );
   const remainingPopularFoods = useMemo(
-    () => totalPopularFoods.slice(PREVIEW_COUNT),
-    [totalPopularFoods],
+    () => totalPopularFoods.slice(previewCount),
+    [totalPopularFoods, previewCount],
   );
 
   const totalFeaturedMenu = useMemo(() => {
@@ -199,17 +211,12 @@ export const Home = () => {
   }, [allFoods]);
 
   const previewFeaturedMenu = useMemo(
-    () => totalFeaturedMenu.slice(0, PREVIEW_COUNT),
-    [totalFeaturedMenu],
+    () => totalFeaturedMenu.slice(0, previewCount),
+    [totalFeaturedMenu, previewCount],
   );
   const remainingFeaturedMenu = useMemo(
-    () => totalFeaturedMenu.slice(PREVIEW_COUNT),
-    [totalFeaturedMenu],
-  );
-
-  const remainingBranches = useMemo(
-    () => allBranches.slice(PREVIEW_COUNT),
-    [allBranches],
+    () => totalFeaturedMenu.slice(previewCount),
+    [totalFeaturedMenu, previewCount],
   );
 
   const foodsById = useMemo(
@@ -377,7 +384,7 @@ export const Home = () => {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {previewBranches.map((branch) => (
               <BranchCard key={branch.id} branch={branch} variants={fadeInUp} />
@@ -399,7 +406,7 @@ export const Home = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingBranches.map((branch) => (
                   <BranchCard
@@ -441,7 +448,7 @@ export const Home = () => {
           </div>
 
           <div className="shrink-0 flex justify-end">
-            {totalPopularFoods.length > PREVIEW_COUNT ? (
+            {totalPopularFoods.length > previewCount ? (
               <button
                 onClick={() => setShowAllPopular((v) => !v)}
                 className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
@@ -493,7 +500,7 @@ export const Home = () => {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -525,7 +532,7 @@ export const Home = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingPopularFoods.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -610,7 +617,7 @@ export const Home = () => {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -641,7 +648,7 @@ export const Home = () => {
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
                     {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);
@@ -673,7 +680,7 @@ export const Home = () => {
               Our Family of Brands
             </h2>
             <div className="flex justify-end">
-              {brands.length > PREVIEW_COUNT ? (
+              {brands.length > previewCount ? (
                 <button
                   onClick={() => setShowAllBrands((v) => !v)}
                   className="flex items-center gap-1 px-3 py-2 sm:px-4 sm:py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-semibold hover:border-primary-500 hover:text-primary-500 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
@@ -714,7 +721,7 @@ export const Home = () => {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
+              className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
             >
               {previewBrands.map((brand) => (
                 <BrandCard key={brand.id} brand={brand} variants={fadeInUp} />
@@ -736,7 +743,7 @@ export const Home = () => {
                   variants={staggerContainer}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                 >
                   {remainingBrands.map((brand) => (
                     <BrandCard
