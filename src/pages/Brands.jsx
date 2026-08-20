@@ -106,8 +106,12 @@ export const Brands = () => {
 
   const branchCountByBrand = useMemo(() => {
     const m = {};
-    branches.forEach((br) => {
-      if (br.brandId != null) m[br.brandId] = (m[br.brandId] || 0) + 1;
+    (branches || []).forEach((br) => {
+      const bId = br.brandId ?? br.brand?._id ?? br.brand?.id;
+      if (bId != null) {
+        m[bId] = (m[bId] || 0) + 1;
+        m[String(bId)] = (m[String(bId)] || 0) + 1;
+      }
     });
     return m;
   }, [branches]);
@@ -239,11 +243,15 @@ export const Brands = () => {
               pagination={{ clickable: true }}
               className="!pb-8"
             >
-              {brands.map((brand) => (
-                <SwiperSlide key={brand.id}>
-                  <BrandMainCard brand={brand} branchCount={branchCountByBrand[brand.id] || 0} />
-                </SwiperSlide>
-              ))}
+              {brands.map((brand) => {
+                const bId = brand.id ?? brand._id;
+                const count = branchCountByBrand[bId] ?? branchCountByBrand[String(bId)] ?? 0;
+                return (
+                  <SwiperSlide key={bId}>
+                    <BrandMainCard brand={brand} branchCount={count} />
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
           </div>
 
@@ -254,14 +262,18 @@ export const Brands = () => {
             variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
             className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
           >
-            {brands.map((brand) => (
-              <motion.div
-                key={brand.id}
-                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              >
-                <BrandMainCard brand={brand} branchCount={branchCountByBrand[brand.id] || 0} />
-              </motion.div>
-            ))}
+            {brands.map((brand) => {
+              const bId = brand.id ?? brand._id;
+              const count = branchCountByBrand[bId] ?? branchCountByBrand[String(bId)] ?? 0;
+              return (
+                <motion.div
+                  key={bId}
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                >
+                  <BrandMainCard brand={brand} branchCount={count} />
+                </motion.div>
+              );
+            })}
           </motion.div>
         </>
       )}
@@ -497,7 +509,7 @@ export const Brands = () => {
                     animate="visible"
                     className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
-                    {remainingFeaturedMenu.main?.map((food) => {
+                    {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);
                       return (
                         <FoodCard
@@ -523,15 +535,16 @@ export const Brands = () => {
 
 // 💡 Top Brands Item Card Component
 const BrandMainCard = memo(({ brand, branchCount }) => {
+  const brandLogo = brand.logoLight || brand.logoDark || brand.cover;
   return (
     <Link
       to={`/brands/${brand.slug}`}
       className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
     >
       <div className="relative h-36 bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
-        {brand.logoLight || brand.cover ? (
+        {brandLogo ? (
           <img
-            src={brand.logoLight || brand.cover}
+            src={brandLogo}
             alt={brand.name}
             loading="lazy"
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
