@@ -6,7 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { Sun, Moon, Menu, X, ShoppingBag, Search as SearchIcon, User, LogIn, UserPlus, LogOut, LayoutDashboard, Bike, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBrand } from '../context/BrandContext';
 import { SearchBar } from './SearchBar';
+import { BrandSearchBar } from './BrandSearchBar';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
@@ -36,6 +38,7 @@ export const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const { cartItemCount, openCart } = useCart();
   const { settings } = useSettings();
+  const brand = useBrand();
 
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const isRider = user?.role === 'rider';
@@ -47,13 +50,20 @@ export const Navbar = () => {
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
-  const baseNavLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Our Brands', path: '/brands' },
-    { name: 'Our Branches', path: '/branches' },
-    { name: 'Menu', path: '/menu' },
-    { name: 'About', path: '/about' },
-  ];
+  const baseNavLinks = brand
+    ? [
+        { name: 'Home', path: `/brands/${brand.slug}`, end: true },
+        { name: 'Branches', path: `/brands/${brand.slug}/branches`, end: false },
+        { name: 'Menu', path: `/brands/${brand.slug}/menu`, end: false },
+        { name: 'All Brands', path: '/brands', end: false },
+      ]
+    : [
+        { name: 'Home', path: '/', end: true },
+        { name: 'Our Brands', path: '/brands', end: false },
+        { name: 'Our Branches', path: '/branches', end: false },
+        { name: 'Menu', path: '/menu', end: false },
+        { name: 'About', path: '/about', end: false },
+      ];
 
   const navLinks = isAuthenticated
     ? [...baseNavLinks, { name: 'My Orders', path: '/profile?tab=orders' }]
@@ -108,6 +118,13 @@ export const Navbar = () => {
     logout();
   };
 
+  const brandLogo = brand
+    ? (theme === 'dark' ? (brand.logoDark || brand.logoLight) : (brand.logoLight || brand.logoDark))
+    : null;
+  const siteLogo = theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB);
+  const logoSrc = brand ? brandLogo : siteLogo;
+  const logoLink = brand ? `/brands/${brand.slug}` : '/';
+
   const iconBtn =
     'relative p-1.5 rounded-lg border border-neutral-200/60 dark:border-neutral-800/60 bg-white/50 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-300 hover:text-primary-500 hover:border-primary-500/40 dark:hover:text-primary-500 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200';
 
@@ -118,12 +135,18 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-full gap-2 xl:gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center shrink-0 group" aria-label="Barcode Restaurant — home">
-            <img
-              src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
-              alt="Barcode Restaurant"
-              className="h-7 lg:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-            />
+          <Link to={logoLink} className="flex items-center shrink-0 group" aria-label={brand ? brand.name : "Barcode Restaurant — home"}>
+            {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt={brand ? brand.name : "Barcode Restaurant"}
+                className="h-7 lg:h-8 w-auto max-w-[160px] object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              />
+            ) : (
+              <span className="font-display text-base lg:text-lg font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
+                {brand?.name}
+              </span>
+            )}
           </Link>
 
           {/* Desktop Nav Links */}
@@ -132,7 +155,7 @@ export const Navbar = () => {
               <NavLink
                 key={link.path}
                 to={link.path}
-                end={link.path === '/'}
+                end={link.end}
                 className={({ isActive }) => {
                   const isOrdersTabActive = link.path.includes('tab=orders') && window.location.search.includes('tab=orders');
                   const active = isActive || isOrdersTabActive;
@@ -167,7 +190,11 @@ export const Navbar = () => {
 
           {/* Desktop Search */}
           <div className="hidden lg:block w-44 xl:w-56 shrink">
-            <SearchBar variant="desktop" />
+            {brand ? (
+              <BrandSearchBar brand={brand} variant="desktop" />
+            ) : (
+              <SearchBar variant="desktop" />
+            )}
           </div>
 
           {/* Right Controls */}
