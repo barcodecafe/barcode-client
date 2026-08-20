@@ -76,7 +76,6 @@ export const Footer = () => {
         { name: 'Home', path: `/brands/${brand.slug}` },
         { name: 'Branches', path: `/brands/${brand.slug}/branches` },
         { name: 'Menu', path: `/brands/${brand.slug}/menu` },
-        { name: 'About Us', path: `/brands/${brand.slug}/about` },
         { name: 'Our Brands', path: '/brands' },
       ]
     : [
