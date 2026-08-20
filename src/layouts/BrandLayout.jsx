@@ -63,15 +63,15 @@ export const BrandLayout = () => {
       <ScrollToTop />
       <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-300">
         {/* Sleek Brand-themed Top Utility Bar with Back to Main Site */}
-        <div className="bg-neutral-100/90 dark:bg-neutral-900/90 text-neutral-600 dark:text-neutral-300 text-[11px] font-medium border-b border-neutral-200/80 dark:border-neutral-800/80 transition-colors duration-300">
+        <div className="bg-neutral-100/90 dark:bg-neutral-900/90 text-[11px] font-medium border-b border-neutral-200/80 dark:border-neutral-800/80 transition-colors duration-300">
           <div className="site-container py-1.5 flex items-center justify-between gap-3">
-            <span className="truncate flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+            <span className="truncate flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
               <span className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0 animate-pulse" />
-              Part of <strong className="text-neutral-900 dark:text-white font-bold">{brand.name}</strong> • Barcode Restaurant Group
+              Part of <strong className="text-neutral-900 dark:text-white font-bold">{brand.name}</strong> • <span className="text-primary-600 dark:text-primary-500 font-semibold">Barcode Restaurant Group</span>
             </span>
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 shrink-0 font-semibold text-neutral-700 dark:text-neutral-200 hover:text-primary-500 dark:hover:text-primary-500 transition-colors duration-200"
+              className="inline-flex items-center gap-1.5 shrink-0 font-bold text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors duration-200"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Main Site
             </Link>
