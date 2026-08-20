@@ -198,151 +198,154 @@ export const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Search */}
-          <div className="hidden lg:block w-44 xl:w-56 2xl:w-72 3xl:w-80 4xl:w-96 shrink">
-            {brand ? (
-              <BrandSearchBar brand={brand} variant="desktop" />
-            ) : (
-              <SearchBar variant="desktop" />
-            )}
-          </div>
-
-          {/* Right Controls */}
-          <div className="hidden md:flex items-center gap-1.5 2xl:gap-3 shrink-0">
-            <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            </button>
-
-            <button onClick={openCart} className={iconBtn} aria-label="Open order cart">
-              <ShoppingBag className="w-3.5 h-3.5" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 px-0.5 items-center justify-center rounded-full bg-primary-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-950">
-                  {cartItemCount}
-                </span>
+          {/* Right Group: Search + Controls */}
+          <div className="flex items-center gap-2 xl:gap-3 2xl:gap-2.5 3xl:gap-3 4xl:gap-3.5 shrink-0">
+            {/* Desktop Search */}
+            <div className="hidden lg:block w-44 xl:w-56 2xl:w-72 3xl:w-80 4xl:w-96 shrink">
+              {brand ? (
+                <BrandSearchBar brand={brand} variant="desktop" />
+              ) : (
+                <SearchBar variant="desktop" />
               )}
-            </button>
+            </div>
 
-            <span className="w-px h-5 bg-neutral-200 dark:bg-neutral-800 mx-0.5" aria-hidden="true" />
+            {/* Right Controls */}
+            <div className="hidden md:flex items-center gap-1.5 2xl:gap-2 shrink-0">
+              <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
 
-            <div className="relative" ref={userMenuRef}>
-              {isAuthenticated ? (
-                <div className="relative group">
+              <button onClick={openCart} className={iconBtn} aria-label="Open order cart">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 px-0.5 items-center justify-center rounded-full bg-primary-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-950">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+
+              <span className="w-px h-5 bg-neutral-200 dark:bg-neutral-800 mx-0.5" aria-hidden="true" />
+
+              <div className="relative" ref={userMenuRef}>
+                {isAuthenticated ? (
+                  <div className="relative group">
+                    <button
+                      onClick={() => setIsUserDropdownOpen((v) => !v)}
+                      className="flex items-center gap-1 p-1 rounded-full border border-neutral-200/70 dark:border-neutral-800/70 bg-white/50 dark:bg-neutral-900/50 hover:border-primary-500/40 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
+                      aria-label="Open account menu"
+                      aria-haspopup="menu"
+                      aria-expanded={isUserDropdownOpen}
+                    >
+                      <Avatar name={user.name} />
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-neutral-400 mr-0.5 transition-transform duration-200 ${
+                          isUserDropdownOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] font-semibold rounded-md whitespace-nowrap shadow-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50">
+                      {user.name}
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral-900 dark:bg-neutral-100 rotate-45" />
+                    </div>
+                  </div>
+                ) : (
                   <button
                     onClick={() => setIsUserDropdownOpen((v) => !v)}
-                    className="flex items-center gap-1 p-1 rounded-full border border-neutral-200/70 dark:border-neutral-800/70 bg-white/50 dark:bg-neutral-900/50 hover:border-primary-500/40 hover:bg-white dark:hover:bg-neutral-900 transition-all duration-200"
-                    aria-label="Open account menu"
+                    className={iconBtn}
+                    aria-label="Open sign in menu"
                     aria-haspopup="menu"
                     aria-expanded={isUserDropdownOpen}
                   >
-                    <Avatar name={user.name} />
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 text-neutral-400 mr-0.5 transition-transform duration-200 ${
-                        isUserDropdownOpen ? 'rotate-180' : ''
-                      }`}
-                    />
+                    <User className="w-3.5 h-3.5" />
                   </button>
-
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] font-semibold rounded-md whitespace-nowrap shadow-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50">
-                    {user.name}
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral-900 dark:bg-neutral-100 rotate-45" />
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsUserDropdownOpen((v) => !v)}
-                  className={iconBtn}
-                  aria-label="Open sign in menu"
-                  aria-haspopup="menu"
-                  aria-expanded={isUserDropdownOpen}
-                >
-                  <User className="w-3.5 h-3.5" />
-                </button>
-              )}
-
-              {/* Dropdown Menu */}
-              <AnimatePresence>
-                {isUserDropdownOpen && (
-                  <motion.div
-                    role="menu"
-                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-3 w-56 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
-                  >
-                    {isAuthenticated ? (
-                      <>
-                        <div className="flex items-center gap-2.5 px-3.5 py-3 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
-                          <Avatar name={user.name} size="lg" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{user.name}</p>
-                            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
-                            <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.2 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-500">
-                              {roleLabel}
-                            </span>
-                          </div>
-                        </div>
-
-                        {accountLinks.length > 0 && (
-                          <div className="p-1 border-b border-neutral-100 dark:border-neutral-800">
-                            {accountLinks.map((item) => (
-                              <Link
-                                key={item.to}
-                                to={item.to}
-                                role="menuitem"
-                                onClick={() => setIsUserDropdownOpen(false)}
-                                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
-                              >
-                                <item.icon className="w-3.5 h-3.5 shrink-0" />
-                                {item.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="p-1">
-                          <button
-                            onClick={handleLogout}
-                            role="menuitem"
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                          >
-                            <LogOut className="w-3.5 h-3.5 shrink-0" />
-                            Log Out
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="px-3.5 py-3 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
-                          <p className="text-xs font-bold text-neutral-800 dark:text-white">Welcome to Barcode</p>
-                          <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Login to manage your orders</p>
-                        </div>
-
-                        <div className="p-1 flex flex-col gap-0.5">
-                          <Link
-                            to="/login"
-                            role="menuitem"
-                            onClick={() => setIsUserDropdownOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
-                          >
-                            <LogIn className="w-3.5 h-3.5 text-neutral-500" />
-                            Log In
-                          </Link>
-                          <Link
-                            to="/signup"
-                            role="menuitem"
-                            onClick={() => setIsUserDropdownOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
-                          >
-                            <UserPlus className="w-3.5 h-3.5 text-neutral-500" />
-                            Sign Up
-                          </Link>
-                        </div>
-                      </>
-                    )}
-                  </motion.div>
                 )}
-              </AnimatePresence>
+
+                {/* Dropdown Menu */}
+                <AnimatePresence>
+                  {isUserDropdownOpen && (
+                    <motion.div
+                      role="menu"
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-3 w-56 origin-top-right rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 shadow-xl shadow-neutral-900/10 overflow-hidden"
+                    >
+                      {isAuthenticated ? (
+                        <>
+                          <div className="flex items-center gap-2.5 px-3.5 py-3 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
+                            <Avatar name={user.name} size="lg" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-neutral-800 dark:text-white truncate">{user.name}</p>
+                              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+                              <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.2 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-500">
+                                {roleLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {accountLinks.length > 0 && (
+                            <div className="p-1 border-b border-neutral-100 dark:border-neutral-800">
+                              {accountLinks.map((item) => (
+                                <Link
+                                  key={item.to}
+                                  to={item.to}
+                                  role="menuitem"
+                                  onClick={() => setIsUserDropdownOpen(false)}
+                                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                                >
+                                  <item.icon className="w-3.5 h-3.5 shrink-0" />
+                                  {item.label}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="p-1">
+                            <button
+                              onClick={handleLogout}
+                              role="menuitem"
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            >
+                              <LogOut className="w-3.5 h-3.5 shrink-0" />
+                              Log Out
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="px-3.5 py-3 bg-neutral-50 dark:bg-neutral-850 border-b border-neutral-100 dark:border-neutral-800">
+                            <p className="text-xs font-bold text-neutral-800 dark:text-white">Welcome to Barcode</p>
+                            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Login to manage your orders</p>
+                          </div>
+
+                          <div className="p-1 flex flex-col gap-0.5">
+                            <Link
+                              to="/login"
+                              role="menuitem"
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                            >
+                              <LogIn className="w-3.5 h-3.5 text-neutral-500" />
+                              Log In
+                            </Link>
+                            <Link
+                              to="/signup"
+                              role="menuitem"
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 hover:text-primary-500 dark:hover:text-primary-500 transition-colors"
+                            >
+                              <UserPlus className="w-3.5 h-3.5 text-neutral-500" />
+                              Sign Up
+                            </Link>
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
