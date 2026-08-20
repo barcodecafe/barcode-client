@@ -260,7 +260,7 @@ export const Brands = () => {
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+            className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {brands.map((brand) => {
               const bId = brand.id ?? brand._id;
@@ -358,7 +358,7 @@ export const Brands = () => {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+            className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {previewPopularFoods.map((food) => {
               const favorited = isFavorite(food.id);
@@ -390,7 +390,7 @@ export const Brands = () => {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
               >
                 {remainingPopularFoods.map((food) => {
                   const favorited = isFavorite(food.id);
@@ -476,7 +476,7 @@ export const Brands = () => {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
             >
               {previewFeaturedMenu.map((food) => {
                 const favorited = isFavorite(food.id);
@@ -507,7 +507,7 @@ export const Brands = () => {
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 mt-4 sm:mt-6"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-3 sm:gap-6 mt-4 sm:mt-6"
                   >
                     {remainingFeaturedMenu.map((food) => {
                       const favorited = isFavorite(food.id);

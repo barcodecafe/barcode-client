@@ -869,7 +869,7 @@ export const Profile = () => {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 3xl:grid 3xl:grid-cols-2 3xl:gap-4 3xl:space-y-0">
           {sortedOrders.map((order) => (
             <OrderCard
               key={order.id || order._id}

@@ -80,18 +80,24 @@
 @media (min-width: 1536px) {
   .site-container {
     max-width: 96rem;   /* 1536px (2xl) */
+    padding-left: 5rem;
+    padding-right: 5rem;
   }
 }
 
 @media (min-width: 1920px) {
   .site-container {
     max-width: 120rem;  /* 1920px (3xl - Full HD Big Monitor) */
+    padding-left: 6rem;
+    padding-right: 6rem;
   }
 }
 
 @media (min-width: 2560px) {
   .site-container {
     max-width: 160rem;  /* 2560px (4xl - 2K/4K Ultra-wide) */
+    padding-left: 8rem;
+    padding-right: 8rem;
   }
 }
 

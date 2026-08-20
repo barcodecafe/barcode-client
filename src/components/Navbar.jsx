@@ -150,17 +150,17 @@ export const Navbar = () => {
               <img
                 src={logoSrc}
                 alt={brand ? brand.name : "Barcode Restaurant"}
-                className="h-7 lg:h-8 w-auto max-w-[160px] object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                className="h-7 lg:h-8 2xl:h-9 3xl:h-10 w-auto max-w-[160px] 2xl:max-w-[200px] object-contain transition-transform duration-300 group-hover:scale-[1.03]"
               />
             ) : (
-              <span className="font-display text-base lg:text-lg font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
+              <span className="font-display text-base lg:text-lg 2xl:text-xl font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
                 {brand?.name}
               </span>
             )}
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-3 lg:gap-5 shrink-0">
+          <div className="hidden md:flex items-center gap-3 lg:gap-5 2xl:gap-8 3xl:gap-10 shrink-0">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
@@ -170,7 +170,7 @@ export const Navbar = () => {
                   const isOrdersTabActive = link.path.includes('tab=orders') && window.location.search.includes('tab=orders');
                   const active = isActive || isOrdersTabActive;
 
-                  return `text-xs lg:text-sm font-medium transition-colors duration-200 relative py-1 whitespace-nowrap ${
+                  return `text-xs lg:text-sm 2xl:text-base font-medium transition-colors duration-200 relative py-1 whitespace-nowrap ${
                     active
                       ? 'text-primary-600 dark:text-primary-500 font-semibold'
                       : 'text-neutral-600 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-500'
@@ -199,7 +199,7 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Search */}
-          <div className="hidden lg:block w-44 xl:w-56 shrink">
+          <div className="hidden lg:block w-44 xl:w-56 2xl:w-72 3xl:w-80 4xl:w-96 shrink">
             {brand ? (
               <BrandSearchBar brand={brand} variant="desktop" />
             ) : (
@@ -208,7 +208,7 @@ export const Navbar = () => {
           </div>
 
           {/* Right Controls */}
-          <div className="hidden md:flex items-center gap-1.5 shrink-0">
+          <div className="hidden md:flex items-center gap-1.5 2xl:gap-3 shrink-0">
             <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>

@@ -105,7 +105,7 @@ export const BrandHome = () => {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6">
             {[1, 2, 3, 4, 5].map((n) => (
               <div key={n} className="h-72 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/50 dark:border-neutral-800/50" />
             ))}
@@ -198,7 +198,7 @@ export const BrandHome = () => {
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+              className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
             >
               {branches.map((br) => {
                 const branchPhone = br.phone || br.contactNumber || br.contact || br.phoneNo;
