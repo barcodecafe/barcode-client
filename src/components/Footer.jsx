@@ -71,7 +71,7 @@ export const Footer = () => {
     },
   ];
 
-  const baseQuickLinks = brand
+  const quickLinks = brand
     ? [
         { name: 'Home', path: `/brands/${brand.slug}` },
         { name: 'Branches', path: `/brands/${brand.slug}/branches` },
@@ -85,14 +85,6 @@ export const Footer = () => {
         { name: 'Menu', path: '/menu' },
         { name: 'About Us', path: '/about' },
       ];
-
-  const ordersPath = brand
-    ? `/brands/${brand.slug}/profile?tab=orders`
-    : '/profile?tab=orders';
-
-  const quickLinks = isAuthenticated
-    ? [...baseQuickLinks, { name: 'My Orders', path: ordersPath }]
-    : baseQuickLinks;
 
   return (
     <footer className="w-full bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
