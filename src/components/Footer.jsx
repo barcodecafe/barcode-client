@@ -86,8 +86,12 @@ export const Footer = () => {
         { name: 'About Us', path: '/about' },
       ];
 
+  const ordersPath = brand
+    ? `/brands/${brand.slug}/profile?tab=orders`
+    : '/profile?tab=orders';
+
   const quickLinks = isAuthenticated
-    ? [...baseQuickLinks, { name: 'My Orders', path: '/profile?tab=orders' }]
+    ? [...baseQuickLinks, { name: 'My Orders', path: ordersPath }]
     : baseQuickLinks;
 
   return (

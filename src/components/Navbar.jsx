@@ -64,11 +64,22 @@ export const Navbar = () => {
         { name: 'About', path: '/about', end: false },
       ];
 
+  const ordersPath = brand
+    ? `/brands/${brand.slug}/profile?tab=orders`
+    : '/profile?tab=orders';
+
+  const profilePath = brand
+    ? `/brands/${brand.slug}/profile`
+    : '/profile';
+
   const navLinks = isAuthenticated
-    ? [...baseNavLinks, { name: 'My Orders', path: '/profile?tab=orders' }]
+    ? [...baseNavLinks, { name: 'My Orders', path: ordersPath }]
     : baseNavLinks;
 
   const accountLinks = [];
+  if (user?.role === 'user') {
+    accountLinks.push({ to: profilePath, label: 'My Profile & Orders', icon: User });
+  }
   if (isAdmin) accountLinks.push({ to: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard });
   if (isRider) accountLinks.push({ to: '/rider', label: 'Rider Portal', icon: Bike });
 
