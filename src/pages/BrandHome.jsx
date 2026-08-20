@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, ArrowRight, UtensilsCrossed, Building2 } from "lucide-react";
+import { MapPin, ArrowRight, UtensilsCrossed, Building2, Phone, Star } from "lucide-react";
 
 // Swiper imports (matching Home.jsx pattern)
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -107,13 +107,13 @@ export const BrandHome = () => {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {[1, 2, 3, 4, 5].map((n) => (
-              <div key={n} className="h-64 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
+              <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/50 dark:border-neutral-800/50" />
             ))}
           </div>
         ) : branches.length === 0 ? (
-          <div className="text-center py-12 rounded-none border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400">
-            <MapPin className="w-8 h-8 mx-auto stroke-1 mb-2" />
-            <p className="text-sm">No branches listed for {brand.name} yet.</p>
+          <div className="text-center py-12 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400 bg-white/40 dark:bg-neutral-900/40">
+            <MapPin className="w-8 h-8 mx-auto stroke-1 mb-2 text-neutral-300 dark:text-neutral-700" />
+            <p className="text-sm font-medium">No branches listed for {brand.name} yet.</p>
           </div>
         ) : (
           <>
@@ -126,38 +126,70 @@ export const BrandHome = () => {
                 pagination={{ clickable: true }}
                 className="!px-4 !pb-8"
               >
-                {branches.map((br) => (
-                  <SwiperSlide key={br.id || br._id}>
-                    <Link
-                      to={`/brands/${brand.slug}/branches/${br.id || br._id}`}
-                      className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
-                    >
-                      <div className="relative h-40 bg-neutral-100 dark:bg-neutral-950 overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
-                        {br.image ? (
-                          <img
-                            src={br.image}
-                            alt={br.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
-                            <Building2 className="w-8 h-8 text-neutral-400" />
+                {branches.map((br) => {
+                  const branchPhone = br.phone || br.contactNumber || br.contact || br.phoneNo;
+                  const detailUrl = `/brands/${brand.slug}/branches/${br.id || br._id}`;
+                  return (
+                    <SwiperSlide key={br.id || br._id}>
+                      <div className="group flex flex-col justify-between h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 hover:border-primary-500/40 transition-all duration-300">
+                        <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                          <Link to={detailUrl}>
+                            {br.image ? (
+                              <img
+                                src={br.image}
+                                alt={br.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
+                                <Building2 className="w-8 h-8 text-neutral-400" />
+                              </div>
+                            )}
+                          </Link>
+                          {br.rating && (
+                            <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10 shadow-xs">
+                              ★ {br.rating}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-4 grow flex flex-col justify-between gap-3 sm:gap-4">
+                          <div>
+                            <Link to={detailUrl}>
+                              <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-1.5 leading-snug break-words">
+                                {br.name}
+                              </h3>
+                            </Link>
+                            {br.location && (
+                              <div className="flex gap-1.5 items-start text-xs text-neutral-500 dark:text-neutral-400">
+                                <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0 mt-0.5" />
+                                <span className="line-clamp-2">{br.location}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          <div className="pt-2.5 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-semibold mt-auto">
+                            <a
+                              href={branchPhone ? `tel:${branchPhone}` : '#'}
+                              className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-primary-500" />
+                              <span>Call</span>
+                            </a>
+                            <Link
+                              to={detailUrl}
+                              className="text-primary-500 hover:text-primary-600 flex items-center gap-0.5 group/btn font-semibold"
+                            >
+                              Details
+                              <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                            </Link>
+                          </div>
+                        </div>
                       </div>
-                      <div className="p-5 flex flex-col flex-1">
-                        <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
-                        <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 shrink-0 text-primary-500" /> <span className="truncate">{br.location}</span>
-                        </p>
-                        <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs mt-auto pt-4 group-hover:gap-1.5 transition-all">
-                          View branch <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
-                    </Link>
-                  </SwiperSlide>
-                ))}
+                    </SwiperSlide>
+                  );
+                })}
               </Swiper>
             </div>
 
@@ -168,38 +200,70 @@ export const BrandHome = () => {
               variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
               className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6"
             >
-              {branches.map((br) => (
-                <motion.div key={br.id || br._id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
-                  <Link
-                    to={`/brands/${brand.slug}/branches/${br.id || br._id}`}
-                    className="group flex flex-col h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all"
-                  >
-                    <div className="relative h-40 bg-neutral-100 dark:bg-neutral-950 overflow-hidden border-b border-neutral-100 dark:border-neutral-800/40">
-                      {br.image ? (
-                        <img
-                          src={br.image}
-                          alt={br.name}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
-                          <Building2 className="w-8 h-8 text-neutral-400" />
+              {branches.map((br) => {
+                const branchPhone = br.phone || br.contactNumber || br.contact || br.phoneNo;
+                const detailUrl = `/brands/${brand.slug}/branches/${br.id || br._id}`;
+                return (
+                  <motion.div key={br.id || br._id} variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}>
+                    <div className="group flex flex-col justify-between h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 hover:border-primary-500/40 transition-all duration-300">
+                      <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                        <Link to={detailUrl}>
+                          {br.image ? (
+                            <img
+                              src={br.image}
+                              alt={br.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
+                              <Building2 className="w-8 h-8 text-neutral-400" />
+                            </div>
+                          )}
+                        </Link>
+                        {br.rating && (
+                          <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10 shadow-xs">
+                            ★ {br.rating}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 grow flex flex-col justify-between gap-3 sm:gap-4">
+                        <div>
+                          <Link to={detailUrl}>
+                            <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-1.5 leading-snug break-words">
+                              {br.name}
+                            </h3>
+                          </Link>
+                          {br.location && (
+                            <div className="flex gap-1.5 items-start text-xs text-neutral-500 dark:text-neutral-400">
+                              <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0 mt-0.5" />
+                              <span className="line-clamp-2">{br.location}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+
+                        <div className="pt-2.5 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-semibold mt-auto">
+                          <a
+                            href={branchPhone ? `tel:${branchPhone}` : '#'}
+                            className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-primary-500" />
+                            <span>Call</span>
+                          </a>
+                          <Link
+                            to={detailUrl}
+                            className="text-primary-500 hover:text-primary-600 flex items-center gap-0.5 group/btn font-semibold"
+                          >
+                            Details
+                            <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                          </Link>
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="font-bold text-sm text-neutral-800 dark:text-white">{br.name}</h3>
-                      <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 shrink-0 text-primary-500" /> <span className="truncate">{br.location}</span>
-                      </p>
-                      <span className="flex items-center gap-1 text-primary-500 font-semibold text-xs mt-auto pt-4 group-hover:gap-1.5 transition-all">
-                        View branch <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </>
         )}

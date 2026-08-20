@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Phone, ArrowRight, Building2, Search, X } from 'lucide-react';
+import { MapPin, Phone, ArrowRight, Building2, Search, X, Star } from 'lucide-react';
 import { useBrand } from '../context/BrandContext';
 import { getBrandBranches } from '../services/brandsService';
 
@@ -139,67 +139,82 @@ export const BrandBranches = () => {
             variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
-            {filteredBranches.map((branch) => (
-              <motion.div
-                key={branch.id || branch._id}
-                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-              >
-                <Link
-                  to={`/brands/${brand.slug}/branches/${branch.id || branch._id}`}
-                  className="group flex flex-col h-full rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary-500/40 transition-all duration-300"
+            {filteredBranches.map((branch) => {
+              const branchPhone = branch.phone || branch.contactNumber || branch.contact || branch.phoneNo;
+              const detailUrl = `/brands/${brand.slug}/branches/${branch.id || branch._id}`;
+
+              return (
+                <motion.div
+                  key={branch.id || branch._id}
+                  variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                 >
-                  {/* Branch Cover Image */}
-                  <div className="relative h-44 bg-neutral-100 dark:bg-neutral-950 overflow-hidden border-b border-neutral-100 dark:border-neutral-800/50">
-                    {branch.image ? (
-                      <img
-                        src={branch.image}
-                        alt={branch.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-850">
-                        <Building2 className="w-10 h-10 text-neutral-400" />
+                  <div className="group flex flex-col justify-between h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 hover:border-primary-500/40 transition-all duration-300">
+                    {/* Branch Cover Image */}
+                    <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                      <Link to={detailUrl}>
+                        {branch.image ? (
+                          <img
+                            src={branch.image}
+                            alt={branch.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
+                            <Building2 className="w-8 h-8 text-neutral-400" />
+                          </div>
+                        )}
+                      </Link>
+                      {branch.rating ? (
+                        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10 shadow-xs">
+                          ★ {branch.rating}
+                        </div>
+                      ) : (
+                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wide">
+                          {brand.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Branch Details */}
+                    <div className="p-4 grow flex flex-col justify-between gap-3 sm:gap-4">
+                      <div>
+                        <Link to={detailUrl}>
+                          <h3 className="font-bold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 group-hover:text-primary-500 transition-colors mb-1.5 leading-snug break-words">
+                            {branch.name}
+                          </h3>
+                        </Link>
+
+                        {branch.location && (
+                          <div className="flex gap-1.5 items-start text-xs text-neutral-500 dark:text-neutral-400">
+                            <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">{branch.location}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wide">
-                      {brand.name}
-                    </span>
-                  </div>
 
-                  {/* Branch Details */}
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-base text-neutral-850 dark:text-white group-hover:text-primary-500 transition-colors">
-                      {branch.name}
-                    </h3>
-
-                    {branch.location && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 flex items-start gap-1.5 leading-relaxed">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-500 mt-0.5" />
-                        <span>{branch.location}</span>
-                      </p>
-                    )}
-
-                    {branch.phone && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
-                        <span>{branch.phone}</span>
-                      </p>
-                    )}
-
-                    {/* Bottom Action */}
-                    <div className="mt-auto pt-5 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between">
-                      <span className="text-xs font-bold text-primary-600 dark:text-primary-400 group-hover:underline inline-flex items-center gap-1">
-                        View Details <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                      <span className="text-[10px] text-neutral-400 font-medium">
-                        Dine-in & Delivery
-                      </span>
+                      {/* Bottom Action Footer */}
+                      <div className="pt-2.5 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-semibold mt-auto">
+                        <a
+                          href={branchPhone ? `tel:${branchPhone}` : '#'}
+                          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-primary-500" />
+                          <span>Call</span>
+                        </a>
+                        <Link
+                          to={detailUrl}
+                          className="text-primary-500 hover:text-primary-600 flex items-center gap-0.5 group/btn font-semibold"
+                        >
+                          Details
+                          <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
       </section>
