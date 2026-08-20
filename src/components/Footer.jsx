@@ -13,6 +13,7 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../context/SettingsContext";
 import { useBrand } from "../context/BrandContext";
+import { useAuth } from "../context/AuthContext";
 import barB from "../assets/Barcode_cafe_B.png";
 import barW from "../assets/Barcode_cafe_W.png";
 import resB from "../assets/Barcode_restaurant_group-B.png";
@@ -25,6 +26,7 @@ export const Footer = () => {
   const { theme } = useTheme();
   const location = useLocation();
   const { settings } = useSettings();
+  const { isAuthenticated } = useAuth();
   const brand = useBrand();
 
   const brandLogo = brand
@@ -69,7 +71,7 @@ export const Footer = () => {
     },
   ];
 
-  const quickLinks = brand
+  const baseQuickLinks = brand
     ? [
         { name: 'Home', path: `/brands/${brand.slug}` },
         { name: 'Branches', path: `/brands/${brand.slug}/branches` },
@@ -84,6 +86,10 @@ export const Footer = () => {
         { name: 'Menu', path: '/menu' },
         { name: 'About Us', path: '/about' },
       ];
+
+  const quickLinks = isAuthenticated
+    ? [...baseQuickLinks, { name: 'My Orders', path: '/profile?tab=orders' }]
+    : baseQuickLinks;
 
   return (
     <footer className="w-full bg-neutral-900 text-neutral-400 border-t border-neutral-800 transition-colors duration-300">
@@ -239,7 +245,7 @@ export const Footer = () => {
               <Link to="/terms-of-service" className="hover:text-primary-500 transition-colors">
                 Terms of Service
               </Link>
-              <Link to="/menu" className="hover:text-primary-500 transition-colors">
+              <Link to={brand ? `/brands/${brand.slug}/menu` : '/menu'} className="hover:text-primary-500 transition-colors">
                 Sitemap
               </Link>
             </div>
