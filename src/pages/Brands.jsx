@@ -231,7 +231,7 @@ export const Brands = () => {
       ) : (
         <>
           {/* Mobile View: Brands Swiper Slider */}
-          <div className="sm:hidden px-2">
+          <div className="sm:hidden">
             <Swiper
               modules={[Pagination]}
               slidesPerView={1.15}
@@ -311,7 +311,7 @@ export const Brands = () => {
         </div>
 
         {/* Mobile View: Swiper Slider */}
-        <div className="sm:hidden px-2">
+        <div className="sm:hidden">
           {previewPopularFoods.length > 0 && (
             <Swiper
               key={activeSort}

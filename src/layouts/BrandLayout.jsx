@@ -179,7 +179,7 @@ export const BrandLayout = () => {
       <div className="min-h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100">
         {/* Brand-themed Top Bar */}
         <div className="bg-primary-500 text-white text-[11px] font-medium">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-3">
+          <div className="site-container py-1.5 flex items-center justify-between gap-3">
             <span className="truncate font-semibold">Part of the Barcode Restaurant Group</span>
             <Link to="/brands" className="inline-flex items-center gap-1 shrink-0 hover:underline font-semibold">
               <Grid3x3 className="w-3 h-3" /> All Brands
@@ -189,7 +189,7 @@ export const BrandLayout = () => {
 
         {/* Brand Sticky Navbar */}
         <header className="sticky top-0 z-50 border-b border-neutral-200/60 dark:border-neutral-800/60 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md transition-all duration-300">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2 xl:gap-4">
+          <div className="site-container h-14 flex items-center justify-between gap-2 xl:gap-4">
             {/* Brand Logo / Brand Title */}
             <Link to={base} className="flex items-center gap-2.5 shrink-0 min-w-0 group">
               {logo ? (
@@ -613,7 +613,7 @@ export const BrandLayout = () => {
 
         {/* Brand-themed Footer */}
         <footer className="border-t border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 mt-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="site-container py-10">
             <div className="flex flex-col sm:flex-row justify-between gap-8">
               <div className="max-w-sm">
                 {logo ? (
