@@ -159,11 +159,11 @@ const InfoCard = ({ icon, label, value, delay = 0, href }) => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.4, delay }}
-      className={`group flex gap-4 items-start p-5 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
+      className={`group flex gap-4 items-start p-5 rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
         href ? "cursor-pointer hover:border-primary-500/50" : ""
       }`}
     >
-      <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shrink-0 group-hover:scale-105 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
+      <div className="p-2.5 rounded-none bg-primary-500/10 text-primary-500 shrink-0 group-hover:scale-105 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
         {icon}
       </div>
       <div className="min-w-0">
@@ -377,7 +377,7 @@ export const BrandBranchDetail = () => {
         <div className="absolute top-5 left-4 sm:top-8 sm:left-8 z-30">
           <Link
             to={backToBranchesUrl}
-            className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
+            className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-none bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-semibold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to {brand?.name ? `${brand.name} Branches` : "Branches"}
@@ -393,11 +393,11 @@ export const BrandBranchDetail = () => {
           >
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {brand?.name && (
-                <span className="px-2.5 py-1 rounded-md bg-white/20 backdrop-blur-md text-white text-[11px] font-bold tracking-wide">
+                <span className="px-2.5 py-1 rounded-none bg-white/20 backdrop-blur-md text-white text-[11px] font-bold tracking-wide">
                   {brand.name}
                 </span>
               )}
-              <span className="px-2.5 py-1 rounded-md bg-primary-500 text-xs font-bold uppercase tracking-wider shadow-md">
+              <span className="px-2.5 py-1 rounded-none bg-primary-500 text-xs font-bold uppercase tracking-wider shadow-md">
                 {getRegion(branch.location)}
               </span>
             </div>
@@ -411,7 +411,7 @@ export const BrandBranchDetail = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
             >
               <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
               <span>{branch.rating} Rating</span>
@@ -439,7 +439,7 @@ export const BrandBranchDetail = () => {
               <button
                 type="button"
                 onClick={() => handleCategoryScroll("left")}
-                className="absolute left-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
+                className="absolute left-0 z-10 p-1.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
                 aria-label="Scroll categories left"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -457,7 +457,7 @@ export const BrandBranchDetail = () => {
                   key={cat}
                   type="button"
                   onClick={() => handleCategoryChange(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center cursor-pointer ${
+                  className={`px-4 py-2 rounded-none text-xs font-bold transition-all duration-300 whitespace-nowrap snap-center cursor-pointer ${
                     activeCategory?.trim().toLowerCase() ===
                     cat?.trim().toLowerCase()
                       ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
@@ -473,7 +473,7 @@ export const BrandBranchDetail = () => {
               <button
                 type="button"
                 onClick={() => handleCategoryScroll("right")}
-                className="absolute right-0 z-10 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
+                className="absolute right-0 z-10 p-1.5 rounded-none bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 backdrop-blur-xs transition-all duration-200 active:scale-90 cursor-pointer"
                 aria-label="Scroll categories right"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -483,7 +483,7 @@ export const BrandBranchDetail = () => {
         </div>
 
         {branchMenu.length === 0 ? (
-          <div className="py-16 text-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800">
+          <div className="py-16 text-center rounded-none border border-dashed border-neutral-200 dark:border-neutral-800">
             <UtensilsCrossed className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
             <p className="text-neutral-500 dark:text-neutral-400 font-medium text-sm">
               Full menu for this branch is coming soon.
@@ -595,7 +595,7 @@ export const BrandBranchDetail = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="lg:col-span-7 p-6 sm:p-8 rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900"
+            className="lg:col-span-7 p-6 sm:p-8 rounded-none border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900"
           >
             <div className="flex items-center gap-2 mb-5">
               <Sparkles className="w-5 h-5 text-primary-500" />
@@ -607,14 +607,14 @@ export const BrandBranchDetail = () => {
               {activeDetails.features.map((feature, i) => (
                 <span
                   key={i}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold border border-neutral-200/10"
+                  className="px-3 py-1.5 rounded-none bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold border border-neutral-200/10"
                 >
                   {feature}
                 </span>
               ))}
             </div>
             <div className="flex items-center gap-3.5 pt-5 border-t border-neutral-100 dark:border-neutral-800/60">
-              <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 shadow-xs text-neutral-400 border border-neutral-200/40 dark:border-neutral-800/40">
+              <div className="p-2.5 rounded-none bg-white dark:bg-neutral-900 shadow-xs text-neutral-400 border border-neutral-200/40 dark:border-neutral-800/40">
                 <UtensilsCrossed className="w-5 h-5" />
               </div>
               <div>
@@ -643,7 +643,7 @@ export const BrandBranchDetail = () => {
                 className="h-56 sm:min-h-[220px] w-full border border-neutral-200 dark:border-neutral-800 shadow-inner"
               />
             ) : (
-              <div className="relative h-56 sm:min-h-[220px] rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-dashed border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col items-center justify-center gap-2 shadow-inner text-center px-4">
+              <div className="relative h-56 sm:min-h-[220px] rounded-none bg-neutral-50 dark:bg-neutral-950 border border-dashed border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col items-center justify-center gap-2 shadow-inner text-center px-4">
                 <MapPin className="w-8 h-8 text-neutral-300 dark:text-neutral-700" />
                 <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 max-w-[85%]">
                   Precise map pin coming soon — use “Get Directions” to find us.
@@ -654,7 +654,7 @@ export const BrandBranchDetail = () => {
             <div className="flex gap-3">
               <a
                 href={telHref}
-                className="flex-1 py-3 rounded-xl border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300 cursor-pointer"
+                className="flex-1 py-3 rounded-none border border-primary-500 text-primary-500 font-bold text-center text-sm flex items-center justify-center gap-2 hover:bg-primary-500/5 active:scale-95 transition-all duration-300 cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
                 Call Branch
@@ -663,7 +663,7 @@ export const BrandBranchDetail = () => {
                 href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
+                className="flex-1 py-3 rounded-none bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
               >
                 <Navigation className="w-4 h-4" />
                 Get Directions

@@ -122,7 +122,7 @@ export const BrandMenu = () => {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-none text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 activeCategory.trim().toLowerCase() === cat.trim().toLowerCase()
                   ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
                   : "bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 text-neutral-600 dark:text-neutral-300 hover:text-primary-500"
@@ -137,11 +137,11 @@ export const BrandMenu = () => {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
+            <div key={n} className="h-72 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
           ))}
         </div>
       ) : sortedAndGroupedFoods.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400">
+        <div className="text-center py-16 rounded-none border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400">
           <UtensilsCrossed className="w-8 h-8 mx-auto stroke-1 mb-2" />
           <p className="text-sm">No dishes available for {brand.name} yet.</p>
         </div>

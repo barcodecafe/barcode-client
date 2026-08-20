@@ -80,7 +80,7 @@ export const BrandBranches = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Search ${brand.name} branches...`}
-                className="w-full pl-9 pr-8 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 border border-neutral-200/80 dark:border-neutral-700/80 focus:border-primary-500/50 focus:outline-none shadow-sm transition-all"
+                className="w-full pl-9 pr-8 py-2.5 text-xs sm:text-sm rounded-none bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 border border-neutral-200/80 dark:border-neutral-700/80 focus:border-primary-500/50 focus:outline-none shadow-sm transition-all"
               />
               {searchQuery && (
                 <button
@@ -102,12 +102,12 @@ export const BrandBranches = () => {
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
-                className="h-72 rounded-2xl bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/50 dark:border-neutral-800/50"
+                className="h-72 rounded-none bg-neutral-100 dark:bg-neutral-900 animate-pulse border border-neutral-200/50 dark:border-neutral-800/50"
               />
             ))}
           </div>
         ) : branches.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400 bg-white/40 dark:bg-neutral-900/40">
+          <div className="text-center py-16 rounded-none border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400 bg-white/40 dark:bg-neutral-900/40">
             <Building2 className="w-12 h-12 mx-auto stroke-1 text-neutral-300 dark:text-neutral-700 mb-3" />
             <h3 className="font-bold text-base text-neutral-700 dark:text-neutral-300">
               No branches found
@@ -117,7 +117,7 @@ export const BrandBranches = () => {
             </p>
           </div>
         ) : filteredBranches.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400 bg-white/40 dark:bg-neutral-900/40">
+          <div className="text-center py-16 rounded-none border border-dashed border-neutral-200 dark:border-neutral-800 text-neutral-400 bg-white/40 dark:bg-neutral-900/40">
             <Search className="w-10 h-10 mx-auto stroke-1 text-neutral-300 dark:text-neutral-700 mb-3" />
             <h3 className="font-bold text-base text-neutral-700 dark:text-neutral-300">
               No branches match "{searchQuery}"
@@ -127,7 +127,7 @@ export const BrandBranches = () => {
             </p>
             <button
               onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-1.5 text-xs font-semibold text-primary-500 bg-primary-500/10 hover:bg-primary-500/20 rounded-lg transition-colors"
+              className="mt-4 px-4 py-1.5 text-xs font-semibold text-primary-500 bg-primary-500/10 hover:bg-primary-500/20 rounded-none transition-colors"
             >
               Clear Search
             </button>
@@ -148,7 +148,7 @@ export const BrandBranches = () => {
                   key={branch.id || branch._id}
                   variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                 >
-                  <div className="group flex flex-col justify-between h-full rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 hover:border-primary-500/40 transition-all duration-300">
+                  <div className="group flex flex-col justify-between h-full rounded-none border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:shadow-neutral-950/20 hover:border-primary-500/40 transition-all duration-300">
                     {/* Branch Cover Image */}
                     <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                       <Link to={detailUrl}>
@@ -166,11 +166,11 @@ export const BrandBranches = () => {
                         )}
                       </Link>
                       {branch.rating ? (
-                        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10 shadow-xs">
+                        <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10 shadow-xs">
                           ★ {branch.rating}
                         </div>
                       ) : (
-                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wide">
+                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-none bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wide">
                           {brand.name}
                         </span>
                       )}
