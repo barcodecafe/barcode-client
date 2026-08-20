@@ -136,6 +136,7 @@ export const AppRoutes = () => {
                     <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="terms-of-service" element={<TermsOfService />} />
+                    <Route path="rider-application" element={<RiderApplication />} />
                   </Route>
 
                   {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}

@@ -225,7 +225,7 @@ export const Footer = () => {
                 </span>
               </div>
               <Link
-                to="/rider-application"
+                to={brand ? `/brands/${brand.slug}/rider-application` : '/rider-application'}
                 className="text-primary-500 hover:text-primary-400 hover:underline font-bold transition-colors"
               >
                 Apply Now →
