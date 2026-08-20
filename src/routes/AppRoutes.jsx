@@ -134,6 +134,8 @@ export const AppRoutes = () => {
                     <Route path="menu/:id" element={<DishDetail />} />
                     <Route path="dish/:id" element={<DishDetail />} />
                     <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="terms-of-service" element={<TermsOfService />} />
                   </Route>
 
                   {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}

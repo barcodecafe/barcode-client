@@ -242,10 +242,10 @@ export const Footer = () => {
 
             {/* Quick Policy Links & Sitemap */}
             <div className="order-3 md:order-0 flex gap-5 text-neutral-400 shrink-0">
-              <Link to="/privacy-policy" className="hover:text-primary-500 transition-colors">
+              <Link to={brand ? `/brands/${brand.slug}/privacy-policy` : '/privacy-policy'} className="hover:text-primary-500 transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/terms-of-service" className="hover:text-primary-500 transition-colors">
+              <Link to={brand ? `/brands/${brand.slug}/terms-of-service` : '/terms-of-service'} className="hover:text-primary-500 transition-colors">
                 Terms of Service
               </Link>
               <Link to={brand ? `/brands/${brand.slug}/menu` : '/menu'} className="hover:text-primary-500 transition-colors">
