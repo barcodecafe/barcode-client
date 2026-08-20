@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useParams, useLocation, useNavigate } from "react-router-dom";
-import { Building2 } from "lucide-react";
+import { Building2, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { BrandProvider } from "../context/BrandContext";
 import { getBrandBySlug } from "../services/brandsService";
@@ -62,6 +62,22 @@ export const BrandLayout = () => {
     <BrandProvider brand={brand}>
       <ScrollToTop />
       <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-300">
+        {/* Sleek Brand-themed Top Utility Bar with Back to Main Site */}
+        <div className="bg-neutral-900 dark:bg-neutral-950 text-neutral-300 text-[11px] font-medium border-b border-neutral-800/80">
+          <div className="site-container py-1.5 flex items-center justify-between gap-3">
+            <span className="truncate flex items-center gap-1.5 text-neutral-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0 animate-pulse" />
+              Part of <strong className="text-white font-semibold">{brand.name}</strong> • Barcode Restaurant Group
+            </span>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 shrink-0 text-white hover:text-primary-400 font-semibold transition-colors duration-200"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Main Site
+            </Link>
+          </div>
+        </div>
+
         {/* Unified Navbar (Dynamic Brand Logo & Brand Links) */}
         <Navbar />
 
