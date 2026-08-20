@@ -55,7 +55,7 @@ export const Navbar = () => {
         { name: 'Home', path: `/brands/${brand.slug}`, end: true },
         { name: 'Branches', path: `/brands/${brand.slug}/branches`, end: false },
         { name: 'Menu', path: `/brands/${brand.slug}/menu`, end: false },
-        { name: 'About', path: '/about', end: false },
+        { name: 'About', path: `/brands/${brand.slug}/about`, end: false },
       ]
     : [
         { name: 'Home', path: '/', end: true },

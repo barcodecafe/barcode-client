@@ -13,6 +13,7 @@ import { BrandHome } from '../pages/BrandHome';
 import { BrandBranches } from '../pages/BrandBranches';
 import { BrandBranchDetail } from '../pages/BrandBranchDetail';
 import { BrandMenu } from '../pages/BrandMenu';
+import { BrandAbout } from '../pages/BrandAbout';
 import { Menu } from '../pages/Menu';
 import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
@@ -129,6 +130,7 @@ export const AppRoutes = () => {
                     <Route path="branches" element={<BrandBranches />} />
                     <Route path="branches/:id" element={<BrandBranchDetail />} />
                     <Route path="menu" element={<BrandMenu />} />
+                    <Route path="about" element={<BrandAbout />} />
                     <Route path="menu/:id" element={<DishDetail />} />
                     <Route path="dish/:id" element={<DishDetail />} />
                   </Route>
