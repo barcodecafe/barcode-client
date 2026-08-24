@@ -1328,6 +1328,13 @@ export const AdminOrders = () => {
                       ""
                     );
 
+                    const isPickupOrder =
+                      ord.orderType === "pickup" ||
+                      ord.deliveryArea === "Self Pickup" ||
+                      String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
+                      String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
+                      String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+
                     return (
                       <tr
                         key={ordId || Math.random()}
@@ -1341,12 +1348,12 @@ export const AdminOrders = () => {
                           {formatShortOrderId(ordId)}
                           <span
                             className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide font-extrabold ${
-                              ord.orderType === "pickup"
+                              isPickupOrder
                                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                                 : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
                             }`}
                           >
-                            {ord.orderType === "pickup" ? "🛍️ Pickup" : "🚚 Delivery"}
+                            {isPickupOrder ? "🛍️ Pickup" : "🚚 Delivery"}
                           </span>
                           {badge && (
                             <span
@@ -1433,14 +1440,14 @@ export const AdminOrders = () => {
                               <select
                                 value={ord.status}
                                 disabled={
-                                  ord.orderType !== "pickup" &&
+                                  !isPickupOrder &&
                                   (!assignedRiderId || ord.riderAcceptStatus !== "accepted")
                                 }
                                 onChange={(e) =>
                                   handleStatusChange(ordId, e.target.value)
                                 }
                                 className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                  ord.orderType !== "pickup" &&
+                                  !isPickupOrder &&
                                   (!assignedRiderId || ord.riderAcceptStatus !== "accepted")
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                     : `${getStatusColor(ord.status)} cursor-pointer`
@@ -1449,19 +1456,19 @@ export const AdminOrders = () => {
                                 <option value="Accepted">Accepted</option>
                                 <option value="Preparing">Preparing</option>
                                 <option value="Ready to Pick">
-                                  {ord.orderType === "pickup" ? "Ready for Pickup" : "Ready to Pick"}
+                                  {isPickupOrder ? "Ready for Pickup" : "Ready to Pick"}
                                 </option>
-                                {ord.orderType !== "pickup" && (
+                                {!isPickupOrder && (
                                   <option value="Out for Delivery">
                                     Out for Delivery
                                   </option>
                                 )}
                                 <option value="Delivered">
-                                  {ord.orderType === "pickup" ? "Collected / Handed Over" : "Delivered"}
+                                  {isPickupOrder ? "Collected / Handed Over" : "Delivered"}
                                 </option>
                               </select>
 
-                              {ord.orderType !== "pickup" &&
+                              {!isPickupOrder &&
                                 (!assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted") && (
                                   <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
@@ -1475,7 +1482,7 @@ export const AdminOrders = () => {
                         </td>
 
                         <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
-                          {ord.orderType === "pickup" ? (
+                          {isPickupOrder ? (
                             <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] uppercase tracking-wide inline-flex items-center gap-1">
                               🛍️ Self-Pickup
                             </span>
