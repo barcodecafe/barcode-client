@@ -22,7 +22,14 @@ export const FulfillmentProvider = ({ children }) => {
     }
   });
 
-  const [isFulfillmentModalOpen, setIsFulfillmentModalOpen] = useState(false);
+  const [isFulfillmentModalOpen, setIsFulfillmentModalOpen] = useState(() => {
+    try {
+      const hasChosen = localStorage.getItem('barcode_fulfillment_chosen');
+      return !hasChosen; // 🎯 Auto-open pop-up modal on first visit!
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     try {
@@ -44,9 +51,18 @@ export const FulfillmentProvider = ({ children }) => {
     }
   }, [selectedBranch]);
 
+  const markFulfillmentChosen = () => {
+    try {
+      localStorage.setItem('barcode_fulfillment_chosen', 'true');
+    } catch (err) {
+      console.error('Failed to mark fulfillment chosen:', err);
+    }
+  };
+
   const setFulfillmentMode = (mode) => {
     if (mode !== 'delivery' && mode !== 'pickup') return;
     setFulfillmentModeState(mode);
+    markFulfillmentChosen();
     if (mode === 'pickup' && !selectedBranch) {
       setIsFulfillmentModalOpen(true);
     }
@@ -60,6 +76,7 @@ export const FulfillmentProvider = ({ children }) => {
     if (!branch) return;
     setSelectedBranchState(branch);
     setFulfillmentModeState('pickup');
+    markFulfillmentChosen();
     setIsFulfillmentModalOpen(false);
     toast.success(`Selected ${branch.name || 'Branch Outlet'} for Self-Pickup!`, {
       icon: '🛍️',
@@ -69,6 +86,7 @@ export const FulfillmentProvider = ({ children }) => {
 
   const selectHomeDelivery = () => {
     setFulfillmentModeState('delivery');
+    markFulfillmentChosen();
     setIsFulfillmentModalOpen(false);
     toast.success('Switched to Home Delivery mode!', {
       icon: '🚚',
@@ -77,7 +95,10 @@ export const FulfillmentProvider = ({ children }) => {
   };
 
   const openFulfillmentModal = () => setIsFulfillmentModalOpen(true);
-  const closeFulfillmentModal = () => setIsFulfillmentModalOpen(false);
+  const closeFulfillmentModal = () => {
+    markFulfillmentChosen();
+    setIsFulfillmentModalOpen(false);
+  };
 
   return (
     <FulfillmentContext.Provider
