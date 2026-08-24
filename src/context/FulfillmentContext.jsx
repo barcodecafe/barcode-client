@@ -22,10 +22,23 @@ export const FulfillmentProvider = ({ children }) => {
     }
   });
 
+  const checkIsAdminOrRider = () => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const path = window.location.pathname || '';
+      return path.startsWith('/admin') || path.startsWith('/rider');
+    } catch {
+      return false;
+    }
+  };
+
   const [isFulfillmentModalOpen, setIsFulfillmentModalOpen] = useState(() => {
     try {
-      const hasChosen = localStorage.getItem('barcode_fulfillment_chosen');
-      return !hasChosen; // 🎯 Auto-open pop-up modal on first visit!
+      // Clean up legacy localStorage item if present
+      localStorage.removeItem('barcode_fulfillment_chosen');
+      if (checkIsAdminOrRider()) return false;
+      const hasChosen = sessionStorage.getItem('barcode_fulfillment_chosen');
+      return !hasChosen; // 🎯 Auto-open pop-up modal on every browser session / re-open!
     } catch {
       return false;
     }
@@ -53,7 +66,7 @@ export const FulfillmentProvider = ({ children }) => {
 
   const markFulfillmentChosen = () => {
     try {
-      localStorage.setItem('barcode_fulfillment_chosen', 'true');
+      sessionStorage.setItem('barcode_fulfillment_chosen', 'true');
     } catch (err) {
       console.error('Failed to mark fulfillment chosen:', err);
     }
@@ -63,7 +76,7 @@ export const FulfillmentProvider = ({ children }) => {
     if (mode !== 'delivery' && mode !== 'pickup') return;
     setFulfillmentModeState(mode);
     markFulfillmentChosen();
-    if (mode === 'pickup' && !selectedBranch) {
+    if (mode === 'pickup' && !selectedBranch && !checkIsAdminOrRider()) {
       setIsFulfillmentModalOpen(true);
     }
   };
@@ -94,15 +107,20 @@ export const FulfillmentProvider = ({ children }) => {
     });
   };
 
-  const openFulfillmentModal = () => setIsFulfillmentModalOpen(true);
+  const openFulfillmentModal = () => {
+    if (checkIsAdminOrRider()) return;
+    setIsFulfillmentModalOpen(true);
+  };
+
   const closeFulfillmentModal = () => {
     markFulfillmentChosen();
     setIsFulfillmentModalOpen(false);
   };
 
   const ensureFulfillmentSelected = () => {
+    if (checkIsAdminOrRider()) return true;
     try {
-      const hasChosen = localStorage.getItem('barcode_fulfillment_chosen');
+      const hasChosen = sessionStorage.getItem('barcode_fulfillment_chosen');
       const savedMode = localStorage.getItem('barcode_fulfillment_mode');
       const savedBranch = localStorage.getItem('barcode_selected_branch');
 
