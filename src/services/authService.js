@@ -72,13 +72,21 @@ export async function login(credentials) {
 }
 
 /**
- * 🔑 Resets password for a user/rider by registered phone number or email.
- * BACKEND: POST /api/auth/reset-password
+ * 📧 Requests a 6-digit OTP to linked email by registered mobile number.
+ * BACKEND: POST /api/auth/forgot-password/request-otp
  */
-export async function resetPasswordService({ phone, email, newPassword }) {
-  return apiClient.post('/auth/reset-password', {
+export async function requestOtpService(phone) {
+  return apiClient.post('/auth/forgot-password/request-otp', { phone });
+}
+
+/**
+ * 🔑 Resets password using received OTP code.
+ * BACKEND: POST /api/auth/forgot-password/reset
+ */
+export async function resetPasswordOtpService({ phone, otp, newPassword }) {
+  return apiClient.post('/auth/forgot-password/reset', {
     phone,
-    email,
+    otp,
     newPassword,
   });
 }

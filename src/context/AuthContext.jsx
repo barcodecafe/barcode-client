@@ -170,6 +170,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     await authService.logout();
+    try {
+      sessionStorage.removeItem('barcode_fulfillment_chosen');
+    } catch {
+      // ignore
+    }
     setUser(null);
   }, []);
 
