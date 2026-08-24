@@ -618,7 +618,7 @@ export const AdminDishes = () => {
   // 🎯 Quick 1-Tap Kitchen Stock Toggle (In Stock ↔ Sold Out)
   const handleToggleStock = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const isCurrentlyAvailable = foodItem.isAvailable !== false;
+    const isCurrentlyAvailable = foodItem.isAvailable !== false && foodItem.isAvailable !== "false";
     const nextVal = !isCurrentlyAvailable;
     try {
       setFoods((prev) =>
@@ -648,7 +648,7 @@ export const AdminDishes = () => {
   // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Inactive/Hidden)
   const handleToggleActive = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const isCurrentlyActive = foodItem.isActive !== false;
+    const isCurrentlyActive = foodItem.isActive !== false && foodItem.isActive !== "false";
     const nextVal = !isCurrentlyActive;
     try {
       setFoods((prev) =>
