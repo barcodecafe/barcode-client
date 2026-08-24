@@ -181,7 +181,7 @@ export const DishDetail = () => {
     })();
 
     // Non-blocking secondary loads
-    getPopularFoods(6)
+    getPopularFoods(12)
       .then((popularData) => {
         if (!cancelled) {
           setFeaturedMenu(Array.isArray(popularData) ? popularData : popularData?.foods || []);
@@ -380,9 +380,9 @@ export const DishDetail = () => {
     openCart();
   };
 
-  const recommendedFoods = (featuredMenu || [])
-    .filter((f) => String(f?.id || f?._id) !== String(food?.id || food?._id))
-    .slice(0, 6);
+  const recommendedFoods = (featuredMenu || []).filter(
+    (f) => String(f?.id || f?._id) !== String(food?.id || food?._id)
+  );
 
   return (
     /* 🎯 Global site-container class applied */
