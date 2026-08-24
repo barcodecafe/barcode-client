@@ -7,6 +7,19 @@
 // ---------------------------------------------------------------------------
 import apiClient from './apiClient';
 
+/** Helper to filter out inactive foods and sort Sold Out items to the bottom of customer views */
+export function processCustomerFoods(foodsList) {
+  if (!Array.isArray(foodsList)) return [];
+  return foodsList
+    .filter((f) => f && f.isActive !== false)
+    .sort((a, b) => {
+      const availA = a.isAvailable !== false ? 1 : 0;
+      const availB = b.isAvailable !== false ? 1 : 0;
+      if (availA !== availB) return availB - availA;
+      return 0;
+    });
+}
+
 /** GET /api/foods */
 export async function getAllFoods() {
   return apiClient.get('/foods');

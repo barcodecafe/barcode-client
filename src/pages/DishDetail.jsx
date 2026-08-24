@@ -400,8 +400,12 @@ export const DishDetail = () => {
         {/* Left Section: Image Display */}
         <div className="relative aspect-square rounded-none overflow-hidden bg-neutral-50 dark:bg-neutral-800">
           
-          {/* 🎯 BOGO Offer Badge (Purple) */}
-          {offerLabel ? (
+          {/* 🎯 Sold Out / BOGO Offer / Discount Badge */}
+          {food?.isAvailable === false ? (
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-rose-600 text-white font-black text-xs uppercase shadow-lg z-10 flex items-center gap-1.5">
+              🔴 Sold Out Today
+            </div>
+          ) : offerLabel ? (
             <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-primary-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-600/35 z-10 flex items-center gap-1.5">
               <Gift className="w-3.5 h-3.5" />
               <span>{offerLabel}</span>
@@ -680,27 +684,37 @@ export const DishDetail = () => {
             </div>
 
             {/* Add to Cart Button */}
-            <button
-              type="button"
-              onClick={handleAddToCartClick}
-              className={`flex-1 h-12 rounded-none font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all cursor-pointer ${
-                isAdded
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-                  : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"
-              }`}
-            >
-              {isAdded ? (
-                <>
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span className="truncate">Update Qty ({quantity})</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-4 h-4" />
-                  <span className="truncate">Add to Cart</span>
-                </>
-              )}
-            </button>
+            {food?.isAvailable === false ? (
+              <button
+                type="button"
+                disabled
+                className="flex-1 h-12 rounded-none font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/50 dark:border-neutral-700/50"
+              >
+                Sold Out Today
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCartClick}
+                className={`flex-1 h-12 rounded-none font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 hover:scale-[1.01] active:scale-95 shadow-xl transition-all cursor-pointer ${
+                  isAdded
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                    : "bg-primary-500 hover:bg-primary-600 text-white shadow-primary-500/20"
+                }`}
+              >
+                {isAdded ? (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span className="truncate">Update Qty ({quantity})</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-4 h-4" />
+                    <span className="truncate">Add to Cart</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

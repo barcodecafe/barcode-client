@@ -118,6 +118,8 @@ export const AdminDishes = () => {
     rating: 4.5,
     image: "",
     description: "",
+    isAvailable: true,
+    isActive: true,
     popular: false,
     isAdminFeatured: false,
     featuredOrder: 1,
@@ -475,6 +477,8 @@ export const AdminDishes = () => {
       rating: 4.5,
       image: "",
       description: "",
+      isAvailable: true,
+      isActive: true,
       popular: false,
       isAdminFeatured: false,
       featuredOrder: 1,
@@ -523,6 +527,8 @@ export const AdminDishes = () => {
       rating: food.rating || 4.5,
       image: food.image || "",
       description: food.description || "",
+      isAvailable: food.isAvailable !== false,
+      isActive: food.isActive !== false,
       popular: !!food.popular,
       isAdminFeatured: !!food.isAdminFeatured,
       featuredOrder: food.featuredOrder || 1,
@@ -606,6 +612,44 @@ export const AdminDishes = () => {
       } catch (err) {
         alert("Failed to delete dish.");
       }
+    }
+  };
+
+  // 🎯 Quick 1-Tap Kitchen Stock Toggle (In Stock ↔ Sold Out)
+  const handleToggleStock = async (foodItem) => {
+    const targetId = foodItem.id || foodItem._id;
+    const nextVal = foodItem.isAvailable === false ? true : false;
+    try {
+      setFoods((prev) =>
+        prev.map((f) =>
+          String(f.id || f._id) === String(targetId)
+            ? { ...f, isAvailable: nextVal }
+            : f
+        )
+      );
+      await updateFood(targetId, { isAvailable: nextVal });
+    } catch (err) {
+      alert("Failed to update stock status: " + (err.message || err));
+      fetchData();
+    }
+  };
+
+  // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Draft/Hidden)
+  const handleToggleActive = async (foodItem) => {
+    const targetId = foodItem.id || foodItem._id;
+    const nextVal = foodItem.isActive === false ? true : false;
+    try {
+      setFoods((prev) =>
+        prev.map((f) =>
+          String(f.id || f._id) === String(targetId)
+            ? { ...f, isActive: nextVal }
+            : f
+        )
+      );
+      await updateFood(targetId, { isActive: nextVal });
+    } catch (err) {
+      alert("Failed to update active status: " + (err.message || err));
+      fetchData();
     }
   };
 
@@ -1363,6 +1407,25 @@ export const AdminDishes = () => {
                         <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
                           {food.category}
                         </span>
+                        {/* 🎯 International Restaurant Standard Status Badges */}
+                        <span
+                          className={`text-[10px] px-2 py-0.5 font-extrabold rounded-md border ${
+                            food.isAvailable !== false
+                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60"
+                              : "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/60"
+                          }`}
+                        >
+                          {food.isAvailable !== false ? "🟢 In Stock" : "🔴 Sold Out"}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 font-extrabold rounded-md border ${
+                            food.isActive !== false
+                              ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60"
+                              : "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60"
+                          }`}
+                        >
+                          {food.isActive !== false ? "👁️ Active" : "🚫 Draft"}
+                        </span>
                         {food.promoCode && (
                           <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200">
                             🏷️ {food.promoCode}
@@ -1444,7 +1507,33 @@ export const AdminDishes = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 pointer-events-auto">
+                    <div className="flex items-center gap-1.5 pointer-events-auto">
+                      {/* 🎯 Stock Quick 1-Tap Toggle */}
+                      <button
+                        onClick={() => handleToggleStock(food)}
+                        title={food.isAvailable !== false ? "Click to mark as Sold Out Today" : "Click to mark as In Stock"}
+                        className={`px-2 py-1 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer border ${
+                          food.isAvailable !== false
+                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100"
+                            : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-100"
+                        }`}
+                      >
+                        {food.isAvailable !== false ? "In Stock" : "Sold Out"}
+                      </button>
+
+                      {/* 🎯 Active Quick 1-Tap Toggle */}
+                      <button
+                        onClick={() => handleToggleActive(food)}
+                        title={food.isActive !== false ? "Click to set as Draft/Hidden" : "Click to Publish on Menu"}
+                        className={`px-2 py-1 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer border ${
+                          food.isActive !== false
+                            ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100"
+                            : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100"
+                        }`}
+                      >
+                        {food.isActive !== false ? "Active" : "Draft"}
+                      </button>
+
                       <button
                         onClick={() => openEditModal(food)}
                         className="p-2 sm:p-2.5 rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
@@ -2248,6 +2337,28 @@ export const AdminDishes = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4 pt-1">
+                  <label className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isAvailable}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isAvailable: e.target.checked })
+                      }
+                      className="rounded text-emerald-500 cursor-pointer"
+                    />{" "}
+                    🟢 In Stock (Available Today)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isActive: e.target.checked })
+                      }
+                      className="rounded text-blue-500 cursor-pointer"
+                    />{" "}
+                    👁️ Active (Published on Menu)
+                  </label>
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
                     <input
                       type="checkbox"
