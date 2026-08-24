@@ -55,7 +55,7 @@ export const BrandMenu = () => {
     const categoryMap = new Map();
 
     foods.forEach((f) => {
-      if (f.category?.trim()) {
+      if (f && f.category?.trim() && f.isActive !== false) {
         const catName = f.category.trim();
         const lowerName = catName.toLowerCase();
         const orderVal = typeof f.categoryOrder === "number" ? f.categoryOrder : 999;
@@ -79,9 +79,9 @@ export const BrandMenu = () => {
   const sortedAndGroupedFoods = useMemo(() => {
     if (!foods || foods.length === 0) return [];
 
-    let filtered = foods;
+    let filtered = foods.filter((f) => f && f.isActive !== false);
     if (activeCategory !== "All") {
-      filtered = foods.filter(
+      filtered = filtered.filter(
         (f) => f.category?.trim().toLowerCase() === activeCategory.trim().toLowerCase()
       );
     }

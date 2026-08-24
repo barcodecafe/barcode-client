@@ -1424,7 +1424,7 @@ export const AdminDishes = () => {
                               : "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60"
                           }`}
                         >
-                          {food.isActive !== false ? "👁️ Active" : "🚫 Draft"}
+                          {food.isActive !== false ? "👁️ Active" : "🚫 Inactive"}
                         </span>
                         {food.promoCode && (
                           <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200">
@@ -1524,14 +1524,14 @@ export const AdminDishes = () => {
                       {/* 🎯 Active Quick 1-Tap Toggle */}
                       <button
                         onClick={() => handleToggleActive(food)}
-                        title={food.isActive !== false ? "Click to set as Draft/Hidden" : "Click to Publish on Menu"}
+                        title={food.isActive !== false ? "Click to set as Inactive (Hide from Menu)" : "Click to set as Active (Show on Menu)"}
                         className={`px-2 py-1 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer border ${
                           food.isActive !== false
                             ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100"
                             : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100"
                         }`}
                       >
-                        {food.isActive !== false ? "Active" : "Draft"}
+                        {food.isActive !== false ? "Active" : "Inactive"}
                       </button>
 
                       <button

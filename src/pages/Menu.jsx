@@ -123,7 +123,7 @@ export const Menu = () => {
     const categoryMap = new Map();
 
     foods.forEach((item) => {
-      if (item && item.category?.trim()) {
+      if (item && item.category?.trim() && item.isActive !== false) {
         const catName = item.category.trim();
         const lowerName = catName.toLowerCase();
         const orderVal = typeof item.categoryOrder === "number" ? item.categoryOrder : 999;
@@ -209,7 +209,7 @@ export const Menu = () => {
    const query = searchQuery.trim().toLowerCase();
 
    const matched = foods.filter((food) => {
-     if (!food) return false;
+     if (!food || food.isActive === false) return false;
      // ১. ক্যাটাগরি ফিল্টার
      const matchesCategory =
        activeCategory.trim().toLowerCase() === "all" ||

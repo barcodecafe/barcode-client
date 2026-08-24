@@ -167,6 +167,10 @@ export const DishDetail = () => {
           }
         }
 
+        if (foodData && foodData.isActive === false) {
+          foodData = null;
+        }
+
         if (cancelled) return;
 
         setFood(foodData);
@@ -381,7 +385,7 @@ export const DishDetail = () => {
   };
 
   const recommendedFoods = (featuredMenu || []).filter(
-    (f) => String(f?.id || f?._id) !== String(food?.id || food?._id)
+    (f) => f && f.isActive !== false && String(f?.id || f?._id) !== String(food?.id || food?._id)
   );
 
   return (

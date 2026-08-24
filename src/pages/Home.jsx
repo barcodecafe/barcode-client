@@ -181,7 +181,9 @@ export const Home = () => {
   const totalPopularFoods = useMemo(() => {
     if (!allFoods || allFoods.length === 0) return [];
     
-    let filteredList = allFoods.filter((food) => food.popular === true);
+    let filteredList = allFoods.filter(
+      (food) => food.popular === true && food.isActive !== false
+    );
 
     return [...filteredList].sort((a, b) => {
       const priceA = getEffectivePrice(a);
@@ -206,7 +208,7 @@ export const Home = () => {
 
   const totalFeaturedMenu = useMemo(() => {
     return allFoods
-      .filter((food) => food.isAdminFeatured === true)
+      .filter((food) => food.isAdminFeatured === true && food.isActive !== false)
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   }, [allFoods]);
 

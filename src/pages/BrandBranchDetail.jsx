@@ -270,14 +270,18 @@ export const BrandBranchDetail = () => {
     return match || "All";
   }, [rawCategory, categories]);
 
+  const activeBranchMenu = useMemo(() => {
+    return (branchMenu || []).filter((f) => f && f.isActive !== false);
+  }, [branchMenu]);
+
   const filteredMenu = useMemo(() => {
-    if (activeCategory === "All") return branchMenu;
-    return branchMenu.filter(
+    if (activeCategory === "All") return activeBranchMenu;
+    return activeBranchMenu.filter(
       (food) =>
         food.category?.trim().toLowerCase() ===
         activeCategory.trim().toLowerCase(),
     );
-  }, [branchMenu, activeCategory]);
+  }, [activeBranchMenu, activeCategory]);
 
   const handleCategoryScroll = (direction) => {
     if (scrollContainerRef.current) {
