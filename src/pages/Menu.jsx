@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Tag,
   CheckCircle,
+  Truck,
+  ShoppingBag,
 } from "lucide-react";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -16,12 +18,14 @@ import { getFoodsByBranch, getPopularFoods, applyFoodDiscount, hasFoodDiscount }
 import { socket } from "../services/socket";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import FoodCard from "../components/FoodCard";
 
 import "swiper/css";
 import "swiper/css/pagination";
 
 export const Menu = () => {
+  const { isPickup, selectedBranch, openFulfillmentModal } = useFulfillment();
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +91,8 @@ export const Menu = () => {
             if (isMounted) setLoading(false);
           });
       } else {
-        getFoodsByBranch(null)
+        const branchIdToFetch = isPickup && selectedBranch ? (selectedBranch.id || selectedBranch._id || null) : null;
+        getFoodsByBranch(branchIdToFetch)
           .then((data) => {
             if (isMounted) setFoods(Array.isArray(data) ? data : []);
           })
@@ -115,7 +120,7 @@ export const Menu = () => {
       socket.off("foods_updated", handleMenuSync);
       socket.off("categories_updated", handleMenuSync);
     };
-  }, [popularOnly]);
+  }, [popularOnly, isPickup, selectedBranch]);
 
   const categories = useMemo(() => {
     if (!Array.isArray(foods) || foods.length === 0) return ["All"];
@@ -259,6 +264,32 @@ export const Menu = () => {
 
   return (
     <div className="site-container relative py-8">
+      {/* 🎯 Menu Fulfillment Status Header Bar */}
+      <div className="mb-6 p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 ${isPickup ? "bg-emerald-500" : "bg-primary-500"}`}>
+            {isPickup ? <ShoppingBag className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className="font-extrabold text-xs sm:text-sm text-neutral-800 dark:text-white">
+              {isPickup ? `Viewing Menu for 🛍️ ${selectedBranch?.name || "Self-Pickup Branch"}` : "Viewing Menu for 🚚 Home Delivery"}
+            </span>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+              {isPickup
+                ? `Collect directly from ${selectedBranch?.address || selectedBranch?.name || "our branch outlet"} with ৳0 delivery fee.`
+                : "Standard delivery rates & regions apply at checkout."}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={openFulfillmentModal}
+          className="px-3.5 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 font-extrabold text-neutral-700 dark:text-neutral-200 transition-all cursor-pointer shrink-0 text-xs shadow-2xs"
+        >
+          {isPickup ? "Change Branch / Mode" : "Switch to Self-Pickup"}
+        </button>
+      </div>
+
       {/* 💡 Standard Coupon Alert Banner (QR Code Scan Toast) */}
       {showPromoBanner && appliedPromo && (
         <motion.div

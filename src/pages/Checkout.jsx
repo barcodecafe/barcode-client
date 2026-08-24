@@ -27,8 +27,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import Swal from "sweetalert2";
-import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import {
   validateCoupon,
   couponDiscountAmount,
@@ -134,22 +135,34 @@ export const Checkout = () => {
   const [billingAddress, setBillingAddress] = useState("");
 
   // Fulfillment Mode (Home Delivery vs Self Pickup)
-  const [orderType, setOrderType] = useState("delivery");
+  const { fulfillmentMode, selectedBranch, openFulfillmentModal } = useFulfillment();
+  const [orderType, setOrderType] = useState(fulfillmentMode || "delivery");
   const [branches, setBranches] = useState([]);
   const [pickupBranchId, setPickupBranchId] = useState(null);
   const [expectedPickupTime, setExpectedPickupTime] = useState("ASAP (20-30 mins)");
+
+  useEffect(() => {
+    if (fulfillmentMode === "pickup") {
+      setOrderType("pickup");
+      if (selectedBranch) {
+        setPickupBranchId(selectedBranch.id || selectedBranch._id || null);
+      }
+    } else {
+      setOrderType("delivery");
+    }
+  }, [fulfillmentMode, selectedBranch]);
 
   useEffect(() => {
     getAllBranches()
       .then((res) => {
         const list = Array.isArray(res) ? res : Array.isArray(res?.branches) ? res.branches : [];
         setBranches(list);
-        if (list.length > 0) {
-          setPickupBranchId(list[0].id || list[0]._id);
+        if (list.length > 0 && !pickupBranchId) {
+          setPickupBranchId(selectedBranch ? (selectedBranch.id || selectedBranch._id) : (list[0].id || list[0]._id));
         }
       })
       .catch(() => setBranches([]));
-  }, []);
+  }, [selectedBranch]);
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("cod");

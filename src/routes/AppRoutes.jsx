@@ -61,6 +61,8 @@ import { BranchProvider } from '../context/BranchContext';
 import { AuthProvider } from '../context/AuthContext';
 import { SettingsProvider } from '../context/SettingsContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
+import { FulfillmentProvider } from '../context/FulfillmentContext';
+import { FulfillmentSelectorModal } from '../components/FulfillmentSelectorModal';
 import { ScrollToTop } from '../components/ScrollToTop';
 import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
@@ -78,21 +80,23 @@ export const AppRoutes = () => {
     <AuthProvider>
       <SettingsProvider>
         <FavoritesProvider>
-          <CartProvider>
-            <BranchProvider>
-            <OrderProvider>
-              <ScrollToTop />
-              <NormalizePath />
-              <Toaster 
-                position="top-right" 
-                containerStyle={{ zIndex: 999999 }}
-                toastOptions={{ 
-                  duration: 4000,
-                  style: { zIndex: 999999 }
-                }} 
-              />
-              <Suspense fallback={<PageFallbackSpinner />}>
-                <Routes>
+          <FulfillmentProvider>
+            <CartProvider>
+              <BranchProvider>
+              <OrderProvider>
+                <ScrollToTop />
+                <NormalizePath />
+                <FulfillmentSelectorModal />
+                <Toaster 
+                  position="top-right" 
+                  containerStyle={{ zIndex: 999999 }}
+                  toastOptions={{ 
+                    duration: 4000,
+                    style: { zIndex: 999999 }
+                  }} 
+                />
+                <Suspense fallback={<PageFallbackSpinner />}>
+                  <Routes>
                   {/* Public / User Routes */}
                   <Route path="/" element={<RootLayout />}>
                     <Route index element={<Home />} />
@@ -193,6 +197,7 @@ export const AppRoutes = () => {
               </OrderProvider>
             </BranchProvider>
           </CartProvider>
+          </FulfillmentProvider>
         </FavoritesProvider>
       </SettingsProvider>
     </AuthProvider>

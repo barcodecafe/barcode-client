@@ -8,10 +8,14 @@ import {
   Phone,
   ArrowRight,
   ChevronDown,
+  ChevronRight,
+  Truck,
+  ShoppingBag,
 } from "lucide-react";
 
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import { getAllBranches } from "../services/branchesService";
 import {
   getAllFoods,
@@ -35,6 +39,7 @@ import "swiper/css/effect-fade";
 
 export const Home = () => {
   const previewCount = usePreviewCount();
+  const { isPickup, selectedBranch, openFulfillmentModal } = useFulfillment();
   const [brands, setBrands] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
@@ -325,6 +330,40 @@ export const Home = () => {
         ) : (
           <div className="w-full h-full bg-neutral-900 animate-pulse" />
         )}
+      </section>
+
+      {/* 🎯 Upfront Fulfillment Selector Bar */}
+      <section className="bg-neutral-900 border-y border-neutral-800 py-3.5 px-4 shadow-lg relative z-20">
+        <div className="site-container flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-white text-center sm:text-left">
+            <div className="w-10 h-10 rounded-2xl bg-primary-500/20 border border-primary-500/30 text-primary-400 flex items-center justify-center shrink-0 shadow-sm">
+              {isPickup ? <ShoppingBag className="w-5 h-5 text-emerald-400" /> : <Truck className="w-5 h-5 text-primary-400" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-primary-500 text-white px-2 py-0.5 rounded shadow-xs">
+                  Order Fulfillment Mode
+                </span>
+                <span className="text-xs font-extrabold text-neutral-100">
+                  {isPickup ? `🛍️ Self-Pickup (${selectedBranch?.name || "Select Branch Outlet"})` : "🚚 Home Delivery"}
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                {isPickup
+                  ? `Pick up your food directly from ${selectedBranch?.name || "our branch counter"} with ৳0 delivery charge.`
+                  : "Order online and get your food delivered hot & fresh to your doorstep."}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={openFulfillmentModal}
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs border border-white/20 transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer shadow-md"
+          >
+            <span>{isPickup ? "Change Branch Outlet" : "Switch to Self-Pickup"}</span>
+            <ChevronRight className="w-4 h-4 text-primary-400" />
+          </button>
+        </div>
       </section>
 
       {/* 2. OUR BRANCHES SECTION */}
