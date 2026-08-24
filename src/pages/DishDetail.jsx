@@ -199,7 +199,24 @@ export const DishDetail = () => {
       .catch(() => {});
 
     // ⚡ Real-Time WebSocket Listener for instant zero-refresh updates
-    const handleFoodUpdate = () => {
+    const handleFoodUpdate = (payload) => {
+      if (payload && payload.food) {
+        const updated = payload.food;
+        const currentDishIdentifier = String(id).toLowerCase().trim();
+        const matchesThisDish =
+          String(updated.id) === currentDishIdentifier ||
+          String(updated._id) === currentDishIdentifier ||
+          (updated.name && updated.name.toLowerCase().trim() === currentDishIdentifier);
+
+        if (matchesThisDish) {
+          if (updated.isActive === false) {
+            setFood(null);
+          } else {
+            setFood({ ...updated });
+          }
+          return;
+        }
+      }
       loadDishData(false);
     };
 
