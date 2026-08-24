@@ -333,22 +333,22 @@ export const Home = () => {
       </section>
 
       {/* 🎯 Upfront Fulfillment Selector Bar */}
-      <section className="bg-neutral-900 border-y border-neutral-800 py-3.5 px-4 shadow-lg relative z-20">
+      <section className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-700 text-white py-3.5 px-4 shadow-xl relative z-20 border-y border-primary-400/30">
         <div className="site-container flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 text-white text-center sm:text-left">
-            <div className="w-10 h-10 rounded-2xl bg-primary-500/20 border border-primary-500/30 text-primary-400 flex items-center justify-center shrink-0 shadow-sm">
-              {isPickup ? <ShoppingBag className="w-5 h-5 text-emerald-400" /> : <Truck className="w-5 h-5 text-primary-400" />}
+            <div className="w-10 h-10 rounded-2xl bg-white/20 border border-white/30 text-white flex items-center justify-center shrink-0 shadow-sm backdrop-blur-xs">
+              {isPickup ? <ShoppingBag className="w-5 h-5 text-white" /> : <Truck className="w-5 h-5 text-white" />}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-primary-500 text-white px-2 py-0.5 rounded shadow-xs">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-black/30 text-white px-2 py-0.5 rounded shadow-xs border border-white/20">
                   Order Fulfillment Mode
                 </span>
-                <span className="text-xs font-extrabold text-neutral-100">
+                <span className="text-xs font-extrabold text-white">
                   {isPickup ? `🛍️ Self-Pickup (${selectedBranch?.name || "Select Branch Outlet"})` : "🚚 Home Delivery"}
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
+              <p className="text-[11px] text-white/90 font-medium mt-0.5">
                 {isPickup
                   ? `Pick up your food directly from ${selectedBranch?.name || "our branch counter"} with ৳0 delivery charge.`
                   : "Order online and get your food delivered hot & fresh to your doorstep."}
@@ -358,10 +358,10 @@ export const Home = () => {
 
           <button
             onClick={openFulfillmentModal}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs border border-white/20 transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer shadow-md"
+            className="px-4 py-2.5 rounded-xl bg-white text-primary-600 hover:bg-neutral-100 font-extrabold text-xs transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-black/10"
           >
             <span>{isPickup ? "Change Branch Outlet" : "Switch to Self-Pickup"}</span>
-            <ChevronRight className="w-4 h-4 text-primary-400" />
+            <ChevronRight className="w-4 h-4 text-primary-600" />
           </button>
         </div>
       </section>
