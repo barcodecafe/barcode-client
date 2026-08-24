@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,8 @@ const Avatar = ({ name, size = 'sm' }) => {
 };
 
 export const Navbar = () => {
+  const location = useLocation();
+  const isAdminOrRiderRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/rider');
   const { theme, toggleTheme } = useTheme();
   const { cartItemCount, openCart } = useCart();
   const { settings } = useSettings();
@@ -213,29 +215,31 @@ export const Navbar = () => {
 
             {/* Right Controls */}
             <div className="hidden md:flex items-center gap-1.5 2xl:gap-2 shrink-0">
-              {/* 🎯 Fulfillment Mode Pill Selector */}
-              <button
-                onClick={openFulfillmentModal}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
-                title="Change Order Fulfillment Mode / Outlet"
-              >
-                {isPickup ? (
-                  <>
-                    <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span className="truncate max-w-[110px] xl:max-w-[140px] text-emerald-600 dark:text-emerald-400">
-                      {selectedBranch?.name ? `Pickup: ${selectedBranch.name}` : "Self Pickup"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Truck className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-                    <span className="truncate max-w-[100px] xl:max-w-[130px]">
-                      Delivery
-                    </span>
-                  </>
-                )}
-                <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
-              </button>
+              {/* 🎯 Fulfillment Mode Pill Selector (Customer Pages Only) */}
+              {!isAdminOrRiderRoute && (
+                <button
+                  onClick={openFulfillmentModal}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
+                  title="Change Order Fulfillment Mode / Outlet"
+                >
+                  {isPickup ? (
+                    <>
+                      <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span className="truncate max-w-[110px] xl:max-w-[140px] text-emerald-600 dark:text-emerald-400">
+                        {selectedBranch?.name ? `Pickup: ${selectedBranch.name}` : "Self Pickup"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                      <span className="truncate max-w-[100px] xl:max-w-[130px]">
+                        Delivery
+                      </span>
+                    </>
+                  )}
+                  <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
+                </button>
+              )}
 
               <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
                 {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}

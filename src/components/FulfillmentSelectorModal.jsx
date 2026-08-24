@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Truck, ShoppingBag, MapPin, Clock, Check, X, Building, ChevronRight } from 'lucide-react';
 import { useFulfillment } from '../context/FulfillmentContext';
 import { getAllBranches } from '../services/branchesService';
 
 export const FulfillmentSelectorModal = () => {
+  const location = useLocation();
+  const isAdminOrRiderRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/rider');
+
   const {
     fulfillmentMode,
     selectedBranch,
@@ -23,7 +27,7 @@ export const FulfillmentSelectorModal = () => {
   }, [fulfillmentMode, isFulfillmentModalOpen]);
 
   useEffect(() => {
-    if (!isFulfillmentModalOpen) return;
+    if (!isFulfillmentModalOpen || isAdminOrRiderRoute) return;
     let active = true;
 
     const fetchBranchesData = async () => {
@@ -44,9 +48,9 @@ export const FulfillmentSelectorModal = () => {
     return () => {
       active = false;
     };
-  }, [isFulfillmentModalOpen]);
+  }, [isFulfillmentModalOpen, isAdminOrRiderRoute]);
 
-  if (!isFulfillmentModalOpen) return null;
+  if (!isFulfillmentModalOpen || isAdminOrRiderRoute) return null;
 
   return (
     <AnimatePresence>
