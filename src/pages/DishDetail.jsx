@@ -44,6 +44,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useBranch } from "../context/BranchContext";
+import usePreviewCount from "../hooks/usePreviewCount";
 
 // 💡 Shared Global FoodCard Component
 import FoodCard from "../components/FoodCard";
@@ -53,6 +54,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 
 export const DishDetail = () => {
+  const previewCount = usePreviewCount();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -943,7 +945,7 @@ export const DishDetail = () => {
               Might Also Like
             </h2>
             
-            {recommendedFoods.length > 5 && (
+            {recommendedFoods.length > previewCount && (
               <Link
                 to="/menu"
                 className="text-xs font-bold text-primary-500 hover:underline"
@@ -962,7 +964,7 @@ export const DishDetail = () => {
               pagination={{ clickable: true }}
               className="!px-4 !pb-8"
             >
-              {recommendedFoods.map((recFood, rIdx) => {
+              {recommendedFoods.slice(0, previewCount).map((recFood, rIdx) => {
                 if (!recFood) return null;
                 const recId = recFood.id || recFood._id || rIdx;
                 const favorited = isFavorite(recId);
@@ -982,8 +984,8 @@ export const DishDetail = () => {
           </div>
 
           {/* Desktop & Tablet View: Grid */}
-          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {recommendedFoods.map((recFood, rIdx) => {
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6">
+            {recommendedFoods.slice(0, previewCount).map((recFood, rIdx) => {
               if (!recFood) return null;
               const recId = recFood.id || recFood._id || rIdx;
               const favorited = isFavorite(recId);

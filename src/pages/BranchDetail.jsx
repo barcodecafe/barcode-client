@@ -511,7 +511,7 @@ export const BranchDetail = () => {
               variants={gridVariants}
               initial="hidden"
               animate="visible"
-              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+              className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
             >
               {filteredMenu.map((food) => {
                 const favorited = isFavorite(food.id);

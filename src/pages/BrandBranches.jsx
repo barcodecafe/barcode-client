@@ -98,7 +98,7 @@ export const BrandBranches = () => {
       {/* Branches List */}
       <section className="site-container py-10">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6">
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
@@ -137,7 +137,7 @@ export const BrandBranches = () => {
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {filteredBranches.map((branch) => {
               const branchPhone = branch.phone || branch.contactNumber || branch.contact || branch.phoneNo;
