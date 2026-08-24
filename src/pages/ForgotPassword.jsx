@@ -123,10 +123,10 @@ export const ForgotPassword = () => {
           <h1 className="font-display text-2xl font-extrabold text-neutral-800 dark:text-white">
             Reset Password
           </h1>
-          <p className="text-xs text-neutral-500 mt-1">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
             {step === 1
-              ? 'Enter your registered mobile number to receive an Email OTP.'
-              : `Enter the OTP sent to ${maskedEmail}`}
+              ? 'Enter your registered mobile number. We will send a 6-digit OTP code to the email address linked with your account.'
+              : `Enter the 6-digit OTP code sent to ${maskedEmail}`}
           </p>
         </div>
 
@@ -157,6 +157,9 @@ export const ForgotPassword = () => {
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
                   />
                 </div>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 flex items-start gap-1">
+                  <span>💡 <strong>Note:</strong> The OTP code will be sent to the email address registered with this mobile number.</span>
+                </p>
               </div>
 
               <button
