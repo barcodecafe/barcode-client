@@ -45,6 +45,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useBranch } from "../context/BranchContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import usePreviewCount from "../hooks/usePreviewCount";
 
 // 💡 Shared Global FoodCard Component
@@ -62,6 +63,7 @@ export const DishDetail = () => {
   const { cart, addToCart, updateCartQuantity, openCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { selectedBranchId } = useBranch();
+  const { ensureFulfillmentSelected } = useFulfillment();
 
   const [food, setFood] = useState(null);
   const foodRef = useRef(food);
@@ -422,6 +424,9 @@ export const DishDetail = () => {
   };
 
   const handleAddToCartClick = () => {
+    if (typeof ensureFulfillmentSelected === 'function' && !ensureFulfillmentSelected()) {
+      return;
+    }
     addToCart(food, branchId, selectedVariation, quantity, selectedAddons);
     setIsAdded(true);
     openCart();

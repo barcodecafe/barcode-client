@@ -100,6 +100,26 @@ export const FulfillmentProvider = ({ children }) => {
     setIsFulfillmentModalOpen(false);
   };
 
+  const ensureFulfillmentSelected = () => {
+    try {
+      const hasChosen = localStorage.getItem('barcode_fulfillment_chosen');
+      const savedMode = localStorage.getItem('barcode_fulfillment_mode');
+      const savedBranch = localStorage.getItem('barcode_selected_branch');
+
+      if (!hasChosen || (savedMode === 'pickup' && !savedBranch)) {
+        setIsFulfillmentModalOpen(true);
+        toast('Please confirm Home Delivery or Pickup Branch first!', {
+          icon: '📍',
+          position: 'top-center',
+        });
+        return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  };
+
   return (
     <FulfillmentContext.Provider
       value={{
@@ -112,6 +132,7 @@ export const FulfillmentProvider = ({ children }) => {
         selectHomeDelivery,
         openFulfillmentModal,
         closeFulfillmentModal,
+        ensureFulfillmentSelected,
         isPickup: fulfillmentMode === 'pickup',
       }}
     >

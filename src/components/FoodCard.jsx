@@ -10,6 +10,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import {
   hasFoodDiscount,
   applyFoodDiscount,
@@ -30,6 +31,7 @@ const FoodCard = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useSettings();
+  const { ensureFulfillmentSelected } = useFulfillment();
 
   // 🎯 Branch-based Price Adjustment Logic
   let rawBasePrice = Number(food?.price) || 0;
@@ -237,8 +239,10 @@ const FoodCard = ({
           ) : (
             <button
               onClick={() => {
-                // 🎯 মূল ফুড অবজেক্ট পাঠানো হচ্ছে, ডাবল ডিসকাউন্ট রোধের জন্য কার্ট নিজে বেস প্রাইস থেকে হিসাব করবে
-                onAddToCart(food, branchId);
+                if (typeof ensureFulfillmentSelected === 'function' && !ensureFulfillmentSelected()) {
+                  return;
+                }
+                if (onAddToCart) onAddToCart(food, branchId);
               }}
               className="inline-flex shrink-0 items-center gap-1 rounded-none bg-primary-500 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-600 active:scale-95"
             >

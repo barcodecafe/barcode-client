@@ -40,7 +40,7 @@ import "swiper/css/effect-fade";
 export const Home = () => {
   const navigate = useNavigate();
   const previewCount = usePreviewCount();
-  const { isPickup, selectedBranch, openFulfillmentModal } = useFulfillment();
+  const { isPickup, selectedBranch, openFulfillmentModal, ensureFulfillmentSelected } = useFulfillment();
   const [brands, setBrands] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
@@ -321,6 +321,9 @@ export const Home = () => {
                       <div className="z-10">
                         <button
                           onClick={() => {
+                            if (typeof ensureFulfillmentSelected === 'function' && !ensureFulfillmentSelected()) {
+                              return;
+                            }
                             if (featuredFood) {
                               addToCart(featuredFood);
                               openCart();
