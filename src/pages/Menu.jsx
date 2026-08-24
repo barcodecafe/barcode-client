@@ -369,7 +369,7 @@ export const Menu = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6 py-4">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
             <div
               key={n}
@@ -412,7 +412,7 @@ export const Menu = () => {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
+            className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-6 4xl:grid-cols-6 gap-6"
           >
             {filteredFoods.map((food) => (
               <FoodCard
