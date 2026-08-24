@@ -232,8 +232,8 @@ const getResponsiveItemsPerPage = (width) => {
   if (width < 1024) return 8;       // Tablet (640px - 1023px)
   if (width < 1536) return 10;      // Laptop/Desktop (1024px - 1535px)
   if (width < 1920) return 12;      // 2xl (1536px - 1919px)
-  if (width < 2560) return 16;      // 3xl (1920px - 2559px: 8 per column in 2-col grid)
-  return 20;                        // 4xl (2560px+: 10 per column in 2-col grid)
+  if (width < 2560) return 15;      // 3xl (1920px - 2559px: 1-col list)
+  return 20;                        // 4xl (2560px+: 1-col list)
 };
 
 const PaginationControls = ({
@@ -1094,7 +1094,7 @@ export const Profile = () => {
         />
       ) : (
         <>
-          <div className="space-y-3 3xl:grid 3xl:grid-cols-2 3xl:gap-4 3xl:space-y-0">
+          <div className="space-y-3">
             {paginatedOrders.map((order) => (
               <OrderCard
                 key={order.id || order._id}
