@@ -36,6 +36,7 @@ import {
 } from "../services/couponsService";
 import { createOrder } from "../services/ordersService";
 import { getAllRegions } from "../services/regionsService";
+import { getAllBranches } from "../services/branchesService";
 import { getRegionDeliveryCharge, checkFreeDeliveryEligibility } from "../services/deliveryService";
 import { initPayment, MIN_ONLINE_AMOUNT } from "../services/paymentsService";
 import { getAuthErrorMessage } from "../services/authService";
@@ -132,6 +133,24 @@ export const Checkout = () => {
   const [billingSame, setBillingSame] = useState(true);
   const [billingAddress, setBillingAddress] = useState("");
 
+  // Fulfillment Mode (Home Delivery vs Self Pickup)
+  const [orderType, setOrderType] = useState("delivery");
+  const [branches, setBranches] = useState([]);
+  const [pickupBranchId, setPickupBranchId] = useState(null);
+  const [expectedPickupTime, setExpectedPickupTime] = useState("ASAP (20-30 mins)");
+
+  useEffect(() => {
+    getAllBranches()
+      .then((res) => {
+        const list = Array.isArray(res) ? res : Array.isArray(res?.branches) ? res.branches : [];
+        setBranches(list);
+        if (list.length > 0) {
+          setPickupBranchId(list[0].id || list[0]._id);
+        }
+      })
+      .catch(() => setBranches([]));
+  }, []);
+
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("cod");
 
@@ -213,14 +232,15 @@ export const Checkout = () => {
   );
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
   const { settings } = useSettings();
-  const standardDeliveryCharge = getRegionDeliveryCharge(region, area);
-  const isFreeDelivery = checkFreeDeliveryEligibility(settings, {
+  const isPickup = orderType === "pickup";
+  const standardDeliveryCharge = isPickup ? 0 : getRegionDeliveryCharge(region, area);
+  const isFreeDelivery = isPickup || checkFreeDeliveryEligibility(settings, {
     subtotal: cartTotal,
     cartItems: cart,
     area,
     region,
   });
-  const deliveryCharge = isFreeDelivery ? 0 : standardDeliveryCharge;
+  const deliveryCharge = (isFreeDelivery || isPickup) ? 0 : standardDeliveryCharge;
   const orderTotal = Math.max(0, afterCoupon - pointsDiscount + deliveryCharge);
   const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
 
@@ -436,7 +456,7 @@ export const Checkout = () => {
       });
       return;
     }
-    if (!address.trim()) {
+    if (orderType === "delivery" && !address.trim()) {
       const msg = "Delivery address is required.";
       setOrderError(msg);
       Swal.fire({
@@ -472,6 +492,7 @@ export const Checkout = () => {
 
     setIsLoading(true);
     try {
+      const selectedBranch = branches.find((b) => String(b.id || b._id) === String(pickupBranchId));
       const orderData = {
         items: cart.map((item) => ({
           id: item.id,
@@ -494,10 +515,14 @@ export const Checkout = () => {
         regionId,
         couponCode: appliedCoupon?.code || "",
         pointsToRedeem: pointsDiscount,
-        deliveryArea: area,
-        deliveryAddress: address,
+        deliveryArea: isPickup ? (selectedBranch?.name || "Self Pickup") : area,
+        deliveryAddress: isPickup ? `Self Pickup at ${selectedBranch?.name || "Selected Branch"}` : address,
         deliveryPhone: phone,
         paymentMethod,
+        orderType,
+        expectedPickupTime: isPickup ? expectedPickupTime : "",
+        pickupBranchId: isPickup ? (pickupBranchId ? Number(pickupBranchId) : null) : null,
+        pickupBranchName: isPickup ? (selectedBranch?.name || "") : "",
       };
 
       const orderObj = await createOrder(orderData);
@@ -1280,14 +1305,43 @@ export const Checkout = () => {
             )}
           </section>
 
-          {/* Step 2 — Delivery details */}
+          {/* Step 2 — Delivery / Fulfillment details */}
           {isAuthenticated && (
             <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-              <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-1">
-                <StepBadge n={2} /> Delivery Details
+              <h2 className="font-display font-bold text-sm text-neutral-800 dark:text-white flex items-center gap-2 mb-3">
+                <StepBadge n={2} /> {orderType === "pickup" ? "Pickup & Contact Details" : "Delivery Details"}
               </h2>
-              {region && (
-                <p className="text-[11px] text-neutral-400 mb-4 ml-8">
+
+              {/* Order Fulfillment Mode Selector */}
+              <div className="mb-4 bg-neutral-100 dark:bg-neutral-950 p-1 rounded-xl grid grid-cols-2 gap-1 border border-neutral-200/50 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setOrderType("delivery")}
+                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderType === "delivery"
+                      ? "bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-md border border-neutral-200/60 dark:border-neutral-800"
+                      : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                  }`}
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>🚚 Home Delivery</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("pickup")}
+                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderType === "pickup"
+                      ? "bg-white dark:bg-neutral-900 text-emerald-600 dark:text-emerald-400 shadow-md border border-neutral-200/60 dark:border-neutral-800"
+                      : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                  }`}
+                >
+                  <ShoppingBag className="w-4 h-4 text-emerald-500" />
+                  <span>🛍️ Self Pickup (FREE)</span>
+                </button>
+              </div>
+
+              {orderType === "delivery" && region && (
+                <p className="text-[11px] text-neutral-400 mb-4">
                   📍 Delivering in{" "}
                   <span className="font-semibold text-neutral-500 dark:text-neutral-300">
                     {region.name}
@@ -1295,10 +1349,20 @@ export const Checkout = () => {
                   — charge is from your selected area
                 </p>
               )}
+
+              {orderType === "pickup" && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    No delivery charges for Self-Pickup! Please collect your meal directly from your selected branch outlet.
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                    Phone Number
+                    Contact Phone Number
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -1311,42 +1375,81 @@ export const Checkout = () => {
                     />
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                      Delivery Area
-                    </label>
-                    <select
-                      value={area}
-                      onChange={(e) => setArea(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                    >
-                      {(region?.deliveryZones || []).map((z) => (
-                        <option key={z.name} value={z.name}>
-                          {z.name} (৳{z.charge})
-                        </option>
-                      ))}
-                      <option value="">
-                        Other area (৳{region?.defaultDeliveryCharge ?? 100})
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                      Detailed Address
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                      <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="House #, Road #, Area"
-                        className={fieldCls}
-                      />
+
+                {orderType === "pickup" ? (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Select Pickup Branch Outlet
+                      </label>
+                      <select
+                        value={pickupBranchId || ""}
+                        onChange={(e) => setPickupBranchId(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer font-semibold"
+                      >
+                        {branches.map((b) => (
+                          <option key={b.id || b._id} value={b.id || b._id}>
+                            {b.name} ({b.location || b.address || "Outlet"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Estimated Pickup Time
+                      </label>
+                      <select
+                        value={expectedPickupTime}
+                        onChange={(e) => setExpectedPickupTime(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer font-semibold"
+                      >
+                        <option value="ASAP (20-30 mins)">ASAP (20 - 30 minutes)</option>
+                        <option value="In 30 minutes">In 30 minutes</option>
+                        <option value="In 45 minutes">In 45 minutes</option>
+                        <option value="In 1 hour">In 1 hour</option>
+                        <option value="In 1.5 hours">In 1.5 hours</option>
+                      </select>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Delivery Area
+                      </label>
+                      <select
+                        value={area}
+                        onChange={(e) => setArea(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                      >
+                        {(region?.deliveryZones || []).map((z) => (
+                          <option key={z.name} value={z.name}>
+                            {z.name} (৳{z.charge})
+                          </option>
+                        ))}
+                        <option value="">
+                          Other area (৳{region?.defaultDeliveryCharge ?? 100})
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Detailed Address
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="House #, Road #, Area"
+                          className={fieldCls}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <label className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer pt-1">
                   <input
                     type="checkbox"

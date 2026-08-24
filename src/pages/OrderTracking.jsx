@@ -233,20 +233,30 @@ export const OrderTracking = () => {
     );
   }
 
-  const steps = [
-    { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
-    { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
-    {
-      key: "Preparing",
-      label: order.status === "Ready to Pick" ? "Food Ready" : "Preparing",
-      desc:
-        order.status === "Ready to Pick"
-          ? "Food packed & ready for courier pickup"
-          : "Chefs are cooking your meal",
-    },
-    { key: "Out for Delivery", label: "On The Way", desc: "Rider is out for delivery" },
-    { key: "Delivered", label: "Delivered", desc: "Handed over successfully" },
-  ];
+  const isPickup = order?.orderType === "pickup";
+
+  const steps = isPickup
+    ? [
+        { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
+        { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
+        { key: "Preparing", label: "Preparing", desc: "Chefs are cooking your meal" },
+        { key: "Ready to Pick", label: "Ready for Pickup", desc: "Order packed & ready at branch" },
+        { key: "Delivered", label: "Collected", desc: "Handed over to customer" },
+      ]
+    : [
+        { key: "Placed", label: "Order Placed", desc: "Waiting for confirmation" },
+        { key: "Accepted", label: "Accepted", desc: "Kitchen preparing soon" },
+        {
+          key: "Preparing",
+          label: order.status === "Ready to Pick" ? "Food Ready" : "Preparing",
+          desc:
+            order.status === "Ready to Pick"
+              ? "Food packed & ready for courier pickup"
+              : "Chefs are cooking your meal",
+        },
+        { key: "Out for Delivery", label: "On The Way", desc: "Rider is out for delivery" },
+        { key: "Delivered", label: "Delivered", desc: "Handed over successfully" },
+      ];
 
   const getStepIndex = (status) => {
     if (status === "Ready to Pick") return 2;
@@ -595,22 +605,83 @@ export const OrderTracking = () => {
 
           <AnimatePresence>
             {activeTab === "map" ? (
-              <motion.div
-                key="map"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col gap-5"
-              >
-                <div>
-                  <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">
-                    Active Delivery Path
-                  </h3>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                    View the courier riding path connecting the restaurant and
-                    your location in real time.
-                  </p>
-                </div>
+              isPickup ? (
+                <motion.div
+                  key="pickup-info"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm flex flex-col gap-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/20">
+                      <ShoppingBag className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded shadow-xs">
+                        🛍️ Self-Pickup Order
+                      </span>
+                      <h3 className="text-lg font-black text-neutral-900 dark:text-white mt-1">
+                        Outlet: {order.pickupBranchName || order.user?.pickArea || "Selected Branch Outlet"}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800 rounded-xl space-y-2.5 text-xs">
+                    <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300">
+                      <span>Collection Location:</span>
+                      <strong className="font-bold text-neutral-900 dark:text-white">
+                        {order.pickupBranchName || "Barcode Cafe Branch"}
+                      </strong>
+                    </div>
+                    {order.expectedPickupTime && (
+                      <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300">
+                        <span>Expected Pickup Time:</span>
+                        <strong className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {order.expectedPickupTime}
+                        </strong>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300">
+                      <span>Delivery Fee:</span>
+                      <strong className="font-bold text-emerald-500 uppercase">FREE (৳0)</strong>
+                    </div>
+                  </div>
+
+                  {order.status === "Ready to Pick" ? (
+                    <div className="p-4 bg-emerald-500 text-white rounded-xl font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                      <Check className="w-5 h-5 stroke-[3]" />
+                      Your order is Ready for Pickup! Please present Order #{displayId} at the branch counter.
+                    </div>
+                  ) : order.status === "Delivered" ? (
+                    <div className="p-4 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold text-xs flex items-center gap-2 border border-emerald-300 dark:border-emerald-800">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      Order collected and completed!
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-semibold border border-amber-200/60 dark:border-amber-800/60 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      Our kitchen is preparing your order. We'll mark it "Ready for Pickup" as soon as it's packed!
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="map"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col gap-5"
+                >
+                  <div>
+                    <h3 className="font-display font-bold text-base text-neutral-800 dark:text-white">
+                      Active Delivery Path
+                    </h3>
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                      View the courier riding path connecting the restaurant and
+                      your location in real time.
+                    </p>
+                  </div>
 
                 {/* SVG Map */}
                 <div className="relative w-full aspect-[5/2.2] bg-neutral-950 rounded-xl overflow-hidden border border-neutral-800 shadow-inner flex items-center justify-center p-4">
@@ -783,6 +854,7 @@ export const OrderTracking = () => {
                   </div>
                 )}
               </motion.div>
+            )
             ) : (
               <motion.div
                 key="details"
