@@ -233,7 +233,12 @@ export const OrderTracking = () => {
     );
   }
 
-  const isPickup = order?.orderType === "pickup";
+  const isPickup =
+    order?.orderType === "pickup" ||
+    order?.deliveryArea === "Self Pickup" ||
+    String(order?.user?.pickArea || "").toLowerCase().includes("self pickup") ||
+    String(order?.user?.address || "").toLowerCase().includes("self pickup") ||
+    String(order?.deliveryAddress || "").toLowerCase().includes("self pickup");
 
   const steps = isPickup
     ? [
@@ -259,8 +264,14 @@ export const OrderTracking = () => {
       ];
 
   const getStepIndex = (status) => {
+    if (isPickup) {
+      if (status === "Ready to Pick") return 3;
+      const idx = steps.findIndex((s) => s.key === status);
+      return idx !== -1 ? idx : 0;
+    }
     if (status === "Ready to Pick") return 2;
-    return steps.findIndex((s) => s.key === status);
+    const idx = steps.findIndex((s) => s.key === status);
+    return idx !== -1 ? idx : 0;
   };
 
   const isAwaitingPayment = order.status === "Awaiting Payment";
