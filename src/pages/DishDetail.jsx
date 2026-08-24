@@ -40,6 +40,7 @@ import {
   submitReview,
   deleteReview,
 } from "../services/reviewsService";
+import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -138,12 +139,9 @@ export const DishDetail = () => {
       .catch((err) => console.error("Error loading food reviews:", err));
   };
 
-  useEffect(() => {
-    setLoading(true);
-    window.scrollTo(0, 0);
-    let cancelled = false;
-
-    (async () => {
+  const loadDishData = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) setLoading(true);
       try {
         let foodData = null;
         try {
@@ -171,40 +169,48 @@ export const DishDetail = () => {
           foodData = null;
         }
 
-        if (cancelled) return;
-
         setFood(foodData);
-        // Do not auto-select any variant so the main dish image is shown by default
-        setSelectedVariation(null);
       } catch (err) {
         console.error("Error loading dish detail:", err);
-        if (!cancelled) setFood(null);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (showLoader) setLoading(false);
       }
-    })();
+    },
+    [id]
+  );
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    loadDishData(true);
 
     // Non-blocking secondary loads
     getPopularFoods(12)
       .then((popularData) => {
-        if (!cancelled) {
-          setFeaturedMenu(Array.isArray(popularData) ? popularData : popularData?.foods || []);
-        }
+        setFeaturedMenu(Array.isArray(popularData) ? popularData : popularData?.foods || []);
       })
       .catch(() => {
-        if (!cancelled) setFeaturedMenu([]);
+        setFeaturedMenu([]);
       });
 
     getFoodReviews(id)
       .then((reviewsRes) => {
-        if (!cancelled && reviewsRes) setReviewsData(reviewsRes);
+        if (reviewsRes) setReviewsData(reviewsRes);
       })
       .catch(() => {});
 
-    return () => {
-      cancelled = true;
+    // ⚡ Real-Time WebSocket Listener for instant zero-refresh updates
+    const handleFoodUpdate = () => {
+      loadDishData(false);
     };
-  }, [id]);
+
+    socket.on("foods_updated", handleFoodUpdate);
+    socket.on("categories_updated", handleFoodUpdate);
+
+    return () => {
+      socket.off("foods_updated", handleFoodUpdate);
+      socket.off("categories_updated", handleFoodUpdate);
+    };
+  }, [id, loadDishData]);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
