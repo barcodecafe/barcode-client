@@ -33,7 +33,7 @@ export async function getFoodsByCategory(category) {
 
 /** GET /api/foods/:id */
 export async function getFoodById(id) {
-  return apiClient.get(`/foods/${id}`);
+  return apiClient.get(`/foods/${id}?_t=${Date.now()}`);
 }
 
 /** GET /api/foods/popular?limit=6 — admin's "Mark as Popular" picks + best sellers */

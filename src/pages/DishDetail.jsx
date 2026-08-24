@@ -64,6 +64,11 @@ export const DishDetail = () => {
   const { selectedBranchId } = useBranch();
 
   const [food, setFood] = useState(null);
+  const foodRef = useRef(food);
+  useEffect(() => {
+    foodRef.current = food;
+  }, [food]);
+
   const [featuredMenu, setFeaturedMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -203,20 +208,32 @@ export const DishDetail = () => {
       if (payload && payload.food) {
         const updated = payload.food;
         const currentDishIdentifier = String(id).toLowerCase().trim();
-        const loadedId = food ? String(food.id || food._id).toLowerCase().trim() : "";
+        const currentDishSlug = currentDishIdentifier.replace(/\s+/g, "-");
+
+        const loadedFood = foodRef.current;
+        const loadedId = loadedFood ? String(loadedFood.id || loadedFood._id).toLowerCase().trim() : "";
+        const loadedName = loadedFood?.name ? String(loadedFood.name).toLowerCase().trim() : "";
+        const loadedSlug = loadedName.replace(/\s+/g, "-");
+
+        const updatedId = String(updated.id || "").toLowerCase().trim();
+        const updatedMongoId = String(updated._id || "").toLowerCase().trim();
+        const updatedName = updated.name ? String(updated.name).toLowerCase().trim() : "";
+        const updatedSlug = updatedName.replace(/\s+/g, "-");
+
         const matchesThisDish =
-          String(updated.id || "").toLowerCase().trim() === currentDishIdentifier ||
-          String(updated._id || "").toLowerCase().trim() === currentDishIdentifier ||
-          (loadedId && (String(updated.id || "").toLowerCase().trim() === loadedId || String(updated._id || "").toLowerCase().trim() === loadedId)) ||
-          (updated.name && updated.name.toLowerCase().trim() === currentDishIdentifier);
+          updatedId === currentDishIdentifier ||
+          updatedMongoId === currentDishIdentifier ||
+          updatedName === currentDishIdentifier ||
+          updatedSlug === currentDishSlug ||
+          (loadedId && (updatedId === loadedId || updatedMongoId === loadedId)) ||
+          (loadedName && (updatedName === loadedName || updatedSlug === loadedSlug));
 
         if (matchesThisDish) {
           if (updated.isActive === false) {
             setFood(null);
           } else {
-            setFood({ ...updated });
+            setFood((prev) => (prev ? { ...prev, ...updated } : { ...updated }));
           }
-          loadDishData(false);
           return;
         }
       }
