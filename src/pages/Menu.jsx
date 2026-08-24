@@ -226,6 +226,10 @@ export const Menu = () => {
    });
 
    return [...matched].sort((a, b) => {
+     const availA = a.isAvailable !== false ? 1 : 0;
+     const availB = b.isAvailable !== false ? 1 : 0;
+     if (availA !== availB) return availB - availA; // Available (1) before Sold Out (0)
+
      const priceA = getEffectivePrice(a);
      const priceB = getEffectivePrice(b);
      const ratingA = Number(a?.rating) || 0;

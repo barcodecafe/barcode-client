@@ -629,8 +629,8 @@ export const AdminDishes = () => {
         )
       );
       const res = await updateFood(targetId, { isAvailable: nextVal });
-      if (res && res.data) {
-        const updatedDoc = res.data;
+      const updatedDoc = res?.data || res;
+      if (updatedDoc && typeof updatedDoc === "object") {
         setFoods((prev) =>
           prev.map((f) =>
             String(f.id || f._id) === String(targetId)
@@ -659,8 +659,8 @@ export const AdminDishes = () => {
         )
       );
       const res = await updateFood(targetId, { isActive: nextVal });
-      if (res && res.data) {
-        const updatedDoc = res.data;
+      const updatedDoc = res?.data || res;
+      if (updatedDoc && typeof updatedDoc === "object") {
         setFoods((prev) =>
           prev.map((f) =>
             String(f.id || f._id) === String(targetId)
