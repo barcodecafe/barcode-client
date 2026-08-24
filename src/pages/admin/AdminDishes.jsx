@@ -618,7 +618,8 @@ export const AdminDishes = () => {
   // 🎯 Quick 1-Tap Kitchen Stock Toggle (In Stock ↔ Sold Out)
   const handleToggleStock = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const nextVal = foodItem.isAvailable === false ? true : false;
+    const isCurrentlyAvailable = foodItem.isAvailable !== false;
+    const nextVal = !isCurrentlyAvailable;
     try {
       setFoods((prev) =>
         prev.map((f) =>
@@ -627,17 +628,28 @@ export const AdminDishes = () => {
             : f
         )
       );
-      await updateFood(targetId, { isAvailable: nextVal });
+      const res = await updateFood(targetId, { isAvailable: nextVal });
+      if (res && res.data) {
+        const updatedDoc = res.data;
+        setFoods((prev) =>
+          prev.map((f) =>
+            String(f.id || f._id) === String(targetId)
+              ? { ...f, ...updatedDoc }
+              : f
+          )
+        );
+      }
     } catch (err) {
       alert("Failed to update stock status: " + (err.message || err));
       fetchData();
     }
   };
 
-  // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Draft/Hidden)
+  // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Inactive/Hidden)
   const handleToggleActive = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const nextVal = foodItem.isActive === false ? true : false;
+    const isCurrentlyActive = foodItem.isActive !== false;
+    const nextVal = !isCurrentlyActive;
     try {
       setFoods((prev) =>
         prev.map((f) =>
@@ -646,7 +658,17 @@ export const AdminDishes = () => {
             : f
         )
       );
-      await updateFood(targetId, { isActive: nextVal });
+      const res = await updateFood(targetId, { isActive: nextVal });
+      if (res && res.data) {
+        const updatedDoc = res.data;
+        setFoods((prev) =>
+          prev.map((f) =>
+            String(f.id || f._id) === String(targetId)
+              ? { ...f, ...updatedDoc }
+              : f
+          )
+        );
+      }
     } catch (err) {
       alert("Failed to update active status: " + (err.message || err));
       fetchData();
