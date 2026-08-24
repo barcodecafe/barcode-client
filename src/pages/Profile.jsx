@@ -12,8 +12,11 @@ import {
   Phone,
   MapPin,
   LogOut,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   Package,
   Wallet,
   Coins,
@@ -215,13 +218,165 @@ const EmptyState = ({ icon: Icon, title, message, cta }) => (
   </div>
 );
 
-const Card = ({ children, className = "" }) => (
+const Card = ({ children, className = "", innerRef }) => (
   <div
+    ref={innerRef}
     className={`bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs ${className}`}
   >
     {children}
   </div>
 );
+
+const getResponsiveItemsPerPage = (width) => {
+  if (width < 640) return 5;        // Mobile (<640px)
+  if (width < 1024) return 8;       // Tablet (640px - 1023px)
+  if (width < 1536) return 10;      // Laptop/Desktop (1024px - 1535px)
+  if (width < 1920) return 12;      // 2xl (1536px - 1919px)
+  if (width < 2560) return 16;      // 3xl (1920px - 2559px: 8 per column in 2-col grid)
+  return 20;                        // 4xl (2560px+: 10 per column in 2-col grid)
+};
+
+const PaginationControls = ({
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPageOption,
+  effectiveItemsPerPage,
+  onPageChange,
+  onItemsPerPageChange,
+  label = "items",
+  containerRef,
+}) => {
+  if (totalItems <= 0) return null;
+
+  const startItem = (currentPage - 1) * effectiveItemsPerPage + 1;
+  const endItem = Math.min(currentPage * effectiveItemsPerPage, totalItems);
+
+  const handlePageSelect = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    onPageChange(page);
+    if (containerRef && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) pages.push("...");
+      if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  return (
+    <div className="mt-6 pt-4 border-t border-neutral-200/60 dark:border-neutral-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+      <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+        <span>
+          Showing <span className="font-bold text-neutral-800 dark:text-neutral-200">{startItem}–{endItem}</span> of{" "}
+          <span className="font-bold text-neutral-800 dark:text-neutral-200">{totalItems}</span> {label}
+        </span>
+
+        <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800/80 px-2.5 py-1 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60">
+          <span className="text-[11px] text-neutral-400">Per page:</span>
+          <select
+            value={itemsPerPageOption}
+            onChange={(e) => {
+              const val =
+                e.target.value === "auto" || e.target.value === "all"
+                  ? e.target.value
+                  : Number(e.target.value);
+              onItemsPerPageChange(val);
+            }}
+            className="bg-transparent font-bold text-neutral-800 dark:text-neutral-100 cursor-pointer focus:outline-none text-xs"
+          >
+            <option value="auto" className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">Auto (Responsive)</option>
+            <option value={5} className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">5</option>
+            <option value={8} className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">8</option>
+            <option value={10} className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">10</option>
+            <option value={15} className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">15</option>
+            <option value={20} className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">20</option>
+            <option value="all" className="dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100">All ({totalItems})</option>
+          </select>
+        </div>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handlePageSelect(1)}
+            disabled={currentPage === 1}
+            title="First Page"
+            className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer text-neutral-700 dark:text-neutral-300"
+          >
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handlePageSelect(currentPage - 1)}
+            disabled={currentPage === 1}
+            title="Previous Page"
+            className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer text-neutral-700 dark:text-neutral-300"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="flex items-center gap-1 px-1">
+            {getPageNumbers().map((p, idx) =>
+              p === "..." ? (
+                <span key={`ellipsis-${idx}`} className="px-1 text-neutral-400 font-bold">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => handlePageSelect(p)}
+                  className={`min-w-[28px] h-7 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    currentPage === p
+                      ? "bg-primary-500 text-white shadow-sm shadow-primary-500/30"
+                      : "border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            )}
+          </div>
+
+          <button
+            onClick={() => handlePageSelect(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            title="Next Page"
+            className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer text-neutral-700 dark:text-neutral-300"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handlePageSelect(totalPages)}
+            disabled={currentPage === totalPages}
+            title="Last Page"
+            className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer text-neutral-700 dark:text-neutral-300"
+          >
+            <ChevronsRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Profile.jsx এর ভেতর OrderCard কম্পোনেন্ট এবং রেন্ডার সেকশনে ট্র্যাক বাটনটি এভাবে আপডেট করুন:
 
@@ -331,6 +486,25 @@ export const Profile = () => {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  // 📄 Pagination States (Dynamic per device)
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState("auto");
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [paymentsPerPage, setPaymentsPerPage] = useState("auto");
+
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1280
+  );
+
+  const ordersCardRef = useRef(null);
+  const paymentsCardRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const [form, setForm] = useState({
     name: "",
@@ -578,6 +752,56 @@ export const Profile = () => {
       ),
     [orders],
   );
+
+  // 📄 Dynamic Responsive Pagination Calculations
+  const responsiveItemsPerPage = useMemo(
+    () => getResponsiveItemsPerPage(windowWidth),
+    [windowWidth]
+  );
+
+  const effectiveOrdersPerPage = useMemo(() => {
+    if (ordersPerPage === "auto") return responsiveItemsPerPage;
+    if (ordersPerPage === "all") return Math.max(sortedOrders.length, 1);
+    return Number(ordersPerPage) || responsiveItemsPerPage;
+  }, [ordersPerPage, responsiveItemsPerPage, sortedOrders.length]);
+
+  const totalOrdersPages = useMemo(
+    () => Math.max(1, Math.ceil(sortedOrders.length / effectiveOrdersPerPage)),
+    [sortedOrders.length, effectiveOrdersPerPage]
+  );
+
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * effectiveOrdersPerPage;
+    return sortedOrders.slice(start, start + effectiveOrdersPerPage);
+  }, [sortedOrders, ordersPage, effectiveOrdersPerPage]);
+
+  const effectivePaymentsPerPage = useMemo(() => {
+    if (paymentsPerPage === "auto") return responsiveItemsPerPage;
+    if (paymentsPerPage === "all") return Math.max(sortedOrders.length, 1);
+    return Number(paymentsPerPage) || responsiveItemsPerPage;
+  }, [paymentsPerPage, responsiveItemsPerPage, sortedOrders.length]);
+
+  const totalPaymentsPages = useMemo(
+    () => Math.max(1, Math.ceil(sortedOrders.length / effectivePaymentsPerPage)),
+    [sortedOrders.length, effectivePaymentsPerPage]
+  );
+
+  const paginatedPayments = useMemo(() => {
+    const start = (paymentsPage - 1) * effectivePaymentsPerPage;
+    return sortedOrders.slice(start, start + effectivePaymentsPerPage);
+  }, [sortedOrders, paymentsPage, effectivePaymentsPerPage]);
+
+  useEffect(() => {
+    if (ordersPage > totalOrdersPages) {
+      setOrdersPage(1);
+    }
+  }, [totalOrdersPages, ordersPage]);
+
+  useEffect(() => {
+    if (paymentsPage > totalPaymentsPages) {
+      setPaymentsPage(1);
+    }
+  }, [totalPaymentsPages, paymentsPage]);
 
   const stats = useMemo(() => {
     const totalSpent = orders
@@ -846,7 +1070,7 @@ export const Profile = () => {
   };
 
   const renderOrders = () => (
-    <Card className="p-5 sm:p-6">
+    <Card className="p-5 sm:p-6" innerRef={ordersCardRef}>
       <SectionHeading
         icon={ShoppingBag}
         title="My Orders"
@@ -869,17 +1093,34 @@ export const Profile = () => {
           }
         />
       ) : (
-        <div className="space-y-3 3xl:grid 3xl:grid-cols-2 3xl:gap-4 3xl:space-y-0">
-          {sortedOrders.map((order) => (
-            <OrderCard
-              key={order.id || order._id}
-              order={order}
-              expanded={expandedOrderId === (order.id || order._id)}
-              onToggle={() => toggleOrder(order.id || order._id)}
-              onRateExperience={handleRateExperience}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3 3xl:grid 3xl:grid-cols-2 3xl:gap-4 3xl:space-y-0">
+            {paginatedOrders.map((order) => (
+              <OrderCard
+                key={order.id || order._id}
+                order={order}
+                expanded={expandedOrderId === (order.id || order._id)}
+                onToggle={() => toggleOrder(order.id || order._id)}
+                onRateExperience={handleRateExperience}
+              />
+            ))}
+          </div>
+
+          <PaginationControls
+            currentPage={ordersPage}
+            totalPages={totalOrdersPages}
+            totalItems={sortedOrders.length}
+            itemsPerPageOption={ordersPerPage}
+            effectiveItemsPerPage={effectiveOrdersPerPage}
+            onPageChange={setOrdersPage}
+            onItemsPerPageChange={(val) => {
+              setOrdersPerPage(val);
+              setOrdersPage(1);
+            }}
+            label="orders"
+            containerRef={ordersCardRef}
+          />
+        </>
       )}
     </Card>
   );
@@ -934,7 +1175,7 @@ export const Profile = () => {
           )}
         </div>
 
-        <Card className="p-5 sm:p-6">
+        <Card className="p-5 sm:p-6" innerRef={paymentsCardRef}>
           <SectionHeading
             icon={CreditCard}
             title="Payment History"
@@ -949,50 +1190,68 @@ export const Profile = () => {
               message="Payments appear here once you place an order."
             />
           ) : (
-            <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-xs text-left min-w-[560px]">
-                <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-semibold">
-                    <th className="px-3 py-3">Order</th>
-                    <th className="px-3 py-3">Date</th>
-                    <th className="px-3 py-3">Method</th>
-                    <th className="px-3 py-3 text-right">Amount</th>
-                    <th className="px-3 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedOrders.map((order) => {
-                    const payStatus = derivePaymentStatus(order);
-                    return (
-                      <tr
-                        key={order.id}
-                        className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
-                      >
-                        <td className="px-3 py-3.5 font-bold text-neutral-800 dark:text-white">
-                          {shortId(order.id)}
-                        </td>
-                        <td className="px-3 py-3.5 text-neutral-500 dark:text-neutral-400">
-                          {formatDate(order.createdAt)}
-                        </td>
-                        <td className="px-3 py-3.5 text-neutral-600 dark:text-neutral-300">
-                          {paymentMethodLabel(order.paymentMethod)}
-                        </td>
-                        <td className="px-3 py-3.5 text-right font-bold text-primary-500">
-                          {taka(order.total)}
-                        </td>
-                        <td className="px-3 py-3.5 text-center">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getPaymentStatusColor(payStatus)}`}
-                          >
-                            {paymentStatusLabel(order)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="overflow-x-auto -mx-1">
+                <table className="w-full text-xs text-left min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800 text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-semibold">
+                      <th className="px-3 py-3">Order</th>
+                      <th className="px-3 py-3">Date</th>
+                      <th className="px-3 py-3">Method</th>
+                      <th className="px-3 py-3 text-right">Amount</th>
+                      <th className="px-3 py-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPayments.map((order) => {
+                      const payStatus = derivePaymentStatus(order);
+                      const orderId = order.id || order._id;
+                      return (
+                        <tr
+                          key={orderId}
+                          className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20"
+                        >
+                          <td className="px-3 py-3.5 font-bold text-neutral-800 dark:text-white">
+                            {shortId(orderId)}
+                          </td>
+                          <td className="px-3 py-3.5 text-neutral-500 dark:text-neutral-400">
+                            {formatDate(order.createdAt)}
+                          </td>
+                          <td className="px-3 py-3.5 text-neutral-600 dark:text-neutral-300">
+                            {paymentMethodLabel(order.paymentMethod)}
+                          </td>
+                          <td className="px-3 py-3.5 text-right font-bold text-primary-500">
+                            {taka(order.total)}
+                          </td>
+                          <td className="px-3 py-3.5 text-center">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wide ${getPaymentStatusColor(payStatus)}`}
+                            >
+                              {paymentStatusLabel(order)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <PaginationControls
+                currentPage={paymentsPage}
+                totalPages={totalPaymentsPages}
+                totalItems={sortedOrders.length}
+                itemsPerPageOption={paymentsPerPage}
+                effectiveItemsPerPage={effectivePaymentsPerPage}
+                onPageChange={setPaymentsPage}
+                onItemsPerPageChange={(val) => {
+                  setPaymentsPerPage(val);
+                  setPaymentsPage(1);
+                }}
+                label="transactions"
+                containerRef={paymentsCardRef}
+              />
+            </>
           )}
         </Card>
       </div>
