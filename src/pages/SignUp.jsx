@@ -237,11 +237,11 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               )}
             </div>
 
-            {/* Email Field (Optional for Customer/User, Required for Admin & Rider) */}
+            {/* Email Field */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Email Address {!isUser && '*'}
+                  Email Address *
                 </label>
                 {isUser && (
                   <span className="text-[10px] text-neutral-400 font-semibold uppercase">Optional</span>
