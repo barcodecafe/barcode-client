@@ -1325,7 +1325,7 @@ export const Checkout = () => {
                 <StepBadge n={2} /> {orderType === "pickup" ? "Pickup & Contact Details" : "Delivery Details"}
               </h2>
 
-              {/* Sleek Fulfillment Summary Header */}
+              {/* Sleek Fulfillment Summary Header (Strict Read-only from Navbar/Header Selection) */}
               <div className="mb-4 p-3.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-950 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 ${orderType === "pickup" ? "bg-emerald-500" : "bg-primary-500"}`}>
@@ -1344,14 +1344,6 @@ export const Checkout = () => {
                     </span>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={openFulfillmentModal}
-                  className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 transition-all shrink-0 cursor-pointer"
-                >
-                  Change
-                </button>
               </div>
 
               <div className="space-y-3.5">
