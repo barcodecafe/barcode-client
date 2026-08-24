@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, memo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination, EffectFade } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,7 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
 export const Home = () => {
+  const navigate = useNavigate();
   const previewCount = usePreviewCount();
   const { isPickup, selectedBranch, openFulfillmentModal } = useFulfillment();
   const [brands, setBrands] = useState([]);
@@ -229,7 +230,15 @@ export const Home = () => {
   const foodsById = useMemo(
     () =>
       allFoods.reduce((map, food) => {
-        map[food.id] = food;
+        if (!food) return map;
+        if (food.id !== undefined && food.id !== null) {
+          map[food.id] = food;
+          map[String(food.id)] = food;
+        }
+        if (food._id !== undefined && food._id !== null) {
+          map[food._id] = food;
+          map[String(food._id)] = food;
+        }
         return map;
       }, {}),
     [allFoods],
@@ -275,9 +284,9 @@ export const Home = () => {
               [&_.swiper-button-next]:!right-2 sm:[&_.swiper-button-next]:!right-4 lg:[&_.swiper-button-next]:!right-8"
           >
             {heroSlides.map((slide, index) => {
-              const featuredFood = foodsById[slide.featuredFoodId];
-              const showOrderButton =
-                slide.type === "promo" && Boolean(featuredFood);
+              const slideFoodKey = slide.featuredFoodId !== undefined && slide.featuredFoodId !== null ? slide.featuredFoodId : null;
+              const featuredFood = slideFoodKey ? (foodsById[slideFoodKey] || foodsById[String(slideFoodKey)]) : null;
+              const showOrderButton = slide.type === "promo" || Boolean(slide.cta);
 
               const hasActiveDiscount = featuredFood && hasFoodDiscount(featuredFood);
 
@@ -312,8 +321,12 @@ export const Home = () => {
                       <div className="z-10">
                         <button
                           onClick={() => {
-                            addToCart(featuredFood);
-                            openCart();
+                            if (featuredFood) {
+                              addToCart(featuredFood);
+                              openCart();
+                            } else {
+                              navigate("/menu");
+                            }
                           }}
                           className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold flex items-center gap-2 group shadow-xl shadow-primary-500/20 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-95 transition-all duration-300 pointer-events-auto cursor-pointer"
                         >

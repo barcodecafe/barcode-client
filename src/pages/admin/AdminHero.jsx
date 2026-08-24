@@ -115,7 +115,7 @@ export const AdminHero = () => {
     try {
       const payload = {
         ...formData,
-        featuredFoodId: formData.type === 'promo' && formData.featuredFoodId ? parseInt(formData.featuredFoodId, 10) : null,
+        featuredFoodId: formData.type === 'promo' && formData.featuredFoodId ? formData.featuredFoodId : null,
         cta: formData.type === 'promo' ? formData.cta || 'Order Now' : null,
         offerText: formData.type === 'promo' ? formData.offerText || '' : null
       };
@@ -419,11 +419,14 @@ export const AdminHero = () => {
                           className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
                         >
                           <option value="">-- Select Dish --</option>
-                          {foods.map((food) => (
-                            <option key={food.id} value={food.id}>
-                              {food.name} (৳{food.price})
-                            </option>
-                          ))}
+                          {foods.map((food) => {
+                            const fId = food.id || food._id;
+                            return (
+                              <option key={fId} value={fId}>
+                                {food.name} (৳{food.price})
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 
