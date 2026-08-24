@@ -414,6 +414,8 @@ export const DishDetail = () => {
     (f) => f && f.isActive !== false && String(f?.id || f?._id) !== String(food?.id || food?._id)
   );
 
+  const isSoldOut = food ? (food.isAvailable === false || food.isAvailable === "false") : false;
+
   return (
     /* 🎯 Global site-container class applied */
     <div className="site-container py-8">
@@ -431,7 +433,7 @@ export const DishDetail = () => {
         <div className="relative aspect-square rounded-none overflow-hidden bg-neutral-50 dark:bg-neutral-800">
           
           {/* 🎯 Sold Out / BOGO Offer / Discount Badge */}
-          {food?.isAvailable === false ? (
+          {isSoldOut ? (
             <div className="absolute top-4 left-4 px-3 py-1 rounded-none bg-rose-600 text-white font-black text-xs uppercase shadow-lg z-10 flex items-center gap-1.5">
               🔴 Sold Out Today
             </div>
@@ -453,7 +455,7 @@ export const DishDetail = () => {
             src={displayImage}
             alt={food?.name || "Dish"}
             className={`w-full h-full object-cover transition-all duration-300 ${
-              food?.isAvailable === false ? "grayscale opacity-75" : ""
+              isSoldOut ? "grayscale opacity-75" : ""
             }`}
           />
 
@@ -716,7 +718,7 @@ export const DishDetail = () => {
             </div>
 
             {/* Add to Cart Button */}
-            {food?.isAvailable === false ? (
+            {isSoldOut ? (
               <button
                 type="button"
                 disabled
