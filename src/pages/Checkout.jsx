@@ -1325,52 +1325,34 @@ export const Checkout = () => {
                 <StepBadge n={2} /> {orderType === "pickup" ? "Pickup & Contact Details" : "Delivery Details"}
               </h2>
 
-              {/* Order Fulfillment Mode Selector */}
-              <div className="mb-4 bg-neutral-100 dark:bg-neutral-950 p-1 rounded-xl grid grid-cols-2 gap-1 border border-neutral-200/50 dark:border-neutral-800">
+              {/* Sleek Fulfillment Summary Header */}
+              <div className="mb-4 p-3.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-950 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 ${orderType === "pickup" ? "bg-emerald-500" : "bg-primary-500"}`}>
+                    {orderType === "pickup" ? <ShoppingBag className="w-4.5 h-4.5" /> : <Truck className="w-4.5 h-4.5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-extrabold text-neutral-900 dark:text-white block truncate">
+                      {orderType === "pickup"
+                        ? `🛍️ Self-Pickup (${selectedBranch?.name || pickupBranchName || "Selected Branch"})`
+                        : "🚚 Home Delivery"}
+                    </span>
+                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block truncate mt-0.5">
+                      {orderType === "pickup"
+                        ? "Fulfillment Fee: ৳0.00 (FREE) • Collect at counter"
+                        : "Standard delivery rates & regions apply"}
+                    </span>
+                  </div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setOrderType("delivery")}
-                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    orderType === "delivery"
-                      ? "bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-md border border-neutral-200/60 dark:border-neutral-800"
-                      : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-                  }`}
+                  onClick={openFulfillmentModal}
+                  className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 transition-all shrink-0 cursor-pointer"
                 >
-                  <Truck className="w-4 h-4" />
-                  <span>🚚 Home Delivery</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderType("pickup")}
-                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    orderType === "pickup"
-                      ? "bg-white dark:bg-neutral-900 text-emerald-600 dark:text-emerald-400 shadow-md border border-neutral-200/60 dark:border-neutral-800"
-                      : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-                  }`}
-                >
-                  <ShoppingBag className="w-4 h-4 text-emerald-500" />
-                  <span>🛍️ Self Pickup (FREE)</span>
+                  Change
                 </button>
               </div>
-
-              {orderType === "delivery" && region && (
-                <p className="text-[11px] text-neutral-400 mb-4">
-                  📍 Delivering in{" "}
-                  <span className="font-semibold text-neutral-500 dark:text-neutral-300">
-                    {region.name}
-                  </span>{" "}
-                  — charge is from your selected area
-                </p>
-              )}
-
-              {orderType === "pickup" && (
-                <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>
-                    No delivery charges for Self-Pickup! Please collect your meal directly from your selected branch outlet.
-                  </span>
-                </div>
-              )}
 
               <div className="space-y-3.5">
                 <div>
