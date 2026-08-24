@@ -203,9 +203,11 @@ export const DishDetail = () => {
       if (payload && payload.food) {
         const updated = payload.food;
         const currentDishIdentifier = String(id).toLowerCase().trim();
+        const loadedId = food ? String(food.id || food._id).toLowerCase().trim() : "";
         const matchesThisDish =
-          String(updated.id) === currentDishIdentifier ||
-          String(updated._id) === currentDishIdentifier ||
+          String(updated.id || "").toLowerCase().trim() === currentDishIdentifier ||
+          String(updated._id || "").toLowerCase().trim() === currentDishIdentifier ||
+          (loadedId && (String(updated.id || "").toLowerCase().trim() === loadedId || String(updated._id || "").toLowerCase().trim() === loadedId)) ||
           (updated.name && updated.name.toLowerCase().trim() === currentDishIdentifier);
 
         if (matchesThisDish) {
@@ -214,6 +216,7 @@ export const DishDetail = () => {
           } else {
             setFood({ ...updated });
           }
+          loadDishData(false);
           return;
         }
       }
