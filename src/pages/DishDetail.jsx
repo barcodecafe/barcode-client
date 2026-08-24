@@ -426,7 +426,9 @@ export const DishDetail = () => {
           <img
             src={displayImage}
             alt={food?.name || "Dish"}
-            className="w-full h-full object-cover transition-all duration-300"
+            className={`w-full h-full object-cover transition-all duration-300 ${
+              food?.isAvailable === false ? "grayscale opacity-75" : ""
+            }`}
           />
 
           <button
