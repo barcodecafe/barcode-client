@@ -285,13 +285,14 @@ export const Home = () => {
       <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
         {heroSlides.length > 0 ? (
           <Swiper
-            key={`hero-swiper-${heroSlides.length}-${heroSlides.map((s) => s.id || s._id).join('-')}`}
             modules={[Autoplay, Navigation, Pagination, EffectFade]}
             effect={"fade"}
             autoplay={{ delay: 4000, disableOnInteraction: false }}
             pagination={{ clickable: true, dynamicBullets: true }}
             navigation={true}
             loop={heroSlides.length > 1}
+            observer={true}
+            observeParents={true}
             className="w-full h-full 
               [&_.swiper-button-next]:!bg-transparent [&_.swiper-button-prev]:!bg-transparent 
               [&_.swiper-button-next]:after:text-primary-500 [&_.swiper-button-prev]:after:text-primary-500 
