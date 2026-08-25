@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
-import { Plus, Edit2, Trash2, X, Image as ImageIcon, Link2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Image as ImageIcon, Link2, Calendar, Percent, DollarSign, Sparkles } from 'lucide-react';
 import { getAllSlides, createSlide, updateSlide, deleteSlide } from '../../services/heroSlidesService';
-import { getAllFoods } from '../../services/foodsService';
+import { getAllFoods, updateFood } from '../../services/foodsService';
+
+const formatForDateTimeInput = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return '';
+  }
+};
 
 export const AdminHero = () => {
   const [slides, setSlides] = useState([]);
@@ -20,7 +32,13 @@ export const AdminHero = () => {
     image: '',
     cta: 'Order Now',
     featuredFoodId: '',
-    offerText: ''
+    offerText: '',
+    discountType: 'percent',
+    discountPct: '',
+    discountAmount: '',
+    offerType: 'none',
+    discountStartDate: '',
+    discountEndDate: '',
   });
   const [formError, setFormError] = useState('');
 
@@ -55,7 +73,13 @@ export const AdminHero = () => {
       image: '', 
       cta: 'Order Now',
       featuredFoodId: '',
-      offerText: ''
+      offerText: '',
+      discountType: 'percent',
+      discountPct: '',
+      discountAmount: '',
+      offerType: 'none',
+      discountStartDate: '',
+      discountEndDate: '',
     });
     setFormError('');
     setIsModalOpen(true);
@@ -63,14 +87,21 @@ export const AdminHero = () => {
 
   const openEditModal = (slide) => {
     setEditingSlide(slide);
+    const linkedFood = foods.find((f) => String(f.id || f._id) === String(slide.featuredFoodId));
     setFormData({
       type: slide.type,
       title: slide.title,
       subtitle: slide.subtitle,
       image: slide.image,
-      cta: slide.cta || '',
+      cta: slide.cta || 'Order Now',
       featuredFoodId: slide.featuredFoodId || '',
-      offerText: slide.offerText || ''
+      offerText: slide.offerText || '',
+      discountType: linkedFood?.discountType || 'percent',
+      discountPct: linkedFood?.discountPct ? String(linkedFood.discountPct) : '',
+      discountAmount: linkedFood?.discountAmount ? String(linkedFood.discountAmount) : '',
+      offerType: linkedFood?.offerType || 'none',
+      discountStartDate: formatForDateTimeInput(linkedFood?.discountStartDate),
+      discountEndDate: formatForDateTimeInput(linkedFood?.discountEndDate),
     });
     setFormError('');
     setIsModalOpen(true);
@@ -80,20 +111,45 @@ export const AdminHero = () => {
     if (!foodId) {
       setFormData((prev) => ({
         ...prev,
-        featuredFoodId: ''
+        featuredFoodId: '',
+        discountPct: '',
+        discountAmount: '',
+        offerType: 'none',
+        discountStartDate: '',
+        discountEndDate: '',
       }));
       return;
     }
 
     const selected = foods.find((f) => String(f.id || f._id) === String(foodId));
     if (selected) {
+      const dType = selected.discountType || 'percent';
+      const dPct = selected.discountPct ? String(selected.discountPct) : '';
+      const dAmt = selected.discountAmount ? String(selected.discountAmount) : '';
+      const oType = selected.offerType || 'none';
+      const sDate = formatForDateTimeInput(selected.discountStartDate);
+      const eDate = formatForDateTimeInput(selected.discountEndDate);
+
+      let computedOffer = '';
+      if (oType === 'bogo_1g1') computedOffer = 'BUY 1 GET 1 FREE';
+      else if (oType === 'bogo_1g2') computedOffer = 'BUY 1 GET 2 FREE';
+      else if (oType === 'combo') computedOffer = 'COMBO DEAL';
+      else if (dType === 'flat' && Number(dAmt) > 0) computedOffer = `FLAT ৳${dAmt} OFF`;
+      else if (dType === 'percent' && Number(dPct) > 0) computedOffer = `${dPct}% OFF`;
+
       setFormData((prev) => ({
         ...prev,
         featuredFoodId: foodId,
         title: prev.title.trim() && prev.title !== 'Untitled' ? prev.title : selected.name,
         subtitle: prev.subtitle.trim() ? prev.subtitle : (selected.description || `Special delicious ${selected.name} available now for ৳${selected.price}`),
         image: prev.image ? prev.image : (selected.image || ''),
-        offerText: prev.offerText ? prev.offerText : (selected.discount?.percentage ? `${selected.discount.percentage}% OFF` : (selected.discount?.amount ? `৳${selected.discount.amount} OFF` : ''))
+        discountType: dType,
+        discountPct: dPct,
+        discountAmount: dAmt,
+        offerType: oType,
+        discountStartDate: sDate,
+        discountEndDate: eDate,
+        offerText: prev.offerText ? prev.offerText : computedOffer,
       }));
     }
   };
@@ -160,12 +216,24 @@ export const AdminHero = () => {
     }
 
     try {
+      // 1. Prepare Hero Slide Payload
+      let finalOfferText = formData.offerText?.trim() || '';
+      if (!finalOfferText && formData.type === 'promo') {
+        if (formData.offerType === 'bogo_1g1') finalOfferText = 'BUY 1 GET 1 FREE';
+        else if (formData.offerType === 'bogo_1g2') finalOfferText = 'BUY 1 GET 2 FREE';
+        else if (formData.offerType === 'combo') finalOfferText = 'COMBO DEAL';
+        else if (formData.discountType === 'flat' && Number(formData.discountAmount) > 0) finalOfferText = `FLAT ৳${formData.discountAmount} OFF`;
+        else if (formData.discountType === 'percent' && Number(formData.discountPct) > 0) finalOfferText = `${formData.discountPct}% OFF`;
+      }
+
       const payload = {
-        ...formData,
+        type: formData.type,
+        title: formData.title,
+        subtitle: formData.subtitle,
         image: finalImage,
         featuredFoodId: formData.type === 'promo' && formData.featuredFoodId ? formData.featuredFoodId : null,
         cta: formData.type === 'promo' ? formData.cta || 'Order Now' : null,
-        offerText: formData.type === 'promo' ? formData.offerText || '' : null
+        offerText: formData.type === 'promo' ? finalOfferText || null : null
       };
 
       if (editingSlide) {
@@ -175,6 +243,24 @@ export const AdminHero = () => {
         await createSlide(payload);
         toast.success('Hero slide created successfully!');
       }
+
+      // 2. ⚡ Synchronize Linked Food Dish (Discount, Timer & Offer Type on Menu)
+      if (formData.type === 'promo' && formData.featuredFoodId) {
+        try {
+          const foodUpdatePayload = {
+            discountType: formData.discountType,
+            discountPct: formData.discountType === 'percent' ? Number(formData.discountPct) || 0 : 0,
+            discountAmount: formData.discountType === 'flat' ? Number(formData.discountAmount) || 0 : 0,
+            offerType: formData.offerType || 'none',
+            discountStartDate: formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
+            discountEndDate: formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
+          };
+          await updateFood(formData.featuredFoodId, foodUpdatePayload);
+        } catch (foodErr) {
+          console.warn('Could not sync food discount:', foodErr);
+        }
+      }
+
       broadcastHeroUpdate();
       setIsModalOpen(false);
       fetchSlides();
@@ -383,24 +469,29 @@ export const AdminHero = () => {
                   </div>
                 </div>
 
-                {/* 🎯 Promo Configuration: If Promo, Put Dish Selection at the top for intuitive auto-filling */}
+                {/* 🎯 Promo Configuration: Fully Professional 4-Section Layout */}
                 {formData.type === 'promo' && (
-                  <div className="p-4 bg-primary-500/5 dark:bg-primary-500/10 border border-primary-500/20 rounded-2xl space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
-                        🍔 Link Food Dish (Auto-fills info & image)
+                  <div className="p-4 bg-primary-500/5 dark:bg-primary-500/10 border border-primary-500/20 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-primary-500/15">
+                      <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" /> Food Advertisement & Dish Menu Sync
                       </span>
-                      {formData.featuredFoodId && (
-                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                          Dish Linked ✓
+                      {formData.featuredFoodId ? (
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          ✓ Linked to Main Menu Dish
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-neutral-400">
+                          (Select a dish to sync menu pricing & timers)
                         </span>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
-                          Select Food Dish
+                    <div className="space-y-3.5">
+                      {/* Section 1: Select Food Dish */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                          1. Select Food Dish to Link & Auto-fill
                         </label>
                         <select
                           name="featuredFoodId"
@@ -408,7 +499,7 @@ export const AdminHero = () => {
                           onChange={handleInputChange}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-primary-500/30 dark:border-primary-500/40 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/50 cursor-pointer"
                         >
-                          <option value="">-- Choose a Food Dish to Auto-fill --</option>
+                          <option value="">-- Choose a Food Dish from Menu --</option>
                           {foods.map((food) => {
                             const fId = food.id || food._id;
                             return (
@@ -420,78 +511,224 @@ export const AdminHero = () => {
                         </select>
                       </div>
 
+                      {/* Section 2: Special Promotion Offer */}
                       <div>
-                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                          Button CTA Text
+                        <label className="block text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                          🎁 2. Special Promotion Offer (Optional)
                         </label>
-                        <input
-                          type="text"
-                          name="cta"
-                          value={formData.cta}
-                          onChange={handleInputChange}
-                          placeholder="e.g. Order Now, Grab Offer"
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+                        <select
+                          name="offerType"
+                          value={formData.offerType}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            let oText = formData.offerText;
+                            if (val === 'bogo_1g1') oText = 'BUY 1 GET 1 FREE';
+                            else if (val === 'bogo_1g2') oText = 'BUY 1 GET 2 FREE';
+                            else if (val === 'combo') oText = 'COMBO DEAL';
+                            else if (val === 'none' && (formData.offerText === 'BUY 1 GET 1 FREE' || formData.offerText === 'BUY 1 GET 2 FREE' || formData.offerText === 'COMBO DEAL')) oText = '';
+                            setFormData((prev) => ({
+                              ...prev,
+                              offerType: val,
+                              offerText: oText,
+                            }));
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-neutral-900 text-xs text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                        >
+                          <option value="none">No Offer (Standard)</option>
+                          <option value="bogo_1g1">Buy 1 Get 1 Free (BOGO)</option>
+                          <option value="bogo_1g2">Buy 1 Get 2 Free (BOGO)</option>
+                          <option value="combo">Special Combo Deal</option>
+                        </select>
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                          Offer / Discount Badge Text
+                      {/* Section 3: Direct Discount Value */}
+                      <div className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl space-y-2.5">
+                        <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                          ⭐ 3. Direct Discount Value (Percentage % or Flat ৳)
                         </label>
-                        <input
-                          type="text"
-                          name="offerText"
-                          value={formData.offerText}
-                          onChange={handleInputChange}
-                          placeholder="e.g. 20% OFF, BUY 1 GET 1"
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
 
-                      {/* ⚡ Quick Offer Presets: Percentage (%) & Flat Taka (৳) Discounts */}
-                      <div className="sm:col-span-2 space-y-2 pt-1">
-                        <div>
-                          <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 mb-1">
-                            💰 Flat Taka (৳) Cash Discounts:
+                        <div className="flex items-center gap-2">
+                          <select
+                            name="discountType"
+                            value={formData.discountType}
+                            onChange={(e) => {
+                              const newType = e.target.value;
+                              setFormData((prev) => ({
+                                ...prev,
+                                discountType: newType,
+                                discountPct: newType === 'percent' ? prev.discountPct : '',
+                                discountAmount: newType === 'flat' ? prev.discountAmount : '',
+                              }));
+                            }}
+                            className="px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer shrink-0"
+                          >
+                            <option value="percent">% Percentage Off</option>
+                            <option value="flat">৳ Flat Taka Off</option>
+                          </select>
+
+                          {formData.discountType === 'flat' ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={formData.discountAmount}
+                              onChange={(e) => {
+                                const amt = e.target.value;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  discountAmount: amt,
+                                  discountPct: '',
+                                  offerText: Number(amt) > 0 ? `FLAT ৳${amt} OFF` : prev.offerText,
+                                }));
+                              }}
+                              placeholder="৳ off (Enter 0 to clear)"
+                              className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            />
+                          ) : (
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={formData.discountPct}
+                              onChange={(e) => {
+                                const pct = e.target.value;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  discountPct: pct,
+                                  discountAmount: '',
+                                  offerText: Number(pct) > 0 ? `${pct}% OFF` : prev.offerText,
+                                }));
+                              }}
+                              placeholder="% off (Enter 0 to clear)"
+                              className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            />
+                          )}
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="space-y-1.5 pt-1">
+                          <span className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
+                            1-Click Preset Discounts:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['FLAT ৳50 OFF', 'FLAT ৳100 OFF', 'FLAT ৳150 OFF', 'FLAT ৳200 OFF', 'FLAT ৳300 OFF', 'FLAT ৳500 OFF'].map((chip) => (
-                              <button
-                                key={chip}
-                                type="button"
-                                onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                  formData.offerText === chip
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-emerald-600 dark:text-emerald-400 hover:border-emerald-400'
-                                }`}
-                              >
-                                💵 {chip}
-                              </button>
-                            ))}
+                          <div className="flex flex-wrap gap-1">
+                            {['10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF'].map((chip) => {
+                              const pct = parseInt(chip);
+                              return (
+                                <button
+                                  key={chip}
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      discountType: 'percent',
+                                      discountPct: String(pct),
+                                      discountAmount: '',
+                                      offerText: chip,
+                                    }))
+                                  }
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                                    formData.discountType === 'percent' && String(formData.discountPct) === String(pct)
+                                      ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-red-400'
+                                  }`}
+                                >
+                                  🔥 {chip}
+                                </button>
+                              );
+                            })}
+
+                            {['FLAT ৳50 OFF', 'FLAT ৳100 OFF', 'FLAT ৳150 OFF', 'FLAT ৳200 OFF', 'FLAT ৳300 OFF', 'FLAT ৳500 OFF'].map((chip) => {
+                              const amt = parseInt(chip.replace(/\D/g, ''));
+                              return (
+                                <button
+                                  key={chip}
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      discountType: 'flat',
+                                      discountAmount: String(amt),
+                                      discountPct: '',
+                                      offerText: chip,
+                                    }))
+                                  }
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                                    formData.discountType === 'flat' && String(formData.discountAmount) === String(amt)
+                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-emerald-600 dark:text-emerald-400 hover:border-emerald-400'
+                                  }`}
+                                >
+                                  💵 {chip}
+                                </button>
+                              );
+                            })}
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Section 4: Duration Timer */}
+                      <div className="p-3.5 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20 space-y-2">
+                        <label className="text-[10px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Calendar className="w-3.5 h-3.5" /> 4. Promotion & Discount Duration Timer
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-[10px] font-semibold text-neutral-500 block mb-1">
+                              Start Date & Time (Optional)
+                            </span>
+                            <input
+                              type="datetime-local"
+                              name="discountStartDate"
+                              value={formData.discountStartDate}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs text-neutral-800 dark:text-white focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-semibold text-neutral-500 block mb-1">
+                              End Date & Time (Expiration)
+                            </span>
+                            <input
+                              type="datetime-local"
+                              name="discountEndDate"
+                              value={formData.discountEndDate}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs text-neutral-800 dark:text-white focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 italic pt-0.5">
+                          * When End Date expires, the discount badge & reduction will automatically deactivate on both the hero slide and main menu.
+                        </p>
+                      </div>
+
+                      {/* CTA & Offer text override */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                            Button CTA Text
+                          </label>
+                          <input
+                            type="text"
+                            name="cta"
+                            value={formData.cta}
+                            onChange={handleInputChange}
+                            placeholder="e.g. Order Now, Grab Offer"
+                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
                         </div>
 
                         <div>
-                          <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 mb-1">
-                            🔥 Percentage (%) & Special Deals:
-                          </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF', 'BUY 1 GET 1', 'FREE DELIVERY'].map((chip) => (
-                              <button
-                                key={chip}
-                                type="button"
-                                onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                  formData.offerText === chip
-                                    ? 'bg-red-500 text-white border-red-500 shadow-xs'
-                                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-red-400'
-                                }`}
-                              >
-                                🔥 {chip}
-                              </button>
-                            ))}
-                          </div>
+                          <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                            Banner Badge Custom Text
+                          </label>
+                          <input
+                            type="text"
+                            name="offerText"
+                            value={formData.offerText}
+                            onChange={handleInputChange}
+                            placeholder="e.g. 20% OFF, BUY 1 GET 1"
+                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
                         </div>
                       </div>
                     </div>
