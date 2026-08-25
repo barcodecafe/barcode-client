@@ -149,7 +149,9 @@ export const CartDrawer = () => {
                         : (item.price * item.quantity);
                       const freeSavings = originalTotal - finalPayable;
 
-                      const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
+                      const hasDirectDiscount = item.originalPrice && Number(item.originalPrice) > Number(item.price);
+                      const itemOriginalUnitPrice = Number(item.originalPrice) || Number(item.price);
+                      const directSavings = Math.max(0, (itemOriginalUnitPrice - Number(item.price)) * item.quantity);
 
                       return (
                         <div
@@ -170,6 +172,12 @@ export const CartDrawer = () => {
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800/60">
                                   <Gift className="w-2.5 h-2.5" />
                                   {offerLabel}
+                                </span>
+                              )}
+
+                              {hasDirectDiscount && !offerLabel && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800/60">
+                                  🔥 {item.discountPct ? `${item.discountPct}% OFF` : item.discountAmount ? `৳${item.discountAmount} OFF` : `৳${(Number(item.originalPrice) - Number(item.price)).toFixed(0)} OFF`}
                                 </span>
                               )}
 
@@ -206,6 +214,23 @@ export const CartDrawer = () => {
                                   </div>
                                   <div className="text-xs text-primary-500 font-black">
                                     Payable: ৳{finalPayable.toFixed(2)}
+                                  </div>
+                                </>
+                              ) : hasDirectDiscount ? (
+                                <>
+                                  <div className="flex items-center gap-1.5 text-[10px]">
+                                    <span className="text-neutral-400 line-through font-medium">
+                                      {item.quantity} × ৳{Number(item.originalPrice).toFixed(2)}
+                                    </span>
+                                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-1 py-0.5 rounded text-[9px]">
+                                      Save ৳{directSavings.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-baseline gap-1 text-xs">
+                                    <span className="text-[10px] text-neutral-400 font-medium">{item.quantity} × ৳{Number(item.price).toFixed(2)} =</span>
+                                    <span className="font-black text-primary-500">
+                                      ৳{finalPayable.toFixed(2)}
+                                    </span>
                                   </div>
                                 </>
                               ) : (

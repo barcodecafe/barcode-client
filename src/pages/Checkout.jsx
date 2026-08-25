@@ -743,6 +743,12 @@ export const Checkout = () => {
                         </span>
                       )}
 
+                      {item.originalPrice && Number(item.originalPrice) > Number(item.price) && !offerLabel && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded mt-0.5 border border-red-200 dark:border-red-800/60">
+                          🔥 {item.discountPct ? `${item.discountPct}% OFF` : item.discountAmount ? `৳${item.discountAmount} OFF` : `৳${(Number(item.originalPrice) - Number(item.price)).toFixed(0)} OFF`}
+                        </span>
+                      )}
+
                       {(item.selectedSize || item.selectedVariation?.name) && (
                         <span className="inline-block text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500 font-bold px-1.5 py-0.5 rounded mt-0.5 ml-1">
                           Option: {item.selectedSize || item.selectedVariation?.name}
@@ -797,13 +803,16 @@ export const Checkout = () => {
                     <div className="text-right shrink-0">
                       {(offerLabel && itemSavings > 0) ||
                       (item.originalPrice &&
-                        item.originalPrice > item.price) ? (
+                        Number(item.originalPrice) > Number(item.price)) ? (
                         <>
                           <span className="block text-[10px] text-neutral-400 line-through">
                             ৳{itemOriginalTotal.toFixed(2)}
                           </span>
                           <span className="text-xs font-black text-primary-500">
                             ৳{itemFinalPayable.toFixed(2)}
+                          </span>
+                          <span className="block text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                            Save ৳{itemSavings.toFixed(0)}
                           </span>
                         </>
                       ) : (
