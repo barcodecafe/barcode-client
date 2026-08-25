@@ -121,6 +121,7 @@ export const Home = () => {
     socket.on("foods_updated", handleFoodsUpdated);
     socket.on("categories_updated", handleFoodsUpdated);
     socket.on("slides_updated", handleSlidesUpdated);
+    socket.on("hero_slides_updated", handleSlidesUpdated);
 
     return () => {
       isMounted = false;
@@ -129,6 +130,7 @@ export const Home = () => {
       socket.off("foods_updated", handleFoodsUpdated);
       socket.off("categories_updated", handleFoodsUpdated);
       socket.off("slides_updated", handleSlidesUpdated);
+      socket.off("hero_slides_updated", handleSlidesUpdated);
     };
   }, []);
 
