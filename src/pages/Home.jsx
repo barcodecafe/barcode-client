@@ -30,6 +30,7 @@ import { socket } from "../services/socket";
 // 💡 Global FoodCard Import
 import FoodCard from "../components/FoodCard";
 import usePreviewCount from "../hooks/usePreviewCount";
+import { useVisiblePolling } from "../hooks/useVisiblePolling";
 
 // Import Swiper styles
 import "swiper/css";
@@ -133,6 +134,18 @@ export const Home = () => {
       socket.off("hero_slides_updated", handleSlidesUpdated);
     };
   }, []);
+
+  // ⚡ Bulletproof Background Sync: Refresh hero slides when active tab is visible
+  useVisiblePolling(
+    () => {
+      getAllSlides()
+        .then((slidesData) => {
+          setHeroSlides(Array.isArray(slidesData) ? slidesData : []);
+        })
+        .catch(() => {});
+    },
+    { intervalMs: 15000, enabled: true }
+  );
 
   const sortTabs = [
     { id: "popular", label: "Popular" },
