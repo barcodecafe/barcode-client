@@ -22,6 +22,7 @@ import {
   hasFoodDiscount,
   foodDiscountLabel,
   applyFoodDiscount,
+  parseOfferTextToDiscount,
 } from "../services/foodsService";
 import { getAllSlides } from "../services/heroSlidesService";
 import { getAllBrands } from "../services/brandsService";
@@ -363,7 +364,19 @@ export const Home = () => {
                               return;
                             }
                             if (featuredFood) {
-                              addToCart(featuredFood);
+                              let foodToOrder = { ...featuredFood };
+                              if (slide.offerText && !hasFoodDiscount(featuredFood)) {
+                                const parsed = parseOfferTextToDiscount(slide.offerText);
+                                if (parsed) {
+                                  foodToOrder = {
+                                    ...foodToOrder,
+                                    discountType: parsed.discountType,
+                                    discountPct: parsed.discountPct || 0,
+                                    discountAmount: parsed.discountAmount || 0,
+                                  };
+                                }
+                              }
+                              addToCart(foodToOrder);
                               openCart();
                             } else {
                               navigate("/menu");

@@ -165,3 +165,34 @@ export function foodDiscountLabel(food) {
   const pct = Number(food.discountPct) || 0;
   return pct > 0 ? `${pct}% OFF` : null;
 }
+
+/**
+ * 🎯 Parses promo offer text (e.g. "20% OFF", "FLAT ৳50 OFF", "FLAT ৳200 OFF", "100 TK DISCOUNT")
+ * into a structured discount object { discountType: 'percent' | 'flat', discountPct, discountAmount }.
+ */
+export function parseOfferTextToDiscount(offerText) {
+  if (!offerText || typeof offerText !== 'string') return null;
+  const str = offerText.trim();
+
+  // 1. Percentage check: e.g. "20% OFF", "15% DISCOUNT", "25%"
+  const pctMatch = str.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (pctMatch) {
+    const pct = parseFloat(pctMatch[1]);
+    if (pct > 0 && pct <= 100) {
+      return { discountType: 'percent', discountPct: pct, discountAmount: 0 };
+    }
+  }
+
+  // 2. Flat Taka cash check: e.g. "FLAT ৳50 OFF", "৳200 OFF", "FLAT 100 TK", "FLAT ৳200", "200 TK OFF", "500৳"
+  const flatMatch =
+    str.match(/(?:FLAT|SAVE|DISCOUNT)?\s*[৳Tk.]*\s*(\d+(?:\.\d+)?)\s*(?:TK|TAKA|৳)?\s*(?:OFF|DISCOUNT|LESS|ছাড়|ছাড়)?/i);
+
+  if (flatMatch) {
+    const amt = parseFloat(flatMatch[1]);
+    if (amt > 0) {
+      return { discountType: 'flat', discountAmount: amt, discountPct: 0 };
+    }
+  }
+
+  return null;
+}
