@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as authService from '../services/authService';
-import { socket } from '../services/socket';
+import { socket, refreshSocketAuth } from '../services/socket';
 
 // ---------------------------------------------------------------------------
 // AuthContext.jsx
