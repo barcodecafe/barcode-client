@@ -301,18 +301,51 @@ export const Home = () => {
     },
   };
 
+  const activeHeroSlides = useMemo(() => {
+    if (!heroSlides || heroSlides.length === 0) return [];
+    const now = new Date();
+    return heroSlides.filter((slide) => {
+      // 1. Ambient slides (Atmosphere) are permanent
+      if (slide.type === 'ambient') return true;
+
+      // 2. If the slide itself has an endDate that has passed, auto-hide it from public view
+      if (slide.endDate && new Date(slide.endDate) < now) return false;
+      if (slide.startDate && new Date(slide.startDate) > now) return false;
+
+      // 3. If the slide is linked to a food dish with a discount timer that expired, auto-hide it
+      const slideFoodKey = slide.featuredFoodId !== undefined && slide.featuredFoodId !== null ? slide.featuredFoodId : null;
+      const featuredFood = slideFoodKey ? (foodsById[slideFoodKey] || foodsById[String(slideFoodKey)]) : null;
+      if (featuredFood?.discountEndDate && new Date(featuredFood.discountEndDate) < now) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [heroSlides, foodsById]);
+
   return (
-    <div className="w-full">
-      {/* 1. HERO BANNER CAROUSEL */}
-      <section className="relative w-full h-[60vh] sm:h-[70vh] bg-black overflow-hidden">
-        {heroSlides.length > 0 ? (
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 font-sans text-neutral-800 dark:text-neutral-100 transition-colors duration-300">
+      {/* 1. HERO CAROUSEL SECTION */}
+      {/* 🎯 Sticky Mobile App Navigation Bar ও Desktop Header-এর উচ্চতার সমান স্পেসিং */}
+      <section className="relative w-full h-[62vh] sm:h-[70vh] md:h-[80vh] min-h-[440px] max-h-[750px] overflow-hidden bg-neutral-900 shadow-2xl">
+        {activeHeroSlides.length > 0 ? (
           <Swiper
-            modules={[Autoplay, Navigation, Pagination, EffectFade]}
-            effect={"fade"}
-            autoplay={{ delay: 4000, disableOnInteraction: false }}
-            pagination={{ clickable: true, dynamicBullets: true }}
+            modules={[Autoplay, Pagination, Navigation, EffectFade]}
+            effect="fade"
+            fadeEffect={{ crossFade: true }}
+            speed={1200}
+            autoplay={{
+              delay: 4000,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: false,
+            }}
+            pagination={{
+              clickable: true,
+              bulletClass: "swiper-pagination-bullet !w-2.5 !h-2.5 !bg-white/50 !opacity-100 transition-all duration-300",
+              bulletActiveClass: "!w-8 !rounded-full !bg-primary-500 !shadow-lg !shadow-primary-500/50",
+            }}
             navigation={true}
-            loop={heroSlides.length > 1}
+            loop={activeHeroSlides.length > 1}
             observer={true}
             observeParents={true}
             className="w-full h-full 
@@ -322,7 +355,7 @@ export const Home = () => {
               [&_.swiper-button-prev]:!left-2 sm:[&_.swiper-button-prev]:!left-4 lg:[&_.swiper-button-prev]:!left-8
               [&_.swiper-button-next]:!right-2 sm:[&_.swiper-button-next]:!right-4 lg:[&_.swiper-button-next]:!right-8"
           >
-            {heroSlides.map((slide, index) => {
+            {activeHeroSlides.map((slide, index) => {
               const slideFoodKey = slide.featuredFoodId !== undefined && slide.featuredFoodId !== null ? slide.featuredFoodId : null;
               const featuredFood = slideFoodKey ? (foodsById[slideFoodKey] || foodsById[String(slideFoodKey)]) : null;
               const showOrderButton = slide.type === "promo" || Boolean(slide.cta);

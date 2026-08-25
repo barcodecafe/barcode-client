@@ -100,8 +100,8 @@ export const AdminHero = () => {
       discountPct: linkedFood?.discountPct ? String(linkedFood.discountPct) : '',
       discountAmount: linkedFood?.discountAmount ? String(linkedFood.discountAmount) : '',
       offerType: linkedFood?.offerType || 'none',
-      discountStartDate: formatForDateTimeInput(linkedFood?.discountStartDate),
-      discountEndDate: formatForDateTimeInput(linkedFood?.discountEndDate),
+      discountStartDate: formatForDateTimeInput(slide.startDate || linkedFood?.discountStartDate),
+      discountEndDate: formatForDateTimeInput(slide.endDate || linkedFood?.discountEndDate),
     });
     setFormError('');
     setIsModalOpen(true);
@@ -233,7 +233,9 @@ export const AdminHero = () => {
         image: finalImage,
         featuredFoodId: formData.type === 'promo' && formData.featuredFoodId ? formData.featuredFoodId : null,
         cta: formData.type === 'promo' ? formData.cta || 'Order Now' : null,
-        offerText: formData.type === 'promo' ? finalOfferText || null : null
+        offerText: formData.type === 'promo' ? finalOfferText || null : null,
+        startDate: formData.type === 'promo' && formData.discountStartDate ? new Date(formData.discountStartDate).toISOString() : null,
+        endDate: formData.type === 'promo' && formData.discountEndDate ? new Date(formData.discountEndDate).toISOString() : null,
       };
 
       if (editingSlide) {
@@ -339,14 +341,29 @@ export const AdminHero = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent pointer-events-none" />
                   
-                  {/* Slide Type Badge */}
-                  <span className={`absolute top-3 left-3 px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border ${
-                    slide.type === 'promo' 
-                      ? 'bg-primary-500/10 text-primary-500 border-primary-500/20' 
-                      : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                  }`}>
-                    {slide.type === 'promo' ? 'Food Ad Slide' : 'Atmosphere Photo'}
-                  </span>
+                  {/* Slide Type & Expiry Badges */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1 pointer-events-none">
+                    <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border ${
+                      slide.type === 'promo' 
+                        ? 'bg-primary-500/10 text-primary-500 border-primary-500/20' 
+                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    }`}>
+                      {slide.type === 'promo' ? 'Food Ad Slide' : 'Atmosphere Photo'}
+                    </span>
+
+                    {slide.type === 'promo' && (
+                      (slide.endDate && new Date(slide.endDate) < new Date()) ||
+                      (linkedDish?.discountEndDate && new Date(linkedDish.discountEndDate) < new Date()) ? (
+                        <span className="px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-red-500/90 text-white shadow-xs">
+                          🕒 Expired (Hidden from Home)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-emerald-600/90 text-white shadow-xs">
+                          🟢 Live on Home
+                        </span>
+                      )
+                    )}
+                  </div>
 
                   <div className="absolute bottom-3 left-3 right-3 text-white pointer-events-none">
                     <h4 className="font-semibold text-sm truncate">{slide.title}</h4>
