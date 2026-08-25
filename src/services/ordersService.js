@@ -60,6 +60,12 @@ export async function getOrderById(id) {
   return res?.data || res;
 }
 
+/** GET /api/orders/:id/messages */
+export async function getOrderMessages(id) {
+  const res = await apiClient.get(`/orders/${id}/messages`);
+  return res?.data || res || [];
+}
+
 /** GET /api/orders?active=true */
 export async function getActiveOrdersForUser(userId) {
   const q = userId ? `?userId=${userId}&active=true` : '?active=true';

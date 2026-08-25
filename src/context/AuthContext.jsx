@@ -101,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     const loggedInUser = await authService.login(credentials);
     setUser(loggedInUser);
     markRegistered();
+    refreshSocketAuth();
     return loggedInUser;
   }, []);
 
@@ -108,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     const newUser = await authService.register(details);
     setUser(newUser);
     markRegistered();
+    refreshSocketAuth();
     return newUser;
   }, []);
 
@@ -115,6 +117,7 @@ export const AuthProvider = ({ children }) => {
     const newUser = await authService.registerRider(formData);
     setUser(newUser);
     markRegistered();
+    refreshSocketAuth();
     return newUser;
   }, []);
 
@@ -176,6 +179,7 @@ export const AuthProvider = ({ children }) => {
       // ignore
     }
     setUser(null);
+    refreshSocketAuth();
   }, []);
 
   const value = {

@@ -32,3 +32,10 @@ export const socket = io(SOCKET_URL, {
     cb({ token: token ? `Bearer ${token}` : '' });
   },
 });
+
+export const refreshSocketAuth = () => {
+  if (socket && typeof socket.disconnect === 'function') {
+    socket.disconnect();
+    socket.connect();
+  }
+};

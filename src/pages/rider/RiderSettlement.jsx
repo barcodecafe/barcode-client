@@ -35,7 +35,7 @@ import {
   submitRiderDailyCash,
 } from "../../services/ordersService";
 import { socket } from "../../services/socket";
-import { isAssignedToMe } from "../../layouts/RiderLayout";
+import { isAssignedToMe } from "../../utils/rider";
 
 export const RiderSettlement = () => {
   const { user } = useAuth();

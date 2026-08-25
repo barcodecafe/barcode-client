@@ -35,27 +35,8 @@ const navItems = [
   { name: "Daily Track Log", path: "/rider/settlement", icon: ClipboardList },
 ];
 
-// 🎯 FIX: অর্ডারটি এই রাইডারের কি না তা চেক করার জন্য বুলেটপ্রুফ গ্লোবাল ফাংশন
-export const isAssignedToMe = (orderOrData, user) => {
-  if (!user || !orderOrData) return false;
-  
-  const uId = String(user.id || user._id || "").trim();
-  const uName = String(user.name || "").trim().toLowerCase();
-
-  const oId1 = String(orderOrData.riderId || "").trim();
-  const oId2 = String(orderOrData.rider?._id || "").trim();
-  const oId3 = String(orderOrData.rider || "").trim();
-  const oId4 = String(orderOrData.order?.riderId || "").trim();
-
-  const oName1 = String(orderOrData.riderName || "").trim().toLowerCase();
-  const oName2 = String(orderOrData.rider?.name || "").trim().toLowerCase();
-  const oName3 = String(orderOrData.order?.riderName || "").trim().toLowerCase();
-
-  const idMatch = uId !== "" && (uId === oId1 || uId === oId2 || uId === oId3 || uId === oId4);
-  const nameMatch = uName !== "" && (uName === oName1 || uName === oName2 || uName === oName3);
-
-  return idMatch || nameMatch;
-};
+import { isAssignedToMe } from "../utils/rider";
+export { isAssignedToMe };
 
 export const RiderLayout = () => {
   const { theme, toggleTheme } = useTheme();

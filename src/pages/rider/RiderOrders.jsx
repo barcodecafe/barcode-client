@@ -18,12 +18,13 @@ import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 import {
   getAllOrders,
   getOrderById,
+  getOrderMessages,
   updateOrderStatus,
   addChatMessage,
   acceptRiderOrder,
   rejectRiderOrder,
 } from "../../services/ordersService";
-import { isAssignedToMe } from "../../layouts/RiderLayout";
+import { isAssignedToMe } from "../../utils/rider";
 
 import { socket } from "../../services/socket"; 
 
@@ -64,13 +65,14 @@ export const RiderOrders = () => {
   // 💬 লাইভ চ্যাট হিস্ট্রি ব্যাকএন্ড থেকে ফেচ করা
   useEffect(() => {
     if (!activeChatOrderId) return;
-    getOrderById(activeChatOrderId)
-      .then((fullOrder) => {
-        if (fullOrder && fullOrder.chatHistory) {
+    socket.emit("join_order_room", activeChatOrderId);
+    getOrderMessages(activeChatOrderId)
+      .then((history) => {
+        if (Array.isArray(history)) {
           setOrders((prev) =>
             prev.map((o) =>
               String(o._id || o.id) === String(activeChatOrderId)
-                ? { ...o, chatHistory: fullOrder.chatHistory }
+                ? { ...o, chatHistory: history }
                 : o
             )
           );

@@ -13,7 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { getAllOrders } from "../../services/ordersService";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
-import { isAssignedToMe } from "../../layouts/RiderLayout";
+import { isAssignedToMe } from "../../utils/rider";
 import { riderCommissionFor } from "../../utils/settlement";
 import { socket } from "../../services/socket";
 
