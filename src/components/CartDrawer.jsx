@@ -148,6 +148,7 @@ export const CartDrawer = () => {
                         ? getCartItemLineTotal(item) 
                         : (item.price * item.quantity);
                       const freeSavings = originalTotal - finalPayable;
+                      const step = item.offerType === 'bogo_1g1' ? 2 : item.offerType === 'bogo_1g2' ? 3 : 1;
 
                       const hasDirectDiscount = item.originalPrice && Number(item.originalPrice) > Number(item.price);
                       const itemOriginalUnitPrice = Number(item.originalPrice) || Number(item.price);
