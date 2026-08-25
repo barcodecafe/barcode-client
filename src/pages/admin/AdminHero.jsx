@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
 import { Plus, Edit2, Trash2, X, Image as ImageIcon, Link2 } from 'lucide-react';
 import { getAllSlides, createSlide, updateSlide, deleteSlide } from '../../services/heroSlidesService';
 import { getAllFoods } from '../../services/foodsService';
@@ -122,8 +123,10 @@ export const AdminHero = () => {
 
       if (editingSlide) {
         await updateSlide(editingSlide.id || editingSlide._id, payload);
+        toast.success('Hero slide updated successfully!');
       } else {
         await createSlide(payload);
+        toast.success('Hero slide created successfully!');
       }
       setIsModalOpen(false);
       fetchSlides();
@@ -135,12 +138,20 @@ export const AdminHero = () => {
   const handleDeleteClick = async (target) => {
     const slideId = typeof target === 'object' ? (target.id || target._id) : target;
     if (!slideId) return;
+
     if (window.confirm('Are you sure you want to delete this hero slide?')) {
+      const previousSlides = [...slides];
+      // ⚡ 0ms Optimistic Removal: Instantly remove card from screen
+      setSlides((prev) => prev.filter((s) => String(s.id || s._id) !== String(slideId)));
+
       try {
         await deleteSlide(slideId);
-        fetchSlides();
+        toast.success('Hero slide deleted successfully!');
       } catch (err) {
         console.error('Failed to delete slide:', err);
+        toast.error(err?.message || 'Failed to delete slide');
+        // Rollback state if delete failed
+        setSlides(previousSlides);
       }
     }
   };
