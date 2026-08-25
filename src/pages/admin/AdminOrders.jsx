@@ -15,6 +15,7 @@ import { ErrorBanner } from "../../components/ErrorBanner";
 import { ExportSalesModal } from "../../components/ExportSalesModal";
 import {
   getAllOrders,
+  getOrderMessages,
   updateOrderStatus,
   addChatMessage,
   assignRiderToOrder,
@@ -347,12 +348,46 @@ export const AdminOrders = () => {
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const invoiceRef = useRef(null);
-  const currentChat = orders.find((o) => (o.id || o._id) === activeChatOrderId);
+  const currentChat = orders.find((o) => String(o.id || o._id) === String(activeChatOrderId));
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
+
+  // 💬 Load full chat history when opening chat panel in admin
+  useEffect(() => {
+    if (!activeChatOrderId) return;
+    socket.emit("join_order_room", activeChatOrderId);
+    getOrderMessages(activeChatOrderId)
+      .then((history) => {
+        if (Array.isArray(history)) {
+          setOrders((prev) =>
+            prev.map((o) =>
+              String(o._id || o.id) === String(activeChatOrderId)
+                ? { ...o, chatHistory: history }
+                : o
+            )
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to load chat history in Admin:", err));
+  }, [activeChatOrderId]);
 
   const applyResult = (result, setter, transform, label) => {
     if (result.status === "fulfilled") {
-      setter(transform(result.value));
+      const transformed = transform(result.value);
+      if (label === "orders" && Array.isArray(transformed)) {
+        setOrders((prevOrders) => {
+          const prevMap = new Map(prevOrders.map((o) => [String(o._id || o.id), o]));
+          return transformed.map((newOrder) => {
+            const key = String(newOrder._id || newOrder.id);
+            const prev = prevMap.get(key);
+            if (prev && Array.isArray(prev.chatHistory) && prev.chatHistory.length > 0) {
+              return { ...newOrder, chatHistory: prev.chatHistory };
+            }
+            return newOrder;
+          });
+        });
+      } else {
+        setter(transformed);
+      }
       return null;
     }
     console.error(`Failed to load ${label}:`, result.reason);

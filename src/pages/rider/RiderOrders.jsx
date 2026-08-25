@@ -111,7 +111,18 @@ export const RiderOrders = () => {
       .then((data) => {
         const orderList = Array.isArray(data) ? data : data?.data || [];
         const assigned = orderList.filter((o) => isAssignedToMe(o, user) && o.status !== "Delivered" && o.status !== "Rejected");
-        setOrders(assigned);
+
+        setOrders((prevOrders) => {
+          const prevMap = new Map(prevOrders.map((o) => [String(o._id || o.id), o]));
+          return assigned.map((newOrder) => {
+            const key = String(newOrder._id || newOrder.id);
+            const prev = prevMap.get(key);
+            if (prev && Array.isArray(prev.chatHistory) && prev.chatHistory.length > 0) {
+              return { ...newOrder, chatHistory: prev.chatHistory };
+            }
+            return newOrder;
+          });
+        });
         setLoading(false);
       })
       .catch((err) => {
@@ -150,7 +161,16 @@ export const RiderOrders = () => {
             return prev.filter((o) => String(o.id || o._id) !== targetId);
           }
           return prev.map((o) =>
-            String(o.id || o._id) === targetId ? { ...o, ...incomingOrder } : o
+            String(o.id || o._id) === targetId
+              ? {
+                  ...o,
+                  ...incomingOrder,
+                  chatHistory:
+                    Array.isArray(incomingOrder.chatHistory) && incomingOrder.chatHistory.length > 0
+                      ? incomingOrder.chatHistory
+                      : o.chatHistory || [],
+                }
+              : o
           );
         }
 
