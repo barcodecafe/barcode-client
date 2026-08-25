@@ -1,14 +1,10 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { RootLayout } from '../layouts/RootLayout';
-import { AdminLayout } from '../layouts/AdminLayout';
-import { RiderLayout } from '../layouts/RiderLayout'; 
-
 import { Home } from '../pages/Home';
 import { Branches } from '../pages/Branches';
 import BranchDetail from '../pages/BranchDetail';
 import { Brands } from '../pages/Brands';
-import { BrandLayout } from '../layouts/BrandLayout';
 import { BrandHome } from '../pages/BrandHome';
 import { BrandBranches } from '../pages/BrandBranches';
 import { BrandBranchDetail } from '../pages/BrandBranchDetail';
@@ -19,6 +15,11 @@ import { DishDetail } from '../pages/DishDetail';
 import { About } from '../pages/About';
 import { Login } from '../pages/Login';
 import { SignUp } from '../pages/SignUp';
+
+// ⚡ Lazy-loaded Layouts
+const AdminLayout = lazy(() => import('../layouts/AdminLayout').then((m) => ({ default: m.AdminLayout || m.default })));
+const RiderLayout = lazy(() => import('../layouts/RiderLayout').then((m) => ({ default: m.RiderLayout || m.default })));
+const BrandLayout = lazy(() => import('../layouts/BrandLayout').then((m) => ({ default: m.BrandLayout || m.default })));
 
 // ⚡ Lazy-loaded secondary & utility pages for instant initial bundle loading
 const ForgotPassword = lazy(() => import('../pages/ForgotPassword').then((m) => ({ default: m.ForgotPassword })));
