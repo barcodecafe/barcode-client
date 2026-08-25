@@ -448,26 +448,50 @@ export const AdminHero = () => {
                         />
                       </div>
 
-                      {/* ⚡ Quick Offer % Preset Chips */}
-                      <div className="sm:col-span-2 space-y-1.5 pt-1">
-                        <span className="block text-[10px] font-semibold text-neutral-400">
-                          Quick Discount Presets:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF', 'BUY 1 GET 1', 'FLAT 50৳ OFF'].map((chip) => (
-                            <button
-                              key={chip}
-                              type="button"
-                              onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
-                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                formData.offerText === chip
-                                  ? 'bg-red-500 text-white border-red-500 shadow-xs'
-                                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-red-400'
-                              }`}
-                            >
-                              🔥 {chip}
-                            </button>
-                          ))}
+                      {/* ⚡ Quick Offer Presets: Percentage (%) & Flat Taka (৳) Discounts */}
+                      <div className="sm:col-span-2 space-y-2 pt-1">
+                        <div>
+                          <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 mb-1">
+                            💰 Flat Taka (৳) Cash Discounts:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['FLAT ৳50 OFF', 'FLAT ৳100 OFF', 'FLAT ৳150 OFF', 'FLAT ৳200 OFF', 'FLAT ৳300 OFF', 'FLAT ৳500 OFF'].map((chip) => (
+                              <button
+                                key={chip}
+                                type="button"
+                                onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                  formData.offerText === chip
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-emerald-600 dark:text-emerald-400 hover:border-emerald-400'
+                                }`}
+                              >
+                                💵 {chip}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 mb-1">
+                            🔥 Percentage (%) & Special Deals:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF', 'BUY 1 GET 1', 'FREE DELIVERY'].map((chip) => (
+                              <button
+                                key={chip}
+                                type="button"
+                                onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                  formData.offerText === chip
+                                    ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-red-400'
+                                }`}
+                              >
+                                🔥 {chip}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
