@@ -104,6 +104,18 @@ export const AdminHero = () => {
     }
   };
 
+  const broadcastHeroUpdate = () => {
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('barcode_realtime');
+        bc.postMessage({ type: 'HERO_SLIDES_UPDATED' });
+        bc.close();
+      }
+    } catch (e) {
+      // Ignore broadcast errors
+    }
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -128,6 +140,7 @@ export const AdminHero = () => {
         await createSlide(payload);
         toast.success('Hero slide created successfully!');
       }
+      broadcastHeroUpdate();
       setIsModalOpen(false);
       fetchSlides();
     } catch (err) {
@@ -146,6 +159,7 @@ export const AdminHero = () => {
 
       try {
         await deleteSlide(slideId);
+        broadcastHeroUpdate();
         toast.success('Hero slide deleted successfully!');
       } catch (err) {
         console.error('Failed to delete slide:', err);

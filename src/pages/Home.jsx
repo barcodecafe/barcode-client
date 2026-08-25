@@ -124,6 +124,25 @@ export const Home = () => {
     socket.on("slides_updated", handleSlidesUpdated);
     socket.on("hero_slides_updated", handleSlidesUpdated);
 
+    // ⚡ 0.1ms Instant Cross-Tab Broadcast Channel
+    let bc = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('barcode_realtime');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'HERO_SLIDES_UPDATED') {
+            handleSlidesUpdated();
+          }
+        };
+      }
+    } catch {}
+
+    // ⚡ Instant Refetch when user switches or clicks into the tab
+    const handleFocus = () => {
+      handleSlidesUpdated();
+    };
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       isMounted = false;
       socket.off("brands_updated", handleBrandsUpdated);
@@ -132,10 +151,12 @@ export const Home = () => {
       socket.off("categories_updated", handleFoodsUpdated);
       socket.off("slides_updated", handleSlidesUpdated);
       socket.off("hero_slides_updated", handleSlidesUpdated);
+      if (bc) bc.close();
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
-  // ⚡ Bulletproof Background Sync: Refresh hero slides when active tab is visible
+  // ⚡ Bulletproof Background Sync: Refresh hero slides every 5s when tab is visible
   useVisiblePolling(
     () => {
       getAllSlides()
@@ -144,7 +165,7 @@ export const Home = () => {
         })
         .catch(() => {});
     },
-    { intervalMs: 15000, enabled: true }
+    { intervalMs: 5000, enabled: true }
   );
 
   const sortTabs = [
