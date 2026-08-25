@@ -134,7 +134,7 @@ export const AdminHero = () => {
       if (oType === 'bogo_1g1') computedOffer = 'BUY 1 GET 1 FREE';
       else if (oType === 'bogo_1g2') computedOffer = 'BUY 1 GET 2 FREE';
       else if (oType === 'combo') computedOffer = 'COMBO DEAL';
-      else if (dType === 'flat' && Number(dAmt) > 0) computedOffer = `FLAT ৳${dAmt} OFF`;
+      else if (dType === 'flat' && Number(dAmt) > 0) computedOffer = `৳${dAmt} OFF`;
       else if (dType === 'percent' && Number(dPct) > 0) computedOffer = `${dPct}% OFF`;
 
       setFormData((prev) => ({
@@ -222,7 +222,7 @@ export const AdminHero = () => {
         if (formData.offerType === 'bogo_1g1') finalOfferText = 'BUY 1 GET 1 FREE';
         else if (formData.offerType === 'bogo_1g2') finalOfferText = 'BUY 1 GET 2 FREE';
         else if (formData.offerType === 'combo') finalOfferText = 'COMBO DEAL';
-        else if (formData.discountType === 'flat' && Number(formData.discountAmount) > 0) finalOfferText = `FLAT ৳${formData.discountAmount} OFF`;
+        else if (formData.discountType === 'flat' && Number(formData.discountAmount) > 0) finalOfferText = `৳${formData.discountAmount} OFF`;
         else if (formData.discountType === 'percent' && Number(formData.discountPct) > 0) finalOfferText = `${formData.discountPct}% OFF`;
       }
 
@@ -544,7 +544,7 @@ export const AdminHero = () => {
                       {/* Section 3: Direct Discount Value */}
                       <div className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl space-y-2.5">
                         <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                          ⭐ 3. Direct Discount Value (Percentage % or Flat ৳)
+                          ⭐ 3. Direct Discount Value (% or ৳)
                         </label>
 
                         <div className="flex items-center gap-2">
@@ -560,10 +560,10 @@ export const AdminHero = () => {
                                 discountAmount: newType === 'flat' ? prev.discountAmount : '',
                               }));
                             }}
-                            className="px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold focus:outline-none cursor-pointer shrink-0"
+                            className="px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm font-black focus:outline-none cursor-pointer shrink-0"
                           >
-                            <option value="percent">% Percentage Off</option>
-                            <option value="flat">৳ Flat Taka Off</option>
+                            <option value="percent">%</option>
+                            <option value="flat">৳</option>
                           </select>
 
                           {formData.discountType === 'flat' ? (
@@ -577,7 +577,7 @@ export const AdminHero = () => {
                                   ...prev,
                                   discountAmount: amt,
                                   discountPct: '',
-                                  offerText: Number(amt) > 0 ? `FLAT ৳${amt} OFF` : prev.offerText,
+                                  offerText: Number(amt) > 0 ? `৳${amt} OFF` : prev.offerText,
                                 }));
                               }}
                               placeholder="৳ off (Enter 0 to clear)"
@@ -636,7 +636,7 @@ export const AdminHero = () => {
                               );
                             })}
 
-                            {['FLAT ৳50 OFF', 'FLAT ৳100 OFF', 'FLAT ৳150 OFF', 'FLAT ৳200 OFF', 'FLAT ৳300 OFF', 'FLAT ৳500 OFF'].map((chip) => {
+                            {['৳50 OFF', '৳100 OFF', '৳150 OFF', '৳200 OFF', '৳300 OFF', '৳500 OFF'].map((chip) => {
                               const amt = parseInt(chip.replace(/\D/g, ''));
                               return (
                                 <button
