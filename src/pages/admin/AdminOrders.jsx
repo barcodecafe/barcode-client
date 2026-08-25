@@ -1009,14 +1009,6 @@ export const AdminOrders = () => {
     }, 450);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       setOrders((prevOrders) =>
@@ -1600,7 +1592,16 @@ export const AdminOrders = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-16 text-neutral-400 font-medium">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-7 h-7 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-neutral-400 font-bold">Loading live orders...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td
                       colSpan="8"
