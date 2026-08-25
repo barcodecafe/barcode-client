@@ -374,13 +374,39 @@ export const Home = () => {
 
                   <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-6 sm:pb-8 gap-3">
                     <div className="max-w-3xl text-white flex flex-col items-center select-none pointer-events-none">
-                      {slide.type === "promo" &&
-                        (slide.offerText || hasActiveDiscount) && (
-                          <span className="inline-block px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2.5 shadow-lg shadow-red-500/35">
-                            🔥{" "}
-                            {slide.offerText || foodDiscountLabel(featuredFood)}
+                      {/* 🔥 Badges & Price Tag Bar */}
+                      <div className="flex items-center justify-center gap-2 flex-wrap mb-2">
+                        {slide.type === "promo" && (slide.offerText || hasActiveDiscount) && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-lg shadow-red-500/40">
+                            🔥 {slide.offerText || foodDiscountLabel(featuredFood)}
                           </span>
                         )}
+
+                        {slide.type === "promo" && featuredFood && (
+                          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-xl">
+                            {hasActiveDiscount ? (
+                              <>
+                                <span className="text-xs text-neutral-300 line-through font-semibold">
+                                  ৳{Number(featuredFood.price || 0).toFixed(0)}
+                                </span>
+                                <span className="text-sm sm:text-base font-black text-amber-400">
+                                  ৳{getEffectivePrice(featuredFood).toFixed(0)}
+                                </span>
+                                {Number(featuredFood.price || 0) > getEffectivePrice(featuredFood) && (
+                                  <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                    Save ৳{(Number(featuredFood.price || 0) - getEffectivePrice(featuredFood)).toFixed(0)}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-sm sm:text-base font-black text-amber-400">
+                                ৳{Number(featuredFood.price || 0).toFixed(0)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                       <h2 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow-lg">
                         {slide.title}
                       </h2>
