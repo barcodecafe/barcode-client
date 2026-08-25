@@ -76,12 +76,38 @@ export const AdminHero = () => {
     setIsModalOpen(true);
   };
 
+  const handleFoodSelect = (foodId) => {
+    if (!foodId) {
+      setFormData((prev) => ({
+        ...prev,
+        featuredFoodId: ''
+      }));
+      return;
+    }
+
+    const selected = foods.find((f) => String(f.id || f._id) === String(foodId));
+    if (selected) {
+      setFormData((prev) => ({
+        ...prev,
+        featuredFoodId: foodId,
+        title: prev.title.trim() && prev.title !== 'Untitled' ? prev.title : selected.name,
+        subtitle: prev.subtitle.trim() ? prev.subtitle : (selected.description || `Special delicious ${selected.name} available now for ৳${selected.price}`),
+        image: prev.image ? prev.image : (selected.image || ''),
+        offerText: prev.offerText ? prev.offerText : (selected.discount?.percentage ? `${selected.discount.percentage}% OFF` : (selected.discount?.amount ? `৳${selected.discount.amount} OFF` : ''))
+      }));
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'featuredFoodId') {
+      handleFoodSelect(value);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -120,14 +146,23 @@ export const AdminHero = () => {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.title.trim() || !formData.image) {
-      setFormError('Please fill in Slide Title and upload a background Image.');
+    const linkedFood = foods.find((f) => String(f.id || f._id) === String(formData.featuredFoodId));
+    const finalImage = formData.image || (formData.type === 'promo' && linkedFood ? linkedFood.image : '');
+
+    if (!formData.title.trim()) {
+      setFormError('Please enter a Slide Title.');
+      return;
+    }
+
+    if (!finalImage) {
+      setFormError('Please upload a slide image or select a food dish with an image.');
       return;
     }
 
     try {
       const payload = {
         ...formData,
+        image: finalImage,
         featuredFoodId: formData.type === 'promo' && formData.featuredFoodId ? formData.featuredFoodId : null,
         cta: formData.type === 'promo' ? formData.cta || 'Order Now' : null,
         offerText: formData.type === 'promo' ? formData.offerText || '' : null
@@ -348,6 +383,97 @@ export const AdminHero = () => {
                   </div>
                 </div>
 
+                {/* 🎯 Promo Configuration: If Promo, Put Dish Selection at the top for intuitive auto-filling */}
+                {formData.type === 'promo' && (
+                  <div className="p-4 bg-primary-500/5 dark:bg-primary-500/10 border border-primary-500/20 rounded-2xl space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        🍔 Link Food Dish (Auto-fills info & image)
+                      </span>
+                      {formData.featuredFoodId && (
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                          Dish Linked ✓
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                          Select Food Dish
+                        </label>
+                        <select
+                          name="featuredFoodId"
+                          value={formData.featuredFoodId}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-primary-500/30 dark:border-primary-500/40 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/50 cursor-pointer"
+                        >
+                          <option value="">-- Choose a Food Dish to Auto-fill --</option>
+                          {foods.map((food) => {
+                            const fId = food.id || food._id;
+                            return (
+                              <option key={fId} value={fId}>
+                                {food.name} (৳{food.price}) — {food.category || 'General'}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                          Button CTA Text
+                        </label>
+                        <input
+                          type="text"
+                          name="cta"
+                          value={formData.cta}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Order Now, Grab Offer"
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                          Offer / Discount Badge Text
+                        </label>
+                        <input
+                          type="text"
+                          name="offerText"
+                          value={formData.offerText}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 20% OFF, BUY 1 GET 1"
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+
+                      {/* ⚡ Quick Offer % Preset Chips */}
+                      <div className="sm:col-span-2 space-y-1.5 pt-1">
+                        <span className="block text-[10px] font-semibold text-neutral-400">
+                          Quick Discount Presets:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF', 'BUY 1 GET 1', 'FLAT 50৳ OFF'].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, offerText: chip }))}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                formData.offerText === chip
+                                  ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-red-400'
+                              }`}
+                            >
+                              🔥 {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
                     Slide Title
@@ -378,9 +504,17 @@ export const AdminHero = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                    Background Image
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Background Image
+                    </label>
+                    {formData.image && formData.featuredFoodId && (
+                      <span className="text-[10px] text-neutral-400">
+                        {formData.image.startsWith('data:') ? '🖼️ Custom Uploaded Banner' : '📌 Using Linked Dish Photo'}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="space-y-3">
                     {formData.image && (
                       <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-950">
@@ -399,14 +533,14 @@ export const AdminHero = () => {
                       </div>
                     )}
 
-                    <label className="flex flex-col items-center justify-center w-full min-h-[110px] border-2 border-dashed border-neutral-200 dark:border-neutral-800 hover:border-primary-500 dark:hover:border-primary-500 rounded-2xl cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-955/50 transition-all p-4 text-center">
+                    <label className="flex flex-col items-center justify-center w-full min-h-[100px] border-2 border-dashed border-neutral-200 dark:border-neutral-800 hover:border-primary-500 dark:hover:border-primary-500 rounded-2xl cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-955/50 transition-all p-4 text-center">
                       <div className="flex flex-col items-center justify-center space-y-1 text-neutral-500 dark:text-neutral-400">
                         <ImageIcon className="w-5 h-5 text-neutral-400 mb-0.5" />
                         <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                          {formData.image ? 'Change Image' : 'Upload Slide Image'}
+                          {formData.image ? 'Upload Extra Custom Banner (Override)' : 'Upload Custom Slide Banner (Optional)'}
                         </span>
                         <span className="text-[10px] text-neutral-400">
-                          Supports JPG, PNG (Max 2MB)
+                          Supports JPG, PNG, WebP (Max 2MB)
                         </span>
                       </div>
                       <input
@@ -418,65 +552,6 @@ export const AdminHero = () => {
                     </label>
                   </div>
                 </div>
-
-                {formData.type === 'promo' && (
-                  <div className="p-4 bg-neutral-50 dark:bg-neutral-955/50 border border-neutral-100 dark:border-neutral-850 rounded-2xl space-y-4">
-                    <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                      Promo Configuration
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                          Button CTA Text
-                        </label>
-                        <input
-                          type="text"
-                          name="cta"
-                          value={formData.cta}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                          Link to Food Dish
-                        </label>
-                        <select
-                          name="featuredFoodId"
-                          value={formData.featuredFoodId}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                        >
-                          <option value="">-- Select Dish --</option>
-                          {foods.map((food) => {
-                            const fId = food.id || food._id;
-                            return (
-                              <option key={fId} value={fId}>
-                                {food.name} (৳{food.price})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                          Offer / Discount Text
-                        </label>
-                        <input
-                          type="text"
-                          name="offerText"
-                          value={formData.offerText}
-                          onChange={handleInputChange}
-                          placeholder="e.g. Special 20% OFF, Buy 1 Get 1 Free"
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-955 text-neutral-805 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-150 dark:border-neutral-800 shrink-0">
                   <button
