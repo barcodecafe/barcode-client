@@ -121,7 +121,7 @@ export const AdminHero = () => {
       };
 
       if (editingSlide) {
-        await updateSlide(editingSlide.id, payload);
+        await updateSlide(editingSlide.id || editingSlide._id, payload);
       } else {
         await createSlide(payload);
       }
@@ -132,10 +132,16 @@ export const AdminHero = () => {
     }
   };
 
-  const handleDeleteClick = async (id) => {
+  const handleDeleteClick = async (target) => {
+    const slideId = typeof target === 'object' ? (target.id || target._id) : target;
+    if (!slideId) return;
     if (window.confirm('Are you sure you want to delete this hero slide?')) {
-      await deleteSlide(id);
-      fetchSlides();
+      try {
+        await deleteSlide(slideId);
+        fetchSlides();
+      } catch (err) {
+        console.error('Failed to delete slide:', err);
+      }
     }
   };
 
@@ -174,7 +180,7 @@ export const AdminHero = () => {
           const linkedDish = foods.find((f) => f.id === slide.featuredFoodId);
           return (
             <div
-              key={slide.id}
+              key={slide.id || slide._id}
               className="group bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
@@ -239,7 +245,7 @@ export const AdminHero = () => {
                 </button>
 
                 <button
-                  onClick={() => handleDeleteClick(slide.id)}
+                  onClick={() => handleDeleteClick(slide)}
                   className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
