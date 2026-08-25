@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import { socket } from '../services/socket'; // ⚡ আপনার সেন্ট্রাল socket.js ফাইল থেকে ইমপোর্ট করা হলো
 import { getAllOrders } from '../services/ordersService';
 import { useAuth } from './AuthContext';
+import { soundNotification } from '../utils/soundNotification';
 
 const OrderContext = createContext();
 
@@ -40,16 +41,7 @@ export const OrderProvider = ({ children }) => {
 
   const playNotificationSound = () => {
     if (!isAdmin) return;
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 1.0;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => console.warn("Audio blocked:", err));
-      }
-    } catch (e) {
-      console.error("Sound error:", e);
-    }
+    soundNotification.playKitchenBellChime();
   };
 
   const fetchAndUpdateOrders = useCallback(async () => {
@@ -83,6 +75,11 @@ export const OrderProvider = ({ children }) => {
       return undefined;
     }
 
+    // 🔔 Prompt for native OS notification permission for Admin
+    if (isAdmin) {
+      soundNotification.requestPermission();
+    }
+
     // ১. প্রথমবার কম্পোনেন্ট লোড হলে ডাটা ফেচ করবে
     fetchAndUpdateOrders();
 
@@ -103,19 +100,34 @@ export const OrderProvider = ({ children }) => {
     };
 
     // 🛒 ৪+৫. নতুন অর্ডার / স্ট্যাটাস পরিবর্তনে লিস্ট রিলোড।
-    //
-    // Coalesced: the server broadcasts to every connected client and a single
-    // admin action emits several events in a row, so one click used to trigger
-    // one refetch per event in every open browser at once.
     let burstTimer = null;
     const handleOrdersChanged = () => {
       clearTimeout(burstTimer);
       burstTimer = setTimeout(fetchAndUpdateOrders, 600);
     };
 
+    const handleNewOrder = (order) => {
+      if (isAdmin && order) {
+        soundNotification.playKitchenBellChime();
+        const orderId = order.displayId || order.id || order._id || 'New';
+        const customerName = order.customerName || order.customer?.name || 'Customer';
+        const totalAmount = Number(order.totalAmount || order.total || 0).toFixed(0);
+        const orderType = order.orderType === 'pickup' ? 'Takeaway Pickup' : 'Home Delivery';
+
+        soundNotification.sendNotification({
+          title: `🔔 New Order #${orderId} Received!`,
+          body: `৳${totalAmount} • ${customerName} (${orderType})\nClick to view and manage order details.`,
+          url: '/admin/orders',
+          tag: `order-${orderId}`,
+        });
+      }
+      handleOrdersChanged();
+    };
+
     socket.on('connect', handleConnect);
     socket.on('pending_count_updated', handlePendingCount);
-    socket.on('order_created', handleOrdersChanged);
+    socket.on('admin_new_order', handleNewOrder);
+    socket.on('order_created', handleNewOrder);
     socket.on('order_updated', handleOrdersChanged);
     socket.on('order_status_updated', handleOrdersChanged);
     socket.on('rider_cash_submitted', handleOrdersChanged);
@@ -129,14 +141,15 @@ export const OrderProvider = ({ children }) => {
       clearTimeout(burstTimer);
       socket.off('connect', handleConnect);
       socket.off('pending_count_updated', handlePendingCount);
-      socket.off('order_created', handleOrdersChanged);
+      socket.off('admin_new_order', handleNewOrder);
+      socket.off('order_created', handleNewOrder);
       socket.off('order_updated', handleOrdersChanged);
       socket.off('order_status_updated', handleOrdersChanged);
       socket.off('rider_cash_submitted', handleOrdersChanged);
       socket.off('rider_cash_settled', handleOrdersChanged);
       socket.off('rider_order_updated', handleOrdersChanged);
     };
-  }, [isAuthLoaded, canReadOrders, fetchAndUpdateOrders]);
+  }, [isAuthLoaded, canReadOrders, isAdmin, fetchAndUpdateOrders]);
 
   // (ঐচ্ছিক) যদি ব্যাকএন্ডের মিলি-সেকেন্ড রেসপন্সের আগেও 0ms-এ ইউআই আপডেট করতে চান
   const updateLocalOrderStatus = (orderId, newStatus) => {

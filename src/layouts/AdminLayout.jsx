@@ -34,6 +34,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useOrders } from '../context/OrderContext';
 import { socket } from '../services/socket';
+import { soundNotification } from '../utils/soundNotification';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
@@ -87,14 +88,14 @@ export const AdminLayout = () => {
       const riderName = payload?.riderName || "A rider";
       const date = payload?.date || "today";
 
-      // 🔊 Play notification chime
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.volume = 1.0;
-        audio.play().catch((err) => console.warn("Audio blocked:", err));
-      } catch (err) {
-        console.warn("Notification sound error:", err);
-      }
+      // 🔊 Play notification chime & desktop notification
+      soundNotification.playKitchenBellChime();
+      soundNotification.sendNotification({
+        title: '💰 Cash Handover Submitted!',
+        body: `Rider ${riderName} submitted collected cash for ${date}. Click to verify.`,
+        url: '/admin/fleet-overview',
+        tag: `cash-${riderName}-${date}`,
+      });
 
       toast.custom(
         (t) => (
