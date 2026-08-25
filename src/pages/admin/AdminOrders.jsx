@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -10,6 +10,12 @@ import {
   BellRing,
   Printer,
   FileSpreadsheet,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { ExportSalesModal } from "../../components/ExportSalesModal";
@@ -344,6 +350,14 @@ export const AdminOrders = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [adjustments, setAdjustments] = useState({});
   const [isExportSalesModalOpen, setIsExportSalesModalOpen] = useState(false);
+
+  // 🎯 Search, Filter & Pagination State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -1279,6 +1293,148 @@ export const AdminOrders = () => {
   const advanceAmount = isPaidOrder ? grandTotal : 0;
   const remainingAmount = isRejectedOrder ? 0 : isPaidOrder ? 0 : grandTotal;
 
+  // 🎯 Status counts for quick filter tabs
+  const orderCounts = useMemo(() => {
+    const counts = {
+      all: orders.length,
+      pending: 0,
+      preparing: 0,
+      ready: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      rejected: 0,
+    };
+
+    orders.forEach((ord) => {
+      if (!ord) return;
+      const st = String(ord.status || "").trim().toLowerCase();
+      if (st === "placed" || st === "pending" || st === "awaiting payment" || st === "awaiting_payment" || !st) {
+        counts.pending += 1;
+      } else if (st === "preparing") {
+        counts.preparing += 1;
+      } else if (st === "ready to pick" || st === "ready_to_pick") {
+        counts.ready += 1;
+      } else if (st === "out for delivery" || st === "out_for_delivery") {
+        counts.out_for_delivery += 1;
+      } else if (st === "delivered") {
+        counts.delivered += 1;
+      } else if (st === "rejected" || st === "cancelled") {
+        counts.rejected += 1;
+      }
+    });
+
+    return counts;
+  }, [orders]);
+
+  // 🎯 Filtered Orders list
+  const filteredOrders = useMemo(() => {
+    let list = orders.filter(Boolean);
+
+    // 1. Status Filter
+    if (statusFilter !== "all") {
+      if (statusFilter === "pending") {
+        list = list.filter((ord) => {
+          const st = String(ord.status || "").toUpperCase();
+          return st === "PLACED" || st === "PENDING" || st === "AWAITING PAYMENT" || st === "AWAITING_PAYMENT" || !ord.status;
+        });
+      } else if (statusFilter === "rejected") {
+        list = list.filter((ord) => {
+          const st = String(ord.status || "").toUpperCase();
+          return st === "REJECTED" || st === "CANCELLED";
+        });
+      } else if (statusFilter === "ready") {
+        list = list.filter((ord) => {
+          const st = String(ord.status || "").toLowerCase();
+          return st === "ready to pick" || st === "ready_to_pick";
+        });
+      } else if (statusFilter === "out_for_delivery") {
+        list = list.filter((ord) => {
+          const st = String(ord.status || "").toLowerCase();
+          return st === "out for delivery" || st === "out_for_delivery";
+        });
+      } else {
+        list = list.filter((ord) => String(ord.status || "").toLowerCase() === statusFilter.toLowerCase());
+      }
+    }
+
+    // 2. Order Type Filter (Delivery / Pickup)
+    if (orderTypeFilter !== "all") {
+      list = list.filter((ord) => {
+        const isPickup =
+          ord.orderType === "pickup" ||
+          ord.deliveryArea === "Self Pickup" ||
+          String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
+          String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
+          String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+        return orderTypeFilter === "pickup" ? isPickup : !isPickup;
+      });
+    }
+
+    // 3. Payment Filter (Paid / Unpaid)
+    if (paymentFilter !== "all") {
+      list = list.filter((ord) => {
+        const isPaid =
+          String(ord.paymentStatus || "").toLowerCase() === "paid" ||
+          Boolean(ord.isPaid) ||
+          String(ord.status || "").toUpperCase() === "DELIVERED" ||
+          (String(ord.paymentMethod || "cod").toLowerCase() !== "cod" && Boolean(ord.transactionId));
+        return paymentFilter === "paid" ? isPaid : !isPaid;
+      });
+    }
+
+    // 4. Search Filter (Order ID, Name, Phone, Address, Area, Rider)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((ord) => {
+        const id = String(ord.id || ord._id || ord.orderId || "").toLowerCase();
+        const name = String(ord.user?.name || ord.customerName || "").toLowerCase();
+        const phone = String(ord.user?.phone || ord.customerPhone || "").toLowerCase();
+        const addr = String(ord.user?.address || ord.deliveryAddress || "").toLowerCase();
+        const area = String(ord.user?.pickArea || ord.area || ord.deliveryArea || "").toLowerCase();
+        const rider = String(ord.riderName || ord.rider?.name || "").toLowerCase();
+        return id.includes(q) || name.includes(q) || phone.includes(q) || addr.includes(q) || area.includes(q) || rider.includes(q);
+      });
+    }
+
+    return list;
+  }, [orders, statusFilter, orderTypeFilter, paymentFilter, searchQuery]);
+
+  // 🎯 Pagination Calculations
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredOrders.length);
+  const paginatedOrders = useMemo(() => {
+    return filteredOrders.slice(startIndex, startIndex + pageSize);
+  }, [filteredOrders, startIndex, pageSize]);
+
+  // Page Numbers Generator
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (validCurrentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (validCurrentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', validCurrentPage - 1, validCurrentPage, validCurrentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
+
+  const statusTabItems = [
+    { id: "all", label: "All Orders", count: orderCounts.all, tone: "neutral" },
+    { id: "pending", label: "Pending", count: orderCounts.pending, tone: "amber" },
+    { id: "preparing", label: "Preparing", count: orderCounts.preparing, tone: "blue" },
+    { id: "ready", label: "Ready to Pick", count: orderCounts.ready, tone: "purple" },
+    { id: "out_for_delivery", label: "Out for Delivery", count: orderCounts.out_for_delivery, tone: "orange" },
+    { id: "delivered", label: "Delivered", count: orderCounts.delivered, tone: "emerald" },
+    { id: "rejected", label: "Cancelled", count: orderCounts.rejected, tone: "rose" },
+  ];
+
   return (
     <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-6">
 
@@ -1293,14 +1449,131 @@ export const AdminOrders = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsExportSalesModalOpen(true)}
-          className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 self-start md:self-auto"
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Export Sales to Excel</span>
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={fetchOrdersAndFleet}
+            className="px-3.5 py-2.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Refresh Orders"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsExportSalesModalOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export Sales to Excel</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 🎯 Quick Status Tabs Filter */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {statusTabItems.map((tab) => {
+          const isActive = statusFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setStatusFilter(tab.id);
+                setCurrentPage(1);
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer border ${
+                isActive
+                  ? "bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20"
+                  : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800 hover:border-primary-500/40"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                  isActive
+                    ? "bg-white/20 text-white"
+                    : tab.tone === "amber"
+                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    : tab.tone === "blue"
+                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    : tab.tone === "purple"
+                    ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                    : tab.tone === "orange"
+                    ? "bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                    : tab.tone === "emerald"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : tab.tone === "rose"
+                    ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 🎯 Live Search & Advanced Filter Controls Bar */}
+      <div className="p-3.5 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search Bar */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search by Order ID, Customer Name, Phone, Area or Rider..."
+            className="w-full pl-9 pr-8 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-neutral-800 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setCurrentPage(1);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Dropdowns */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Order Type */}
+          <select
+            value={orderTypeFilter}
+            onChange={(e) => {
+              setOrderTypeFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+          >
+            <option value="all">📦 All Types</option>
+            <option value="delivery">🚚 Delivery Only</option>
+            <option value="pickup">🛍️ Pickup Only</option>
+          </select>
+
+          {/* Payment Status */}
+          <select
+            value={paymentFilter}
+            onChange={(e) => {
+              setPaymentFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+          >
+            <option value="all">💳 All Payments</option>
+            <option value="paid">✅ Paid Only</option>
+            <option value="unpaid">⏳ Unpaid / COD</option>
+          </select>
+        </div>
       </div>
 
       <ErrorBanner
@@ -1327,7 +1600,7 @@ export const AdminOrders = () => {
                 </tr>
               </thead>
               <tbody>
-                {orders.length === 0 ? (
+                {filteredOrders.length === 0 ? (
                   <tr>
                     <td
                       colSpan="8"
@@ -1335,11 +1608,13 @@ export const AdminOrders = () => {
                     >
                       {loadError
                         ? "Orders could not be loaded — see the message above."
+                        : searchQuery || statusFilter !== "all" || orderTypeFilter !== "all" || paymentFilter !== "all"
+                        ? "No orders match your filter criteria."
                         : "No orders found."}
                     </td>
                   </tr>
                 ) : (
-                  orders.filter(Boolean).map((ord) => {
+                  paginatedOrders.filter(Boolean).map((ord) => {
                     const ordId = String(ord.id || ord._id || ord.orderId || "");
                     const currentStatus = String(
                       ord.status || "",
@@ -1622,6 +1897,115 @@ export const AdminOrders = () => {
               </tbody>
             </table>
           </div>
+
+          {/* 🎯 Pagination Control Bar */}
+          {filteredOrders.length > 0 && (
+            <div className="px-4 py-3.5 border-t border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              {/* Left Info & Page Size */}
+              <div className="flex items-center gap-4 flex-wrap text-neutral-500 dark:text-neutral-400">
+                <span>
+                  Showing <span className="font-bold text-neutral-800 dark:text-neutral-200">{filteredOrders.length === 0 ? 0 : startIndex + 1}</span> to{" "}
+                  <span className="font-bold text-neutral-800 dark:text-neutral-200">{endIndex}</span> of{" "}
+                  <span className="font-bold text-neutral-800 dark:text-neutral-200">{filteredOrders.length}</span> orders
+                  {filteredOrders.length !== orders.length && (
+                    <span className="text-neutral-400 ml-1">(filtered from {orders.length} total)</span>
+                  )}
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium">Rows per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold text-neutral-700 dark:text-neutral-300 focus:outline-none cursor-pointer"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Right Pagination Buttons */}
+              <div className="flex items-center gap-1">
+                {/* First Page */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={validCurrentPage === 1}
+                  className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="First Page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={validCurrentPage === 1}
+                  className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page Number Buttons */}
+                <div className="flex items-center gap-1 mx-1">
+                  {getPageNumbers().map((p, idx) => {
+                    if (p === '...') {
+                      return (
+                        <span key={`ellipsis-${idx}`} className="px-1 text-neutral-400 font-bold select-none">
+                          ...
+                        </span>
+                      );
+                    }
+                    const isCurrent = p === validCurrentPage;
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        onClick={() => setCurrentPage(Number(p))}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                          isCurrent
+                            ? "bg-primary-500 text-white shadow-xs"
+                            : "border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Page */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={validCurrentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={validCurrentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Last Page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
