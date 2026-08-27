@@ -1695,29 +1695,65 @@ export const Profile = () => {
     const labelClass =
       "block text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider mb-1.5";
 
-    const FOOD_QUALITY_OPTIONS = [
-      { value: 1, label: "1 - Terrible" },
-      { value: 2, label: "2 - Poor" },
-      { value: 3, label: "3 - Average" },
-      { value: 4, label: "4 - Good" },
-      { value: 5, label: "5 - Excellent" },
+    const RATING_STEPS = [
+      { value: 1, label: "1.0 Terrible" },
+      { value: 1.5, label: "1.5 Poor" },
+      { value: 2, label: "2.0 Below Avg" },
+      { value: 2.5, label: "2.5 Fair" },
+      { value: 3, label: "3.0 Average" },
+      { value: 3.5, label: "3.5 Good" },
+      { value: 4, label: "4.0 Very Good" },
+      { value: 4.5, label: "4.5 Excellent" },
+      { value: 5, label: "5.0 Superb" },
     ];
 
-    const SERVICE_SPEED_OPTIONS = [
-      { value: 1, label: "1 - Very Slow" },
-      { value: 2, label: "2 - Slow" },
-      { value: 3, label: "3 - Moderate" },
-      { value: 4, label: "4 - Fast" },
-      { value: 5, label: "5 - Super Fast" },
-    ];
-
-    const STAFF_BEHAVIOR_OPTIONS = [
-      { value: 1, label: "1 - Unfriendly" },
-      { value: 2, label: "2 - Inattentive" },
-      { value: 3, label: "3 - Average" },
-      { value: 4, label: "4 - Polite & Helpful" },
-      { value: 5, label: "5 - Exceptional" },
-    ];
+    const renderHalfStarPills = (field, currentValue, label) => {
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className={labelClass}>
+              {label} <span className="text-red-500">*</span>
+            </label>
+            {currentValue > 0 && (
+              <span className="text-xs font-bold text-amber-500 flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-current" />
+                {currentValue % 1 !== 0 ? currentValue.toFixed(1) : currentValue} / 5 Stars
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5">
+            {RATING_STEPS.map((opt) => {
+              const isSelected = currentValue === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      [field]: opt.value,
+                    }))
+                  }
+                  className={`px-2 py-2 rounded-xl border text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    isSelected
+                      ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20 scale-[1.03]"
+                      : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-amber-500/50 hover:text-amber-500"
+                  }`}
+                >
+                  <span className="flex items-center gap-0.5 font-extrabold text-[11px]">
+                    <Star className={`w-3 h-3 ${isSelected ? "fill-white" : "fill-amber-400 text-amber-400"}`} />
+                    {opt.value % 1 !== 0 ? opt.value.toFixed(1) : opt.value}
+                  </span>
+                  <span className={`text-[9px] truncate max-w-full font-medium ${isSelected ? "text-amber-100" : "text-neutral-400"}`}>
+                    {opt.label.split(" ").slice(1).join(" ")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
 
     const HEARD_FROM_OPTIONS = [
       { value: "friends_family", label: "Friends & Family" },
@@ -1819,7 +1855,7 @@ export const Profile = () => {
               <div className="border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white font-display flex items-center gap-2">
                   <Star className="w-4 h-4 text-primary-500" />
-                  1. Performance Ratings
+                  1. Performance Ratings (1 to 5 Stars with Half-Star Options)
                 </h4>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                   Rate your satisfaction on food quality, service speed, and staff hospitality.
@@ -1827,97 +1863,13 @@ export const Profile = () => {
               </div>
 
               {/* Food Quality */}
-              <div className="space-y-2">
-                <label className={labelClass}>
-                  Food Quality <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {FOOD_QUALITY_OPTIONS.map((opt) => {
-                    const isSelected = feedbackForm.foodQuality === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          setFeedbackForm((prev) => ({
-                            ...prev,
-                            foodQuality: opt.value,
-                          }))
-                        }
-                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                          isSelected
-                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
-                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {renderHalfStarPills("foodQuality", feedbackForm.foodQuality, "Food Quality")}
 
               {/* Service Speed */}
-              <div className="space-y-2">
-                <label className={labelClass}>
-                  Service Speed <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {SERVICE_SPEED_OPTIONS.map((opt) => {
-                    const isSelected = feedbackForm.serviceSpeed === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          setFeedbackForm((prev) => ({
-                            ...prev,
-                            serviceSpeed: opt.value,
-                          }))
-                        }
-                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                          isSelected
-                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
-                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {renderHalfStarPills("serviceSpeed", feedbackForm.serviceSpeed, "Service Speed")}
 
               {/* Staff Behavior */}
-              <div className="space-y-2">
-                <label className={labelClass}>
-                  Staff Behavior <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {STAFF_BEHAVIOR_OPTIONS.map((opt) => {
-                    const isSelected = feedbackForm.staffBehavior === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          setFeedbackForm((prev) => ({
-                            ...prev,
-                            staffBehavior: opt.value,
-                          }))
-                        }
-                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                          isSelected
-                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20 scale-[1.02]"
-                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {renderHalfStarPills("staffBehavior", feedbackForm.staffBehavior, "Staff Behavior")}
             </div>
 
             {/* 2. Qualitative Feedback */}
@@ -2246,19 +2198,19 @@ export const Profile = () => {
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
                       <span className="text-[10px] text-neutral-400 block">Food Quality</span>
                       <span className="font-bold text-neutral-800 dark:text-white">
-                        {fb.foodQuality} / 5
+                        {Number(fb.foodQuality) % 1 !== 0 ? Number(fb.foodQuality).toFixed(1) : fb.foodQuality} / 5
                       </span>
                     </div>
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
                       <span className="text-[10px] text-neutral-400 block">Service Speed</span>
                       <span className="font-bold text-neutral-800 dark:text-white">
-                        {fb.serviceSpeed} / 5
+                        {Number(fb.serviceSpeed) % 1 !== 0 ? Number(fb.serviceSpeed).toFixed(1) : fb.serviceSpeed} / 5
                       </span>
                     </div>
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50">
                       <span className="text-[10px] text-neutral-400 block">Staff Behavior</span>
                       <span className="font-bold text-neutral-800 dark:text-white">
-                        {fb.staffBehavior} / 5
+                        {Number(fb.staffBehavior) % 1 !== 0 ? Number(fb.staffBehavior).toFixed(1) : fb.staffBehavior} / 5
                       </span>
                     </div>
                   </div>

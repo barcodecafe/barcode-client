@@ -445,48 +445,53 @@ export const AdminReviews = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-2.5">
             {filteredFeedbacks.map((fb, idx) => {
               const retentionBadge = getVisitAgainBadge(fb.visitAgain);
+              const formatScore = (val) => {
+                const num = Number(val || 0);
+                return num % 1 !== 0 ? num.toFixed(1) : num.toString();
+              };
+
               return (
                 <motion.div
                   key={fb._id || fb.id || idx}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: idx * 0.03 }}
-                  className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 hover:border-primary-500/40 transition-all"
+                  transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-3 sm:p-3.5 shadow-2xs space-y-2 hover:border-primary-500/40 hover:shadow-xs transition-all"
                 >
                   {/* Top Row: Customer Info, Branch, Date & Delete */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-black text-lg shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800/70 pb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-display font-black text-xs shrink-0">
                         {String(fb.userName || 'C').charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-extrabold text-neutral-900 dark:text-white">
-                          {fb.userName}
-                        </h3>
-                        <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xs sm:text-sm font-extrabold text-neutral-900 dark:text-white truncate">
+                            {fb.userName}
+                          </h3>
                           <a
                             href={`tel:${fb.phone}`}
-                            className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline"
+                            className="inline-flex items-center gap-1 text-[11px] text-primary-600 dark:text-primary-400 font-bold hover:underline"
                           >
-                            <Phone className="w-3.5 h-3.5" />
+                            <Phone className="w-3 h-3" />
                             {fb.phone}
                           </a>
                           {fb.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3.5 h-3.5" />
-                              {fb.email}
+                            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 truncate max-w-[180px] sm:max-w-[240px]">
+                              <Mail className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{fb.email}</span>
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold">
-                        <Building2 className="w-3.5 h-3.5 text-primary-500" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 self-start sm:self-center shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[11px] font-semibold">
+                        <Building2 className="w-3 h-3 text-primary-500" />
                         {fb.branchName || 'General / Delivery'}
                       </span>
                       <span className="text-[11px] text-neutral-400">
@@ -494,76 +499,76 @@ export const AdminReviews = () => {
                       </span>
                       <button
                         onClick={() => handleDelete(fb)}
-                        className="p-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer ml-1"
+                        className="p-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
                         title="Delete Feedback"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
                   {/* Middle Row: Ratings Pills & Marketing Badges */}
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
                     {/* Performance Rating Pills */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <div className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
-                        <Star className="w-3.5 h-3.5 fill-current text-emerald-500" />
-                        <span>Food Quality: <strong>{fb.foodQuality} / 5</strong></span>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      <div className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current text-emerald-500 shrink-0" />
+                        <span>Food Quality: <strong>{formatScore(fb.foodQuality)}/5</strong></span>
                       </div>
 
-                      <div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Service Speed: <strong>{fb.serviceSpeed} / 5</strong></span>
+                      <div className="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span>Service Speed: <strong>{formatScore(fb.serviceSpeed)}/5</strong></span>
                       </div>
 
-                      <div className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 font-semibold flex items-center gap-1.5">
-                        <HeartHandshake className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Staff Behavior: <strong>{fb.staffBehavior} / 5</strong></span>
+                      <div className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                        <HeartHandshake className="w-3 h-3 text-indigo-500 shrink-0" />
+                        <span>Staff Behavior: <strong>{formatScore(fb.staffBehavior)}/5</strong></span>
                       </div>
                     </div>
 
                     {/* Marketing & Retention Badges */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
                         Channel: {getHeardFromLabel(fb.heardFrom)}
                       </span>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border ${retentionBadge.cls}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${retentionBadge.cls}`}>
                         {retentionBadge.label}
                       </span>
                     </div>
                   </div>
 
-                  {/* Qualitative Feedback Sections */}
+                  {/* Qualitative Feedback Sections (Slim Inline / 3-Column Grid) */}
                   {(fb.likedMost || fb.improvements || fb.comments) && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 pt-1 border-t border-neutral-100 dark:border-neutral-800/50">
                       {fb.likedMost && (
-                        <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
-                            Liked Most
+                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-neutral-800/50 flex items-start gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                            Liked:
                           </span>
-                          <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
+                          <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug font-normal">
                             {fb.likedMost}
                           </p>
                         </div>
                       )}
 
                       {fb.improvements && (
-                        <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
-                            Suggested Improvements
+                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-neutral-800/50 flex items-start gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                            Improve:
                           </span>
-                          <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
+                          <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug font-normal">
                             {fb.improvements}
                           </p>
                         </div>
                       )}
 
                       {fb.comments && (
-                        <div className="p-3.5 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary-600 dark:text-primary-400 block">
-                            Additional Comments
+                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-neutral-800/50 flex items-start gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400 shrink-0 mt-0.5">
+                            Comment:
                           </span>
-                          <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
+                          <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug font-normal">
                             {fb.comments}
                           </p>
                         </div>
