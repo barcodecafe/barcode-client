@@ -261,7 +261,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
               </div>
               {isUser && (
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1.5">
-                  💡 ইমেইল না দিলে পাসওয়ার্ড রিকভারির জন্য কাস্টমার সাপোর্টের সাথে যোগাযোগ করতে হবে।
+                  💡 Without an email, you will need to contact Customer Support for password recovery.
                 </p>
               )}
               {email.length > 0 && !STRICT_EMAIL.test(email.trim()) && (
