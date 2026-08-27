@@ -48,8 +48,9 @@ import { useBranch } from "../context/BranchContext";
 import { useFulfillment } from "../context/FulfillmentContext";
 import usePreviewCount from "../hooks/usePreviewCount";
 
-// 💡 Shared Global FoodCard Component
+// 💡 Shared Global FoodCard & StarRatingInput Components
 import FoodCard from "../components/FoodCard";
+import StarRatingInput from "../components/StarRatingInput";
 
 // Import Swiper styles
 import "swiper/css";
@@ -854,33 +855,15 @@ export const DishDetail = () => {
             {isAuthenticated ? (
               <form onSubmit={handleReviewSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5">
-                    Your Rating (1 to 5 Stars with Half-Star Options):
+                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-2">
+                    Your Rating (Click half or full star):
                   </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((val) => {
-                      const isSelected = ratingInput === val;
-                      return (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setRatingInput(val)}
-                          className={`px-2.5 py-1.5 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                            isSelected
-                              ? "bg-amber-500 text-white shadow-xs scale-[1.03]"
-                              : "bg-neutral-100 dark:bg-neutral-850 text-neutral-700 dark:text-neutral-300 hover:bg-amber-500/10 hover:text-amber-500"
-                          }`}
-                        >
-                          <Star className={`w-3 h-3 ${isSelected ? "fill-white" : "fill-amber-400 text-amber-400"}`} />
-                          <span>{val % 1 !== 0 ? val.toFixed(1) : val}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span>Selected: {ratingInput} Star{ratingInput > 1 ? "s" : ""}</span>
-                  </div>
+                  <StarRatingInput
+                    value={ratingInput}
+                    onChange={(val) => setRatingInput(val)}
+                    size="md"
+                    showLabel={true}
+                  />
                 </div>
 
                 <div>

@@ -57,6 +57,7 @@ import {
 import { getAllBranches } from "../services/branchesService";
 import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
 import { getCustomerTier, membershipIdOf } from "./admin/AdminCustomers";
+import StarRatingInput from "../components/StarRatingInput";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas-pro";
 
@@ -1695,66 +1696,6 @@ export const Profile = () => {
     const labelClass =
       "block text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider mb-1.5";
 
-    const RATING_STEPS = [
-      { value: 1, label: "1.0 Terrible" },
-      { value: 1.5, label: "1.5 Poor" },
-      { value: 2, label: "2.0 Below Avg" },
-      { value: 2.5, label: "2.5 Fair" },
-      { value: 3, label: "3.0 Average" },
-      { value: 3.5, label: "3.5 Good" },
-      { value: 4, label: "4.0 Very Good" },
-      { value: 4.5, label: "4.5 Excellent" },
-      { value: 5, label: "5.0 Superb" },
-    ];
-
-    const renderHalfStarPills = (field, currentValue, label) => {
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className={labelClass}>
-              {label} <span className="text-red-500">*</span>
-            </label>
-            {currentValue > 0 && (
-              <span className="text-xs font-bold text-amber-500 flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                {currentValue % 1 !== 0 ? currentValue.toFixed(1) : currentValue} / 5 Stars
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5">
-            {RATING_STEPS.map((opt) => {
-              const isSelected = currentValue === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    setFeedbackForm((prev) => ({
-                      ...prev,
-                      [field]: opt.value,
-                    }))
-                  }
-                  className={`px-2 py-2 rounded-xl border text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                    isSelected
-                      ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20 scale-[1.03]"
-                      : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-amber-500/50 hover:text-amber-500"
-                  }`}
-                >
-                  <span className="flex items-center gap-0.5 font-extrabold text-[11px]">
-                    <Star className={`w-3 h-3 ${isSelected ? "fill-white" : "fill-amber-400 text-amber-400"}`} />
-                    {opt.value % 1 !== 0 ? opt.value.toFixed(1) : opt.value}
-                  </span>
-                  <span className={`text-[9px] truncate max-w-full font-medium ${isSelected ? "text-amber-100" : "text-neutral-400"}`}>
-                    {opt.label.split(" ").slice(1).join(" ")}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-    };
-
     const HEARD_FROM_OPTIONS = [
       { value: "friends_family", label: "Friends & Family" },
       { value: "social_media", label: "Social Media (Facebook / Instagram / TikTok)" },
@@ -1863,13 +1804,58 @@ export const Profile = () => {
               </div>
 
               {/* Food Quality */}
-              {renderHalfStarPills("foodQuality", feedbackForm.foodQuality, "Food Quality")}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Food Quality <span className="text-red-500">*</span>
+                </label>
+                <StarRatingInput
+                  value={feedbackForm.foodQuality}
+                  onChange={(val) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      foodQuality: val,
+                    }))
+                  }
+                  size="md"
+                  showLabel={true}
+                />
+              </div>
 
               {/* Service Speed */}
-              {renderHalfStarPills("serviceSpeed", feedbackForm.serviceSpeed, "Service Speed")}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Service Speed <span className="text-red-500">*</span>
+                </label>
+                <StarRatingInput
+                  value={feedbackForm.serviceSpeed}
+                  onChange={(val) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      serviceSpeed: val,
+                    }))
+                  }
+                  size="md"
+                  showLabel={true}
+                />
+              </div>
 
               {/* Staff Behavior */}
-              {renderHalfStarPills("staffBehavior", feedbackForm.staffBehavior, "Staff Behavior")}
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  Staff Behavior <span className="text-red-500">*</span>
+                </label>
+                <StarRatingInput
+                  value={feedbackForm.staffBehavior}
+                  onChange={(val) =>
+                    setFeedbackForm((prev) => ({
+                      ...prev,
+                      staffBehavior: val,
+                    }))
+                  }
+                  size="md"
+                  showLabel={true}
+                />
+              </div>
             </div>
 
             {/* 2. Qualitative Feedback */}
