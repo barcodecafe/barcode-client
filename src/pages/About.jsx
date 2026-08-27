@@ -5,6 +5,9 @@ import {
   Eye,
   UtensilsCrossed,
   Sparkles,
+  ShieldCheck,
+  Heart,
+  CheckCircle2,
 } from 'lucide-react';
 import { getAboutData } from '../services/aboutService';
 
@@ -319,7 +322,7 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          3. MISSION & VISION
+          3. VISION, MISSION & CORE VALUES (3 Equal Pillars)
       =================================================================== */}
       <section className="bg-neutral-100 dark:bg-neutral-900/40 py-16 sm:py-24 transition-colors duration-300">
         <div className="site-container">
@@ -328,45 +331,131 @@ export const About = () => {
               What Drives Us
             </span>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">
-              Mission &amp; Vision
+              Vision, Mission &amp; Core Values
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+            {/* 1. Our Vision */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm"
+              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5">
-                <Target className="w-7 h-7 text-primary-500" />
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
+                  <Eye className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
+                  {visionTitle}
+                </h3>
+                <p className="text-neutral-600 dark:text-neutral-400 font-light leading-relaxed text-sm sm:text-base">
+                  {vision}
+                </p>
               </div>
-              <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
-                {missionTitle}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 font-light leading-relaxed">
-                {mission}
-              </p>
+              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
+                <Sparkles className="w-4 h-4" />
+                <span>Our Long-term Inspiration</span>
+              </div>
             </motion.div>
 
+            {/* 2. Our Mission */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm"
+              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5">
-                <Eye className="w-7 h-7 text-primary-500" />
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
+                  <Target className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
+                  {missionTitle}
+                </h3>
+                
+                {/* Clean formatted mission text */}
+                <div className="space-y-2.5 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 font-light leading-relaxed">
+                  {(() => {
+                    const raw = mission || '';
+                    const clean = raw.replace(/[🔲➤•]/g, '\n');
+                    const lines = clean.split('\n').map((l) => l.trim()).filter(Boolean);
+                    if (lines.length > 1) {
+                      const hasIntro = lines[0].toLowerCase().includes('committed to');
+                      const intro = hasIntro ? lines[0] : null;
+                      const items = hasIntro ? lines.slice(1) : lines;
+                      return (
+                        <div className="space-y-2.5">
+                          {intro && <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2">{intro}</p>}
+                          <ul className="space-y-2">
+                            {items.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    }
+                    return <p>{mission}</p>;
+                  })()}
+                </div>
               </div>
-              <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
-                {visionTitle}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 font-light leading-relaxed">
-                {vision}
-              </p>
+              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Our Daily Commitment</span>
+              </div>
+            </motion.div>
+
+            {/* 3. Core Values */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-4">
+                  {aboutData?.valuesTitle || 'Core Values'}
+                </h3>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {[
+                    { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
+                    { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+                    { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
+                    { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+                  ].map((val, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 sm:p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 flex items-start gap-2.5 transition-all hover:border-primary-500/30"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold font-mono">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-100">
+                          {val.title}
+                        </h4>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light mt-0.5 leading-snug">
+                          {val.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
+                <Heart className="w-4 h-4" />
+                <span>Our Guiding Principles</span>
+              </div>
             </motion.div>
           </div>
 
