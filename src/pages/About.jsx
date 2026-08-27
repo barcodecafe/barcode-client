@@ -427,12 +427,15 @@ export const About = () => {
                   {aboutData?.valuesTitle || 'Core Values'}
                 </h3>
                 <div className="grid grid-cols-1 gap-2.5">
-                  {[
-                    { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
-                    { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
-                    { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
-                    { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
-                  ].map((val, idx) => (
+                  {(Array.isArray(aboutData?.coreValues) && aboutData.coreValues.length > 0
+                    ? aboutData.coreValues
+                    : [
+                        { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
+                        { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+                        { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
+                        { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+                      ]
+                  ).map((val, idx) => (
                     <div
                       key={idx}
                       className="p-2.5 sm:p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 flex items-start gap-2.5 transition-all hover:border-primary-500/30"
@@ -444,9 +447,11 @@ export const About = () => {
                         <h4 className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-100">
                           {val.title}
                         </h4>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light mt-0.5 leading-snug">
-                          {val.desc}
-                        </p>
+                        {val.desc && (
+                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light mt-0.5 leading-snug">
+                            {val.desc}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}

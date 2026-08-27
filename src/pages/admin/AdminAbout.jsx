@@ -14,6 +14,8 @@ import {
   BookOpen,
   Users,
   Image as ImageIcon,
+  ShieldCheck,
+  Heart,
 } from 'lucide-react';
 import {
   getAboutData,
@@ -61,12 +63,19 @@ export const AdminAbout = () => {
     storyImageCaption: '',
   });
 
-  // 3. Mission, Vision & Stats Form State
+  // 3. Mission, Vision & Core Values Form State
   const [missionForm, setMissionForm] = useState({
     missionTitle: '',
     mission: '',
     visionTitle: '',
     vision: '',
+    valuesTitle: 'Core Values',
+    coreValues: [
+      { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
+      { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+      { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
+      { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+    ],
     stats: {
       founded: '',
       foundedLabel: 'Founded',
@@ -137,6 +146,15 @@ export const AdminAbout = () => {
             mission: data.mission || '',
             visionTitle: data.visionTitle || 'Our Vision',
             vision: data.vision || '',
+            valuesTitle: data.valuesTitle || 'Core Values',
+            coreValues: Array.isArray(data.coreValues) && data.coreValues.length > 0
+              ? data.coreValues
+              : [
+                  { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
+                  { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+                  { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
+                  { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+                ],
             stats: {
               founded: data.stats?.founded || '2022',
               foundedLabel: data.stats?.foundedLabel || 'Founded',
@@ -213,13 +231,38 @@ export const AdminAbout = () => {
     setIsSaving(true);
     try {
       await updateAboutCore(missionForm);
-      showSuccess('Mission, Vision and Statistics saved successfully!');
+      showSuccess('Mission, Vision, Core Values and Statistics saved successfully!');
       fetchAboutData();
     } catch (err) {
-      alert('Failed to save mission & vision details.');
+      alert('Failed to save mission, vision & core values details.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleAddCoreValue = () => {
+    setMissionForm((prev) => ({
+      ...prev,
+      coreValues: [
+        ...(prev.coreValues || []),
+        { title: '', desc: '' },
+      ],
+    }));
+  };
+
+  const handleUpdateCoreValue = (index, field, value) => {
+    setMissionForm((prev) => {
+      const updated = [...(prev.coreValues || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, coreValues: updated };
+    });
+  };
+
+  const handleRemoveCoreValue = (index) => {
+    setMissionForm((prev) => ({
+      ...prev,
+      coreValues: (prev.coreValues || []).filter((_, i) => i !== index),
+    }));
   };
 
   const handleSaveLeadershipHeader = async (e) => {
@@ -1021,6 +1064,78 @@ export const AdminAbout = () => {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 leading-relaxed"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Core Values Section */}
+            <div className="pt-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={missionForm.valuesTitle || 'Core Values'}
+                      onChange={(e) => setMissionForm({ ...missionForm, valuesTitle: e.target.value })}
+                      placeholder="Core Values Title"
+                      className="font-display font-bold text-sm bg-transparent border-b border-neutral-200 dark:border-neutral-800 pb-0.5 focus:outline-none focus:border-primary-500"
+                    />
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Key company pillars &amp; standards displayed on the About page.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddCoreValue}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500/10 hover:bg-primary-500 text-primary-600 hover:text-white dark:text-primary-400 dark:hover:text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Core Value
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(missionForm.coreValues || []).map((val, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 relative group space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="w-6 h-6 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 text-xs font-bold font-mono">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={val.title || ''}
+                          onChange={(e) => handleUpdateCoreValue(idx, 'title', e.target.value)}
+                          placeholder={`Value #${idx + 1} Title (e.g. Guest First)`}
+                          className="w-full font-bold text-xs sm:text-sm bg-transparent border-b border-neutral-200 dark:border-neutral-800 pb-1 focus:outline-none focus:border-primary-500 text-neutral-800 dark:text-neutral-100"
+                          required
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoreValue(idx)}
+                        className="p-1 text-neutral-400 hover:text-red-500 rounded transition-colors cursor-pointer"
+                        title="Delete value"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={val.desc || ''}
+                      onChange={(e) => handleUpdateCoreValue(idx, 'desc', e.target.value)}
+                      placeholder="Short description / guiding principle..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 leading-snug"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
