@@ -71,10 +71,14 @@ export const AdminAbout = () => {
     vision: '',
     valuesTitle: 'Core Values',
     coreValues: [
-      { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
-      { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+      { title: 'Guest First', desc: 'Heartfelt service & uncompromised customer delight' },
+      { title: 'Integrity', desc: 'Transparency, honesty, accountability & high ethics' },
       { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
-      { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+      { title: 'Respect', desc: 'Deep care, dignity & value for guests, team & community' },
+      { title: 'Teamwork', desc: 'Collaborative passion, synergy & unified teamwork' },
+      { title: 'Innovation', desc: 'Embracing modern food trends & culinary creativity' },
+      { title: 'Accountability', desc: 'Taking full ownership and responsibility in service' },
+      { title: 'Sustainability', desc: 'Responsible sourcing, waste care & eco-conscious growth' },
     ],
     stats: {
       founded: '',
@@ -143,17 +147,25 @@ export const AdminAbout = () => {
 
           setMissionForm({
             missionTitle: data.missionTitle || 'Our Mission',
-            mission: data.mission || '',
+            mission:
+              data.mission ||
+              'At Barcode Restaurant Group, we are committed to:\n• Delivering unforgettable dining experiences through outstanding food, exceptional service, and a welcoming atmosphere.\n• Ensuring uncompromising standards of food safety, hygiene, quality, and consistency across every outlet.\n• Driving innovation by embracing modern food trends, technology, and operational excellence.\n• Conducting business with integrity, transparency, accountability, and respect for all.',
             visionTitle: data.visionTitle || 'Our Vision',
-            vision: data.vision || '',
+            vision:
+              data.vision ||
+              "To redefine hospitality by creating exceptional dining destinations where food excellence, heartfelt service and innovation inspire enduring memories while becoming Bangladesh's most trusted and admired restaurant group.",
             valuesTitle: data.valuesTitle || 'Core Values',
             coreValues: Array.isArray(data.coreValues) && data.coreValues.length > 0
               ? data.coreValues
               : [
-                  { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
-                  { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
+                  { title: 'Guest First', desc: 'Heartfelt service & uncompromised customer delight' },
+                  { title: 'Integrity', desc: 'Transparency, honesty, accountability & high ethics' },
                   { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
-                  { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
+                  { title: 'Respect', desc: 'Deep care, dignity & value for guests, team & community' },
+                  { title: 'Teamwork', desc: 'Collaborative passion, synergy & unified teamwork' },
+                  { title: 'Innovation', desc: 'Embracing modern food trends & culinary creativity' },
+                  { title: 'Accountability', desc: 'Taking full ownership and responsibility in service' },
+                  { title: 'Sustainability', desc: 'Responsible sourcing, waste care & eco-conscious growth' },
                 ],
             stats: {
               founded: data.stats?.founded || '2022',

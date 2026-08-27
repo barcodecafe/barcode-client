@@ -8,6 +8,13 @@ import {
   ShieldCheck,
   Heart,
   CheckCircle2,
+  Users,
+  Lightbulb,
+  Scale,
+  Leaf,
+  Compass,
+  Award,
+  Quote,
 } from 'lucide-react';
 import { getAboutData } from '../services/aboutService';
 
@@ -70,11 +77,11 @@ export const About = () => {
   const missionTitle = aboutData?.missionTitle || 'Our Mission';
   const mission =
     aboutData?.mission ||
-    'To serve thoughtfully sourced, carefully prepared food in a space that feels welcoming rather than formal — and to hold that standard at every branch, every day, for every guest.';
+    'At Barcode Restaurant Group, we are committed to:\n• Delivering unforgettable dining experiences through outstanding food, exceptional service, and a welcoming atmosphere.\n• Ensuring uncompromising standards of food safety, hygiene, quality, and consistency across every outlet.\n• Driving innovation by embracing modern food trends, technology, and operational excellence.\n• Conducting business with integrity, transparency, accountability, and respect for all.';
   const visionTitle = aboutData?.visionTitle || 'Our Vision';
   const vision =
     aboutData?.vision ||
-    "To grow into a name people trust before they've even sat down — known branch after branch for the same quality, the same care, and a dining experience worth returning to.";
+    "To redefine hospitality by creating exceptional dining destinations where food excellence, heartfelt service and innovation inspire enduring memories while becoming Bangladesh's most trusted and admired restaurant group.";
 
   const stats = {
     founded: aboutData?.stats?.founded || '2022',
@@ -322,42 +329,64 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          3. VISION, MISSION & CORE VALUES (3 Equal Pillars)
+          3. VISION, MISSION & CORE VALUES (Executive Layout)
       =================================================================== */}
       <section className="bg-neutral-100 dark:bg-neutral-900/40 py-16 sm:py-24 transition-colors duration-300">
-        <div className="site-container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">
+        <div className="site-container space-y-12">
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto">
+            <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs sm:text-sm">
               What Drives Us
             </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 text-neutral-900 dark:text-white">
               Vision, Mission &amp; Core Values
             </h2>
+            <p className="text-neutral-500 dark:text-neutral-400 font-light text-sm mt-2 max-w-lg mx-auto">
+              The foundational pillars and daily commitments that guide every culinary creation across Barcode Restaurant Group.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+          {/* Row 1: Vision & Mission (2 Prominent Hero Cards) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
             {/* 1. Our Vision */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
+              className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
             >
+              {/* Background Ambient Glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
+
               <div>
-                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
-                  <Eye className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
+                    <Eye className="w-7 h-7" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
+                    Long-term Inspiration
+                  </span>
                 </div>
-                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
+
+                <h3 className="font-display font-extrabold text-2xl text-neutral-900 dark:text-white mb-4">
                   {visionTitle}
                 </h3>
-                <p className="text-neutral-600 dark:text-neutral-400 font-light leading-relaxed text-sm sm:text-base">
-                  {vision}
-                </p>
+
+                <div className="relative pl-6 border-l-2 border-primary-500/40 my-4">
+                  <Quote className="w-5 h-5 text-primary-500/30 absolute -top-2 left-0 -translate-x-1/2" />
+                  <p className="text-neutral-700 dark:text-neutral-300 font-light leading-relaxed text-base sm:text-lg italic">
+                    "{vision}"
+                  </p>
+                </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
-                <Sparkles className="w-4 h-4" />
-                <span>Our Long-term Inspiration</span>
+
+              <div className="mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+                <span className="flex items-center gap-1.5 text-primary-500 font-semibold">
+                  <Sparkles className="w-4 h-4" />
+                  Inspiring enduring dining memories
+                </span>
+                <span className="font-mono text-[11px]">Barcode Standard</span>
               </div>
             </motion.div>
 
@@ -367,112 +396,137 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
+              className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
             >
+              {/* Background Ambient Glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
+
               <div>
-                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
-                  <Target className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
+                    <Target className="w-7 h-7" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
+                    Daily Commitment
+                  </span>
                 </div>
-                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-3">
+
+                <h3 className="font-display font-extrabold text-2xl text-neutral-900 dark:text-white mb-2">
                   {missionTitle}
                 </h3>
                 
-                {/* Clean formatted mission text */}
-                <div className="space-y-2.5 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 font-light leading-relaxed">
-                  {(() => {
-                    const raw = mission || '';
-                    const clean = raw.replace(/[🔲➤•]/g, '\n');
-                    const lines = clean.split('\n').map((l) => l.trim()).filter(Boolean);
-                    if (lines.length > 1) {
-                      const hasIntro = lines[0].toLowerCase().includes('committed to');
-                      const intro = hasIntro ? lines[0] : null;
-                      const items = hasIntro ? lines.slice(1) : lines;
-                      return (
-                        <div className="space-y-2.5">
-                          {intro && <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2">{intro}</p>}
-                          <ul className="space-y-2">
-                            {items.map((item, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0" />
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    }
-                    return <p>{mission}</p>;
-                  })()}
-                </div>
-              </div>
-              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Our Daily Commitment</span>
-              </div>
-            </motion.div>
+                <p className="font-semibold text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 mb-4">
+                  At Barcode Restaurant Group, we are committed to:
+                </p>
 
-            {/* 3. Core Values */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="p-7 sm:p-8 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center mb-5 text-primary-500">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h3 className="font-display font-bold text-xl text-neutral-800 dark:text-white mb-4">
-                  {aboutData?.valuesTitle || 'Core Values'}
-                </h3>
-                <div className="grid grid-cols-1 gap-2.5">
-                  {(Array.isArray(aboutData?.coreValues) && aboutData.coreValues.length > 0
-                    ? aboutData.coreValues
-                    : [
-                        { title: 'Guest First', desc: 'Prioritizing customer delight & heartfelt hospitality' },
-                        { title: 'Integrity', desc: 'Operating with transparency, ethics & accountability' },
-                        { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality' },
-                        { title: 'Respect', desc: 'Deep care and dignity for our guests, team & community' },
-                      ]
-                  ).map((val, idx) => (
+                {/* 4 Clean Actionable Bullet Cards */}
+                <div className="space-y-2.5">
+                  {[
+                    'Delivering unforgettable dining experiences through outstanding food, exceptional service, and a welcoming atmosphere.',
+                    'Ensuring uncompromising standards of food safety, hygiene, quality, and consistency across every outlet.',
+                    'Driving innovation by embracing modern food trends, technology, and operational excellence.',
+                    'Conducting business with integrity, transparency, accountability, and respect for all.',
+                  ].map((point, idx) => (
                     <div
                       key={idx}
-                      className="p-2.5 sm:p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 flex items-start gap-2.5 transition-all hover:border-primary-500/30"
+                      className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800 flex items-start gap-3 transition-colors hover:border-primary-500/30"
                     >
-                      <span className="w-5 h-5 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold font-mono">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-100">
-                          {val.title}
-                        </h4>
-                        {val.desc && (
-                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light mt-0.5 leading-snug">
-                            {val.desc}
-                          </p>
-                        )}
+                      <div className="w-5 h-5 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
                       </div>
+                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 font-light leading-relaxed">
+                        {point}
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center gap-2 text-xs font-semibold text-primary-500">
-                <Heart className="w-4 h-4" />
-                <span>Our Guiding Principles</span>
+
+              <div className="mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+                <span className="flex items-center gap-1.5 text-primary-500 font-semibold">
+                  <ShieldCheck className="w-4 h-4" />
+                  Consistent across every outlet
+                </span>
+                <span className="font-mono text-[11px]">Excellence Always</span>
               </div>
             </motion.div>
           </div>
 
+          {/* Row 2: Our 8 Core Values (4-Column Modern Card Grid) */}
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm space-y-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-xl sm:text-2xl text-neutral-900 dark:text-white">
+                    {aboutData?.valuesTitle || 'Our 8 Core Values'}
+                  </h3>
+                  <p className="text-xs text-neutral-400 font-light">
+                    The non-negotiable principles that drive our hospitality and group culture.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full self-start sm:self-auto">
+                8 Core Pillars
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { title: 'Guest First', desc: 'Heartfelt service & uncompromised customer delight', icon: Heart },
+                { title: 'Integrity', desc: 'Transparency, honesty, accountability & high ethics', icon: ShieldCheck },
+                { title: 'Excellence', desc: 'Uncompromising food safety, hygiene & culinary quality', icon: Award },
+                { title: 'Respect', desc: 'Deep care, dignity & value for guests, team & community', icon: Compass },
+                { title: 'Teamwork', desc: 'Collaborative passion, synergy & unified teamwork', icon: Users },
+                { title: 'Innovation', desc: 'Embracing modern food trends & culinary creativity', icon: Lightbulb },
+                { title: 'Accountability', desc: 'Taking full ownership and responsibility in service', icon: Scale },
+                { title: 'Sustainability', desc: 'Responsible sourcing, waste care & eco-conscious growth', icon: Leaf },
+              ].map((val, idx) => {
+                const IconComponent = val.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800/80 hover:border-primary-500/40 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group flex flex-col justify-between"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary-500/10 group-hover:bg-primary-500 text-primary-500 group-hover:text-white flex items-center justify-center transition-all duration-300">
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <span className="text-[11px] font-mono font-bold text-neutral-400">
+                        0{idx + 1}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-display font-bold text-sm sm:text-base text-neutral-900 dark:text-neutral-100 group-hover:text-primary-500 transition-colors">
+                        {val.title}
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-light mt-1 leading-snug">
+                        {val.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
           {/* Quick stats strip */}
-          <div className="grid grid-cols-3 gap-4 mt-8 p-6 sm:p-8 rounded-2xl bg-neutral-900 text-center">
+          <div className="grid grid-cols-3 gap-4 p-6 sm:p-8 rounded-3xl bg-neutral-900 text-center shadow-lg">
             <div>
               <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.founded}</div>
               <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
                 {stats.foundedLabel || 'Founded'}
               </div>
             </div>
-            <div className="border-x border-neutral-700">
+            <div className="border-x border-neutral-700/80">
               <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.branchesCount}</div>
               <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
                 {stats.branchesCountLabel || 'Branches'}
