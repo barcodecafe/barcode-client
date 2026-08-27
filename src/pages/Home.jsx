@@ -157,7 +157,7 @@ export const Home = () => {
     };
   }, []);
 
-  // ⚡ Bulletproof Background Sync: Refresh hero slides every 5s when tab is visible
+  // ⚡ Bulletproof Background Sync: Refresh hero slides every 60s when tab is visible (WebSockets already push updates instantly)
   useVisiblePolling(
     () => {
       getAllSlides()
@@ -166,7 +166,7 @@ export const Home = () => {
         })
         .catch(() => {});
     },
-    { intervalMs: 5000, enabled: true }
+    { intervalMs: 60000, enabled: true }
   );
 
   const sortTabs = [
