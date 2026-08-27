@@ -15,12 +15,16 @@ import {
   Compass,
   Award,
   Quote,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
 } from 'lucide-react';
 import { getAboutData } from '../services/aboutService';
 
 export const About = () => {
   const [aboutData, setAboutData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStoryExpanded, setIsStoryExpanded] = useState(false);
 
   useEffect(() => {
     getAboutData()
@@ -267,97 +271,119 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          2. OUR STORY — A continuous, elegant editorial narrative
+          2. OUR STORY — Compact Executive Reading Capsule (No Long Scroll)
       =================================================================== */}
-      <section className="site-container py-16 sm:py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          {/* Left: Sticky Image & Founder Badge */}
+      <section className="site-container py-12 sm:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          {/* Left: Founder / Restaurant Visual Card */}
           <motion.div
-            initial={{ opacity: 0, x: -25 }}
+            initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="lg:col-span-5 lg:sticky lg:top-28"
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-5 flex flex-col justify-center"
           >
-            <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl bg-neutral-200 dark:bg-neutral-800 border-4 border-white dark:border-neutral-900 group">
+            <div className="relative rounded-3xl overflow-hidden shadow-xl bg-neutral-200 dark:bg-neutral-800 border-4 border-white dark:border-neutral-900 group aspect-[4/4.2] max-h-[460px] mx-auto w-full">
               <img
                 src={storyImage}
                 alt="Barcode Founder & Restaurant Journey"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
-            </div>
-            {storyImageCaption && (
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-3 text-center font-light">
-                {storyImageCaption}
-              </p>
-            )}
-
-            {/* Founder Profile Badge */}
-            <div className="mt-6 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 flex items-center gap-3.5 shadow-sm">
-              <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
-                <Quote className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-bold block leading-none mb-1">
-                  Founder's Reflection
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
+                <span className="text-[10px] uppercase tracking-wider text-primary-400 font-bold block mb-1">
+                  Founder &amp; Managing Director
                 </span>
-                <p className="text-sm font-bold text-neutral-900 dark:text-white leading-none">
+                <h4 className="text-white font-display font-bold text-lg sm:text-xl leading-snug">
                   Monjurul Hoque
+                </h4>
+                <p className="text-neutral-300 text-xs font-light mt-1 line-clamp-1">
+                  {storyImageCaption || 'Barcode Restaurant Group'}
                 </p>
               </div>
             </div>
           </motion.div>
 
-          {/* Right: Plain Continuous Story Narrative */}
+          {/* Right: Elegant Reading Capsule */}
           <motion.div
-            initial={{ opacity: 0, x: 25 }}
+            initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="lg:col-span-7 space-y-6"
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm"
           >
             <div>
-              <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs sm:text-sm">
-                {storyBadge}
-              </span>
-              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mt-1 mb-6 text-neutral-900 dark:text-white">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs">
+                  {storyBadge}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-primary-500" />
+                  Founder's Letter
+                </span>
+              </div>
+
+              <h2 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 text-neutral-900 dark:text-white">
                 {storyTitle}
               </h2>
             </div>
 
-            {/* Plain Story Paragraphs with exquisite typography */}
-            <div className="space-y-4 text-neutral-600 dark:text-neutral-300 font-light text-sm sm:text-base leading-relaxed">
-              {(storyDescription || defaultFullStory)
-                .split('\n\n')
-                .map((paragraph, idx) => {
-                  if (!paragraph.trim()) return null;
-                  return (
-                    <p
-                      key={idx}
-                      className={
-                        idx === 0
-                          ? 'text-base sm:text-lg font-normal text-neutral-900 dark:text-neutral-100 leading-relaxed'
-                          : 'leading-relaxed'
-                      }
-                    >
-                      {paragraph.trim()}
-                    </p>
-                  );
-                })}
+            {/* Scrollable Story Capsule matching image height */}
+            <div className="relative">
+              <div
+                className={`space-y-3.5 text-neutral-600 dark:text-neutral-300 font-light text-xs sm:text-sm leading-relaxed overflow-y-auto pr-3 transition-all duration-300 ${
+                  isStoryExpanded ? 'max-h-none' : 'max-h-[260px] sm:max-h-[300px]'
+                }`}
+                style={{ scrollbarWidth: 'thin' }}
+              >
+                {(storyDescription || defaultFullStory)
+                  .split('\n\n')
+                  .map((paragraph, idx) => {
+                    if (!paragraph.trim()) return null;
+                    return (
+                      <p
+                        key={idx}
+                        className={
+                          idx === 0
+                            ? 'text-sm sm:text-base font-medium text-neutral-900 dark:text-neutral-100 leading-relaxed'
+                            : 'leading-relaxed'
+                        }
+                      >
+                        {paragraph.trim()}
+                      </p>
+                    );
+                  })}
+              </div>
+
+              {/* Gradient Bottom Overlay when collapsed */}
+              {!isStoryExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-neutral-900 via-white/70 dark:via-neutral-900/70 to-transparent pointer-events-none" />
+              )}
             </div>
 
-            {/* Sign-off Box */}
-            <div className="pt-6 border-t border-neutral-200/80 dark:border-neutral-800/80 flex items-center justify-between flex-wrap gap-4 mt-8">
-              <div>
-                <h4 className="font-display font-extrabold text-lg text-neutral-900 dark:text-white">
-                  Monjurul Hoque
-                </h4>
-                <p className="text-xs text-primary-500 font-medium font-mono mt-0.5">
-                  Founder, Barcode Restaurant Group
-                </p>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-primary-500/10 border border-primary-500/30 text-primary-600 dark:text-primary-400 font-display font-bold text-xs shadow-sm">
-                Keep Coming Back ✨
+            {/* Bottom Controls & Sign-off */}
+            <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setIsStoryExpanded((prev) => !prev)}
+                className="flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors cursor-pointer py-1.5 px-3 rounded-xl bg-primary-50 dark:bg-primary-950/50 border border-primary-200/60 dark:border-primary-800/60 shadow-sm"
+              >
+                {isStoryExpanded ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Collapse View</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Read Full Story</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-neutral-400">
+                  Keep Coming Back ✨
+                </span>
               </div>
             </div>
           </motion.div>
