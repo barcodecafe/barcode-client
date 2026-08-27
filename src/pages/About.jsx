@@ -67,12 +67,46 @@ export const About = () => {
   const storyTitle = aboutData?.storyTitle || 'How We Got Here';
   const storyDescription =
     aboutData?.storyDescription ||
-    'Barcode started as one restaurant with a clear point of view: dining out should feel considered, not complicated. That same standard now travels across every branch we open.';
+    'On a fine afternoon in 2013, our journey began with a simple dream: a place where friends could relax over freshly brewed coffee and exceptional food. Today, Barcode Restaurant Group has evolved into a beloved multi-brand culinary family, honoring traditional heritage while pioneering modern dining across Bangladesh.';
   const storyImage =
     aboutData?.storyImage ||
     'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80';
-  const storyImageCaption = aboutData?.storyImageCaption || '';
-  const timeline = Array.isArray(aboutData?.timeline) ? aboutData.timeline : [];
+  const storyImageCaption = aboutData?.storyImageCaption || 'Inside Barcode Cafe & Restaurant Group';
+  const timeline =
+    Array.isArray(aboutData?.timeline) && aboutData.timeline.length > 0
+      ? aboutData.timeline
+      : [
+          {
+            year: '2013',
+            title: 'The Inception — Barcode Cafe',
+            desc: 'Started on 9th July 2013 at Nasirabad, Chittagong. Born from a desire to create a welcoming haven for freshly brewed coffee, warm conversations, and quality dining.',
+          },
+          {
+            year: '2015',
+            title: 'Burgwich Town Fusion Cafe',
+            desc: 'Pioneered hygienic oriental and occidental street food fusion—serving Italian Pizza-Pasta, American Burgers and Arabian Shawarma alongside authentic Deshi Chatpati & Fuchka.',
+          },
+          {
+            year: '2016',
+            title: 'Mezzan Haile Aaiun',
+            desc: 'Honoring Chittagong’s iconic culinary tradition by making authentic Mezbani Khabar accessible every day, expanding into 6 vibrant outlets across Chittagong and Dhaka.',
+          },
+          {
+            year: '2016',
+            title: 'Bir Chattala — Heritage Biyebari',
+            desc: 'Bringing the rich flavors of Bangladeshi wedding feasts (Kacchi Biriyani, Shahi Jarda) and authentic Bangla Khabar in a nostalgic rural household ambiance with Bela Biscuit.',
+          },
+          {
+            year: '2020',
+            title: 'Barcode Food Junction & Marina Capella',
+            desc: 'Launched a grand open festive hub at Muradpur bringing all ventures under one roof, along with scenic riverside seafood at Karnafuli bank, Ek Cup Garam Cha, and Premium Kabab.',
+          },
+          {
+            year: 'Present',
+            title: 'Barcode Catering & Growing Legacy',
+            desc: 'Offering full-scale indoor and outdoor catering across Bangladesh, bringing our signature culinary excellence and heartfelt hospitality to every celebration.',
+          },
+        ];
 
   const missionTitle = aboutData?.missionTitle || 'Our Mission';
   const mission =
@@ -295,7 +329,7 @@ export const About = () => {
               {storyDescription}
             </p>
 
-            <div className="space-y-8">
+            <div className="space-y-4">
               {timeline.map((item, idx) => (
                 <motion.div
                   key={item._id || item.id || item.year + idx}
@@ -303,27 +337,55 @@ export const About = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.45, delay: idx * 0.08 }}
-                  className="flex gap-5"
+                  className="flex gap-4 sm:gap-5 group"
                 >
                   <div className="flex flex-col items-center shrink-0">
-                    <div className="w-11 h-11 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center text-primary-500 font-display font-bold text-xs">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-500/10 border border-primary-500/30 group-hover:bg-primary-500 group-hover:text-white transition-all duration-300 flex items-center justify-center text-primary-500 font-display font-extrabold text-xs shadow-sm">
                       {item.year}
                     </div>
                     {idx < timeline.length - 1 && (
-                      <div className="w-px flex-1 bg-neutral-200 dark:bg-neutral-800 mt-2" />
+                      <div className="w-0.5 flex-1 bg-gradient-to-b from-primary-500/30 to-neutral-200 dark:to-neutral-800 my-2" />
                     )}
                   </div>
-                  <div className="pb-2">
-                    <h3 className="font-display font-bold text-neutral-800 dark:text-white">
-                      {item.title}
-                    </h3>
-                    <p className="text-neutral-500 dark:text-neutral-400 text-sm font-light leading-relaxed mt-1">
-                      {item.desc}
-                    </p>
+                  <div className="pb-2 flex-1">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm group-hover:border-primary-500/30 transition-all duration-300">
+                      <h3 className="font-display font-bold text-base sm:text-lg text-neutral-900 dark:text-white group-hover:text-primary-500 transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed mt-1.5">
+                        {item.desc}
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
+
+            {/* Founder Note / Sign-off */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-8 p-5 sm:p-6 rounded-3xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 flex items-start gap-4"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                <Quote className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 font-light italic leading-relaxed">
+                  "We have received your unconditional love and support in our long journey and want you beside us in our future ahead. And like always, Keep Coming Back."
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="font-display font-bold text-xs sm:text-sm text-neutral-900 dark:text-white">
+                    Monjurul Hoque
+                  </span>
+                  <span className="text-[11px] text-primary-500 font-medium font-mono">
+                    Founder, Barcode Restaurant Group
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
