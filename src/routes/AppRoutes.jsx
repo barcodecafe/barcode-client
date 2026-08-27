@@ -1,20 +1,22 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { RootLayout } from '../layouts/RootLayout';
-import { Home } from '../pages/Home';
-import { Branches } from '../pages/Branches';
-import BranchDetail from '../pages/BranchDetail';
-import { Brands } from '../pages/Brands';
-import { BrandHome } from '../pages/BrandHome';
-import { BrandBranches } from '../pages/BrandBranches';
-import { BrandBranchDetail } from '../pages/BrandBranchDetail';
-import { BrandMenu } from '../pages/BrandMenu';
-import { BrandAbout } from '../pages/BrandAbout';
-import { Menu } from '../pages/Menu';
-import { DishDetail } from '../pages/DishDetail';
-import { About } from '../pages/About';
-import { Login } from '../pages/Login';
-import { SignUp } from '../pages/SignUp';
+
+// ⚡ Core Customer Pages (Lazy-loaded for optimum initial chunk size)
+const Home = lazy(() => import('../pages/Home').then((m) => ({ default: m.Home || m.default })));
+const Branches = lazy(() => import('../pages/Branches').then((m) => ({ default: m.Branches || m.default })));
+const BranchDetail = lazy(() => import('../pages/BranchDetail').then((m) => ({ default: m.BranchDetail || m.default })));
+const Brands = lazy(() => import('../pages/Brands').then((m) => ({ default: m.Brands || m.default })));
+const BrandHome = lazy(() => import('../pages/BrandHome').then((m) => ({ default: m.BrandHome || m.default })));
+const BrandBranches = lazy(() => import('../pages/BrandBranches').then((m) => ({ default: m.BrandBranches || m.default })));
+const BrandBranchDetail = lazy(() => import('../pages/BrandBranchDetail').then((m) => ({ default: m.BrandBranchDetail || m.default })));
+const BrandMenu = lazy(() => import('../pages/BrandMenu').then((m) => ({ default: m.BrandMenu || m.default })));
+const BrandAbout = lazy(() => import('../pages/BrandAbout').then((m) => ({ default: m.BrandAbout || m.default })));
+const Menu = lazy(() => import('../pages/Menu').then((m) => ({ default: m.Menu || m.default })));
+const DishDetail = lazy(() => import('../pages/DishDetail').then((m) => ({ default: m.DishDetail || m.default })));
+const About = lazy(() => import('../pages/About').then((m) => ({ default: m.About || m.default })));
+const Login = lazy(() => import('../pages/Login').then((m) => ({ default: m.Login || m.default })));
+const SignUp = lazy(() => import('../pages/SignUp').then((m) => ({ default: m.SignUp || m.default })));
 
 // ⚡ Lazy-loaded Layouts
 const AdminLayout = lazy(() => import('../layouts/AdminLayout').then((m) => ({ default: m.AdminLayout || m.default })));
