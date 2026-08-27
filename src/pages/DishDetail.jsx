@@ -199,6 +199,7 @@ export const DishDetail = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadDishData(true);
+    loadReviews(id);
 
     // Non-blocking secondary loads
     getPopularFoods(12)

@@ -12,7 +12,23 @@ export async function getFoodReviews(foodId) {
   try {
     const idParam = Number.isFinite(Number(foodId)) ? Number(foodId) : foodId;
     const res = await apiClient.get(`/reviews/food/${idParam}`);
-    return res || fallback;
+    const data = res?.data || res;
+    if (data && typeof data === 'object') {
+      const revs = Array.isArray(data.reviews) ? data.reviews : [];
+      const computedAvg =
+        revs.length > 0
+          ? Number((revs.reduce((acc, r) => acc + Number(r.rating || 0), 0) / revs.length).toFixed(1))
+          : 4.5;
+
+      return {
+        foodId: data.foodId || idParam,
+        reviews: revs,
+        totalReviews: Number(data.totalReviews ?? revs.length),
+        averageRating: Number(data.averageRating ?? computedAvg),
+        ratingCounts: data.ratingCounts || fallback.ratingCounts,
+      };
+    }
+    return fallback;
   } catch (err) {
     console.warn(`Could not load reviews for food ${foodId}:`, err?.message || err);
     return fallback;
