@@ -139,6 +139,29 @@ export const DishDetail = () => {
   const [reviewMsg, setReviewMsg] = useState({ error: "", success: "" });
   const [userHoverRating, setUserHoverRating] = useState(0);
 
+  const myExistingReview = useMemo(() => {
+    if (!isAuthenticated || !reviewsData?.reviews?.length) return null;
+    const currentUserId = user?._id || user?.id;
+    const currentUserEmail = user?.email?.toLowerCase().trim();
+    return (
+      reviewsData.reviews.find((r) => {
+        const rUserId = r.userId?._id || r.userId?.id || r.userId;
+        const rEmail = r.userEmail?.toLowerCase().trim();
+        return (
+          (currentUserId && String(rUserId) === String(currentUserId)) ||
+          (currentUserEmail && rEmail === currentUserEmail)
+        );
+      }) || null
+    );
+  }, [reviewsData?.reviews, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (myExistingReview) {
+      setRatingInput(Number(myExistingReview.rating) || 5);
+      setCommentInput(myExistingReview.comment || "");
+    }
+  }, [myExistingReview]);
+
   const loadReviews = (targetId) => {
     const queryId = targetId || food?.id || food?._id || id;
     if (!queryId) return;
@@ -856,9 +879,18 @@ export const DishDetail = () => {
 
           {/* Write a Review Box / Form */}
           <div className="lg:col-span-2 p-6 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800/60 rounded-none shadow-sm space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-primary-500" /> Write Your Review
-            </h3>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+                {myExistingReview ? "Update Your Review" : "Write Your Review"}
+              </h3>
+              {myExistingReview && (
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 border border-amber-200 dark:border-amber-900/60 flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-current" />
+                  You previously rated: {myExistingReview.rating} Stars
+                </span>
+              )}
+            </div>
 
             {reviewMsg.error && (
               <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-xs">
@@ -908,7 +940,11 @@ export const DishDetail = () => {
                     disabled={submittingReview}
                     className="px-5 py-2.5 rounded-none bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs shadow-md shadow-primary-500/20 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                   >
-                    {submittingReview ? "Submitting..." : "Submit Review"}
+                    {submittingReview
+                      ? "Saving..."
+                      : myExistingReview
+                      ? "Update Review"
+                      : "Submit Review"}
                   </button>
                 </div>
               </form>
