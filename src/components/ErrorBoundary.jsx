@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { captureClientException } from '../utils/sentry';
 
 // ---------------------------------------------------------------------------
 // ErrorBoundary.jsx
@@ -29,6 +30,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled render error:', error, info?.componentStack);
+    captureClientException(error, info);
   }
 
   render() {
