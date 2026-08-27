@@ -66,14 +66,20 @@ export class ApiError extends Error {
 // authService.getCurrentUser()'s catch-all. That was the "logged out at random /
 // everything blank" report.
 const isAuthFailure = (status, message) =>
-  status === 401 || (status === 403 && /invalid or expired token/i.test(message || ''));
+  status === 401 || (status === 403 && (!message || /token|unauthorized|expired/i.test(message)));
 
 const clearSessionIfAuthFailure = (status, message, hadToken) => {
   if (hadToken && isAuthFailure(status, message)) {
-    localStorage.removeItem(TOKEN_KEY);
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // ignore
+    }
     // Let the app react (drop to logged-out) instead of leaving each page to
     // discover the dead session on its own.
-    window.dispatchEvent(new CustomEvent('auth:session-expired'));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:session-expired'));
+    }
   }
 };
 
