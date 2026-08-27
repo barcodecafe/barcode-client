@@ -142,7 +142,7 @@ export const AdminAbout = () => {
               data.storyDescription ||
               'On a fine afternoon in 2013, our journey began with a simple dream: a place where friends could relax over freshly brewed coffee and exceptional food. Today, Barcode Restaurant Group has evolved into a beloved multi-brand culinary family, honoring traditional heritage while pioneering modern dining across Bangladesh.',
             storyImage: data.storyImage || '',
-            storyImageCaption: data.storyImageCaption || 'Inside Barcode Cafe & Restaurant Group',
+            storyImageCaption: data.storyImageCaption || '',
           });
 
           setMissionForm({

@@ -84,7 +84,7 @@ export const About = () => {
   const storyImage =
     aboutData?.storyImage ||
     'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80';
-  const storyImageCaption = aboutData?.storyImageCaption || 'Inside Barcode Cafe & Restaurant Group';
+  const storyImageCaption = aboutData?.storyImageCaption || '';
 
   const missionTitle = aboutData?.missionTitle || 'Our Mission';
   const mission =
@@ -134,22 +134,26 @@ export const About = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="relative min-h-screen bg-gradient-to-br from-neutral-50 via-primary-50/15 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900/40 dark:to-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 overflow-hidden">
       {/* ===================================================================
-          1. PAGE HEADER (LIGHT & PREMIUM CULINARY THEME)
+          UNIFIED GRID PATTERN ACROSS TOTAL PAGE (Marked Background)
       =================================================================== */}
-      <section className="relative py-16 sm:py-24 bg-gradient-to-br from-neutral-50 via-primary-50/20 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900/40 dark:to-neutral-950 text-neutral-900 dark:text-neutral-100 overflow-hidden border-b border-neutral-200 dark:border-neutral-800/60 transition-colors duration-300">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-        <div className="relative site-container z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
+
+      {/* ===================================================================
+          1. HERO SECTION (TIGHTENED & PROPORTIONAL)
+      =================================================================== */}
+      <section className="relative z-10 pt-8 pb-10 sm:pt-12 sm:pb-14">
+        <div className="site-container">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             {/* Left Column: Brand Story & Scale */}
-            <div className="lg:col-span-6 space-y-6 text-left">
+            <div className="lg:col-span-6 space-y-4 sm:space-y-5 text-left">
               {heroBadge && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-100/50 dark:bg-primary-950/30 border border-primary-200/50 dark:border-primary-800/40 backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100/50 dark:bg-primary-950/30 border border-primary-200/50 dark:border-primary-800/40 backdrop-blur-sm"
                 >
                   <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
                   <span className="text-primary-700 dark:text-primary-400 font-semibold uppercase tracking-widest text-[10px] sm:text-xs">
@@ -159,19 +163,19 @@ export const About = () => {
               )}
 
               <motion.h1
-                initial={{ opacity: 0, y: 25 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
-                className="font-display text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-neutral-900 dark:text-white leading-[1.15]"
+                className="font-display text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-900 dark:text-white leading-[1.15]"
               >
                 {renderTitle(heroTitle, heroHighlightText)}
               </motion.h1>
 
               <motion.p
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.25 }}
-                className="text-neutral-600 dark:text-neutral-400 text-base sm:text-lg font-light leading-relaxed max-w-xl tracking-wide"
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base font-light leading-relaxed max-w-xl tracking-wide"
               >
                 {heroDescription}
               </motion.p>
@@ -180,29 +184,29 @@ export const About = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="pt-4 flex flex-wrap items-center gap-y-4 gap-x-6 text-neutral-500 dark:text-neutral-400 text-sm font-medium border-t border-neutral-200/60 dark:border-neutral-800/60"
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="pt-3 flex flex-wrap items-center gap-y-3 gap-x-5 text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-medium border-t border-neutral-200/60 dark:border-neutral-800/60"
               >
                 {heroStat1Value && (
                   <div className="flex items-center gap-2">
-                    <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat1Value}</span>
+                    <span className="text-primary-500 font-extrabold font-display text-lg sm:text-xl">{heroStat1Value}</span>
                     <span className="tracking-wide">{heroStat1Label}</span>
                   </div>
                 )}
                 {heroStat2Value && (
                   <>
-                    <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
+                    <div className="hidden sm:block w-px h-4 bg-neutral-300 dark:bg-neutral-800 self-center" />
                     <div className="flex items-center gap-2">
-                      <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat2Value}</span>
+                      <span className="text-primary-500 font-extrabold font-display text-lg sm:text-xl">{heroStat2Value}</span>
                       <span className="tracking-wide">{heroStat2Label}</span>
                     </div>
                   </>
                 )}
                 {heroStat3Value && (
                   <>
-                    <div className="hidden sm:block w-px h-5 bg-neutral-300 dark:bg-neutral-800 self-center" />
+                    <div className="hidden sm:block w-px h-4 bg-neutral-300 dark:bg-neutral-800 self-center" />
                     <div className="flex items-center gap-2">
-                      <span className="text-primary-500 font-extrabold font-display text-xl sm:text-2xl">{heroStat3Value}</span>
+                      <span className="text-primary-500 font-extrabold font-display text-lg sm:text-xl">{heroStat3Value}</span>
                       <span className="tracking-wide">{heroStat3Label}</span>
                     </div>
                   </>
@@ -211,29 +215,29 @@ export const About = () => {
             </div>
 
             {/* Right Column: Premium Food-Centric Dynamic Grid */}
-            <div className="lg:col-span-6 relative mt-6 lg:mt-0">
+            <div className="lg:col-span-6 relative mt-4 lg:mt-0">
               <motion.div
-                initial={{ opacity: 0, x: 40 }}
+                initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="relative grid grid-cols-12 gap-4 items-center max-w-[520px] mx-auto lg:mr-0"
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative grid grid-cols-12 gap-3 sm:gap-4 items-center max-w-[480px] mx-auto lg:mr-0 pb-4"
               >
-                <div className="col-span-7 row-span-12 relative z-10 group overflow-hidden rounded-3xl shadow-xl shadow-neutral-900/5 dark:shadow-black/40 border-4 border-white dark:border-neutral-900">
+                <div className="col-span-7 row-span-12 relative z-10 group overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl shadow-neutral-900/5 dark:shadow-black/40 border-3 sm:border-4 border-white dark:border-neutral-900">
                   <img
                     src={heroImageMain}
                     alt="Signature Premium Dish"
                     className="w-full aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
                 </div>
-                <div className="col-span-5 space-y-4 self-center">
-                  <div className="overflow-hidden rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
+                <div className="col-span-5 space-y-3 sm:space-y-3.5 self-center">
+                  <div className="overflow-hidden rounded-xl sm:rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
                     <img
                       src={heroImageSecondary1}
                       alt="Restaurant Live Ambiance"
                       className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
-                  <div className="overflow-hidden rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
+                  <div className="overflow-hidden rounded-xl sm:rounded-2xl shadow-lg border-2 border-white dark:border-neutral-900 group">
                     <img
                       src={heroImageSecondary2}
                       alt="Master chef plating professional dish"
@@ -244,15 +248,15 @@ export const About = () => {
 
                 {/* Floating Group Network Badge */}
                 {(heroNetworkBadgeTitle || heroNetworkBadgeSubtitle) && (
-                  <div className="glass absolute -bottom-4 left-4 lg:-left-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 z-20">
-                    <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <div className="glass absolute -bottom-2 left-2 sm:left-4 lg:-left-4 p-3 sm:p-3.5 rounded-2xl shadow-xl flex items-center gap-2.5 z-20">
+                    <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
                       </svg>
                     </div>
                     <div>
                       {heroNetworkBadgeTitle && (
-                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider leading-none mb-1">
+                        <p className="text-[9px] sm:text-[10px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider leading-none mb-0.5">
                           {heroNetworkBadgeTitle}
                         </p>
                       )}
@@ -271,34 +275,29 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          2. OUR STORY — Authentic Editorial Magazine Letter (No Curves)
+          2. OUR STORY — Authentic Editorial Magazine Letter (Optimized)
       =================================================================== */}
-      <section className="site-container py-12 sm:py-20">
+      <section className="relative z-10 site-container py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 sm:p-10 md:p-14 shadow-sm"
+          className="relative bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-neutral-200/80 dark:border-neutral-800/80 p-6 sm:p-8 md:p-10 rounded-3xl shadow-sm"
         >
-          {/* Top-Right Floated Photo (Exact Magazine Layout, No Curves) */}
-          <div className="float-none sm:float-right w-full sm:w-[46%] md:w-[44%] sm:ml-8 sm:mb-6 mb-6">
-            <div className="border-2 border-neutral-900 dark:border-neutral-700 shadow-md bg-neutral-900">
+          {/* Top-Right Floated Photo (Exact Magazine Layout) */}
+          <div className="float-none sm:float-right w-full sm:w-[44%] md:w-[40%] sm:ml-8 sm:mb-4 mb-5">
+            <div className="border-2 border-neutral-900 dark:border-neutral-700 shadow-md bg-neutral-900 rounded-2xl overflow-hidden">
               <img
                 src={storyImage}
                 alt="Monjurul Hoque - Founder, Barcode Restaurant Group"
                 className="w-full aspect-[4/3] object-cover block"
               />
             </div>
-            {storyImageCaption && (
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 text-right font-mono tracking-tight">
-                {storyImageCaption}
-              </p>
-            )}
           </div>
 
           {/* Letter Body Text Wrapping Around the Photo */}
-          <div className="text-neutral-800 dark:text-neutral-200 font-normal text-xs sm:text-sm md:text-[14.5px] leading-relaxed space-y-4 text-justify">
+          <div className="text-neutral-800 dark:text-neutral-200 font-normal text-xs sm:text-sm md:text-[14.5px] leading-relaxed space-y-3.5 text-justify">
             {(storyDescription || defaultFullStory)
               .split('\n\n')
               .map((paragraph, idx) => {
@@ -347,10 +346,10 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          3. VISION, MISSION & CORE VALUES (Executive Layout)
+          3. VISION, MISSION & CORE VALUES (Harmonized Layout)
       =================================================================== */}
-      <section className="bg-neutral-100 dark:bg-neutral-900/40 py-16 sm:py-24 transition-colors duration-300">
-        <div className="site-container space-y-12">
+      <section className="relative z-10 py-8 sm:py-12">
+        <div className="site-container space-y-8 sm:space-y-10">
           {/* Section Header */}
           <div className="text-center max-w-2xl mx-auto">
             <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs sm:text-sm">
@@ -359,49 +358,49 @@ export const About = () => {
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 text-neutral-900 dark:text-white">
               Vision, Mission &amp; Core Values
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 font-light text-sm mt-2 max-w-lg mx-auto">
+            <p className="text-neutral-500 dark:text-neutral-400 font-light text-xs sm:text-sm mt-1.5 max-w-lg mx-auto">
               The foundational pillars and daily commitments that guide every culinary creation across Barcode Restaurant Group.
             </p>
           </div>
 
           {/* Row 1: Vision & Mission (2 Prominent Hero Cards) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* 1. Our Vision */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
+              className="p-6 sm:p-8 rounded-3xl bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
             >
               {/* Background Ambient Glow */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
 
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
-                    <Eye className="w-7 h-7" />
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
+                    <Eye className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
                     Long-term Inspiration
                   </span>
                 </div>
 
-                <h3 className="font-display font-extrabold text-2xl text-neutral-900 dark:text-white mb-4">
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-neutral-900 dark:text-white mb-3">
                   {visionTitle}
                 </h3>
 
-                <div className="relative pl-6 border-l-2 border-primary-500/40 my-4">
-                  <Quote className="w-5 h-5 text-primary-500/30 absolute -top-2 left-0 -translate-x-1/2" />
-                  <p className="text-neutral-700 dark:text-neutral-300 font-light leading-relaxed text-base sm:text-lg italic">
+                <div className="relative pl-5 border-l-2 border-primary-500/40 my-3">
+                  <Quote className="w-4 h-4 text-primary-500/30 absolute -top-1.5 left-0 -translate-x-1/2" />
+                  <p className="text-neutral-700 dark:text-neutral-300 font-light leading-relaxed text-sm sm:text-base italic">
                     "{vision}"
                   </p>
                 </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
-                <span className="flex items-center gap-1.5 text-primary-500 font-semibold">
-                  <Sparkles className="w-4 h-4" />
+              <div className="mt-6 pt-3.5 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+                <span className="flex items-center gap-1.5 text-primary-500 font-semibold text-xs">
+                  <Sparkles className="w-3.5 h-3.5" />
                   Inspiring enduring dining memories
                 </span>
                 <span className="font-mono text-[11px]">Barcode Standard</span>
@@ -414,31 +413,31 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
+              className="p-6 sm:p-8 rounded-3xl bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-primary-500/30 transition-all duration-300"
             >
               {/* Background Ambient Glow */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
 
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
-                    <Target className="w-7 h-7" />
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-inner">
+                    <Target className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/50 dark:border-primary-800/50">
                     Daily Commitment
                   </span>
                 </div>
 
-                <h3 className="font-display font-extrabold text-2xl text-neutral-900 dark:text-white mb-2">
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-neutral-900 dark:text-white mb-2">
                   {missionTitle}
                 </h3>
                 
-                <p className="font-semibold text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 mb-4">
+                <p className="font-semibold text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 mb-3">
                   At Barcode Restaurant Group, we are committed to:
                 </p>
 
                 {/* 4 Clean Actionable Bullet Cards */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {[
                     'Delivering unforgettable dining experiences through outstanding food, exceptional service, and a welcoming atmosphere.',
                     'Ensuring uncompromising standards of food safety, hygiene, quality, and consistency across every outlet.',
@@ -447,12 +446,12 @@ export const About = () => {
                   ].map((point, idx) => (
                     <div
                       key={idx}
-                      className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800 flex items-start gap-3 transition-colors hover:border-primary-500/30"
+                      className="p-2.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800 flex items-start gap-2.5 transition-colors hover:border-primary-500/30"
                     >
-                      <div className="w-5 h-5 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      <div className="w-4 h-4 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3" />
                       </div>
-                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 font-light leading-relaxed">
+                      <p className="text-xs sm:text-[13px] text-neutral-600 dark:text-neutral-300 font-light leading-relaxed">
                         {point}
                       </p>
                     </div>
@@ -460,9 +459,9 @@ export const About = () => {
                 </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
-                <span className="flex items-center gap-1.5 text-primary-500 font-semibold">
-                  <ShieldCheck className="w-4 h-4" />
+              <div className="mt-6 pt-3.5 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+                <span className="flex items-center gap-1.5 text-primary-500 font-semibold text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   Consistent across every outlet
                 </span>
                 <span className="font-mono text-[11px]">Excellence Always</span>
@@ -472,32 +471,32 @@ export const About = () => {
 
           {/* Row 2: Our 8 Core Values (4-Column Modern Card Grid) */}
           <motion.div
-            initial={{ opacity: 0, y: 25 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm space-y-6"
+            className="p-6 sm:p-8 rounded-3xl bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm space-y-5"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-neutral-100 dark:border-neutral-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                  <ShieldCheck className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 className="font-display font-extrabold text-xl sm:text-2xl text-neutral-900 dark:text-white">
+                  <h3 className="font-display font-extrabold text-lg sm:text-xl text-neutral-900 dark:text-white">
                     {aboutData?.valuesTitle || 'Our 8 Core Values'}
                   </h3>
-                  <p className="text-xs text-neutral-400 font-light">
+                  <p className="text-[11px] sm:text-xs text-neutral-400 font-light">
                     The non-negotiable principles that drive our hospitality and group culture.
                   </p>
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full self-start sm:self-auto">
+              <span className="text-[10px] sm:text-[11px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full self-start sm:self-auto">
                 8 Core Pillars
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
               {[
                 { title: 'Guest First', desc: 'Heartfelt service & uncompromised customer delight', icon: Heart },
                 { title: 'Integrity', desc: 'Transparency, honesty, accountability & high ethics', icon: ShieldCheck },
@@ -512,21 +511,21 @@ export const About = () => {
                 return (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800/80 hover:border-primary-500/40 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group flex flex-col justify-between"
+                    className="p-3.5 rounded-2xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800/80 hover:border-primary-500/40 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary-500/10 group-hover:bg-primary-500 text-primary-500 group-hover:text-white flex items-center justify-center transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-primary-500/10 group-hover:bg-primary-500 text-primary-500 group-hover:text-white flex items-center justify-center transition-all duration-300">
                         <IconComponent className="w-4 h-4" />
                       </div>
-                      <span className="text-[11px] font-mono font-bold text-neutral-400">
+                      <span className="text-[10px] font-mono font-bold text-neutral-400">
                         0{idx + 1}
                       </span>
                     </div>
                     <div>
-                      <h4 className="font-display font-bold text-sm sm:text-base text-neutral-900 dark:text-neutral-100 group-hover:text-primary-500 transition-colors">
+                      <h4 className="font-display font-bold text-xs sm:text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-primary-500 transition-colors">
                         {val.title}
                       </h4>
-                      <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-light mt-1 leading-snug">
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light mt-0.5 leading-snug">
                         {val.desc}
                       </p>
                     </div>
@@ -537,22 +536,22 @@ export const About = () => {
           </motion.div>
 
           {/* Quick stats strip */}
-          <div className="grid grid-cols-3 gap-4 p-6 sm:p-8 rounded-3xl bg-neutral-900 text-center shadow-lg">
+          <div className="grid grid-cols-3 gap-3 p-5 sm:p-6 rounded-2xl bg-neutral-900 text-center shadow-lg">
             <div>
-              <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.founded}</div>
-              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
+              <div className="font-display text-xl sm:text-2xl font-extrabold text-primary-400">{stats.founded}</div>
+              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-0.5">
                 {stats.foundedLabel || 'Founded'}
               </div>
             </div>
             <div className="border-x border-neutral-700/80">
-              <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.branchesCount}</div>
-              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
+              <div className="font-display text-xl sm:text-2xl font-extrabold text-primary-400">{stats.branchesCount}</div>
+              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-0.5">
                 {stats.branchesCountLabel || 'Branches'}
               </div>
             </div>
             <div>
-              <div className="font-display text-2xl sm:text-3xl font-extrabold text-primary-400">{stats.standard}</div>
-              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">
+              <div className="font-display text-xl sm:text-2xl font-extrabold text-primary-400">{stats.standard}</div>
+              <div className="text-neutral-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-0.5">
                 {stats.standardLabel || 'Standard'}
               </div>
             </div>
@@ -563,20 +562,20 @@ export const About = () => {
       {/* ===================================================================
           4. OWNER & EXECUTIVE TEAM
       =================================================================== */}
-      <section className="site-container py-16 sm:py-24">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-primary-500 font-semibold uppercase tracking-wider text-sm">
+      <section className="relative z-10 site-container py-8 sm:py-14">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+          <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs sm:text-sm">
             {leadershipBadge}
           </span>
           <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">
             {leadershipTitle}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 font-light mt-3">
+          <p className="text-neutral-500 dark:text-neutral-400 font-light text-xs sm:text-sm mt-1.5">
             {leadershipSubtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-5">
           {leadership.map((person, idx) => (
             <motion.div
               key={person._id || person.id || idx}
@@ -584,7 +583,7 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: idx * 0.08 }}
-              className="group rounded-2xl border border-neutral-200/50 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              className="group rounded-2xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
             >
               <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                 {person.image ? (
@@ -600,14 +599,14 @@ export const About = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>
-              <div className="p-5">
-                <h3 className="font-display font-bold text-neutral-800 dark:text-white">
+              <div className="p-4 sm:p-5">
+                <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
                   {person.name}
                 </h3>
-                <span className="text-primary-500 text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-2">
+                <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
                   {person.role}
                 </span>
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm font-light leading-relaxed">
+                <p className="text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed">
                   {person.bio}
                 </p>
               </div>
