@@ -241,7 +241,7 @@ export const SignUp = ({ defaultRole = 'user' }) => {
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Email Address *
+                  Email Address {!isUser && '*'}
                 </label>
                 {isUser && (
                   <span className="text-[10px] text-neutral-400 font-semibold uppercase">Optional</span>
@@ -260,8 +260,8 @@ export const SignUp = ({ defaultRole = 'user' }) => {
                 />
               </div>
               {isUser && (
-                <p className="text-[11px] text-neutral-400 mt-1">
-                  💡 Adding an email allows free password recovery via email OTP.
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1.5">
+                  💡 ইমেইল না দিলে পাসওয়ার্ড রিকভারির জন্য কাস্টমার সাপোর্টের সাথে যোগাযোগ করতে হবে।
                 </p>
               )}
               {email.length > 0 && !STRICT_EMAIL.test(email.trim()) && (

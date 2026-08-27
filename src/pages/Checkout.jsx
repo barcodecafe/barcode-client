@@ -1190,8 +1190,8 @@ export const Checkout = () => {
                             className={fieldCls}
                           />
                         </div>
-                        <p className="text-[11px] text-neutral-400 mt-1">
-                          💡 Adding an email allows free password recovery via email OTP.
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1.5">
+                          💡 ইমেইল না দিলে পাসওয়ার্ড রিকভারির জন্য কাস্টমার সাপোর্টের সাথে যোগাযোগ করতে হবে।
                         </p>
                         {signupEmail.length > 0 && !STRICT_EMAIL.test(signupEmail.trim()) && (
                           <p className="mt-1 text-[11px] flex items-center gap-1 text-red-500">
