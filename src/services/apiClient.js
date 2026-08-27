@@ -135,11 +135,25 @@ async function handleResponse(response, path, hadToken) {
 
 // Standard request wrapper — centralizes headers, auth token injection,
 // and error normalization so every service gets the same behavior.
-async function request(path, { method = 'GET', body, headers = {}, timeoutMs } = {}) {
+async function request(path, { method = 'GET', body, headers = {}, params, timeoutMs } = {}) {
   const token = localStorage.getItem(TOKEN_KEY);
 
+  let fullPath = path;
+  if (params && typeof params === 'object') {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    const qs = searchParams.toString();
+    if (qs) {
+      fullPath += (fullPath.includes('?') ? '&' : '?') + qs;
+    }
+  }
+
   const response = await fetchWithTimeout(
-    path,
+    fullPath,
     {
       method,
       headers: {
@@ -152,7 +166,7 @@ async function request(path, { method = 'GET', body, headers = {}, timeoutMs } =
     timeoutMs,
   );
 
-  return handleResponse(response, path, Boolean(token));
+  return handleResponse(response, fullPath, Boolean(token));
 }
 
 // Multipart/form-data POST (file uploads). Do NOT set Content-Type — the

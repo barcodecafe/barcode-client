@@ -138,8 +138,10 @@ export const DishDetail = () => {
   const [reviewMsg, setReviewMsg] = useState({ error: "", success: "" });
   const [userHoverRating, setUserHoverRating] = useState(0);
 
-  const loadReviews = () => {
-    getFoodReviews(id)
+  const loadReviews = (targetId) => {
+    const queryId = targetId || food?.id || food?._id || id;
+    if (!queryId) return;
+    getFoodReviews(queryId)
       .then((data) => {
         if (data) setReviewsData(data);
       })
@@ -177,6 +179,13 @@ export const DishDetail = () => {
         }
 
         setFood(foodData);
+        if (foodData?.id || foodData?._id) {
+          getFoodReviews(foodData.id || foodData._id)
+            .then((data) => {
+              if (data) setReviewsData(data);
+            })
+            .catch(() => {});
+        }
       } catch (err) {
         console.error("Error loading dish detail:", err);
       } finally {
@@ -199,12 +208,6 @@ export const DishDetail = () => {
         setFeaturedMenu([]);
       });
 
-    getFoodReviews(id)
-      .then((reviewsRes) => {
-        if (reviewsRes) setReviewsData(reviewsRes);
-      })
-      .catch(() => {});
-
     // ⚡ Real-Time WebSocket Listener for instant zero-refresh updates
     const handleFoodUpdate = (payload) => {
       if (payload && payload.food) {
@@ -218,35 +221,25 @@ export const DishDetail = () => {
         const loadedSlug = loadedName.replace(/\s+/g, "-");
 
         const updatedId = String(updated.id || "").toLowerCase().trim();
-        const updatedMongoId = String(updated._id || "").toLowerCase().trim();
-        const updatedName = updated.name ? String(updated.name).toLowerCase().trim() : "";
+        const updatedName = String(updated.name || "").toLowerCase().trim();
         const updatedSlug = updatedName.replace(/\s+/g, "-");
 
-        const matchesThisDish =
+        if (
           updatedId === currentDishIdentifier ||
-          updatedMongoId === currentDishIdentifier ||
-          updatedName === currentDishIdentifier ||
           updatedSlug === currentDishSlug ||
-          (loadedId && (updatedId === loadedId || updatedMongoId === loadedId)) ||
-          (loadedName && (updatedName === loadedName || updatedSlug === loadedSlug));
-
-        if (matchesThisDish) {
-          if (updated.isActive === false) {
-            setFood(null);
-          } else {
-            setFood((prev) => (prev ? { ...prev, ...updated } : { ...updated }));
-          }
-          return;
+          (loadedId && updatedId === loadedId) ||
+          (loadedSlug && updatedSlug === loadedSlug)
+        ) {
+          setFood(updated);
         }
       }
-      loadDishData(false);
     };
 
-    socket.on("foods_updated", handleFoodUpdate);
+    socket.on("food_updated", handleFoodUpdate);
     socket.on("categories_updated", handleFoodUpdate);
 
     return () => {
-      socket.off("foods_updated", handleFoodUpdate);
+      socket.off("food_updated", handleFoodUpdate);
       socket.off("categories_updated", handleFoodUpdate);
     };
   }, [id, loadDishData]);
@@ -260,14 +253,15 @@ export const DishDetail = () => {
     setSubmittingReview(true);
     setReviewMsg({ error: "", success: "" });
     try {
+      const targetFoodId = Number.isFinite(Number(food?.id)) ? Number(food.id) : (food?.id || food?._id || id);
       await submitReview({
-        foodId: Number(food.id || food._id),
+        foodId: targetFoodId,
         rating: ratingInput,
         comment: commentInput.trim(),
       });
       setCommentInput("");
       setReviewMsg({ error: "", success: "Thank you! Your review has been submitted." });
-      loadReviews();
+      loadReviews(targetFoodId);
       // Reload food to update average rating in header
       getFoodById(id).then((f) => {
         if (f) setFood(f);
