@@ -277,11 +277,15 @@ export const DishDetail = () => {
       });
       setCommentInput("");
       setReviewMsg({ error: "", success: "Thank you! Your review has been submitted." });
-      loadReviews(targetFoodId);
+      
+      await loadReviews(targetFoodId);
+      if (String(targetFoodId) !== String(id)) {
+        await loadReviews(id);
+      }
+
       // Reload food to update average rating in header
-      getFoodById(id).then((f) => {
-        if (f) setFood(f);
-      });
+      const updatedFood = await getFoodById(id);
+      if (updatedFood) setFood(updatedFood);
     } catch (err) {
       setReviewMsg({ error: err.message || "Failed to submit review", success: "" });
     } finally {
@@ -293,12 +297,12 @@ export const DishDetail = () => {
     if (!window.confirm("Are you sure you want to delete this review?")) return;
     try {
       await deleteReview(reviewId);
-      loadReviews();
-      getFoodById(id).then((f) => {
-        if (f) setFood(f);
-      });
+      const targetFoodId = food?.id || food?._id || id;
+      await loadReviews(targetFoodId);
+      const updatedFood = await getFoodById(id);
+      if (updatedFood) setFood(updatedFood);
     } catch (err) {
-      alert(err.message || "Failed to delete review");
+      console.error("Failed to delete review:", err);
     }
   };
 
