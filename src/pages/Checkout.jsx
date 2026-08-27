@@ -331,7 +331,7 @@ export const Checkout = () => {
 
     if (authTab === "login") {
       if (!loginPhone || !loginPassword) {
-        const msg = "Please enter your mobile number and password.";
+        const msg = "Please enter your mobile number or email and password.";
         setAuthError(msg);
         Swal.fire({
           icon: "warning",
@@ -343,7 +343,13 @@ export const Checkout = () => {
       }
       setIsLoading(true);
       try {
-        await login({ phone: loginPhone, password: loginPassword });
+        const sanitized = loginPhone.trim();
+        const isEmail = sanitized.includes('@');
+        const payload = isEmail
+          ? { email: sanitized.toLowerCase(), password: loginPassword }
+          : { phone: sanitized.replace(/\s+/g, ''), password: loginPassword };
+
+        await login(payload);
         Swal.fire({
           icon: "success",
           title: "Logged In Successfully!",
@@ -1265,11 +1271,11 @@ export const Checkout = () => {
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <input
-                          type="tel"
+                          type="text"
                           required
                           value={loginPhone}
                           onChange={(e) => setLoginPhone(e.target.value)}
-                          placeholder="Mobile number"
+                          placeholder="Mobile number / Email"
                           className={fieldCls}
                         />
                       </div>
