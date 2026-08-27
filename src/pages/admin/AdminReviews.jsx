@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { getAllFeedbacks, deleteFeedback } from '../../services/feedbackService';
 import { getAllBranches } from '../../services/branchesService';
+import { socket } from '../../services/socket';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -100,6 +101,16 @@ export const AdminReviews = () => {
     getAllBranches()
       .then((data) => setBranches(Array.isArray(data) ? data : []))
       .catch(() => {});
+
+    const handleFeedbackLive = () => {
+      fetchFeedbacks();
+    };
+
+    socket.on('feedback_updated', handleFeedbackLive);
+
+    return () => {
+      socket.off('feedback_updated', handleFeedbackLive);
+    };
   }, []);
 
   const showSuccess = (msg) => {

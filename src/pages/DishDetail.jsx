@@ -237,12 +237,26 @@ export const DishDetail = () => {
       }
     };
 
+    const handleReviewLiveUpdate = (payload) => {
+      const targetId = foodRef.current?.id || foodRef.current?._id || id;
+      if (!payload || !payload.foodId || String(payload.foodId) === String(targetId) || String(payload.foodId) === String(id)) {
+        loadReviews(targetId);
+        getFoodById(id).then((f) => {
+          if (f) setFood(f);
+        }).catch(() => {});
+      }
+    };
+
     socket.on("food_updated", handleFoodUpdate);
     socket.on("categories_updated", handleFoodUpdate);
+    socket.on("foods_updated", handleFoodUpdate);
+    socket.on("review_updated", handleReviewLiveUpdate);
 
     return () => {
       socket.off("food_updated", handleFoodUpdate);
       socket.off("categories_updated", handleFoodUpdate);
+      socket.off("foods_updated", handleFoodUpdate);
+      socket.off("review_updated", handleReviewLiveUpdate);
     };
   }, [id, loadDishData]);
 
