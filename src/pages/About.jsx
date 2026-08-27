@@ -271,123 +271,79 @@ export const About = () => {
       </section>
 
       {/* ===================================================================
-          2. OUR STORY — Compact Executive Reading Capsule (No Long Scroll)
+          2. OUR STORY — Authentic Editorial Magazine Letter (No Curves)
       =================================================================== */}
-      <section className="site-container py-12 sm:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left: Founder / Restaurant Visual Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-5 flex flex-col justify-center"
-          >
-            <div className="relative rounded-3xl overflow-hidden shadow-xl bg-neutral-200 dark:bg-neutral-800 border-4 border-white dark:border-neutral-900 group aspect-[4/4.2] max-h-[460px] mx-auto w-full">
+      <section className="site-container py-12 sm:py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 sm:p-10 md:p-14 shadow-sm"
+        >
+          {/* Top-Right Floated Photo (Exact Magazine Layout, No Curves) */}
+          <div className="float-none sm:float-right w-full sm:w-[46%] md:w-[44%] sm:ml-8 sm:mb-6 mb-6">
+            <div className="border-2 border-neutral-900 dark:border-neutral-700 shadow-md bg-neutral-900">
               <img
                 src={storyImage}
-                alt="Barcode Founder & Restaurant Journey"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                alt="Monjurul Hoque - Founder, Barcode Restaurant Group"
+                className="w-full aspect-[4/3] object-cover block"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                <span className="text-[10px] uppercase tracking-wider text-primary-400 font-bold block mb-1">
-                  Founder &amp; Managing Director
-                </span>
-                <h4 className="text-white font-display font-bold text-lg sm:text-xl leading-snug">
-                  Monjurul Hoque
-                </h4>
-                <p className="text-neutral-300 text-xs font-light mt-1 line-clamp-1">
-                  {storyImageCaption || 'Barcode Restaurant Group'}
-                </p>
-              </div>
             </div>
-          </motion.div>
+            {storyImageCaption && (
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 text-right font-mono tracking-tight">
+                {storyImageCaption}
+              </p>
+            )}
+          </div>
 
-          {/* Right: Elegant Reading Capsule */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs">
-                  {storyBadge}
-                </span>
-                <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-primary-500" />
-                  Founder's Letter
-                </span>
-              </div>
+          {/* Letter Body Text Wrapping Around the Photo */}
+          <div className="text-neutral-800 dark:text-neutral-200 font-normal text-xs sm:text-sm md:text-[14.5px] leading-relaxed space-y-4 text-justify">
+            {(storyDescription || defaultFullStory)
+              .split('\n\n')
+              .map((paragraph, idx) => {
+                if (!paragraph.trim()) return null;
+                const isOpening = idx === 0;
+                const isThanks = paragraph.trim().toLowerCase() === 'thanks.' || paragraph.trim().toLowerCase() === 'thanks';
 
-              <h2 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 text-neutral-900 dark:text-white">
-                {storyTitle}
-              </h2>
-            </div>
+                if (isOpening) {
+                  return (
+                    <p
+                      key={idx}
+                      className="font-display font-bold text-base sm:text-lg text-neutral-900 dark:text-white mb-2"
+                    >
+                      {paragraph.trim()}
+                    </p>
+                  );
+                }
 
-            {/* Scrollable Story Capsule matching image height */}
-            <div className="relative">
-              <div
-                className={`space-y-3.5 text-neutral-600 dark:text-neutral-300 font-light text-xs sm:text-sm leading-relaxed overflow-y-auto pr-3 transition-all duration-300 ${
-                  isStoryExpanded ? 'max-h-none' : 'max-h-[260px] sm:max-h-[300px]'
-                }`}
-                style={{ scrollbarWidth: 'thin' }}
-              >
-                {(storyDescription || defaultFullStory)
-                  .split('\n\n')
-                  .map((paragraph, idx) => {
-                    if (!paragraph.trim()) return null;
-                    return (
-                      <p
-                        key={idx}
-                        className={
-                          idx === 0
-                            ? 'text-sm sm:text-base font-medium text-neutral-900 dark:text-neutral-100 leading-relaxed'
-                            : 'leading-relaxed'
-                        }
-                      >
-                        {paragraph.trim()}
+                if (isThanks) {
+                  return (
+                    <div key={idx} className="pt-2">
+                      <p className="font-display font-bold text-sm text-neutral-900 dark:text-white">
+                        Thanks.
                       </p>
-                    );
-                  })}
-              </div>
+                      <p className="font-display font-extrabold text-base text-neutral-900 dark:text-white mt-1">
+                        Monjurul Hoque
+                      </p>
+                      <p className="text-xs text-primary-500 font-mono">
+                        Founder, Barcode Restaurant Group
+                      </p>
+                    </div>
+                  );
+                }
 
-              {/* Gradient Bottom Overlay when collapsed */}
-              {!isStoryExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-neutral-900 via-white/70 dark:via-neutral-900/70 to-transparent pointer-events-none" />
-              )}
-            </div>
+                return (
+                  <p key={idx} className="leading-relaxed">
+                    {paragraph.trim()}
+                  </p>
+                );
+              })}
+          </div>
 
-            {/* Bottom Controls & Sign-off */}
-            <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setIsStoryExpanded((prev) => !prev)}
-                className="flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors cursor-pointer py-1.5 px-3 rounded-xl bg-primary-50 dark:bg-primary-950/50 border border-primary-200/60 dark:border-primary-800/60 shadow-sm"
-              >
-                {isStoryExpanded ? (
-                  <>
-                    <ChevronUp className="w-3.5 h-3.5" />
-                    <span>Collapse View</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                    <span>Read Full Story</span>
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-neutral-400">
-                  Keep Coming Back ✨
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+          {/* Clear Float */}
+          <div className="clear-both" />
+        </motion.div>
       </section>
 
       {/* ===================================================================
