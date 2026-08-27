@@ -1,8 +1,31 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getAllUsers, posLookupCustomer } from '../../services/authService';
+import { getAllUsers, posLookupCustomer, adminUpdateCustomer } from '../../services/authService';
 import { getTopCustomers } from '../../services/analyticsService';
-import { CreditCard, Download, X, QrCode, Crown, Search, Sparkles, Check, Copy, UserCheck } from 'lucide-react';
+import {
+  CreditCard,
+  Download,
+  X,
+  QrCode,
+  Crown,
+  Search,
+  Sparkles,
+  Check,
+  Copy,
+  UserCheck,
+  Edit2,
+  Lock,
+  Mail,
+  Phone,
+  User,
+  MapPin,
+  Coins,
+  Eye,
+  EyeOff,
+  Save,
+  Loader2,
+} from 'lucide-react';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import Swal from 'sweetalert2';
 import html2canvas from 'html2canvas-pro';
 import QRCode from 'qrcode';
 
@@ -130,6 +153,121 @@ export const AdminCustomers = () => {
   const [cardQrUrl, setCardQrUrl] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+
+  // 🎯 Edit Customer Profile & Password State
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    pickArea: '',
+    address: '',
+    password: '',
+    points: 0,
+  });
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+
+  const openEditModal = (customer) => {
+    setEditingCustomer(customer);
+    setEditForm({
+      name: customer.name || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      pickArea: customer.pickArea || '',
+      address: customer.address || '',
+      password: '',
+      points: customer.points || 0,
+    });
+    setShowEditPassword(false);
+  };
+
+  const handleSaveCustomer = async (e) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+
+    if (!editForm.name.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Name Required',
+        text: 'Customer full name cannot be empty.',
+        confirmButtonColor: '#f97316',
+      });
+      return;
+    }
+
+    if (editForm.email.trim() && !/^[^\s@.][^\s@]*@[^\s@.]+(?:\.[^\s@.]+)+$/.test(editForm.email.trim())) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Email',
+        text: 'Please enter a valid email address.',
+        confirmButtonColor: '#f97316',
+      });
+      return;
+    }
+
+    if (editForm.password && editForm.password.length < 8) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Weak Password',
+        text: 'New password must be at least 8 characters long.',
+        confirmButtonColor: '#f97316',
+      });
+      return;
+    }
+
+    setIsSavingCustomer(true);
+    try {
+      const payload = {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
+        pickArea: editForm.pickArea.trim(),
+        address: editForm.address.trim(),
+        points: Math.max(0, Number(editForm.points) || 0),
+      };
+      if (editForm.password.trim()) {
+        payload.password = editForm.password.trim();
+      }
+
+      const custId = editingCustomer.id || editingCustomer._id;
+      const res = await adminUpdateCustomer(custId, payload);
+      const updatedUser = res?.data || res?.user || res;
+
+      // Update in local state
+      setCustomers((prev) =>
+        prev.map((c) => (String(c.id || c._id) === String(custId) ? { ...c, ...updatedUser } : c))
+      );
+
+      // Update scanned customer banner if matching
+      if (scannedCustomer && String(scannedCustomer.user?.id || scannedCustomer.user?._id) === String(custId)) {
+        setScannedCustomer((prev) => ({
+          ...prev,
+          user: { ...prev.user, ...updatedUser },
+        }));
+      }
+
+      setEditingCustomer(null);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Customer Updated!',
+        text: `Customer "${editForm.name}" ${editForm.password ? 'profile and password ' : ''}saved successfully.`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || 'Failed to update customer.';
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: msg,
+        confirmButtonColor: '#ef4444',
+      });
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
 
   // Generate dynamic live verification QR code for card preview
   useEffect(() => {
@@ -420,6 +558,12 @@ export const AdminCustomers = () => {
               <span className="font-black text-sm text-amber-400">{scannedCustomer.user?.points || 0} pts</span>
             </div>
             <button
+              onClick={() => openEditModal(scannedCustomer.user)}
+              className="px-3.5 py-2 bg-neutral-700 hover:bg-neutral-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
+            >
+              <Edit2 className="w-4 h-4" /> Edit Profile
+            </button>
+            <button
               onClick={() => setActiveCardUser(scannedCustomer.user)}
               className="px-3.5 py-2 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
             >
@@ -541,13 +685,22 @@ export const AdminCustomers = () => {
                         {new Date(c.createdAt || Date.now()).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <button
-                          onClick={() => setActiveCardUser(c)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
-                          title="Generate & View Membership Card"
-                        >
-                          <CreditCard className="w-3.5 h-3.5" /> Card
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEditModal(c)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[10px] uppercase rounded-lg shadow-2xs cursor-pointer"
+                            title="Edit Customer Details & Reset Password"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-primary-500" /> Edit
+                          </button>
+                          <button
+                            onClick={() => setActiveCardUser(c)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
+                            title="Generate & View Membership Card"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" /> Card
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -706,6 +859,199 @@ export const AdminCustomers = () => {
                 Close
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🎯 EDIT CUSTOMER & RESET PASSWORD MODAL */}
+      {editingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-2xl max-w-lg w-full border border-neutral-200 dark:border-neutral-800 space-y-5 my-auto">
+            
+            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-neutral-800 dark:text-white text-base leading-tight">
+                    Edit Customer Details
+                  </h3>
+                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
+                    {membershipIdOf(editingCustomer)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCustomer(null)}
+                className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomer} className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Full Name *
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Customer full name"
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Number & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Mobile Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder="01712345678"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="customer@example.com"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 -mt-2">
+                💡 Linking an email allows the customer to self-service reset their password via email OTP.
+              </p>
+
+              {/* Pick Area & Loyalty Points */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Pick Area
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={editForm.pickArea}
+                      onChange={(e) => setEditForm({ ...editForm, pickArea: e.target.value })}
+                      placeholder="e.g. Agrabad"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Loyalty Points
+                  </label>
+                  <div className="relative">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                    <input
+                      type="number"
+                      min={0}
+                      value={editForm.points}
+                      onChange={(e) => setEditForm({ ...editForm, points: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Address */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Default Address
+                </label>
+                <input
+                  type="text"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Full street / flat address"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Admin Direct Password Reset Section */}
+              <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Reset Password (Optional)
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <input
+                    type={showEditPassword ? 'text' : 'password'}
+                    value={editForm.password}
+                    onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                    placeholder="Enter new password (leave blank to keep unchanged)"
+                    minLength={8}
+                    className="w-full pl-9 pr-10 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1">
+                  Leave this field empty if you do not want to change the customer's password.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingCustomer(null)}
+                  className="flex-1 py-2.5 text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 rounded-xl transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCustomer}
+                  className="flex-1 py-2.5 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 disabled:opacity-50 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingCustomer ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" /> Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
           </div>
         </div>

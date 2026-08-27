@@ -154,3 +154,11 @@ export async function getPublicMembership(query) {
 export async function getAllUsers() {
   return apiClient.get('/users');
 }
+
+/**
+ * 🎯 Admin update customer details & password reset
+ * BACKEND: PATCH /api/users/:id
+ */
+export async function adminUpdateCustomer(userId, payload) {
+  return apiClient.patch(`/users/${userId}`, payload);
+}
