@@ -5,6 +5,7 @@ import {
   ShoppingBag,
   Tag,
   Phone,
+  Mail,
   MapPin,
   Lock,
   User,
@@ -48,6 +49,7 @@ import { socket } from "../services/socket";
 // Validation Constants
 // ---------------------------------------------------------------------------
 const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
+const STRICT_EMAIL = /^[^\s@.][^\s@]*@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const PASSWORD_RULES = [
   { label: "At least 8 characters", test: (p) => p.length >= 8 },
   { label: "One uppercase letter", test: (p) => /[A-Z]/.test(p) },
@@ -102,12 +104,14 @@ export const Checkout = () => {
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Live Password & Phone Validations
+  // Live Password, Phone & Email Validations
   const signupPhoneValid = BD_PHONE.test(signupPhone.trim());
+  const signupEmailValid = signupEmail.trim() ? STRICT_EMAIL.test(signupEmail.trim()) : true;
   const passwordChecks = PASSWORD_RULES.map((r) => ({
     label: r.label,
     passed: r.test(signupPassword),
@@ -391,6 +395,17 @@ export const Checkout = () => {
         });
         return;
       }
+      if (signupEmail.trim() && !STRICT_EMAIL.test(signupEmail.trim())) {
+        const msg = "Please enter a valid email address.";
+        setAuthError(msg);
+        Swal.fire({
+          icon: "warning",
+          title: "Invalid Email",
+          text: msg,
+          confirmButtonColor: "#f97316",
+        });
+        return;
+      }
       if (!isPasswordValid) {
         const msg = "Please meet all the password requirements below.";
         setAuthError(msg);
@@ -419,6 +434,7 @@ export const Checkout = () => {
         await register({
           name: signupName.trim(),
           phone: signupPhone.trim(),
+          email: signupEmail.trim() || undefined,
           password: signupPassword,
           role: "user",
         });
@@ -1158,6 +1174,33 @@ export const Checkout = () => {
                       </div>
 
                       <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                            Email Address
+                          </label>
+                          <span className="text-[10px] text-neutral-400 font-semibold uppercase">Optional</span>
+                        </div>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="email"
+                            value={signupEmail}
+                            onChange={(e) => setSignupEmail(e.target.value)}
+                            placeholder="you@example.com (Optional for password recovery)"
+                            className={fieldCls}
+                          />
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-1">
+                          💡 Adding an email allows free password recovery via email OTP.
+                        </p>
+                        {signupEmail.length > 0 && !STRICT_EMAIL.test(signupEmail.trim()) && (
+                          <p className="mt-1 text-[11px] flex items-center gap-1 text-red-500">
+                            <X className="w-3 h-3" /> Please enter a valid email address
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
                         <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                           Password
                         </label>
@@ -1312,6 +1355,7 @@ export const Checkout = () => {
                       (authTab === "signup" &&
                         (!signupName.trim() ||
                           !signupPhoneValid ||
+                          !signupEmailValid ||
                           !isPasswordValid ||
                           !passwordsMatch))
                     }
