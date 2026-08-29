@@ -24,11 +24,13 @@ import { getAboutData } from '../services/aboutService';
 export const About = () => {
   const [aboutData, setAboutData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isStoryExpanded, setIsStoryExpanded] = useState(false);
-  const [expandedBioId, setExpandedBioId] = useState(null);
+  const [expandedBioIds, setExpandedBioIds] = useState({});
 
-  const toggleBio = (personId) => {
-    setExpandedBioId((prev) => (prev === personId ? null : personId));
+  const toggleBio = (cardId) => {
+    setExpandedBioIds((prev) => ({
+      ...prev,
+      [cardId]: !prev[cardId],
+    }));
   };
 
   useEffect(() => {
@@ -567,70 +569,89 @@ export const About = () => {
       {/* ===================================================================
           4. OWNER & EXECUTIVE TEAM
       =================================================================== */}
-      <section className="relative z-10 site-container py-5 sm:py-8">
-        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
+      <section className="relative z-10 site-container py-6 sm:py-10">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
           <span className="text-primary-500 font-semibold uppercase tracking-wider text-xs sm:text-sm">
             {leadershipBadge}
           </span>
           <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mt-0.5 text-neutral-900 dark:text-white">
             {leadershipTitle}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 font-light text-xs sm:text-sm mt-1">
+          <p className="text-neutral-500 dark:text-neutral-400 font-light text-xs sm:text-sm mt-1.5 max-w-lg mx-auto">
             {leadershipSubtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center sm:justify-items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start justify-items-center sm:justify-items-stretch">
           {leadership.map((person, idx) => {
-            const personId = person._id || person.id || idx;
-            const isExpanded = expandedBioId === personId;
+            const cardId = person._id || person.id || `leader-${idx}`;
+            const isExpanded = Boolean(expandedBioIds[cardId]);
             const bio = person.bio || '';
-            const isLongBio = bio.length > 75;
+            const isLongBio = bio.length > 80;
 
             return (
               <motion.div
-                key={personId}
+                key={cardId}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: idx * 0.08 }}
-                className="group rounded-none bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-md dark:shadow-black/40 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full"
+                transition={{ duration: 0.4, delay: idx * 0.06 }}
+                className="group rounded-none bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden border border-neutral-200/70 dark:border-neutral-800/80 shadow-sm hover:shadow-2xl hover:scale-[1.015] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full flex flex-col"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
+                <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                   {person.image ? (
                     <img
                       src={person.image}
                       alt={person.name}
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 rounded-none"
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400">
                       <UtensilsCrossed className="w-12 h-12 opacity-30" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+                  {/* Role badge */}
+                  {person.role && (
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <span className="inline-block px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider bg-primary-500 text-white rounded-none shadow-sm">
+                        {person.role}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-4 sm:p-5">
-                  <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
-                    {person.name}
-                  </h3>
-                  <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
-                    {person.role}
-                  </span>
-                  <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
-                    {bio}
-                  </p>
+                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-display font-bold text-base sm:text-lg text-neutral-900 dark:text-white group-hover:text-primary-500 transition-colors">
+                      {person.name}
+                    </h3>
+
+                    {bio && (
+                      <div className="mt-2">
+                        <p
+                          className={`text-neutral-600 dark:text-neutral-400 text-xs sm:text-[13px] font-light leading-relaxed transition-all ${
+                            !isExpanded ? 'line-clamp-2' : ''
+                          }`}
+                        >
+                          {bio}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   {isLongBio && (
-                    <button
-                      type="button"
-                      onClick={() => toggleBio(personId)}
-                      className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-[11px] sm:text-xs mt-2 cursor-pointer transition-colors"
-                    >
-                      <span>{isExpanded ? 'View less' : 'View more'}</span>
-                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
+                    <div className="pt-3 mt-2 border-t border-neutral-100 dark:border-neutral-800/80">
+                      <button
+                        type="button"
+                        onClick={() => toggleBio(cardId)}
+                        className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-xs cursor-pointer transition-colors"
+                      >
+                        <span>{isExpanded ? 'View less' : 'View more'}</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   )}
                 </div>
               </motion.div>
