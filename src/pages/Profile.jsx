@@ -637,7 +637,29 @@ export const Profile = () => {
       matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
     }
 
-    // 4. Only for Home Delivery orders without branch, match region branch
+    // 4. Match via deliveryArea or deliveryAddress (e.g. "Self Pickup at Premium Burger" or "Premium Burger")
+    if (!matchedBranch && (ord.deliveryArea || ord.deliveryAddress)) {
+      matchedBranch = branches.find(
+        (b) =>
+          (ord.deliveryArea && b.name.trim().toLowerCase() === ord.deliveryArea.trim().toLowerCase()) ||
+          (ord.deliveryAddress && ord.deliveryAddress.toLowerCase().includes(b.name.trim().toLowerCase()))
+      );
+    }
+
+    // 5. Match via order item branchId
+    if (!matchedBranch && Array.isArray(ord.items)) {
+      for (const item of ord.items) {
+        if (item.branchId) {
+          const b = branches.find((br) => String(br.id || br._id) === String(item.branchId));
+          if (b) {
+            matchedBranch = b;
+            break;
+          }
+        }
+      }
+    }
+
+    // 6. Only for Home Delivery orders without branch, match region branch
     if (!matchedBranch && ord.orderType === "delivery" && ord.regionId) {
       matchedBranch = branches.find((b) => b.regionId === ord.regionId);
     }
@@ -648,7 +670,7 @@ export const Profile = () => {
 
     const bName = matchedBranch
       ? matchedBranch.name
-      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || "General / Online Delivery");
+      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || (ord.deliveryArea && ord.deliveryArea !== "Self Pickup" ? ord.deliveryArea : "General / Online Delivery"));
 
     setFeedbackForm((prev) => ({
       ...prev,
@@ -2114,19 +2136,23 @@ export const Profile = () => {
                   <div className="relative">
                     <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <select
-                      value={feedbackForm.branchId}
+                      value={
+                        feedbackForm.branchId ||
+                        (branches.find((b) => b.name === feedbackForm.branchName)?.id ?? "")
+                      }
                       onChange={(e) => {
                         const val = e.target.value;
                         const matched = branches.find((b) => String(b.id || b._id) === String(val));
                         setFeedbackForm((prev) => ({
                           ...prev,
                           branchId: val,
-                          branchName: matched ? matched.name : "General / Online Delivery",
+                          branchName: matched ? matched.name : (val === "general" ? "General / Online Delivery" : ""),
                         }));
                       }}
                       className={`${inputClass} pl-10`}
                     >
-                      <option value="">General / Online Delivery</option>
+                      <option value="">-- Choose Branch / Outlet --</option>
+                      <option value="general">General / Online Delivery</option>
                       {branches.map((b) => (
                         <option key={b.id || b._id} value={b.id || b._id}>
                           {b.name} {b.location ? `(${b.location})` : ""}
