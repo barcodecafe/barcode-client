@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getPolicy } from "../services/policyService";
 import { getPolicyIcon } from "./admin/AdminPolicies";
+import { FormattedPolicyText } from "../components/FormattedPolicyText";
 
 const DEFAULT_TERMS = {
   title: "Terms of Service",
@@ -87,9 +88,7 @@ export const TermsOfService = () => {
                     <IconComp className="w-5 h-5 text-primary-500 shrink-0" />
                     <span>{section.title}</span>
                   </h2>
-                  <p className="text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
-                    {section.content}
-                  </p>
+                  <FormattedPolicyText content={section.content} />
                 </section>
               );
             })

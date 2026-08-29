@@ -518,6 +518,12 @@ export const AdminPolicies = () => {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 resize-y leading-relaxed font-light"
                     required
                   />
+                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                    <span>
+                      Smart Formatting: Emails (<code className="font-mono text-primary-600 dark:text-primary-400">info@...</code>), URLs, and notes <code className="font-mono text-primary-600 dark:text-primary-400">(bKash, Nagad)</code> will automatically format as interactive links &amp; badges.
+                    </span>
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800">
