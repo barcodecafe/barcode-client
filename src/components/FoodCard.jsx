@@ -172,11 +172,6 @@ const FoodCard = ({
                 ? Number(food.rating || 4.5).toFixed(1)
                 : Number(food.adminBaseRating || (food.rating && food.rating > 1 ? food.rating : 4.5)).toFixed(1)}
             </span>
-            {Number(food.reviewCount) > 0 && (
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-normal">
-                ({food.reviewCount})
-              </span>
-            )}
           </span>
         </div>
 
