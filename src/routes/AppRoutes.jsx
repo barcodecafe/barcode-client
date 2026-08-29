@@ -98,24 +98,24 @@ export const AppRoutes = () => {
                     className: 'hot-toast-custom',
                     style: { 
                       zIndex: 999999,
-                      padding: '6px 14px',
+                      padding: '8px 16px',
                       fontSize: '13px',
                       fontWeight: '600',
-                      lineHeight: '1.25',
-                      borderRadius: '9999px',
+                      lineHeight: '1.3',
+                      borderRadius: '12px',
                       maxWidth: '90vw',
                       width: 'auto',
                       whiteSpace: 'nowrap',
                     },
                     success: {
                       iconTheme: {
-                        primary: '#10b981',
+                        primary: '#e02424',
                         secondary: '#ffffff',
                       },
                     },
                     error: {
                       iconTheme: {
-                        primary: '#ef4444',
+                        primary: '#e02424',
                         secondary: '#ffffff',
                       },
                     },
