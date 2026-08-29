@@ -527,7 +527,16 @@ export const Checkout = () => {
 
     setIsLoading(true);
     try {
-      const selectedBranch = branches.find((b) => String(b.id || b._id) === String(pickupBranchId));
+      const targetBranch =
+        branches.find((b) => String(b.id || b._id) === String(pickupBranchId)) ||
+        (selectedBranch ? selectedBranch : null);
+
+      const finalPickupId = targetBranch
+        ? (targetBranch.id ?? targetBranch._id)
+        : (pickupBranchId ? (Number(pickupBranchId) || pickupBranchId) : null);
+
+      const finalPickupName = targetBranch ? targetBranch.name : "";
+
       const orderData = {
         items: cart.map((item) => ({
           id: item.id,
@@ -550,14 +559,14 @@ export const Checkout = () => {
         regionId,
         couponCode: appliedCoupon?.code || "",
         pointsToRedeem: pointsDiscount,
-        deliveryArea: isPickup ? (selectedBranch?.name || "Self Pickup") : area,
-        deliveryAddress: isPickup ? `Self Pickup at ${selectedBranch?.name || "Selected Branch"}` : address,
+        deliveryArea: isPickup ? (finalPickupName || "Self Pickup") : area,
+        deliveryAddress: isPickup ? `Self Pickup at ${finalPickupName || "Selected Branch"}` : address,
         deliveryPhone: phone,
         paymentMethod,
         orderType,
         expectedPickupTime: isPickup ? expectedPickupTime : "",
-        pickupBranchId: isPickup ? (pickupBranchId ? Number(pickupBranchId) : null) : null,
-        pickupBranchName: isPickup ? (selectedBranch?.name || "") : "",
+        pickupBranchId: isPickup ? finalPickupId : null,
+        pickupBranchName: isPickup ? finalPickupName : "",
       };
 
       const orderObj = await createOrder(orderData);
