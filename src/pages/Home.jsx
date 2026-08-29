@@ -988,7 +988,7 @@ const BranchCard = memo(({ branch, variants }) => {
           />
         </Link>
         <div className="absolute top-3 right-3 px-2 py-0.5 rounded-none bg-primary-500 text-[10px] font-bold text-white uppercase tracking-wider z-10">
-          ★ {branch.rating}
+          ★ {branch.rating || 4.5}
         </div>
       </div>
 
