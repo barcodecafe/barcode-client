@@ -1387,7 +1387,7 @@ export const Checkout = () => {
               {/* Sleek Fulfillment Summary Header (Strict Read-only from Navbar/Header Selection) */}
               <div className="mb-4 p-3.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-950 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 ${orderType === "pickup" ? "bg-emerald-500" : "bg-primary-500"}`}>
+                  <div className="w-8.5 h-8.5 rounded-xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 bg-primary-500">
                     {orderType === "pickup" ? <ShoppingBag className="w-4.5 h-4.5" /> : <Truck className="w-4.5 h-4.5" />}
                   </div>
                   <div className="min-w-0">

@@ -267,7 +267,7 @@ export const Menu = () => {
       {/* 🎯 Menu Fulfillment Status Header Bar */}
       <div className="mb-6 p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 ${isPickup ? "bg-emerald-500" : "bg-primary-500"}`}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 bg-primary-500">
             {isPickup ? <ShoppingBag className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
           </div>
           <div>
