@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+import { X } from 'lucide-react';
 import { socket } from '../services/socket'; // ⚡ আপনার সেন্ট্রাল socket.js ফাইল থেকে ইমপোর্ট করা হলো
 import { getAllOrders } from '../services/ordersService';
 import { useAuth } from './AuthContext';
@@ -110,16 +112,73 @@ export const OrderProvider = ({ children }) => {
       if (isAdmin && order) {
         soundNotification.playKitchenBellChime();
         const orderId = order.displayId || order.id || order._id || 'New';
+        const shortId = String(orderId).slice(-6).toUpperCase();
         const customerName = order.customerName || order.customer?.name || 'Customer';
         const totalAmount = Number(order.totalAmount || order.total || 0).toFixed(0);
-        const orderType = order.orderType === 'pickup' ? 'Takeaway Pickup' : 'Home Delivery';
+        const orderType = order.orderType === 'pickup' ? 'Self-Pickup' : 'Home Delivery';
 
         soundNotification.sendNotification({
-          title: `🔔 New Order #${orderId} Received!`,
+          title: `🔔 New Order #${shortId} Received!`,
           body: `৳${totalAmount} • ${customerName} (${orderType})\nClick to view and manage order details.`,
           url: '/admin/orders',
-          tag: `order-${orderId}`,
+          tag: `order-${shortId}`,
         });
+
+        // 🎯 Show Slim Production-Grade Red Themed Toast on Admin Screen
+        toast.custom(
+          (t) => (
+            <div
+              onClick={() => {
+                window.location.href = '/admin/orders';
+                toast.dismiss(t.id);
+              }}
+              className={`${
+                t.visible ? 'animate-enter' : 'animate-leave'
+              } max-w-lg w-full bg-white/95 dark:bg-neutral-900/95 shadow-xl shadow-neutral-900/10 rounded-xl pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 border border-primary-500/25 border-l-4 border-l-primary-500 backdrop-blur-md cursor-pointer transition-all hover:scale-[1.01]`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-base shrink-0">🔔</span>
+                <div className="min-w-0 flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                  <span className="text-xs font-black text-primary-600 dark:text-primary-500 whitespace-nowrap">
+                    New Order:
+                  </span>
+                  <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">
+                    #{shortId} • {customerName} (৳{totalAmount}) • {orderType}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = '/admin/orders';
+                    toast.dismiss(t.id);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast.dismiss(t.id);
+                  }}
+                  className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ),
+          {
+            duration: 8000,
+            id: `admin-order-${shortId}`,
+          }
+        );
       }
       handleOrdersChanged();
     };
