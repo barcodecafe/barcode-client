@@ -713,10 +713,38 @@ export const Profile = () => {
       getAllFoods().catch(() => []),
       getAllBranches().catch(() => []),
     ]).then(([ordersData, foodsData, branchesData]) => {
-      if (cancelled) return;
-      setOrders(Array.isArray(ordersData) ? ordersData : []);
-      setFoods(Array.isArray(foodsData) ? foodsData : []);
-      setBranches(Array.isArray(branchesData) ? branchesData : []);
+      const ords = Array.isArray(ordersData) ? ordersData : [];
+      const fds = Array.isArray(foodsData) ? foodsData : [];
+      const brs = Array.isArray(branchesData) ? branchesData : [];
+      setOrders(ords);
+      setFoods(fds);
+      setBranches(brs);
+
+      // 🎯 Auto-preselect branch from recent order if not explicitly specified
+      if (!branchIdParam && !branchNameParam && !activePickupBranch && ords.length > 0) {
+        const recentWithBranch = ords.find(
+          (o) => o.pickupBranchName || o.pickupBranchId || o.deliveryArea || o.branchName || o.branchId
+        );
+        if (recentWithBranch) {
+          const matched = brs.find(
+            (b) =>
+              (recentWithBranch.pickupBranchId && String(b.id || b._id) === String(recentWithBranch.pickupBranchId)) ||
+              (recentWithBranch.pickupBranchName && b.name.trim().toLowerCase() === recentWithBranch.pickupBranchName.trim().toLowerCase()) ||
+              (recentWithBranch.deliveryArea && b.name.trim().toLowerCase() === recentWithBranch.deliveryArea.trim().toLowerCase()) ||
+              (recentWithBranch.deliveryAddress && recentWithBranch.deliveryAddress.toLowerCase().includes(b.name.trim().toLowerCase()))
+          );
+          if (matched) {
+            setFeedbackForm((prev) => {
+              if (prev.branchId && prev.branchId !== "general") return prev;
+              return {
+                ...prev,
+                branchId: String(matched.id ?? matched._id),
+                branchName: matched.name,
+              };
+            });
+          }
+        }
+      }
       setLoading(false);
     });
 

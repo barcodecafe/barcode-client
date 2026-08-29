@@ -146,11 +146,22 @@ export const OrderTracking = () => {
   const [countdownPaused, setCountdownPaused] = useState(false);
 
   const handleGoToReview = () => {
-    const branchId = order?.branchId || order?.branch?._id || order?.branch || "";
-    const branchName = order?.branchName || order?.branch?.name || "";
+    const branchId =
+      order?.pickupBranchId ||
+      order?.branchId ||
+      order?.branch?.id ||
+      order?.branch?._id ||
+      order?.branch ||
+      "";
+    const branchName =
+      order?.pickupBranchName ||
+      order?.branchName ||
+      order?.branch?.name ||
+      (order?.deliveryArea && order?.deliveryArea !== "Self Pickup" ? order.deliveryArea : "") ||
+      "";
     const query = new URLSearchParams();
     query.set("tab", "reviews");
-    if (branchId) query.set("branchId", branchId);
+    if (branchId) query.set("branchId", String(branchId));
     if (branchName) query.set("branchName", branchName);
     navigate(`/profile?${query.toString()}`);
   };
