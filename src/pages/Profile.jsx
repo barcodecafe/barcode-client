@@ -1657,7 +1657,7 @@ export const Profile = () => {
         phone: formattedPhone,
         email: feedbackForm.email.trim(),
         branchId: feedbackForm.branchId || null,
-        branchName: selectedBranch ? selectedBranch.name : "General / Online Delivery",
+        branchName: selectedBranch ? selectedBranch.name : (feedbackForm.branchName || "General / Online Delivery"),
         foodQuality: Number(feedbackForm.foodQuality),
         serviceSpeed: Number(feedbackForm.serviceSpeed),
         staffBehavior: Number(feedbackForm.staffBehavior),
