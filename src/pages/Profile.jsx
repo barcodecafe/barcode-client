@@ -509,6 +509,7 @@ export const Profile = () => {
 
   const [form, setForm] = useState({
     name: "",
+    email: "",
     phone: "",
     pickArea: "",
     address: "",
@@ -544,6 +545,7 @@ export const Profile = () => {
     if (user) {
       setForm({
         name: user.name || "",
+        email: user.email || "",
         phone: user.phone || "",
         pickArea: user.pickArea || "",
         address: user.address || "",
@@ -853,7 +855,7 @@ export const Profile = () => {
     try {
       await updateProfile({
         name: form.name.trim(),
-        phone: form.phone.trim(),
+        email: form.email.trim(),
         pickArea: form.pickArea.trim(),
         address: form.address.trim(),
       });
@@ -871,6 +873,7 @@ export const Profile = () => {
   const resetForm = () => {
     setForm({
       name: user.name || "",
+      email: user.email || "",
       phone: user.phone || "",
       pickArea: user.pickArea || "",
       address: user.address || "",
@@ -1401,42 +1404,48 @@ export const Profile = () => {
               </div>
 
               <div>
-                <label htmlFor="pf-phone" className={labelClass}>
-                  Phone Number
+                <label htmlFor="pf-email" className={labelClass}>
+                  Email Address
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
-                    id="pf-phone"
-                    type="tel"
-                    value={form.phone}
+                    id="pf-email"
+                    type="email"
+                    value={form.email}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, phone: e.target.value }))
+                      setForm((f) => ({ ...f, email: e.target.value }))
                     }
-                    placeholder="e.g. 01700000000"
+                    placeholder="e.g. yourname@example.com"
                     className={`${inputClass} pl-10`}
                   />
                 </div>
+                <p className="text-[11px] text-neutral-400 mt-1.5">
+                  Used for order receipts and digital invoices.
+                </p>
               </div>
             </div>
 
             <div>
-              <label htmlFor="pf-email" className={labelClass}>
-                Email Address
+              <label htmlFor="pf-phone" className={labelClass}>
+                Phone Number (Membership &amp; Account ID)
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
-                  id="pf-email"
-                  type="email"
-                  value={user.email || ""}
+                  id="pf-phone"
+                  type="tel"
+                  value={user.phone || ""}
                   readOnly
                   disabled
-                  className={`${inputClass} pl-10 opacity-70 cursor-not-allowed`}
+                  className={`${inputClass} pl-10 opacity-70 cursor-not-allowed bg-neutral-100 dark:bg-neutral-800/60`}
                 />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 rounded-none">
+                  Locked
+                </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-1.5">
-                Your email is used to sign in and can&apos;t be changed here.
+                Your mobile number is permanently tied to your Loyalty Membership ID (<strong className="font-mono text-primary-600 dark:text-primary-400">{user.membershipId || "BRG-Member"}</strong>) and cannot be changed here.
               </p>
             </div>
 
