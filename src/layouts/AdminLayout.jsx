@@ -338,7 +338,7 @@ export const AdminLayout = () => {
 
         {/* 🎯 dynamic responsive container */}
         <main className="flex-grow py-4 sm:py-6 lg:py-8 w-full">
-          <div className="site-container">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 max-w-full">
             <ErrorBoundary key={location.pathname}>
               <Outlet />
             </ErrorBoundary>

@@ -607,21 +607,21 @@ export const AdminCustomers = () => {
       )}
 
       {/* Main Customers Table */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-5 sm:p-6 shadow-xs w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 sm:p-5 shadow-xs w-full overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm text-left">
+          <table className="w-full text-xs text-left min-w-[900px] xl:min-w-full">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40">
-                <th className="px-4 py-3">Membership ID</th>
-                <th className="px-4 py-3">Tier Badge</th>
-                <th className="px-4 py-3">Full Name</th>
-                <th className="px-4 py-3 text-right">Total Spent</th>
-                <th className="px-4 py-3 text-center">Orders</th>
-                <th className="px-4 py-3">Email Address</th>
-                <th className="px-4 py-3">Phone Number</th>
-                <th className="px-4 py-3">Pick Area</th>
-                <th className="px-4 py-3">Signup Date</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 text-[11px]">
+                <th className="px-3 py-3 whitespace-nowrap">Membership ID</th>
+                <th className="px-2.5 py-3 whitespace-nowrap">Tier Badge</th>
+                <th className="px-3 py-3 whitespace-nowrap">Full Name</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">Total Spent</th>
+                <th className="px-2.5 py-3 text-center whitespace-nowrap">Orders</th>
+                <th className="px-3 py-3 whitespace-nowrap">Email Address</th>
+                <th className="px-3 py-3 whitespace-nowrap">Phone Number</th>
+                <th className="px-2.5 py-3 whitespace-nowrap">Pick Area</th>
+                <th className="px-2.5 py-3 whitespace-nowrap">Signup Date</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -640,7 +640,7 @@ export const AdminCustomers = () => {
 
                   return (
                     <tr key={c.id || c._id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors">
-                      <td className="px-4 py-3.5 font-bold font-mono">
+                      <td className="px-3 py-3 font-bold font-mono whitespace-nowrap">
                         <button
                           onClick={() => copyToClipboard(mId)}
                           className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer"
@@ -654,48 +654,48 @@ export const AdminCustomers = () => {
                           )}
                         </button>
                       </td>
-                      <td className="px-4 py-3.5">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${tier.color}`}>
+                      <td className="px-2.5 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${tier.color}`}>
                           <span>{tier.icon}</span>
                           <span>{tier.badge}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-neutral-800 dark:text-neutral-100">
+                      <td className="px-3 py-3 font-bold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">
                           {isTop && <span aria-hidden title={`Top customer #${idx + 1}`}>{MEDAL[idx]}</span>}
                           {c.name}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100">
+                      <td className="px-3 py-3 text-right font-extrabold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
                         {s.totalSpent > 0 ? taka(s.totalSpent) : <span className="text-neutral-400 font-normal">৳0.00</span>}
                       </td>
-                      <td className="px-4 py-3.5 text-center font-semibold text-neutral-600 dark:text-neutral-300">
+                      <td className="px-2.5 py-3 text-center font-semibold text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
                         {s.orderCount || 0}
                       </td>
-                      <td className="px-4 py-3.5 text-neutral-600 dark:text-neutral-355">
+                      <td className="px-3 py-3 text-neutral-600 dark:text-neutral-355 max-w-[160px] truncate" title={c.email}>
                         {c.email}
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-neutral-800 dark:text-neutral-200">
+                      <td className="px-3 py-3 font-medium text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
                         {c.phone || <span className="text-neutral-450 font-light italic">Not Set</span>}
                       </td>
-                      <td className="px-4 py-3.5 font-semibold text-primary-500">
+                      <td className="px-2.5 py-3 font-semibold text-primary-500 whitespace-nowrap">
                         {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
                       </td>
-                      <td className="px-4 py-3.5 text-neutral-450 dark:text-neutral-500 font-light">
+                      <td className="px-2.5 py-3 text-neutral-450 dark:text-neutral-500 font-light whitespace-nowrap">
                         {new Date(c.createdAt || Date.now()).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[10px] uppercase rounded-lg shadow-2xs cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[10px] uppercase rounded-lg shadow-2xs cursor-pointer"
                             title="Edit Customer Details & Reset Password"
                           >
                             <Edit2 className="w-3.5 h-3.5 text-primary-500" /> Edit
                           </button>
                           <button
                             onClick={() => setActiveCardUser(c)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
                             title="Generate & View Membership Card"
                           >
                             <CreditCard className="w-3.5 h-3.5" /> Card
