@@ -468,6 +468,8 @@ export const Profile = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const branchIdParam = searchParams.get("branchId");
+  const branchNameParam = searchParams.get("branchName");
 
   const VALID_TABS = [
     "overview",
