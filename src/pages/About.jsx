@@ -25,13 +25,10 @@ export const About = () => {
   const [aboutData, setAboutData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
-  const [expandedBios, setExpandedBios] = useState({});
+  const [expandedBioId, setExpandedBioId] = useState(null);
 
   const toggleBio = (personId) => {
-    setExpandedBios((prev) => ({
-      ...prev,
-      [personId]: !prev[personId],
-    }));
+    setExpandedBioId((prev) => (prev === personId ? null : personId));
   };
 
   useEffect(() => {
@@ -586,9 +583,9 @@ export const About = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center sm:justify-items-stretch">
           {leadership.map((person, idx) => {
             const personId = person._id || person.id || idx;
-            const isExpanded = !!expandedBios[personId];
+            const isExpanded = expandedBioId === personId;
             const bio = person.bio || '';
-            const isLongBio = bio.length > 90;
+            const isLongBio = bio.length > 120;
 
             return (
               <motion.div
