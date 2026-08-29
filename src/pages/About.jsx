@@ -25,6 +25,14 @@ export const About = () => {
   const [aboutData, setAboutData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
+  const [expandedBios, setExpandedBios] = useState({});
+
+  const toggleBio = (personId) => {
+    setExpandedBios((prev) => ({
+      ...prev,
+      [personId]: !prev[personId],
+    }));
+  };
 
   useEffect(() => {
     getAboutData()
@@ -576,42 +584,64 @@ export const About = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center sm:justify-items-stretch">
-          {leadership.map((person, idx) => (
-            <motion.div
-              key={person._id || person.id || idx}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: idx * 0.08 }}
-              className="group rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-none hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full"
-            >
-              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
-                {person.image ? (
-                  <img
-                    src={person.image}
-                    alt={person.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
-                    <UtensilsCrossed className="w-12 h-12 opacity-30" />
+          {leadership.map((person, idx) => {
+            const personId = person._id || person.id || idx;
+            const isExpanded = !!expandedBios[personId];
+            const bio = person.bio || '';
+            const isLongBio = bio.length > 90;
+
+            return (
+              <motion.div
+                key={personId}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: idx * 0.08 }}
+                className="group rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-none hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
+                    {person.image ? (
+                      <img
+                        src={person.image}
+                        alt={person.name}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 rounded-none"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
+                        <UtensilsCrossed className="w-12 h-12 opacity-30" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  </div>
+                  <div className="p-4 sm:p-5 pb-2">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
+                      {person.name}
+                    </h3>
+                    <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
+                      {person.role}
+                    </span>
+                    <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                      {bio}
+                    </p>
+                  </div>
+                </div>
+
+                {isLongBio && (
+                  <div className="px-4 sm:px-5 pb-4 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleBio(personId)}
+                      className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-[11px] sm:text-xs cursor-pointer transition-colors"
+                    >
+                      <span>{isExpanded ? 'View less' : 'View more'}</span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              </div>
-              <div className="p-4 sm:p-5">
-                <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
-                  {person.name}
-                </h3>
-                <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
-                  {person.role}
-                </span>
-                <p className="text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed">
-                  {person.bio}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </section>
     </div>
