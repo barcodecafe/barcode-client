@@ -597,7 +597,7 @@ export const About = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: idx * 0.08 }}
-                className="group rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-none hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full flex flex-col justify-between"
+                className="group rounded-none bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-md dark:shadow-black/40 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full flex flex-col justify-between"
               >
                 <div>
                   <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
