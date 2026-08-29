@@ -614,22 +614,38 @@ export const Profile = () => {
 
   const handleRateExperience = (ord) => {
     setActiveSection("reviews");
-    const explicitId =
-      ord.pickupBranchId ||
-      ord.branchId ||
-      ord.branch?.id ||
-      ord.branch?._id ||
-      ord.branch;
+    let matchedBranch = null;
 
-    const matchedBranch = branches.find(
-      (b) =>
-        (explicitId !== undefined && explicitId !== null && String(b.id || b._id) === String(explicitId)) ||
-        (ord.pickupBranchName && b.name === ord.pickupBranchName) ||
-        (ord.branchName && b.name === ord.branchName) ||
-        (ord.regionId && b.regionId === ord.regionId)
-    );
+    // 1. If Self-Pickup order, strictly match by pickup branch ID or Name
+    if (ord.pickupBranchId || ord.pickupBranchName) {
+      matchedBranch = branches.find(
+        (b) =>
+          (ord.pickupBranchId && String(b.id || b._id) === String(ord.pickupBranchId)) ||
+          (ord.pickupBranchName && b.name.trim().toLowerCase() === ord.pickupBranchName.trim().toLowerCase())
+      );
+    }
 
-    const bId = matchedBranch ? String(matchedBranch.id ?? matchedBranch._id) : (explicitId ? String(explicitId) : "");
+    // 2. If explicit branchId on order
+    if (!matchedBranch && (ord.branchId || ord.branch?.id || ord.branch?._id)) {
+      const bId = ord.branchId || ord.branch?.id || ord.branch?._id;
+      matchedBranch = branches.find((b) => String(b.id || b._id) === String(bId));
+    }
+
+    // 3. If explicit branchName on order
+    if (!matchedBranch && (ord.branchName || ord.branch?.name)) {
+      const bName = ord.branchName || ord.branch?.name;
+      matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
+    }
+
+    // 4. Only for Home Delivery orders without branch, match region branch
+    if (!matchedBranch && ord.orderType === "delivery" && ord.regionId) {
+      matchedBranch = branches.find((b) => b.regionId === ord.regionId);
+    }
+
+    const bId = matchedBranch
+      ? String(matchedBranch.id ?? matchedBranch._id)
+      : (ord.pickupBranchId ? String(ord.pickupBranchId) : (ord.branchId ? String(ord.branchId) : ""));
+
     const bName = matchedBranch
       ? matchedBranch.name
       : (ord.pickupBranchName || ord.branchName || ord.branch?.name || "General / Online Delivery");
