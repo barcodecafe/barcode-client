@@ -597,48 +597,45 @@ export const About = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: idx * 0.08 }}
-                className="group rounded-none bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-md dark:shadow-black/40 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full flex flex-col justify-between"
+                className="group rounded-none bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-md dark:shadow-black/40 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full"
               >
-                <div>
-                  <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
-                    {person.image ? (
-                      <img
-                        src={person.image}
-                        alt={person.name}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 rounded-none"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
-                        <UtensilsCrossed className="w-12 h-12 opacity-30" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  </div>
-                  <div className="p-4 sm:p-5 pb-2">
-                    <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
-                      {person.name}
-                    </h3>
-                    <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
-                      {person.role}
-                    </span>
-                    <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
-                      {bio}
-                    </p>
-                  </div>
+                <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
+                  {person.image ? (
+                    <img
+                      src={person.image}
+                      alt={person.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 rounded-none"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
+                      <UtensilsCrossed className="w-12 h-12 opacity-30" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>
 
-                {isLongBio && (
-                  <div className="px-4 sm:px-5 pb-4 pt-1">
+                <div className="p-4 sm:p-5">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-neutral-800 dark:text-white">
+                    {person.name}
+                  </h3>
+                  <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
+                    {person.role}
+                  </span>
+                  <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                    {bio}
+                  </p>
+
+                  {isLongBio && (
                     <button
                       type="button"
                       onClick={() => toggleBio(personId)}
-                      className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-[11px] sm:text-xs cursor-pointer transition-colors"
+                      className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-[11px] sm:text-xs mt-2 cursor-pointer transition-colors"
                     >
                       <span>{isExpanded ? 'View less' : 'View more'}</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </motion.div>
             );
           })}
