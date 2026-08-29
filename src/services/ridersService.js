@@ -65,6 +65,16 @@ export async function getApplicationDocuments(id) {
   return apiClient.get(`/rider-applications/${id}/documents`);
 }
 
+/** PATCH /api/rider-applications/:id (admin) — update application details or status */
+export async function updateRiderApplication(id, payload) {
+  return apiClient.patch(`/rider-applications/${id}`, payload);
+}
+
+/** DELETE /api/rider-applications/:id (admin) — delete application record */
+export async function deleteRiderApplication(id) {
+  return apiClient.delete(`/rider-applications/${id}`);
+}
+
 /**
  * Fetch a rider's document (photo|license) as an object URL (auth-gated stream).
  * Revoke the URL when done. GET /api/rider-applications/:id/documents/:type
