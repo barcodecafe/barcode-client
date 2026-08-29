@@ -607,24 +607,24 @@ export const AdminCustomers = () => {
       )}
 
       {/* Main Customers Table */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-4 sm:p-5 shadow-xs w-full overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left min-w-[900px] xl:min-w-full">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-4 lg:p-4.5 shadow-xs w-full overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left table-auto">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 text-[11px]">
-                <th className="px-3 py-3 whitespace-nowrap">Membership ID</th>
-                <th className="px-2.5 py-3 whitespace-nowrap">Tier Badge</th>
-                <th className="px-3 py-3 whitespace-nowrap">Full Name</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap">Total Spent</th>
-                <th className="px-2.5 py-3 text-center whitespace-nowrap">Orders</th>
-                <th className="px-3 py-3 whitespace-nowrap">Email Address</th>
-                <th className="px-3 py-3 whitespace-nowrap">Phone Number</th>
-                <th className="px-2.5 py-3 whitespace-nowrap">Pick Area</th>
-                <th className="px-2.5 py-3 whitespace-nowrap">Signup Date</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap">Actions</th>
+              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 text-[9.5px] sm:text-[10px] xl:text-[11px]">
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Membership ID</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Tier</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Full Name</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">Total Spent</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center whitespace-nowrap">Orders</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Email</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Phone</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Pick Area</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Date</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[11px] xl:text-xs">
               {filteredCustomers.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-neutral-400 text-sm">
@@ -640,65 +640,65 @@ export const AdminCustomers = () => {
 
                   return (
                     <tr key={c.id || c._id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors">
-                      <td className="px-3 py-3 font-bold font-mono whitespace-nowrap">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold font-mono whitespace-nowrap text-[10px] xl:text-xs">
                         <button
                           onClick={() => copyToClipboard(mId)}
-                          className="inline-flex items-center gap-1.5 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer"
+                          className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer"
                           title="Click to copy Membership ID"
                         >
                           <span>{mId}</span>
                           {copiedId === mId ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <Check className="w-3 h-3 text-emerald-500" />
                           ) : (
                             <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 text-neutral-400 transition-opacity" />
                           )}
                         </button>
                       </td>
-                      <td className="px-2.5 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${tier.color}`}>
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] xl:text-[10px] font-bold border ${tier.color}`}>
                           <span>{tier.icon}</span>
                           <span>{tier.badge}</span>
                         </span>
                       </td>
-                      <td className="px-3 py-3 font-bold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
                           {isTop && <span aria-hidden title={`Top customer #${idx + 1}`}>{MEDAL[idx]}</span>}
-                          {c.name}
+                          <span className="truncate max-w-[90px] sm:max-w-[110px] xl:max-w-none">{c.name}</span>
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-right font-extrabold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100 whitespace-nowrap text-[11px] xl:text-xs">
                         {s.totalSpent > 0 ? taka(s.totalSpent) : <span className="text-neutral-400 font-normal">৳0.00</span>}
                       </td>
-                      <td className="px-2.5 py-3 text-center font-semibold text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center font-semibold text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
                         {s.orderCount || 0}
                       </td>
-                      <td className="px-3 py-3 text-neutral-600 dark:text-neutral-355 max-w-[160px] truncate" title={c.email}>
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-neutral-600 dark:text-neutral-355 max-w-[85px] sm:max-w-[110px] xl:max-w-[160px] 2xl:max-w-none truncate text-[10px] xl:text-xs" title={c.email}>
                         {c.email}
                       </td>
-                      <td className="px-3 py-3 font-medium text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-200 whitespace-nowrap text-[10px] xl:text-xs">
                         {c.phone || <span className="text-neutral-450 font-light italic">Not Set</span>}
                       </td>
-                      <td className="px-2.5 py-3 font-semibold text-primary-500 whitespace-nowrap">
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 font-semibold text-primary-500 whitespace-nowrap text-[10px] xl:text-xs">
                         {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
                       </td>
-                      <td className="px-2.5 py-3 text-neutral-450 dark:text-neutral-500 font-light whitespace-nowrap">
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-neutral-450 dark:text-neutral-500 font-light whitespace-nowrap text-[9.5px] xl:text-[11px]">
                         {new Date(c.createdAt || Date.now()).toLocaleDateString()}
                       </td>
-                      <td className="px-3 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[10px] uppercase rounded-lg shadow-2xs cursor-pointer"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-2xs cursor-pointer"
                             title="Edit Customer Details & Reset Password"
                           >
-                            <Edit2 className="w-3.5 h-3.5 text-primary-500" /> Edit
+                            <Edit2 className="w-3 h-3 text-primary-500" /> Edit
                           </button>
                           <button
                             onClick={() => setActiveCardUser(c)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[10px] uppercase rounded-lg shadow-sm cursor-pointer"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-sm cursor-pointer"
                             title="Generate & View Membership Card"
                           >
-                            <CreditCard className="w-3.5 h-3.5" /> Card
+                            <CreditCard className="w-3 h-3" /> Card
                           </button>
                         </div>
                       </td>
