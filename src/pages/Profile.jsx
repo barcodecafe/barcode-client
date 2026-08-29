@@ -1678,6 +1678,12 @@ export const Profile = () => {
             ? feedbackForm.branchName
             : "General / Online Delivery");
 
+      const formattedPhone = cleanPhone.startsWith("+88")
+        ? cleanPhone
+        : cleanPhone.startsWith("88")
+        ? `+${cleanPhone}`
+        : `+88${cleanPhone}`;
+
       const payload = {
         userName: feedbackForm.userName.trim(),
         phone: formattedPhone,
