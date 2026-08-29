@@ -146,7 +146,7 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md transition-all duration-300 h-14">
       {/* 🎯 Global site-container class applied */}
       <div className="site-container h-full">
-        <div className="flex items-center justify-between h-full gap-2 xl:gap-4">
+        <div className="flex items-center justify-between h-full gap-2 lg:gap-3 xl:gap-4">
 
           {/* Logo */}
           <Link to={logoLink} className="flex items-center shrink-0 group" aria-label={brand ? brand.name : "Barcode Restaurant — home"}>
@@ -154,7 +154,7 @@ export const Navbar = () => {
               <img
                 src={logoSrc}
                 alt={brand ? brand.name : "Barcode Restaurant"}
-                className="h-7 lg:h-8 2xl:h-9 3xl:h-10 w-auto max-w-[160px] 2xl:max-w-[200px] object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                className="h-7 lg:h-7.5 xl:h-8 2xl:h-9 3xl:h-10 w-auto max-w-[135px] lg:max-w-[150px] 2xl:max-w-[190px] object-contain transition-transform duration-300 group-hover:scale-[1.03]"
               />
             ) : (
               <span className="font-display text-base lg:text-lg 2xl:text-xl font-extrabold tracking-tight text-neutral-800 dark:text-white truncate">
@@ -164,7 +164,7 @@ export const Navbar = () => {
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-3 lg:gap-5 2xl:gap-8 3xl:gap-10 shrink-0">
+          <div className="hidden md:flex items-center gap-2.5 lg:gap-3.5 xl:gap-5 2xl:gap-8 3xl:gap-10 shrink-0">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
@@ -174,7 +174,7 @@ export const Navbar = () => {
                   const isOrdersTabActive = link.path.includes('tab=orders') && window.location.search.includes('tab=orders');
                   const active = isActive || isOrdersTabActive;
 
-                  return `text-xs lg:text-sm 2xl:text-base font-medium transition-colors duration-200 relative py-1 whitespace-nowrap ${
+                  return `text-xs lg:text-[13px] xl:text-sm 2xl:text-base font-medium transition-colors duration-200 relative py-1 whitespace-nowrap ${
                     active
                       ? 'text-primary-600 dark:text-primary-500 font-semibold'
                       : 'text-neutral-600 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-500'
@@ -203,9 +203,9 @@ export const Navbar = () => {
           </div>
 
           {/* Right Group: Search + Controls */}
-          <div className="flex items-center gap-2 xl:gap-3 2xl:gap-2.5 3xl:gap-3 4xl:gap-3.5 shrink-0">
+          <div className="flex items-center gap-1.5 lg:gap-2 xl:gap-2.5 2xl:gap-3 shrink-0">
             {/* Desktop Search */}
-            <div className="hidden lg:block w-44 xl:w-56 2xl:w-72 3xl:w-80 4xl:w-96 shrink">
+            <div className="hidden lg:block w-36 lg:w-40 xl:w-48 2xl:w-64 3xl:w-80 4xl:w-96 transition-all duration-200">
               {brand ? (
                 <BrandSearchBar brand={brand} variant="desktop" />
               ) : (
@@ -214,25 +214,25 @@ export const Navbar = () => {
             </div>
 
             {/* Right Controls */}
-            <div className="hidden md:flex items-center gap-1.5 2xl:gap-2 shrink-0">
+            <div className="hidden md:flex items-center gap-1.5 xl:gap-2 shrink-0">
               {/* 🎯 Fulfillment Mode Pill Selector (Customer Pages Only) */}
               {!isAdminOrRiderRoute && (
                 <button
                   onClick={openFulfillmentModal}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
-                  title="Change Order Fulfillment Mode / Outlet"
+                  className="flex items-center gap-1.5 px-2 lg:px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
+                  title={isPickup ? `Pickup: ${selectedBranch?.name || 'Select Outlet'}` : 'Home Delivery (Click to change)'}
                 >
                   {isPickup ? (
                     <>
                       <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="truncate max-w-[110px] xl:max-w-[140px] text-emerald-600 dark:text-emerald-400">
+                      <span className="truncate max-w-[75px] sm:max-w-[90px] xl:max-w-[120px] 2xl:max-w-[160px] text-emerald-600 dark:text-emerald-400">
                         {selectedBranch?.name ? `Pickup: ${selectedBranch.name}` : "Self Pickup"}
                       </span>
                     </>
                   ) : (
                     <>
                       <Truck className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-                      <span className="truncate max-w-[100px] xl:max-w-[130px]">
+                      <span className="truncate max-w-[65px] xl:max-w-[100px]">
                         Delivery
                       </span>
                     </>
