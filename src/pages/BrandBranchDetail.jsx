@@ -417,7 +417,7 @@ export const BrandBranchDetail = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
           >
             <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
-            <span>{branch.rating && branch.rating > 0 ? `${branch.rating} Rating` : "New Branch"}</span>
+            <span>{branch.rating || 4.5} Rating</span>
           </motion.div>
         </div>
       </section>
