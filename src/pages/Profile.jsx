@@ -612,18 +612,26 @@ export const Profile = () => {
 
   const handleRateExperience = (ord) => {
     setActiveSection("reviews");
-    const bId =
+    const explicitId =
       ord.pickupBranchId ||
       ord.branchId ||
       ord.branch?.id ||
       ord.branch?._id ||
-      ord.branch ||
-      "";
-    const bName =
-      ord.pickupBranchName ||
-      ord.branchName ||
-      ord.branch?.name ||
-      "General / Online Delivery";
+      ord.branch;
+
+    const matchedBranch = branches.find(
+      (b) =>
+        (explicitId !== undefined && explicitId !== null && String(b.id || b._id) === String(explicitId)) ||
+        (ord.pickupBranchName && b.name === ord.pickupBranchName) ||
+        (ord.branchName && b.name === ord.branchName) ||
+        (ord.regionId && b.regionId === ord.regionId)
+    );
+
+    const bId = matchedBranch ? String(matchedBranch.id ?? matchedBranch._id) : (explicitId ? String(explicitId) : "");
+    const bName = matchedBranch
+      ? matchedBranch.name
+      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || "General / Online Delivery");
+
     setFeedbackForm((prev) => ({
       ...prev,
       branchId: bId,
@@ -2091,7 +2099,7 @@ export const Profile = () => {
                       <option value="">General / Online Delivery</option>
                       {branches.map((b) => (
                         <option key={b.id || b._id} value={b.id || b._id}>
-                          {b.name} {b.address ? `(${b.address})` : ""}
+                          {b.name} {b.location ? `(${b.location})` : ""}
                         </option>
                       ))}
                     </select>
