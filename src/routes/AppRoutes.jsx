@@ -91,11 +91,34 @@ export const AppRoutes = () => {
                 <NormalizePath />
                 <FulfillmentSelectorModal />
                 <Toaster 
-                  position="top-right" 
-                  containerStyle={{ zIndex: 999999 }}
+                  position="top-center" 
+                  containerStyle={{ zIndex: 999999, top: 16 }}
                   toastOptions={{ 
-                    duration: 4000,
-                    style: { zIndex: 999999 }
+                    duration: 3500,
+                    className: 'hot-toast-custom',
+                    style: { 
+                      zIndex: 999999,
+                      padding: '6px 14px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      lineHeight: '1.25',
+                      borderRadius: '9999px',
+                      maxWidth: '90vw',
+                      width: 'auto',
+                      whiteSpace: 'nowrap',
+                    },
+                    success: {
+                      iconTheme: {
+                        primary: '#10b981',
+                        secondary: '#ffffff',
+                      },
+                    },
+                    error: {
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#ffffff',
+                      },
+                    },
                   }} 
                 />
                 <Suspense fallback={<PageFallbackSpinner />}>

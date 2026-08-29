@@ -222,3 +222,48 @@
 .animate-ticker:hover {
   animation-play-state: paused;
 }
+
+/* ---------------------------------------------------------------------
+   Global Slim & Single-Line Toast Notifications (react-hot-toast)
+------------------------------------------------------------------------ */
+div[data-toaster-container] div[role="status"],
+div[data-toaster-container] div[role="alert"],
+.hot-toast-custom {
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  border-radius: 9999px !important;
+  max-width: 90vw !important;
+  width: auto !important;
+  min-height: unset !important;
+  height: auto !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid rgba(228, 228, 231, 0.9) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #18181b !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.dark div[data-toaster-container] div[role="status"],
+.dark div[data-toaster-container] div[role="alert"],
+.dark .hot-toast-custom {
+  background: rgba(24, 24, 27, 0.96) !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(63, 63, 70, 0.8) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.3) !important;
+}
+
+@media (max-width: 640px) {
+  div[data-toaster-container] div[role="status"],
+  div[data-toaster-container] div[role="alert"],
+  .hot-toast-custom {
+    white-space: normal !important;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    border-radius: 12px !important;
+  }
+}
