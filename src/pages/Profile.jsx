@@ -522,8 +522,8 @@ export const Profile = () => {
     userName: "",
     phone: "",
     email: "",
-    branchId: "",
-    branchName: "General / Online Delivery",
+    branchId: branchIdParam || "",
+    branchName: branchNameParam || "General / Online Delivery",
     foodQuality: 0,
     serviceSpeed: 0,
     staffBehavior: 0,
@@ -537,9 +537,6 @@ export const Profile = () => {
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [myFeedbacks, setMyFeedbacks] = useState([]);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
-
-  const branchIdParam = searchParams.get("branchId");
-  const branchNameParam = searchParams.get("branchName");
 
   useEffect(() => {
     if (user) {
@@ -561,13 +558,16 @@ export const Profile = () => {
 
   useEffect(() => {
     if (branchIdParam || branchNameParam) {
+      const matched = branches.find(
+        (b) => String(b.id || b._id) === String(branchIdParam) || b.name === branchNameParam
+      );
       setFeedbackForm((prev) => ({
         ...prev,
-        branchId: branchIdParam || prev.branchId,
-        branchName: branchNameParam || prev.branchName,
+        branchId: matched ? String(matched.id ?? matched._id) : (branchIdParam || prev.branchId),
+        branchName: matched ? matched.name : (branchNameParam || prev.branchName),
       }));
     }
-  }, [branchIdParam, branchNameParam]);
+  }, [branches, branchIdParam, branchNameParam]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -1661,21 +1661,27 @@ export const Profile = () => {
     setSubmittingFeedback(true);
     try {
       const selectedBranch = branches.find(
-        (b) => String(b.id || b._id) === String(feedbackForm.branchId)
+        (b) =>
+          String(b.id || b._id) === String(feedbackForm.branchId) ||
+          b.name === feedbackForm.branchName
       );
 
-      const formattedPhone = cleanPhone.startsWith("+88")
-        ? cleanPhone
-        : cleanPhone.startsWith("88")
-        ? `+${cleanPhone}`
-        : `+88${cleanPhone}`;
+      const finalBranchId = selectedBranch
+        ? (selectedBranch.id ?? selectedBranch._id)
+        : (feedbackForm.branchId ? Number(feedbackForm.branchId) || feedbackForm.branchId : null);
+
+      const finalBranchName = selectedBranch
+        ? selectedBranch.name
+        : (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery"
+            ? feedbackForm.branchName
+            : "General / Online Delivery");
 
       const payload = {
         userName: feedbackForm.userName.trim(),
         phone: formattedPhone,
         email: feedbackForm.email.trim(),
-        branchId: feedbackForm.branchId || null,
-        branchName: selectedBranch ? selectedBranch.name : (feedbackForm.branchName || "General / Online Delivery"),
+        branchId: finalBranchId,
+        branchName: finalBranchName,
         foodQuality: Number(feedbackForm.foodQuality),
         serviceSpeed: Number(feedbackForm.serviceSpeed),
         staffBehavior: Number(feedbackForm.staffBehavior),
