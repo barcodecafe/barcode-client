@@ -253,7 +253,7 @@ export const SearchBar = ({ variant = 'desktop', onClose }) => {
           setQuery(e.target.value);
           setIsOpen(true);
         }}
-        placeholder="Search dishes, branches, brands..."
+        placeholder="Search dishes, brands..."
         className="w-full pl-9 pr-8 py-2 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white/60 dark:bg-neutral-900/60 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm"
       />
       {query && (

@@ -219,20 +219,20 @@ export const Navbar = () => {
               {!isAdminOrRiderRoute && (
                 <button
                   onClick={openFulfillmentModal}
-                  className="flex items-center gap-1.5 px-2 lg:px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 hover:border-primary-500/50 text-neutral-800 dark:text-neutral-100 transition-all cursor-pointer text-xs font-bold shrink-0"
                   title={isPickup ? `Pickup: ${selectedBranch?.name || 'Select Outlet'}` : 'Home Delivery (Click to change)'}
                 >
                   {isPickup ? (
                     <>
                       <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="truncate max-w-[75px] sm:max-w-[90px] xl:max-w-[120px] 2xl:max-w-[160px] text-emerald-600 dark:text-emerald-400">
-                        {selectedBranch?.name ? `Pickup: ${selectedBranch.name}` : "Self Pickup"}
+                      <span className="text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        Self-Pickup
                       </span>
                     </>
                   ) : (
                     <>
                       <Truck className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-                      <span className="truncate max-w-[65px] xl:max-w-[100px]">
+                      <span className="whitespace-nowrap">
                         Delivery
                       </span>
                     </>
