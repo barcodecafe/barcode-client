@@ -585,7 +585,7 @@ export const About = () => {
             const personId = person._id || person.id || idx;
             const isExpanded = expandedBioId === personId;
             const bio = person.bio || '';
-            const isLongBio = bio.length > 120;
+            const isLongBio = bio.length > 75;
 
             return (
               <motion.div
@@ -618,7 +618,7 @@ export const About = () => {
                   <span className="text-primary-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider block mt-0.5 mb-1.5">
                     {person.role}
                   </span>
-                  <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                  <p className={`text-neutral-500 dark:text-neutral-400 text-xs sm:text-sm font-light leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
                     {bio}
                   </p>
 
