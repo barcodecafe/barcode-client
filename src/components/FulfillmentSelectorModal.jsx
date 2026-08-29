@@ -85,18 +85,18 @@ export const FulfillmentSelectorModal = () => {
               onClick={() => setActiveTab('delivery')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
                 activeTab === 'delivery'
-                  ? 'bg-white dark:bg-neutral-850 text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                   : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               }`}
             >
-              <Truck className="w-4 h-4 text-primary-500" />
+              <Truck className="w-4 h-4" />
               <span>Home Delivery</span>
             </button>
             <button
               onClick={() => setActiveTab('pickup')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
                 activeTab === 'pickup'
-                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                  ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                   : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               }`}
             >
@@ -139,7 +139,7 @@ export const FulfillmentSelectorModal = () => {
 
                 {loadingBranches ? (
                   <div className="flex items-center justify-center py-8 gap-3">
-                    <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                     <span className="text-xs text-neutral-500 font-medium">Loading branch outlets...</span>
                   </div>
                 ) : branches.length === 0 ? (
@@ -158,15 +158,15 @@ export const FulfillmentSelectorModal = () => {
                           onClick={() => selectPickupBranch(b)}
                           className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                             isSelected
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm'
-                              : 'bg-white dark:bg-neutral-900 border-neutral-200/80 dark:border-neutral-800 hover:border-emerald-400'
+                              ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-500 shadow-sm'
+                              : 'bg-white dark:bg-neutral-900 border-neutral-200/80 dark:border-neutral-800 hover:border-primary-400'
                           }`}
                         >
                           <div className="flex items-start gap-3 min-w-0">
                             <div
                               className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold ${
                                 isSelected
-                                  ? 'bg-emerald-500 text-white shadow-md'
+                                  ? 'bg-primary-500 text-white shadow-md'
                                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                               }`}
                             >
@@ -181,7 +181,7 @@ export const FulfillmentSelectorModal = () => {
                                 <span>{b.address || b.area || 'Outlet Address'}</span>
                               </p>
                               {b.operatingHours && (
-                                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+                                <span className="inline-flex items-center gap-1 text-[10px] text-primary-600 dark:text-primary-400 font-bold mt-1">
                                   <Clock className="w-2.5 h-2.5" />
                                   {b.operatingHours}
                                 </span>
@@ -191,11 +191,11 @@ export const FulfillmentSelectorModal = () => {
 
                           <div className="shrink-0">
                             {isSelected ? (
-                              <span className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                              <span className="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-xs">
                                 <Check className="w-4 h-4 stroke-[3]" />
                               </span>
                             ) : (
-                              <span className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                              <span className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 group-hover:bg-primary-500 group-hover:text-white transition-all">
                                 Select
                               </span>
                             )}

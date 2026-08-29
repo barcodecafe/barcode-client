@@ -224,8 +224,8 @@ export const Navbar = () => {
                 >
                   {isPickup ? (
                     <>
-                      <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      <ShoppingBag className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                      <span className="whitespace-nowrap">
                         Self-Pickup
                       </span>
                     </>
