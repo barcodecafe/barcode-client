@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useFulfillment } from "../context/FulfillmentContext";
 import { socket } from "../services/socket";
 import {
   getAllOrders,
@@ -519,13 +520,18 @@ export const Profile = () => {
   const [settingsNotice, setSettingsNotice] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
+  const { fulfillmentMode, selectedBranch: activePickupBranch } = useFulfillment();
+
+  const activePickupId = activePickupBranch ? String(activePickupBranch.id ?? activePickupBranch._id ?? "") : "";
+  const activePickupName = activePickupBranch ? activePickupBranch.name : "";
+
   // 🎯 Feedback & Review States
   const [feedbackForm, setFeedbackForm] = useState({
     userName: "",
     phone: "",
     email: "",
-    branchId: branchIdParam || "",
-    branchName: branchNameParam || "General / Online Delivery",
+    branchId: branchIdParam || activePickupId || "",
+    branchName: branchNameParam || activePickupName || "",
     foodQuality: 0,
     serviceSpeed: 0,
     staffBehavior: 0,
@@ -568,8 +574,19 @@ export const Profile = () => {
         branchId: matched ? String(matched.id ?? matched._id) : (branchIdParam || prev.branchId),
         branchName: matched ? matched.name : (branchNameParam || prev.branchName),
       }));
+    } else if (activePickupBranch) {
+      setFeedbackForm((prev) => {
+        if (!prev.branchId || prev.branchId === "general") {
+          return {
+            ...prev,
+            branchId: String(activePickupBranch.id ?? activePickupBranch._id ?? ""),
+            branchName: activePickupBranch.name,
+          };
+        }
+        return prev;
+      });
     }
-  }, [branches, branchIdParam, branchNameParam]);
+  }, [branches, branchIdParam, branchNameParam, activePickupBranch]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -1700,19 +1717,25 @@ export const Profile = () => {
 
     setSubmittingFeedback(true);
     try {
-      const selectedBranch = branches.find(
-        (b) =>
-          String(b.id || b._id) === String(feedbackForm.branchId) ||
-          b.name === feedbackForm.branchName
-      );
+      const selectedBranch =
+        branches.find(
+          (b) =>
+            (feedbackForm.branchId && feedbackForm.branchId !== "general" && String(b.id || b._id) === String(feedbackForm.branchId)) ||
+            (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery" && b.name.trim().toLowerCase() === feedbackForm.branchName.trim().toLowerCase())
+        ) ||
+        (activePickupBranch && (!feedbackForm.branchId || String(activePickupBranch.id || activePickupBranch._id) === String(feedbackForm.branchId))
+          ? activePickupBranch
+          : null);
 
       const finalBranchId = selectedBranch
         ? (selectedBranch.id ?? selectedBranch._id)
-        : (feedbackForm.branchId ? Number(feedbackForm.branchId) || feedbackForm.branchId : null);
+        : (feedbackForm.branchId && feedbackForm.branchId !== "general"
+            ? Number(feedbackForm.branchId) || feedbackForm.branchId
+            : null);
 
       const finalBranchName = selectedBranch
         ? selectedBranch.name
-        : (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery"
+        : (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery" && feedbackForm.branchId !== "general"
             ? feedbackForm.branchName
             : "General / Online Delivery");
 
