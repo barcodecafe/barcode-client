@@ -57,13 +57,10 @@ export const TermsOfService = () => {
       {/* 🎯 Exact full-width site-container aligning directly with Navbar */}
       <div className="site-container space-y-4">
         {/* Compact Header */}
-        <div className="text-center space-y-1">
+        <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
             {data.title || "Terms of Service"}
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-            Last updated: {data.lastUpdated || "August 2026"}
-          </p>
         </div>
 
         {/* Content Section (Square / Rectangle rounded-none) */}

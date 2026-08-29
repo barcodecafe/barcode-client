@@ -57,13 +57,10 @@ export const PrivacyPolicy = () => {
       {/* 🎯 Global site-container ব্যবহার করা হয়েছে যা index.css থেকে অটোমেটিক ২xl, ৩xl, ৪xl স্ক্রিনে স্কেল হবে */}
       <div className="site-container space-y-4">
         {/* Compact Header */}
-        <div className="text-center space-y-1">
+        <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-neutral-900 dark:text-white">
             {data.title || "Privacy Policy"}
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-            Last updated: {data.lastUpdated || "August 2026"}
-          </p>
         </div>
 
         {/* Content Card (Square / Rectangle rounded-none) */}
