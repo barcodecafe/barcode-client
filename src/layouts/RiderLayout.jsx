@@ -385,40 +385,51 @@ export const RiderLayout = () => {
       <AnimatePresence>
         {toastNotification && (
           <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white dark:bg-neutral-900 border-2 border-rose-500 shadow-2xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer"
+            className="fixed top-4 right-4 z-[9999] max-w-lg w-full bg-white/95 dark:bg-neutral-900/95 border border-primary-500/25 border-l-4 border-l-primary-500 shadow-xl shadow-neutral-900/10 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 backdrop-blur-md cursor-pointer transition-all hover:scale-[1.01]"
             onClick={() => {
               navigate("/rider/orders");
               setToastNotification(null);
             }}
           >
-            <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl shrink-0 animate-bounce">
-              <ToastIcon className="w-6 h-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <h4 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                  🚴 New Delivery Assigned!
-                </h4>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setToastNotification(null);
-                  }}
-                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white p-1 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-base shrink-0">🚴</span>
+              <div className="min-w-0 flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                <span className="text-xs font-black text-primary-600 dark:text-primary-500 whitespace-nowrap">
+                  New Delivery:
+                </span>
+                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">
+                  #{toastNotification.id ? String(toastNotification.id).slice(-6) : 'Order'} • {toastNotification.customer}
+                  {toastNotification.total ? ` (৳${toastNotification.total})` : ''}
+                </span>
               </div>
-              <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
-                Order ID: #{toastNotification.id}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Customer: {toastNotification.customer}
-                {toastNotification.total ? ` • ৳${toastNotification.total}` : ""}
-              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/rider/orders");
+                  setToastNotification(null);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setToastNotification(null);
+                }}
+                className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </motion.div>
         )}
