@@ -612,8 +612,18 @@ export const Profile = () => {
 
   const handleRateExperience = (ord) => {
     setActiveSection("reviews");
-    const bId = ord.branchId || ord.branch?._id || ord.branch || "";
-    const bName = ord.branchName || ord.branch?.name || "General / Online Delivery";
+    const bId =
+      ord.pickupBranchId ||
+      ord.branchId ||
+      ord.branch?.id ||
+      ord.branch?._id ||
+      ord.branch ||
+      "";
+    const bName =
+      ord.pickupBranchName ||
+      ord.branchName ||
+      ord.branch?.name ||
+      "General / Online Delivery";
     setFeedbackForm((prev) => ({
       ...prev,
       branchId: bId,
@@ -621,7 +631,7 @@ export const Profile = () => {
     }));
     setSearchParams({
       tab: "reviews",
-      ...(bId ? { branchId: bId } : {}),
+      ...(bId ? { branchId: String(bId) } : {}),
       ...(bName ? { branchName: bName } : {}),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2067,12 +2077,15 @@ export const Profile = () => {
                     <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <select
                       value={feedbackForm.branchId}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const matched = branches.find((b) => String(b.id || b._id) === String(val));
                         setFeedbackForm((prev) => ({
                           ...prev,
-                          branchId: e.target.value,
-                        }))
-                      }
+                          branchId: val,
+                          branchName: matched ? matched.name : "General / Online Delivery",
+                        }));
+                      }}
                       className={`${inputClass} pl-10`}
                     >
                       <option value="">General / Online Delivery</option>
