@@ -609,19 +609,31 @@ export const AdminCustomers = () => {
       {/* Main Customers Table */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-4 lg:p-4.5 shadow-xs w-full overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left table-auto">
+          <table className="w-full text-left table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[14%] sm:w-[13%]" />
+              <col className="w-[8%] sm:w-[8%]" />
+              <col className="w-[12%] sm:w-[11%]" />
+              <col className="w-[9%] sm:w-[9%]" />
+              <col className="w-[5%] sm:w-[5%]" />
+              <col className="w-[14%] sm:w-[15%]" />
+              <col className="w-[12%] sm:w-[11%]" />
+              <col className="w-[8%] sm:w-[8%]" />
+              <col className="w-[8%] sm:w-[8%]" />
+              <col className="w-[10%] sm:w-[12%]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 text-[9.5px] sm:text-[10px] xl:text-[11px]">
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Membership ID</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Tier</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Full Name</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">Total Spent</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center whitespace-nowrap">Orders</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Email</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap">Phone</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Pick Area</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">Date</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">Actions</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Membership ID</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Tier Badge</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Full Name</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap truncate">Total Spent</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center whitespace-nowrap truncate">Orders</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Email Address</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Phone Number</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Pick Area</th>
+                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Signup Date</th>
+                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap truncate">Actions</th>
               </tr>
             </thead>
             <tbody className="text-[11px] xl:text-xs">
@@ -640,65 +652,71 @@ export const AdminCustomers = () => {
 
                   return (
                     <tr key={c.id || c._id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors">
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold font-mono whitespace-nowrap text-[10px] xl:text-xs">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold font-mono text-[10px] xl:text-xs overflow-hidden">
                         <button
                           onClick={() => copyToClipboard(mId)}
-                          className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer"
+                          className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer max-w-full"
                           title="Click to copy Membership ID"
                         >
-                          <span>{mId}</span>
+                          <span className="truncate">{mId}</span>
                           {copiedId === mId ? (
-                            <Check className="w-3 h-3 text-emerald-500" />
+                            <Check className="w-3 h-3 text-emerald-500 shrink-0" />
                           ) : (
-                            <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 text-neutral-400 transition-opacity" />
+                            <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 text-neutral-400 transition-opacity shrink-0" />
                           )}
                         </button>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] xl:text-[10px] font-bold border ${tier.color}`}>
-                          <span>{tier.icon}</span>
-                          <span>{tier.badge}</span>
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 overflow-hidden">
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] xl:text-[10px] font-bold border truncate max-w-full ${tier.color}`}>
+                          <span className="shrink-0">{tier.icon}</span>
+                          <span className="truncate">{tier.badge}</span>
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          {isTop && <span aria-hidden title={`Top customer #${idx + 1}`}>{MEDAL[idx]}</span>}
-                          <span className="truncate max-w-[90px] sm:max-w-[110px] xl:max-w-none">{c.name}</span>
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold text-neutral-800 dark:text-neutral-100 overflow-hidden">
+                        <span className="inline-flex items-center gap-1 max-w-full" title={c.name}>
+                          {isTop && <span aria-hidden title={`Top customer #${idx + 1}`} className="shrink-0">{MEDAL[idx]}</span>}
+                          <span className="truncate">{c.name}</span>
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100 whitespace-nowrap text-[11px] xl:text-xs">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100 text-[11px] xl:text-xs overflow-hidden truncate">
                         {s.totalSpent > 0 ? taka(s.totalSpent) : <span className="text-neutral-400 font-normal">৳0.00</span>}
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center font-semibold text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center font-semibold text-neutral-600 dark:text-neutral-300 overflow-hidden truncate">
                         {s.orderCount || 0}
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-neutral-600 dark:text-neutral-355 max-w-[85px] sm:max-w-[110px] xl:max-w-[160px] 2xl:max-w-none truncate text-[10px] xl:text-xs" title={c.email}>
-                        {c.email}
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-neutral-600 dark:text-neutral-355 text-[10px] xl:text-xs overflow-hidden">
+                        <span className="truncate block" title={c.email}>
+                          {c.email || '—'}
+                        </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-200 whitespace-nowrap text-[10px] xl:text-xs">
-                        {c.phone || <span className="text-neutral-450 font-light italic">Not Set</span>}
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-200 text-[10px] xl:text-xs overflow-hidden">
+                        <span className="truncate block" title={c.phone}>
+                          {c.phone || <span className="text-neutral-450 font-light italic">Not Set</span>}
+                        </span>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 font-semibold text-primary-500 whitespace-nowrap text-[10px] xl:text-xs">
-                        {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 font-semibold text-primary-500 text-[10px] xl:text-xs overflow-hidden">
+                        <span className="truncate block" title={c.pickArea}>
+                          {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
+                        </span>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-neutral-450 dark:text-neutral-500 font-light whitespace-nowrap text-[9.5px] xl:text-[11px]">
+                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-neutral-450 dark:text-neutral-500 font-light text-[9.5px] xl:text-[11px] overflow-hidden truncate">
                         {new Date(c.createdAt || Date.now()).toLocaleDateString()}
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap">
+                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right overflow-hidden">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-2xs cursor-pointer"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
                             title="Edit Customer Details & Reset Password"
                           >
-                            <Edit2 className="w-3 h-3 text-primary-500" /> Edit
+                            <Edit2 className="w-3 h-3 text-primary-500 shrink-0" /> Edit
                           </button>
                           <button
                             onClick={() => setActiveCardUser(c)}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-sm cursor-pointer"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                             title="Generate & View Membership Card"
                           >
-                            <CreditCard className="w-3 h-3" /> Card
+                            <CreditCard className="w-3 h-3 shrink-0" /> Card
                           </button>
                         </div>
                       </td>
