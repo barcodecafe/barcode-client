@@ -153,9 +153,9 @@ export const About = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100/60 dark:bg-primary-950/40 backdrop-blur-sm shadow-xs"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-primary-100/60 dark:bg-primary-950/40 backdrop-blur-sm shadow-none"
                 >
-                  <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-none bg-primary-500 animate-pulse" />
                   <span className="text-primary-700 dark:text-primary-400 font-semibold uppercase tracking-widest text-[10px] sm:text-xs">
                     {heroBadge}
                   </span>
@@ -222,7 +222,7 @@ export const About = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="relative grid grid-cols-12 gap-3 sm:gap-3.5 items-center max-w-[480px] mx-auto lg:mr-0 pb-3"
               >
-                <div className="col-span-7 row-span-12 relative z-10 group overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300">
+                <div className="col-span-7 row-span-12 relative z-10 group overflow-hidden rounded-none shadow-none hover:shadow-2xl transition-all duration-300">
                   <img
                     src={heroImageMain}
                     alt="Signature Premium Dish"
@@ -230,14 +230,14 @@ export const About = () => {
                   />
                 </div>
                 <div className="col-span-5 space-y-3 sm:space-y-3.5 self-center">
-                  <div className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 group">
+                  <div className="overflow-hidden rounded-none shadow-none hover:shadow-2xl transition-all duration-300 group">
                     <img
                       src={heroImageSecondary1}
                       alt="Restaurant Live Ambiance"
                       className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
-                  <div className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 group">
+                  <div className="overflow-hidden rounded-none shadow-none hover:shadow-2xl transition-all duration-300 group">
                     <img
                       src={heroImageSecondary2}
                       alt="Master chef plating professional dish"
@@ -248,8 +248,8 @@ export const About = () => {
 
                 {/* Floating Group Network Badge */}
                 {(heroNetworkBadgeTitle || heroNetworkBadgeSubtitle) && (
-                  <div className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md absolute -bottom-2 left-2 sm:left-4 lg:-left-4 p-3 sm:p-3.5 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2.5 z-20">
-                    <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                  <div className="bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md absolute -bottom-2 left-2 sm:left-4 lg:-left-4 p-3 sm:p-3.5 rounded-none shadow-none hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2.5 z-20">
+                    <div className="w-8 h-8 rounded-none bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
                       </svg>
@@ -283,15 +283,15 @@ export const About = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="relative bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md p-6 sm:p-8 md:p-9 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300"
+          className="relative bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md p-6 sm:p-8 md:p-9 rounded-none shadow-none hover:shadow-2xl transition-all duration-300"
         >
           {/* Top-Right Floated Photo (Exact Magazine Layout) */}
           <div className="float-none sm:float-right w-full sm:w-[44%] md:w-[40%] sm:ml-8 sm:mb-4 mb-5">
-            <div className="shadow-md hover:shadow-xl hover:scale-[1.015] transition-all duration-300 bg-neutral-900 rounded-xl overflow-hidden group">
+            <div className="shadow-none hover:shadow-2xl hover:scale-[1.015] transition-all duration-300 bg-neutral-900 rounded-none overflow-hidden group">
               <img
                 src={storyImage}
                 alt="Monjurul Hoque - Founder, Barcode Restaurant Group"
-                className="w-full aspect-[4/3] object-cover block group-hover:scale-105 transition-transform duration-500"
+                className="w-full aspect-[4/3] object-cover block group-hover:scale-105 transition-transform duration-500 rounded-none"
               />
             </div>
           </div>
@@ -371,17 +371,17 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="p-6 sm:p-7 rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-md hover:shadow-xl hover:scale-[1.015] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+              className="p-6 sm:p-7 rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md shadow-none hover:shadow-2xl hover:scale-[1.015] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
             >
-              {/* Background Ambient Glow */}
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
+              {/* Background Ambient Glow on Hover */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-transparent group-hover:bg-primary-500/10 blur-3xl -z-10 transition-colors" />
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-xs">
+                  <div className="w-11 h-11 rounded-none bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-none">
                     <Eye className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-none">
                     Long-term Inspiration
                   </span>
                 </div>
@@ -398,7 +398,7 @@ export const About = () => {
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+              <div className="mt-5 pt-3 border-t border-neutral-200/50 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
                 <span className="flex items-center gap-1.5 text-primary-500 font-semibold text-xs">
                   <Sparkles className="w-3.5 h-3.5" />
                   Inspiring enduring dining memories
@@ -413,17 +413,17 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-6 sm:p-7 rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-md hover:shadow-xl hover:scale-[1.015] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+              className="p-6 sm:p-7 rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md shadow-none hover:shadow-2xl hover:scale-[1.015] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
             >
-              {/* Background Ambient Glow */}
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/5 rounded-full blur-3xl -z-10 group-hover:bg-primary-500/10 transition-colors" />
+              {/* Background Ambient Glow on Hover */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-transparent group-hover:bg-primary-500/10 blur-3xl -z-10 transition-colors" />
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-xs">
+                  <div className="w-11 h-11 rounded-none bg-primary-500/10 flex items-center justify-center text-primary-500 shadow-none">
                     <Target className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-none">
                     Daily Commitment
                   </span>
                 </div>
@@ -446,9 +446,9 @@ export const About = () => {
                   ].map((point, idx) => (
                     <div
                       key={idx}
-                      className="p-2.5 rounded-xl bg-neutral-50/90 dark:bg-neutral-800/60 shadow-2xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-2.5"
+                      className="p-2.5 rounded-none bg-transparent hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80 shadow-none hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-2.5"
                     >
-                      <div className="w-4 h-4 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-4 h-4 rounded-none bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0 mt-0.5">
                         <CheckCircle2 className="w-3 h-3" />
                       </div>
                       <p className="text-xs sm:text-[13px] text-neutral-600 dark:text-neutral-300 font-light leading-relaxed">
@@ -459,7 +459,7 @@ export const About = () => {
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+              <div className="mt-5 pt-3 border-t border-neutral-200/50 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
                 <span className="flex items-center gap-1.5 text-primary-500 font-semibold text-xs">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Consistent across every outlet
@@ -475,11 +475,11 @@ export const About = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="p-6 sm:p-7 rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-md hover:shadow-xl transition-all duration-300 space-y-4"
+            className="p-6 sm:p-7 rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md shadow-none hover:shadow-2xl transition-all duration-300 space-y-4"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-neutral-200/50 dark:border-neutral-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                <div className="w-8 h-8 rounded-none bg-primary-500/10 flex items-center justify-center text-primary-500">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
@@ -491,7 +491,7 @@ export const About = () => {
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+              <span className="text-[10px] sm:text-[11px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-none self-start sm:self-auto">
                 8 Core Pillars
               </span>
             </div>
@@ -511,10 +511,10 @@ export const About = () => {
                 return (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-xl bg-neutral-50/90 dark:bg-neutral-800/60 shadow-2xs hover:shadow-lg hover:scale-[1.03] hover:-translate-y-0.5 transition-all duration-300 group flex flex-col justify-between"
+                    className="p-3.5 rounded-none bg-transparent hover:bg-white dark:hover:bg-neutral-900 shadow-none hover:shadow-xl hover:scale-[1.03] hover:-translate-y-0.5 transition-all duration-300 group flex flex-col justify-between"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-7 h-7 rounded-lg bg-primary-500/10 group-hover:bg-primary-500 text-primary-500 group-hover:text-white flex items-center justify-center transition-all duration-300">
+                      <div className="w-7 h-7 rounded-none bg-primary-500/10 group-hover:bg-primary-500 text-primary-500 group-hover:text-white flex items-center justify-center transition-all duration-300">
                         <IconComponent className="w-3.5 h-3.5" />
                       </div>
                       <span className="text-[10px] font-mono font-bold text-neutral-400">
@@ -536,7 +536,7 @@ export const About = () => {
           </motion.div>
 
           {/* Quick stats strip */}
-          <div className="grid grid-cols-3 gap-3 p-4 sm:p-5 rounded-2xl bg-neutral-900 text-center shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+          <div className="grid grid-cols-3 gap-3 p-4 sm:p-5 rounded-none bg-neutral-900 text-center shadow-none hover:shadow-2xl hover:scale-[1.01] transition-all duration-300">
             <div>
               <div className="font-display text-lg sm:text-2xl font-extrabold text-primary-400">{stats.founded}</div>
               <div className="text-neutral-400 text-[9px] sm:text-xs font-semibold uppercase tracking-wider mt-0.5">
@@ -583,17 +583,17 @@ export const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: idx * 0.08 }}
-              className="group rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full"
+              className="group rounded-none bg-transparent hover:bg-white/95 dark:hover:bg-neutral-900/95 backdrop-blur-md overflow-hidden shadow-none hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 max-w-sm w-full"
             >
-              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-none">
                 {person.image ? (
                   <img
                     src={person.image}
                     alt={person.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                  <div className="w-full h-full flex items-center justify-center text-neutral-400 rounded-none">
                     <UtensilsCrossed className="w-12 h-12 opacity-30" />
                   </div>
                 )}
