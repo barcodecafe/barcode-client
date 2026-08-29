@@ -410,17 +410,15 @@ export const BrandBranchDetail = () => {
             </h1>
           </motion.div>
 
-          {branch.rating && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
-            >
-              <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
-              <span>{branch.rating} Rating</span>
-            </motion.div>
-          )}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold w-fit shadow-xs"
+          >
+            <Star className="w-4 h-4 fill-primary-500 stroke-primary-500" />
+            <span>{branch.rating && branch.rating > 0 ? `${branch.rating} Rating` : "New Branch"}</span>
+          </motion.div>
         </div>
       </section>
 

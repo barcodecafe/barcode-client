@@ -976,18 +976,12 @@ export const AdminBranches = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
                       <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1.5">
-                        Base Rating (1-5)
+                        Customer Rating (Live Verified)
                       </label>
-                      <input
-                        type="number"
-                        name="rating"
-                        min="1"
-                        max="5"
-                        step="0.1"
-                        value={formData.rating}
-                        onChange={handleInputChange}
-                        className={field}
-                      />
+                      <div className="flex items-center gap-2 h-10 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800/60 text-neutral-700 dark:text-neutral-300 text-xs font-semibold">
+                        <Star className="w-4 h-4 text-primary-500 fill-primary-500 shrink-0" />
+                        <span>{formData.rating && formData.rating > 0 ? `${formData.rating} / 5.0 (Live Customer Score)` : "New Branch (0 Reviews)"}</span>
+                      </div>
                     </div>
 
                     <div>
