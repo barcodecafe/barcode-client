@@ -72,14 +72,14 @@ export const StarRatingInput = ({
               {/* Filled Star Overlay (Full or Half) */}
               {isFull && (
                 <Star
-                  className={`${starSizeClass} fill-amber-400 text-amber-400 absolute inset-0.5 drop-shadow-xs transition-all`}
+                  className={`${starSizeClass} fill-primary-500 text-primary-500 absolute inset-0.5 drop-shadow-xs transition-all`}
                 />
               )}
 
               {isHalf && (
                 <div className="absolute inset-0.5 overflow-hidden w-[50%] pointer-events-none">
                   <Star
-                    className={`${starSizeClass} fill-amber-400 text-amber-400 drop-shadow-xs`}
+                    className={`${starSizeClass} fill-primary-500 text-primary-500 drop-shadow-xs`}
                   />
                 </div>
               )}
@@ -109,7 +109,7 @@ export const StarRatingInput = ({
       {/* Label and Badge */}
       {showLabel && activeRating > 0 && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-black font-display tracking-wide">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 text-xs font-black font-display tracking-wide">
             <Star className="w-3.5 h-3.5 fill-current" />
             {Number(activeRating).toFixed(1)} / 5.0
           </span>

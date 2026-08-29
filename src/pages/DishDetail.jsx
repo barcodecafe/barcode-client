@@ -550,7 +550,7 @@ export const DishDetail = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-sm font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-none">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-primary-500 bg-primary-50 dark:bg-primary-950/40 px-2.5 py-1 rounded-none">
                   <Star className="w-4 h-4 fill-current" />
                   <span>{reviewsData?.averageRating ? Number(reviewsData.averageRating).toFixed(1) : (food?.rating || 4.5)}</span>
                   {reviewsData?.totalReviews > 0 && (
@@ -832,7 +832,7 @@ export const DishDetail = () => {
                 {reviewsData.averageRating ? Number(reviewsData.averageRating).toFixed(1) : "4.5"}
               </span>
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1 text-amber-500">
+                <div className="flex items-center gap-1 text-primary-500">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
@@ -860,11 +860,11 @@ export const DishDetail = () => {
                 return (
                   <div key={star} className="flex items-center gap-2 text-xs text-neutral-500">
                     <span className="w-6 font-bold flex items-center gap-0.5 shrink-0">
-                      {star} <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      {star} <Star className="w-3 h-3 fill-primary-500 text-primary-500" />
                     </span>
                     <div className="flex-1 h-2 bg-neutral-100 dark:bg-neutral-800 rounded-none overflow-hidden">
                       <div
-                        className="h-full bg-amber-500 transition-all duration-500"
+                        className="h-full bg-primary-500 transition-all duration-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -985,7 +985,7 @@ export const DishDetail = () => {
                           {rev.userName || "Customer"}
                         </h4>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <div className="flex items-center text-amber-500">
+                          <div className="flex items-center text-primary-500">
                             {[1, 2, 3, 4, 5].map((s) => {
                               const isFull = s <= revRating;
                               const isHalf = !isFull && s - 0.5 <= revRating;
@@ -993,10 +993,10 @@ export const DishDetail = () => {
                                 <div key={s} className="relative inline-block w-3.5 h-3.5">
                                   <Star className="w-3.5 h-3.5 text-neutral-200 dark:text-neutral-700" />
                                   {isFull ? (
-                                    <Star className="w-3.5 h-3.5 fill-current text-amber-500 absolute inset-0" />
+                                    <Star className="w-3.5 h-3.5 fill-current text-primary-500 absolute inset-0" />
                                   ) : isHalf ? (
                                     <div className="absolute inset-0 overflow-hidden w-1/2">
-                                      <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
+                                      <Star className="w-3.5 h-3.5 fill-current text-primary-500" />
                                     </div>
                                   ) : null}
                                 </div>
