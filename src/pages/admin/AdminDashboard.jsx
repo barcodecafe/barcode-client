@@ -22,7 +22,9 @@ import { ChartCard } from '../../components/admin/charts/ChartCard';
 import { BarChart } from '../../components/admin/charts/BarChart';
 import { PieChart } from '../../components/admin/charts/PieChart';
 import { LineChart } from '../../components/admin/charts/LineChart';
-import { RankingBarChart } from '../../components/admin/charts/RankingBarChart';
+import { RadialBarChart } from '../../components/admin/charts/RadialBarChart';
+import { TreemapChart } from '../../components/admin/charts/TreemapChart';
+import { RadarChart } from '../../components/admin/charts/RadarChart';
 import { ExportSalesModal } from '../../components/ExportSalesModal';
 import { getAllOrders } from '../../services/ordersService';
 
@@ -415,74 +417,71 @@ export const AdminDashboard = () => {
           </ChartCard>
         )}
 
-        {/* Card 4: Top Selling Dishes */}
+        {/* Card 4: Top Selling Dishes (Radial Bar Chart / Concentric Rings) */}
         {(expandedCard === null || expandedCard === 'dishes') && (
           <ChartCard
             title="Top Selling Dishes"
-            subtitle={expandedCard === 'dishes' ? "Complete menu dishes sales ranking" : "Ranked by total order volume"}
+            subtitle={expandedCard === 'dishes' ? "Concentric order volume rings" : "Radial order distribution"}
             className={expandedCard === 'dishes' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'dishes'}
             onToggleExpand={() => toggleExpand('dishes')}
             action={
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/10 text-primary-600 dark:text-primary-400 text-xs font-black">
                 <Flame className="w-3.5 h-3.5" />
-                <span>{topDishes.length} Dishes</span>
+                <span>Radial Chart</span>
               </div>
             }
           >
-            <RankingBarChart
+            <RadialBarChart
               items={topDishes}
-              type="dishes"
-              maxItems={expandedCard === 'dishes' ? 12 : 5}
+              maxItems={expandedCard === 'dishes' ? 8 : 5}
               emptyMessage="No dish orders recorded yet"
             />
           </ChartCard>
         )}
 
-        {/* Card 5: Top Valued Customers */}
+        {/* Card 5: Top Valued Customers (Treemap Chart / Weighted Mosaic) */}
         {(expandedCard === null || expandedCard === 'customers') && (
           <ChartCard
             title="Top Valued Customers"
-            subtitle={expandedCard === 'customers' ? "Complete customer spending ranking" : "Ranked by total lifetime spend"}
+            subtitle={expandedCard === 'customers' ? "VIP revenue contribution mosaic" : "Customer spend treemap"}
             className={expandedCard === 'customers' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'customers'}
             onToggleExpand={() => toggleExpand('customers')}
             action={
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black">
                 <User className="w-3.5 h-3.5" />
-                <span>{topCustomers.length} Customers</span>
+                <span>Treemap</span>
               </div>
             }
           >
-            <RankingBarChart
+            <TreemapChart
               items={topCustomers}
-              type="customers"
-              maxItems={expandedCard === 'customers' ? 12 : 5}
+              maxItems={expandedCard === 'customers' ? 8 : 5}
               valueFormatter={currency}
               emptyMessage="No customer spending recorded yet"
             />
           </ChartCard>
         )}
 
-        {/* Card 6: Top Delivery Riders */}
+        {/* Card 6: Top Delivery Riders (Radar / Spider Chart) */}
         {(expandedCard === null || expandedCard === 'riders') && (
           <ChartCard
             title="Top Delivery Riders"
-            subtitle={expandedCard === 'riders' ? "Complete delivery fleet performance" : "Ranked by completed delivery trips"}
+            subtitle={expandedCard === 'riders' ? "Multi-axis performance web" : "Rider efficiency spider web"}
             className={expandedCard === 'riders' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'riders'}
             onToggleExpand={() => toggleExpand('riders')}
             action={
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-black">
                 <Bike className="w-3.5 h-3.5" />
-                <span>{topRiders.length} Riders</span>
+                <span>Radar Chart</span>
               </div>
             }
           >
-            <RankingBarChart
+            <RadarChart
               items={topRiders}
-              type="riders"
-              maxItems={expandedCard === 'riders' ? 12 : 5}
+              maxItems={expandedCard === 'riders' ? 5 : 3}
               valueFormatter={currency}
               emptyMessage="No rider trips recorded yet"
             />
