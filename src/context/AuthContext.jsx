@@ -182,16 +182,29 @@ export const AuthProvider = ({ children }) => {
     refreshSocketAuth();
   }, []);
 
+  const userRole = String(user?.role || '').toLowerCase();
+  const isSuperAdmin = ['super_admin', 'superadmin'].includes(userRole);
+  const isAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(userRole);
+
+  const hasPermission = useCallback(
+    (permKey) => {
+      if (!user) return false;
+      const role = String(user?.role || '').toLowerCase();
+      // Super Admin has all permissions
+      if (['super_admin', 'superadmin'].includes(role)) return true;
+      if (!permKey) return true;
+      return Array.isArray(user?.permissions) && user.permissions.includes(permKey);
+    },
+    [user],
+  );
+
   const value = {
     user,
     isAuthenticated: Boolean(user),
     isRegistered,
-    // Matches the server's admin role set (auth.ts ADMIN_ROLES). A strict
-    // === 'admin' check locked a super_admin out of /admin entirely, even
-    // though the API would have authorised every request they made.
-    isAdmin: ['admin', 'super_admin', 'superadmin'].includes(
-      String(user?.role || '').toLowerCase(),
-    ),
+    isAdmin,
+    isSuperAdmin,
+    hasPermission,
     isAuthLoaded: isLoaded,
     login,
     register,

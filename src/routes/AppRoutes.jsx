@@ -58,6 +58,7 @@ const AdminSettings = lazy(() => import('../pages/admin/AdminSettings').then((m)
 const AdminRidersFleet = lazy(() => import('../pages/admin/AdminRidersFleet'));
 const AdminAddRider = lazy(() => import('../pages/admin/AdminAddRider'));
 const AdminFreeDelivery = lazy(() => import('../pages/admin/AdminFreeDelivery'));
+const AdminStaff = lazy(() => import('../pages/admin/AdminStaff').then((m) => ({ default: m.AdminStaff })));
 
 import { CartProvider } from '../context/CartContext';
 import { BranchProvider } from '../context/BranchContext';
@@ -199,23 +200,24 @@ export const AppRoutes = () => {
                       </ProtectedRoute>
                     }
                   >
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="dishes" element={<AdminDishes />} />
-                    <Route path="brands" element={<AdminBrands />} />
-                    <Route path="regions" element={<AdminRegions />} />
-                    <Route path="branches" element={<AdminBranches />} />
-                    <Route path="orders" element={<AdminOrders />} />
-                    <Route path="fleet-overview" element={<AdminRidersFleet />} />
-                    <Route path="add-rider" element={<AdminAddRider />} />
-                    <Route path="customers" element={<AdminCustomers />} />
-                    <Route path="reviews" element={<AdminReviews />} />
-                    <Route path="coupons" element={<AdminCoupons />} />
-                    <Route path="free-delivery" element={<AdminFreeDelivery />} />
-                    <Route path="hero" element={<AdminHero />} />
-                    <Route path="about" element={<AdminAbout />} />
-                    <Route path="policies" element={<AdminPolicies />} />
-                    <Route path="rider-applications" element={<AdminRiders />} />
-                    <Route path="settings" element={<AdminSettings />} />
+                    <Route index element={<ProtectedRoute permission="dashboard"><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="dishes" element={<ProtectedRoute permission="dishes"><AdminDishes /></ProtectedRoute>} />
+                    <Route path="brands" element={<ProtectedRoute permission="brands"><AdminBrands /></ProtectedRoute>} />
+                    <Route path="regions" element={<ProtectedRoute permission="regions"><AdminRegions /></ProtectedRoute>} />
+                    <Route path="branches" element={<ProtectedRoute permission="branches"><AdminBranches /></ProtectedRoute>} />
+                    <Route path="orders" element={<ProtectedRoute permission="orders"><AdminOrders /></ProtectedRoute>} />
+                    <Route path="fleet-overview" element={<ProtectedRoute permission="fleet"><AdminRidersFleet /></ProtectedRoute>} />
+                    <Route path="add-rider" element={<ProtectedRoute permission="add_rider"><AdminAddRider /></ProtectedRoute>} />
+                    <Route path="customers" element={<ProtectedRoute permission="customers"><AdminCustomers /></ProtectedRoute>} />
+                    <Route path="reviews" element={<ProtectedRoute permission="reviews"><AdminReviews /></ProtectedRoute>} />
+                    <Route path="coupons" element={<ProtectedRoute permission="coupons"><AdminCoupons /></ProtectedRoute>} />
+                    <Route path="free-delivery" element={<ProtectedRoute permission="free_delivery"><AdminFreeDelivery /></ProtectedRoute>} />
+                    <Route path="hero" element={<ProtectedRoute permission="hero"><AdminHero /></ProtectedRoute>} />
+                    <Route path="about" element={<ProtectedRoute permission="about"><AdminAbout /></ProtectedRoute>} />
+                    <Route path="policies" element={<ProtectedRoute permission="policies"><AdminPolicies /></ProtectedRoute>} />
+                    <Route path="rider-applications" element={<ProtectedRoute permission="rider_applications"><AdminRiders /></ProtectedRoute>} />
+                    <Route path="settings" element={<ProtectedRoute permission="settings"><AdminSettings /></ProtectedRoute>} />
+                    <Route path="staff" element={<ProtectedRoute permission="staff_management"><AdminStaff /></ProtectedRoute>} />
                   </Route>
                 </Routes>
               </Suspense>

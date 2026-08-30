@@ -13,8 +13,14 @@ import { useAuth } from '../context/AuthContext';
 //   3. Authenticated but not an admin → friendly "access restricted" screen
 //      instead of a redirect loop or blank page.
 // ---------------------------------------------------------------------------
-export const ProtectedRoute = ({ children, requireAdmin = false, requireRider = false }) => {
-  const { isAuthenticated, isAdmin, user, isAuthLoaded } = useAuth();
+export const ProtectedRoute = ({
+  children,
+  requireAdmin = false,
+  requireSuperAdmin = false,
+  requireRider = false,
+  permission = null,
+}) => {
+  const { isAuthenticated, isAdmin, isSuperAdmin, hasPermission, user, isAuthLoaded } = useAuth();
   const location = useLocation();
 
   if (!isAuthLoaded) {
@@ -27,8 +33,24 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireRider = 
 
   if (!isAuthenticated) {
     // Send visitors to the login that matches the area they were trying to reach.
-    const loginPath = requireAdmin ? '/admin/login' : requireRider ? '/rider/login' : '/login';
+    const loginPath = requireAdmin || requireSuperAdmin ? '/admin/login' : requireRider ? '/rider/login' : '/login';
     return <Navigate to={loginPath} state={{ from: location.pathname + location.search }} replace />;
+  }
+
+  if (requireSuperAdmin && !isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mb-4">
+          <ShieldAlert className="w-7 h-7 text-amber-500" />
+        </div>
+        <h1 className="font-display text-xl font-bold text-neutral-800 dark:text-neutral-100">
+          Super Admin Access Required
+        </h1>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 max-w-sm">
+          This section is strictly reserved for the Super Administrator.
+        </p>
+      </div>
+    );
   }
 
   if (requireAdmin && !isAdmin) {
@@ -41,7 +63,23 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireRider = 
           Access Restricted
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 max-w-sm">
-          This area is reserved for administrators. If you believe this is a mistake, contact the Barcode team.
+          This area is reserved for administrators and authorized staff. If you believe this is a mistake, contact the Barcode team.
+        </p>
+      </div>
+    );
+  }
+
+  if (permission && !hasPermission(permission)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mb-4">
+          <ShieldAlert className="w-7 h-7 text-amber-500" />
+        </div>
+        <h1 className="font-display text-xl font-bold text-neutral-800 dark:text-neutral-100">
+          Module Access Denied
+        </h1>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 max-w-sm">
+          You do not have permission to view or manage this module. Please contact your Super Administrator.
         </p>
       </div>
     );

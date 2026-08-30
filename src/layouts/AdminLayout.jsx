@@ -47,28 +47,36 @@ import resW from '../assets/Barcode_restaurant_groupW.png';
 // ---------------------------------------------------------------------------
 
 const navItems = [
-  { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
-  { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed },
-  { name: 'Brands', path: '/admin/brands', icon: Store },
-  { name: 'Regions', path: '/admin/regions', icon: Map },
-  { name: 'Branches', path: '/admin/branches', icon: Building2 },
-  { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
-  { name: 'Rider Fleet', path: '/admin/fleet-overview', icon: Bike },
-  { name: 'Add Rider', path: '/admin/add-rider', icon: UserPlus },
-  { name: 'Customers', path: '/admin/customers', icon: Users },
-  { name: 'Customer Reviews', path: '/admin/reviews', icon: MessageSquarePlus },
-  { name: 'Coupons', path: '/admin/coupons', icon: Tag },
-  { name: 'Free Delivery', path: '/admin/free-delivery', icon: Truck },
-  { name: 'Hero Carousel', path: '/admin/hero', icon: Image },
-  { name: 'About Info', path: '/admin/about', icon: Info },
-  { name: 'Policies & Terms', path: '/admin/policies', icon: ShieldCheck },
-  { name: 'Rider Applications', path: '/admin/rider-applications', icon: Bike },
-  { name: 'Site Settings', path: '/admin/settings', icon: Settings },
+  { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true, permission: 'dashboard' },
+  { name: 'Orders', path: '/admin/orders', icon: ShoppingBag, permission: 'orders' },
+  { name: 'Dishes', path: '/admin/dishes', icon: UtensilsCrossed, permission: 'dishes' },
+  { name: 'Brands', path: '/admin/brands', icon: Store, permission: 'brands' },
+  { name: 'Regions', path: '/admin/regions', icon: Map, permission: 'regions' },
+  { name: 'Branches', path: '/admin/branches', icon: Building2, permission: 'branches' },
+  { name: 'Rider Fleet', path: '/admin/fleet-overview', icon: Bike, permission: 'fleet' },
+  { name: 'Add Rider', path: '/admin/add-rider', icon: UserPlus, permission: 'add_rider' },
+  { name: 'Customers', path: '/admin/customers', icon: Users, permission: 'customers' },
+  { name: 'Customer Reviews', path: '/admin/reviews', icon: MessageSquarePlus, permission: 'reviews' },
+  { name: 'Coupons', path: '/admin/coupons', icon: Tag, permission: 'coupons' },
+  { name: 'Free Delivery', path: '/admin/free-delivery', icon: Truck, permission: 'free_delivery' },
+  { name: 'Hero Carousel', path: '/admin/hero', icon: Image, permission: 'hero' },
+  { name: 'About Info', path: '/admin/about', icon: Info, permission: 'about' },
+  { name: 'Policies & Terms', path: '/admin/policies', icon: ShieldCheck, permission: 'policies' },
+  { name: 'Rider Applications', path: '/admin/rider-applications', icon: Bike, permission: 'rider_applications' },
+  { name: 'Site Settings', path: '/admin/settings', icon: Settings, permission: 'settings' },
+  { name: 'Staff & Roles', path: '/admin/staff', icon: ShieldCheck, permission: 'staff_management' },
 ];
 
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission, isSuperAdmin } = useAuth();
+
+  const getRoleDisplayTitle = (role) => {
+    if (['super_admin', 'superadmin'].includes(role)) return 'Super Admin';
+    if (role === 'admin') return 'Sub-Admin';
+    if (['manager', 'restaurant_manager'].includes(role)) return 'Restaurant Manager';
+    return 'Staff Administrator';
+  };
   const { settings } = useSettings();
   const { unreadOrderCount, markOrdersAsRead, orders } = useOrders();
   const navigate = useNavigate();
@@ -177,7 +185,9 @@ export const AdminLayout = () => {
       </Link>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
-        {navItems.map((item) => {
+        {navItems
+          .filter((item) => hasPermission(item.permission))
+          .map((item) => {
           const isOrdersRoute = item.path === '/admin/orders';
           const isFleetRoute = item.path === '/admin/fleet-overview';
           return (
@@ -223,7 +233,7 @@ export const AdminLayout = () => {
 
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
         <Link
-          to="/admin"
+          to="/"
           onClick={onNavigate}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500 transition-all duration-200"
         >
@@ -232,7 +242,7 @@ export const AdminLayout = () => {
         </Link>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           Log Out
@@ -287,13 +297,13 @@ export const AdminLayout = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all"
+              className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all cursor-pointer"
               aria-label="Toggle Navigation Menu"
             >
               <MenuIcon className="w-4 h-4" />
             </button>
             <Link
-              to="/admin"
+              to="/"
               className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -316,7 +326,7 @@ export const AdminLayout = () => {
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300"
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 transition-all duration-300 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -328,9 +338,11 @@ export const AdminLayout = () => {
               </div>
               <div className="leading-tight hidden sm:block">
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-                  {user?.name || 'Admin'}
+                  {user?.name || 'Staff User'}
                 </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Administrator</p>
+                <p className="text-[10px] font-bold text-primary-600 dark:text-primary-400">
+                  {getRoleDisplayTitle(user?.role)}
+                </p>
               </div>
             </div>
           </div>
