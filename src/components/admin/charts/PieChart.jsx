@@ -10,10 +10,9 @@ import { motion } from 'framer-motion';
 // complementary neutrals, with a hoverable legend.
 // ---------------------------------------------------------------------------
 
-const SIZE = 200;
-const RADIUS = 80;
-const STROKE = 32;
-const CENTER = SIZE / 2;
+const DEFAULT_SIZE = 170;
+const RADIUS = 68;
+const STROKE = 26;
 
 // Palette walks from primary-500 down through the warm family, then adds
 // a couple of neutral-friendly accents so 6 categories stay distinguishable
@@ -42,8 +41,11 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
 }
 
-export const PieChart = ({ data, valueFormatter = (v) => v }) => {
+export const PieChart = ({ data, valueFormatter = (v) => v, size = DEFAULT_SIZE }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const center = size / 2;
+  const radius = size * 0.4;
+  const stroke = size * 0.15;
 
   const total = useMemo(() => {
     if (!data || data.length === 0) return 0;
@@ -76,25 +78,25 @@ export const PieChart = ({ data, valueFormatter = (v) => v }) => {
     <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
       {/* Donut */}
       <div className="relative shrink-0">
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {total === 0 ? (
             <circle
-              cx={CENTER}
-              cy={CENTER}
-              r={RADIUS}
+              cx={center}
+              cy={center}
+              r={radius}
               fill="none"
               stroke="#e5e7eb"
-              strokeWidth={STROKE}
+              strokeWidth={stroke}
               className="dark:stroke-neutral-800"
             />
           ) : (
             segments.map((seg, i) => (
               <motion.path
                 key={seg.label}
-                d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
+                d={describeArc(center, center, radius, seg.startAngle, seg.endAngle)}
                 fill="none"
                 stroke={seg.color}
-                strokeWidth={hoveredIndex === i ? STROKE + 4 : STROKE}
+                strokeWidth={hoveredIndex === i ? stroke + 4 : stroke}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
                 transition={{ duration: 0.6, delay: i * 0.08, ease: 'easeOut' }}

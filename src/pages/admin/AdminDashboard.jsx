@@ -55,8 +55,7 @@ export const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Layout & interactive controls state (Must be declared before any conditional return)
-  const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'performers' | null
-  const [activePerformerTab, setActivePerformerTab] = useState('dishes'); // 'dishes' | 'customers' | 'riders'
+  const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'dishes' | 'customers' | 'riders' | null
   const [trendMonths, setTrendMonths] = useState(12);
 
   const toggleExpand = (cardKey) => {
@@ -133,29 +132,22 @@ export const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Charts Row 1 Skeleton */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6">
-          <div className="xl:col-span-3 h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
-            <div className="space-y-1">
-              <div className="w-40 h-5 bg-neutral-200 dark:bg-neutral-700 rounded" />
-              <div className="w-56 h-3 bg-neutral-100 dark:bg-neutral-800 rounded" />
+        {/* Charts Skeleton: 2 Rows x 3 Columns (6 Cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {[...Array(6)].map((_, j) => (
+            <div
+              key={j}
+              className="h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between"
+            >
+              <div className="space-y-1.5">
+                <div className="w-36 h-5 bg-neutral-200 dark:bg-neutral-700 rounded-lg" />
+                <div className="w-48 h-3 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
+              </div>
+              <div className="h-44 w-full bg-neutral-50 dark:bg-neutral-850 rounded-2xl flex items-center justify-center p-4">
+                <div className="w-full h-full bg-neutral-200/50 dark:bg-neutral-800/50 rounded-xl" />
+              </div>
             </div>
-            <div className="h-48 w-full bg-neutral-50 dark:bg-neutral-850 rounded-xl flex items-end justify-around p-4 gap-2">
-              {[...Array(8)].map((_, j) => (
-                <div key={j} className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-t" style={{ height: `${30 + (j * 15) % 60}%` }} />
-              ))}
-            </div>
-          </div>
-
-          <div className="xl:col-span-2 h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
-            <div className="space-y-1">
-              <div className="w-36 h-5 bg-neutral-200 dark:bg-neutral-700 rounded" />
-              <div className="w-48 h-3 bg-neutral-100 dark:bg-neutral-800 rounded" />
-            </div>
-            <div className="h-44 w-44 rounded-full border-8 border-neutral-100 dark:border-neutral-800 mx-auto my-auto flex items-center justify-center">
-              <div className="w-20 h-20 rounded-full bg-neutral-50 dark:bg-neutral-850" />
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     );
@@ -211,7 +203,7 @@ export const AdminDashboard = () => {
               onClick={() => setExpandedCard(null)}
               className="px-3 py-2 rounded-2xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
             >
-              Reset to 2-Row Grid
+              Reset to 6-Card Grid
             </button>
           )}
 
@@ -258,15 +250,15 @@ export const AdminDashboard = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 🎯 CHARTS ROW 1: Revenue by Branch (Bar) + Category Distribution (Donut)  */}
+      {/* 🎯 CHARTS ROW 1: Branch Revenue (Bar) | Category (Donut) | Trend (Line)    */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
         {/* Card 1: Revenue by Branch */}
         {(expandedCard === null || expandedCard === 'branch') && (
           <ChartCard
             title="Revenue by Branch"
             subtitle={expandedCard === 'branch' ? "Full breakdown across all active branches" : "Top branches this period"}
-            className={expandedCard === 'branch' ? 'col-span-full' : 'xl:col-span-3'}
+            className={expandedCard === 'branch' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'branch'}
             onToggleExpand={() => toggleExpand('branch')}
           >
@@ -274,7 +266,7 @@ export const AdminDashboard = () => {
               data={barData}
               valueFormatter={currency}
               barLabel="Revenue"
-              height={expandedCard === 'branch' ? 340 : 240}
+              height={expandedCard === 'branch' ? 340 : 220}
             />
           </ChartCard>
         )}
@@ -284,25 +276,24 @@ export const AdminDashboard = () => {
           <ChartCard
             title="Orders by Category"
             subtitle="Share of total order volume"
-            className={expandedCard === 'category' ? 'col-span-full' : 'xl:col-span-2'}
+            className={expandedCard === 'category' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'category'}
             onToggleExpand={() => toggleExpand('category')}
           >
-            <PieChart data={pieData} valueFormatter={compactNumber} />
+            <PieChart
+              data={pieData}
+              valueFormatter={compactNumber}
+              size={expandedCard === 'category' ? 220 : 160}
+            />
           </ChartCard>
         )}
-      </div>
 
-      {/* ========================================================================= */}
-      {/* 🎯 CHARTS ROW 2: Revenue Trend (Line) + Top Performers Showcase (Tabbed)   */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6 items-start">
-        {/* Card 3: Revenue Trend */}
+        {/* Card 3: Revenue Growth Trend */}
         {(expandedCard === null || expandedCard === 'trend') && (
           <ChartCard
             title="Revenue Growth Trend"
             subtitle={`Monthly trajectory (${trendMonths} months)`}
-            className={expandedCard === 'trend' ? 'col-span-full' : 'xl:col-span-3'}
+            className={expandedCard === 'trend' ? 'col-span-full' : ''}
             isExpanded={expandedCard === 'trend'}
             onToggleExpand={() => toggleExpand('trend')}
             action={
@@ -339,162 +330,83 @@ export const AdminDashboard = () => {
             />
           </ChartCard>
         )}
+      </div>
 
-        {/* Card 4: Top Performers (Tabbed / Expandable with Visual Bar Charts) */}
-        {(expandedCard === null || expandedCard === 'performers') && (
+      {/* ========================================================================= */}
+      {/* 🎯 CHARTS ROW 2: Top Dishes (Bar) | Top Customers (Bar) | Top Riders (Bar) */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+        {/* Card 4: Top Selling Dishes */}
+        {(expandedCard === null || expandedCard === 'dishes') && (
           <ChartCard
-            title="Top Performers"
-            subtitle={
-              expandedCard === 'performers'
-                ? "Full performance matrix with visual ranking charts"
-                : activePerformerTab === 'dishes'
-                ? "Top selling menu dishes by order volume"
-                : activePerformerTab === 'customers'
-                ? "Top valued customers by total spending"
-                : "Top active riders by completed delivery trips"
-            }
-            className={expandedCard === 'performers' ? 'col-span-full' : 'xl:col-span-2'}
-            isExpanded={expandedCard === 'performers'}
-            onToggleExpand={() => toggleExpand('performers')}
+            title="Top Selling Dishes"
+            subtitle={expandedCard === 'dishes' ? "Complete menu dishes sales ranking" : "Ranked by total order volume"}
+            className={expandedCard === 'dishes' ? 'col-span-full' : ''}
+            isExpanded={expandedCard === 'dishes'}
+            onToggleExpand={() => toggleExpand('dishes')}
             action={
-              expandedCard !== 'performers' && (
-                <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setActivePerformerTab('dishes')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      activePerformerTab === 'dishes'
-                        ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Flame className="w-3.5 h-3.5" />
-                    <span>Dishes</span>
-                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
-                      {topDishes.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePerformerTab('customers')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      activePerformerTab === 'customers'
-                        ? 'bg-white dark:bg-neutral-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Customers</span>
-                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
-                      {topCustomers.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePerformerTab('riders')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      activePerformerTab === 'riders'
-                        ? 'bg-white dark:bg-neutral-900 text-purple-600 dark:text-purple-400 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Bike className="w-3.5 h-3.5" />
-                    <span>Riders</span>
-                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
-                      {topRiders.length}
-                    </span>
-                  </button>
-                </div>
-              )
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/10 text-primary-600 dark:text-primary-400 text-xs font-black">
+                <Flame className="w-3.5 h-3.5" />
+                <span>{topDishes.length} Dishes</span>
+              </div>
             }
           >
-            {/* If Expanded: Show All 3 in a balanced 3-column visual ranking chart grid */}
-            {expandedCard === 'performers' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-                {/* 1. Top Dishes Chart */}
-                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-primary-500 flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5" />
-                      Top Selling Dishes
-                    </h4>
-                    <span className="text-[10px] font-bold text-neutral-400">By Orders</span>
-                  </div>
-                  <RankingBarChart
-                    items={topDishes}
-                    type="dishes"
-                    maxItems={8}
-                    emptyMessage="No dish order data available"
-                  />
-                </div>
+            <RankingBarChart
+              items={topDishes}
+              type="dishes"
+              maxItems={expandedCard === 'dishes' ? 12 : 5}
+              emptyMessage="No dish orders recorded yet"
+            />
+          </ChartCard>
+        )}
 
-                {/* 2. Top Customers Chart */}
-                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      Top Valued Customers
-                    </h4>
-                    <span className="text-[10px] font-bold text-neutral-400">By Total Spend</span>
-                  </div>
-                  <RankingBarChart
-                    items={topCustomers}
-                    type="customers"
-                    maxItems={8}
-                    valueFormatter={currency}
-                    emptyMessage="No customer spending data available"
-                  />
-                </div>
+        {/* Card 5: Top Valued Customers */}
+        {(expandedCard === null || expandedCard === 'customers') && (
+          <ChartCard
+            title="Top Valued Customers"
+            subtitle={expandedCard === 'customers' ? "Complete customer spending ranking" : "Ranked by total lifetime spend"}
+            className={expandedCard === 'customers' ? 'col-span-full' : ''}
+            isExpanded={expandedCard === 'customers'}
+            onToggleExpand={() => toggleExpand('customers')}
+            action={
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black">
+                <User className="w-3.5 h-3.5" />
+                <span>{topCustomers.length} Customers</span>
+              </div>
+            }
+          >
+            <RankingBarChart
+              items={topCustomers}
+              type="customers"
+              maxItems={expandedCard === 'customers' ? 12 : 5}
+              valueFormatter={currency}
+              emptyMessage="No customer spending recorded yet"
+            />
+          </ChartCard>
+        )}
 
-                {/* 3. Top Riders Chart */}
-                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                      <Bike className="w-3.5 h-3.5" />
-                      Top Delivery Riders
-                    </h4>
-                    <span className="text-[10px] font-bold text-neutral-400">By Completed Trips</span>
-                  </div>
-                  <RankingBarChart
-                    items={topRiders}
-                    type="riders"
-                    maxItems={8}
-                    valueFormatter={currency}
-                    emptyMessage="No rider delivery data available"
-                  />
-                </div>
+        {/* Card 6: Top Delivery Riders */}
+        {(expandedCard === null || expandedCard === 'riders') && (
+          <ChartCard
+            title="Top Delivery Riders"
+            subtitle={expandedCard === 'riders' ? "Complete delivery fleet performance" : "Ranked by completed delivery trips"}
+            className={expandedCard === 'riders' ? 'col-span-full' : ''}
+            isExpanded={expandedCard === 'riders'}
+            onToggleExpand={() => toggleExpand('riders')}
+            action={
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-black">
+                <Bike className="w-3.5 h-3.5" />
+                <span>{topRiders.length} Riders</span>
               </div>
-            ) : (
-              /* Standard View: Rich Visual Ranking Bar Chart for Active Tab */
-              <div className="py-1">
-                {activePerformerTab === 'dishes' && (
-                  <RankingBarChart
-                    items={topDishes}
-                    type="dishes"
-                    maxItems={5}
-                    emptyMessage="No dish orders recorded yet"
-                  />
-                )}
-                {activePerformerTab === 'customers' && (
-                  <RankingBarChart
-                    items={topCustomers}
-                    type="customers"
-                    maxItems={5}
-                    valueFormatter={currency}
-                    emptyMessage="No customer spending recorded yet"
-                  />
-                )}
-                {activePerformerTab === 'riders' && (
-                  <RankingBarChart
-                    items={topRiders}
-                    type="riders"
-                    maxItems={5}
-                    valueFormatter={currency}
-                    emptyMessage="No rider trips recorded yet"
-                  />
-                )}
-              </div>
-            )}
+            }
+          >
+            <RankingBarChart
+              items={topRiders}
+              type="riders"
+              maxItems={expandedCard === 'riders' ? 12 : 5}
+              valueFormatter={currency}
+              emptyMessage="No rider trips recorded yet"
+            />
           </ChartCard>
         )}
       </div>
