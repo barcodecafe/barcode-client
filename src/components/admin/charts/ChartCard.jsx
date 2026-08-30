@@ -106,7 +106,14 @@ export const ChartCard = ({
         {children}
       </div>
 
-      {/* 🖱️ Invisible Natural Drag Corner (se-resize) */}
+      {/* ↕️ Bottom Edge Height Resizer (Drag anywhere along bottom border to change height) */}
+      <div
+        onMouseDown={handleCornerMouseDown}
+        title="Drag up or down to resize card height"
+        className="absolute bottom-0 left-0 right-6 h-2 cursor-s-resize select-none z-10 hover:bg-primary-500/10 active:bg-primary-500/20 transition-colors"
+      />
+
+      {/* ↘️ Invisible Natural Drag Corner (se-resize for width & height) */}
       <div
         onMouseDown={handleCornerMouseDown}
         title="Drag corner to resize card size (Height & Width)"
@@ -117,6 +124,7 @@ export const ChartCard = ({
 };
 
 export default ChartCard;
+
 
 
 
