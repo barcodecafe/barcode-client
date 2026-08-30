@@ -16,7 +16,7 @@ const PADDING_X = 16;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 32;
 
-export const LineChart = ({ data, valueFormatter = (v) => v }) => {
+export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const gradientId = useId();
   const svgRef = useRef(null);
@@ -31,7 +31,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v }) => {
     const range = max - min || 1;
 
     const usableWidth = WIDTH - PADDING_X * 2;
-    const usableHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+    const usableHeight = height - PADDING_TOP - PADDING_BOTTOM;
 
     const pts = data.map((d, i) => {
       const x = PADDING_X + (i / (data.length - 1 || 1)) * usableWidth;
@@ -93,10 +93,10 @@ export const LineChart = ({ data, valueFormatter = (v) => v }) => {
 
   return (
     <div className="w-full">
-      <div className="relative w-full" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}>
+      <div className="relative w-full transition-all duration-300" style={{ height: height + 20 }}>
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${WIDTH} ${height}`}
           className="w-full h-full overflow-visible select-none"
           preserveAspectRatio="none"
           onMouseMove={handleMouseMove}
@@ -111,7 +111,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v }) => {
 
           {/* Gridlines */}
           {[0, 0.25, 0.5, 0.75, 1].map((g) => {
-            const y = PADDING_TOP + (HEIGHT - PADDING_TOP - PADDING_BOTTOM) * g;
+            const y = PADDING_TOP + (height - PADDING_TOP - PADDING_BOTTOM) * g;
             return (
               <line
                 key={g}

@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 const CHART_HEIGHT = 240;
 const BAR_GAP = 14;
 
-export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue' }) => {
+export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue', height = 240 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const maxValue = useMemo(() => {
@@ -33,7 +33,7 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
 
   return (
     <div className="w-full">
-      <div className="relative" style={{ height: CHART_HEIGHT + 40 }}>
+      <div className="relative transition-all duration-300" style={{ height: height + 40 }}>
         {/* Gridlines + Y-axis labels */}
         <div className="absolute inset-0 flex flex-col justify-between pb-10">
           {gridLines
