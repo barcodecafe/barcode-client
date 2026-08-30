@@ -519,11 +519,11 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 5: Top Valued Customers (VIP Customer Contribution Chart) */}
+        {/* Card 5: Top Valued Customers (MUI X Tiered Customer Donut Chart) */}
         <ChartCard
           id="customers"
           title="Top Valued Customers"
-          subtitle="VIP revenue contribution"
+          subtitle="VIP revenue contribution breakdown"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -531,37 +531,38 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
               <User className="w-2.5 h-2.5" />
-              <span>VIPs</span>
+              <span>VIP Tiers</span>
             </div>
           }
         >
           <TreemapChart
             items={topCustomers}
-            maxItems={5}
+            maxItems={20}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
         </ChartCard>
 
-        {/* Card 6: Top Delivery Riders (Rider Performance Chart) */}
+        {/* Card 6: Top Delivery Riders (MUI X Multi-Series Comparison Line Chart) */}
         <ChartCard
           id="riders"
           title="Top Delivery Riders"
-          subtitle="Trips, acceptance & earnings"
+          subtitle="Trips vs earnings comparison"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-black">
+            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black">
               <Bike className="w-2.5 h-2.5" />
-              <span>Fleet</span>
+              <span>Multi-Series</span>
             </div>
           }
         >
           <RadarChart
             items={topRiders}
-            maxItems={3}
+            maxItems={15}
+            height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
