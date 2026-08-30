@@ -41,17 +41,17 @@ const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
 const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
 
 const DEFAULT_CARD_SIZES = {
-  branch: { colSpan: 1, height: 210 },
-  category: { colSpan: 1, height: 210 },
-  trend: { colSpan: 1, height: 210 },
-  dishes: { colSpan: 1, height: 210 },
-  customers: { colSpan: 1, height: 210 },
-  riders: { colSpan: 1, height: 210 },
+  branch: { colSpan: 1, height: 175 },
+  category: { colSpan: 1, height: 175 },
+  trend: { colSpan: 1, height: 175 },
+  dishes: { colSpan: 1, height: 175 },
+  customers: { colSpan: 1, height: 175 },
+  riders: { colSpan: 1, height: 175 },
 };
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
 export const AdminDashboard = () => {
@@ -92,9 +92,9 @@ export const AdminDashboard = () => {
   const [globalCardHeight, setGlobalCardHeight] = useState(() => {
     try {
       const saved = localStorage.getItem('admin_dashboard_card_height');
-      return saved ? Number(saved) : 225;
+      return saved ? Number(saved) : 175;
     } catch {
-      return 225;
+      return 175;
     }
   });
 
@@ -109,7 +109,7 @@ export const AdminDashboard = () => {
 
   const handleSetHeightMode = (mode) => {
     setHeightMode(mode);
-    const targetHeight = mode === 'small' ? 225 : 330;
+    const targetHeight = mode === 'small' ? 175 : 270;
     setGlobalCardHeight(targetHeight);
     try {
       localStorage.setItem('admin_dashboard_height_mode', mode);
@@ -259,37 +259,37 @@ export const AdminDashboard = () => {
     .slice(trendMonths === 6 ? -6 : -12)
     .map((t) => ({ label: t.month, value: t.revenue }));
 
-  const cardDensity = globalCardHeight < 250 ? 'compact' : 'normal';
+  const cardDensity = globalCardHeight < 220 ? 'compact' : 'normal';
 
   return (
-    <div className="space-y-5 sm:space-y-6 w-full max-w-full">
+    <div className="space-y-3 sm:space-y-4 w-full max-w-full">
       {/* Header */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeInUp}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
       >
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+          <h1 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
             Dashboard Overview
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             Real-time analytics across {summary?.totalBranches || 0} Barcode branches.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* ↕️ Height Switcher: Show Small / Show Large */}
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
-            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
+          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800/90 p-0.5 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
+            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
               Height:
             </span>
             <button
               type="button"
               onClick={() => handleSetHeightMode('small')}
               title="Show Small (কমপ্যাক্ট হাইট - যাতে সব এক স্ক্রিনে ফিট হয়)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 heightMode === 'small'
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -301,7 +301,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetHeightMode('large')}
               title="Show Large (বড় বিস্তারিত ভিউ)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 heightMode === 'large'
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -312,60 +312,60 @@ export const AdminDashboard = () => {
           </div>
 
           {/* 🔲 Grid Columns Selector (1, 2, 3, 4 Cols) */}
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
-            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
+          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800/90 p-0.5 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
+            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
               Cols:
             </span>
             <button
               type="button"
               onClick={() => handleSetGridCols(1)}
               title="1 Column (Full Width Rows)"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 1
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <Rows3 className="w-3.5 h-3.5" />
+              <Rows3 className="w-3 h-3" />
               <span>1</span>
             </button>
             <button
               type="button"
               onClick={() => handleSetGridCols(2)}
               title="2 Columns Grid"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 2
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <Columns2 className="w-3.5 h-3.5" />
+              <Columns2 className="w-3 h-3" />
               <span>2</span>
             </button>
             <button
               type="button"
               onClick={() => handleSetGridCols(3)}
               title="3 Columns Grid (Standard 3x2)"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 3
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <Columns3 className="w-3.5 h-3.5" />
+              <Columns3 className="w-3 h-3" />
               <span>3</span>
             </button>
             <button
               type="button"
               onClick={() => handleSetGridCols(4)}
               title="4 Columns Grid"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 4
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <Columns4 className="w-3.5 h-3.5" />
+              <Columns4 className="w-3 h-3" />
               <span>4</span>
             </button>
           </div>
@@ -374,9 +374,9 @@ export const AdminDashboard = () => {
             type="button"
             onClick={handleOpenSalesExport}
             disabled={isFetchingOrders}
-            className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-extrabold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{isFetchingOrders ? "Loading..." : "Export Sales"}</span>
             <span className="sm:hidden">Export</span>
           </button>
@@ -384,7 +384,7 @@ export const AdminDashboard = () => {
       </motion.div>
 
       {/* 🎯 Stat Cards: 4 KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3">
         <StatCard
           icon={DollarSign}
           label="Total Revenue" 
@@ -416,7 +416,7 @@ export const AdminDashboard = () => {
       {/* ========================================================================= */}
       {/* 🎯 SYNCHRONIZED EQUAL HEIGHT CHARTS GRID (6 Charts Total)                 */}
       {/* ========================================================================= */}
-      <div className={`grid gap-4 sm:gap-5 items-stretch ${getGridColsClass()}`}>
+      <div className={`grid gap-2.5 sm:gap-3 items-stretch ${getGridColsClass()}`}>
         {/* Card 1: Revenue by Branch (Bar Chart) */}
         <ChartCard
           id="branch"
@@ -431,7 +431,7 @@ export const AdminDashboard = () => {
             data={barData}
             valueFormatter={currency}
             barLabel="Revenue"
-            height={Math.max(105, globalCardHeight - 85)}
+            height={Math.max(90, globalCardHeight - 75)}
           />
         </ChartCard>
 
@@ -448,7 +448,7 @@ export const AdminDashboard = () => {
           <PieChart
             data={pieData}
             valueFormatter={compactNumber}
-            size={globalCardHeight < 250 ? 105 : 135}
+            size={globalCardHeight < 220 ? 95 : 125}
           />
         </ChartCard>
 
@@ -466,7 +466,7 @@ export const AdminDashboard = () => {
               <button
                 type="button"
                 onClick={() => setTrendMonths(6)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition-all cursor-pointer ${
                   trendMonths === 6
                     ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -477,7 +477,7 @@ export const AdminDashboard = () => {
               <button
                 type="button"
                 onClick={() => setTrendMonths(12)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition-all cursor-pointer ${
                   trendMonths === 12
                     ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -491,7 +491,7 @@ export const AdminDashboard = () => {
           <LineChart
             data={lineData}
             valueFormatter={currency}
-            height={Math.max(105, globalCardHeight - 85)}
+            height={Math.max(90, globalCardHeight - 75)}
           />
         </ChartCard>
 
@@ -505,8 +505,8 @@ export const AdminDashboard = () => {
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black">
-              <Flame className="w-3 h-3" />
+            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[9px] font-black">
+              <Flame className="w-2.5 h-2.5" />
               <span>Radial</span>
             </div>
           }
@@ -514,7 +514,7 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={globalCardHeight < 250 ? 110 : 145}
+            size={globalCardHeight < 220 ? 100 : 135}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -529,8 +529,8 @@ export const AdminDashboard = () => {
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black">
-              <User className="w-3 h-3" />
+            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
+              <User className="w-2.5 h-2.5" />
               <span>Treemap</span>
             </div>
           }
@@ -554,8 +554,8 @@ export const AdminDashboard = () => {
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black">
-              <Bike className="w-3 h-3" />
+            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-black">
+              <Bike className="w-2.5 h-2.5" />
               <span>Radar</span>
             </div>
           }
@@ -563,7 +563,7 @@ export const AdminDashboard = () => {
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={globalCardHeight < 250 ? 115 : 155}
+            size={globalCardHeight < 220 ? 105 : 145}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />

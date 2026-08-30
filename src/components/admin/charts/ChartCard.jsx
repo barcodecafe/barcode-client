@@ -75,38 +75,38 @@ export const ChartCard = ({
 
   const paddingClass =
     density === 'compact'
-      ? 'p-3 sm:p-3.5'
+      ? 'p-2.5 sm:p-3'
       : density === 'comfort'
-      ? 'p-5 sm:p-6'
-      : 'p-4 sm:p-5';
+      ? 'p-4 sm:p-5'
+      : 'p-3 sm:p-3.5';
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       style={{
-        height: height ? `${height}px` : '240px',
-        minHeight: height ? `${height}px` : '240px',
+        height: height ? `${height}px` : '185px',
+        minHeight: height ? `${height}px` : '185px',
       }}
-      className={`relative bg-white dark:bg-neutral-900 border rounded-2xl sm:rounded-3xl shadow-xs transition-all flex flex-col justify-between overflow-hidden ${paddingClass} ${
+      className={`relative bg-white dark:bg-neutral-900 border rounded-xl sm:rounded-2xl shadow-2xs transition-all flex flex-col justify-between overflow-hidden ${paddingClass} ${
         isResizing
           ? 'border-primary-500 ring-2 ring-primary-500/30 shadow-md select-none'
           : 'border-neutral-200/75 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700'
       } ${className}`}
     >
       {/* Card Header */}
-      <div className={`flex items-start justify-between gap-2 ${density === 'compact' ? 'mb-2' : 'mb-3'}`}>
+      <div className={`flex items-start justify-between gap-1.5 ${density === 'compact' ? 'mb-1.5' : 'mb-2'}`}>
         <div className="min-w-0 flex-1">
           <h3 className={`font-display font-extrabold text-neutral-900 dark:text-white truncate ${
-            density === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'
+            density === 'compact' ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
           }`}>
             {title}
           </h3>
           {subtitle && (
             <p className={`text-neutral-500 dark:text-neutral-400 truncate ${
-              density === 'compact' ? 'text-[10px] mt-0.5' : 'text-xs mt-0.5'
+              density === 'compact' ? 'text-[9px] mt-0.2' : 'text-[10px] mt-0.5'
             }`}>
               {subtitle}
             </p>
