@@ -75,6 +75,9 @@ export const FulfillmentProvider = ({ children }) => {
   const setFulfillmentMode = (mode) => {
     if (mode !== 'delivery' && mode !== 'pickup') return;
     setFulfillmentModeState(mode);
+    if (mode === 'delivery') {
+      setSelectedBranchState(null);
+    }
     markFulfillmentChosen();
     if (mode === 'pickup' && !selectedBranch && !checkIsAdminOrRider()) {
       setIsFulfillmentModalOpen(true);
@@ -99,6 +102,7 @@ export const FulfillmentProvider = ({ children }) => {
 
   const selectHomeDelivery = () => {
     setFulfillmentModeState('delivery');
+    setSelectedBranchState(null);
     markFulfillmentChosen();
     setIsFulfillmentModalOpen(false);
     toast.success('Switched to Home Delivery mode!', {

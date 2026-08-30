@@ -551,10 +551,9 @@ export const Checkout = () => {
           discountPct: Number(item.discountPct) || 0,
           discountAmount: Number(item.discountAmount) || 0,
           discountType: item.discountType || 'percent',
-          branchId:
-            item.branchId ||
-            Number(localStorage.getItem("selected_branch_id")) ||
-            null,
+          branchId: isPickup
+            ? (item.branchId || finalPickupId || null)
+            : (item.branchId || null),
         })),
         regionId,
         couponCode: appliedCoupon?.code || "",

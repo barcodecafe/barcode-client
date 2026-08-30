@@ -88,15 +88,20 @@ export async function createOrder(orderData) {
       discountPct: Number(i.discountPct) || 0,
       discountAmount: Number(i.discountAmount) || 0,
       discountType: i.discountType || 'percent',
+      branchId: i.branchId || null,
     })),
     regionId: orderData.regionId,
-    branchId: orderData.branchId || Number(localStorage.getItem('selected_branch_id')) || null,
+    branchId: orderData.branchId || null,
     couponCode: orderData.couponCode || '',
     pointsToRedeem: Math.max(0, Math.floor(Number(orderData.pointsToRedeem) || 0)),
     deliveryArea: orderData.deliveryArea || '',
     deliveryAddress: orderData.deliveryAddress || '',
     deliveryPhone: orderData.deliveryPhone || '',
     paymentMethod: orderData.paymentMethod || 'cod',
+    orderType: orderData.orderType || 'delivery',
+    expectedPickupTime: orderData.expectedPickupTime || '',
+    pickupBranchId: orderData.pickupBranchId || null,
+    pickupBranchName: orderData.pickupBranchName || '',
   };
   
   const response = await apiClient.post('/orders', payload);

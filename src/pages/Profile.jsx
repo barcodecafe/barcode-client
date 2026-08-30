@@ -522,16 +522,17 @@ export const Profile = () => {
 
   const { fulfillmentMode, selectedBranch: activePickupBranch } = useFulfillment();
 
-  const activePickupId = activePickupBranch ? String(activePickupBranch.id ?? activePickupBranch._id ?? "") : "";
-  const activePickupName = activePickupBranch ? activePickupBranch.name : "";
+  const isPickupMode = fulfillmentMode === "pickup";
+  const activePickupId = isPickupMode && activePickupBranch ? String(activePickupBranch.id ?? activePickupBranch._id ?? "") : "";
+  const activePickupName = isPickupMode && activePickupBranch ? activePickupBranch.name : "";
 
   // 🎯 Feedback & Review States
   const [feedbackForm, setFeedbackForm] = useState({
     userName: "",
     phone: "",
     email: "",
-    branchId: branchIdParam || activePickupId || "",
-    branchName: branchNameParam || activePickupName || "",
+    branchId: branchIdParam || activePickupId || (isPickupMode ? "" : "general"),
+    branchName: branchNameParam || activePickupName || (isPickupMode ? "" : "General / Online Delivery"),
     foodQuality: 0,
     serviceSpeed: 0,
     staffBehavior: 0,
@@ -566,15 +567,23 @@ export const Profile = () => {
 
   useEffect(() => {
     if (branchIdParam || branchNameParam) {
-      const matched = branches.find(
-        (b) => String(b.id || b._id) === String(branchIdParam) || b.name === branchNameParam
-      );
-      setFeedbackForm((prev) => ({
-        ...prev,
-        branchId: matched ? String(matched.id ?? matched._id) : (branchIdParam || prev.branchId),
-        branchName: matched ? matched.name : (branchNameParam || prev.branchName),
-      }));
-    } else if (activePickupBranch) {
+      if (branchIdParam === "general" || branchNameParam === "General / Online Delivery") {
+        setFeedbackForm((prev) => ({
+          ...prev,
+          branchId: "general",
+          branchName: "General / Online Delivery",
+        }));
+      } else {
+        const matched = branches.find(
+          (b) => String(b.id || b._id) === String(branchIdParam) || b.name.trim().toLowerCase() === (branchNameParam || "").trim().toLowerCase()
+        );
+        setFeedbackForm((prev) => ({
+          ...prev,
+          branchId: matched ? String(matched.id ?? matched._id) : (branchIdParam || prev.branchId),
+          branchName: matched ? matched.name : (branchNameParam || prev.branchName),
+        }));
+      }
+    } else if (fulfillmentMode === "pickup" && activePickupBranch) {
       setFeedbackForm((prev) => {
         if (!prev.branchId || prev.branchId === "general") {
           return {
@@ -585,8 +594,19 @@ export const Profile = () => {
         }
         return prev;
       });
+    } else if (fulfillmentMode === "delivery") {
+      setFeedbackForm((prev) => {
+        if (!prev.branchId || (prev.branchId !== "general" && !branchIdParam)) {
+          return {
+            ...prev,
+            branchId: "general",
+            branchName: "General / Online Delivery",
+          };
+        }
+        return prev;
+      });
     }
-  }, [branches, branchIdParam, branchNameParam, activePickupBranch]);
+  }, [branches, branchIdParam, branchNameParam, fulfillmentMode, activePickupBranch]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -634,60 +654,46 @@ export const Profile = () => {
     let matchedBranch = null;
 
     // 1. If Self-Pickup order, strictly match by pickup branch ID or Name
-    if (ord.pickupBranchId || ord.pickupBranchName) {
-      matchedBranch = branches.find(
-        (b) =>
-          (ord.pickupBranchId && String(b.id || b._id) === String(ord.pickupBranchId)) ||
-          (ord.pickupBranchName && b.name.trim().toLowerCase() === ord.pickupBranchName.trim().toLowerCase())
-      );
-    }
-
-    // 2. If explicit branchId on order
-    if (!matchedBranch && (ord.branchId || ord.branch?.id || ord.branch?._id)) {
-      const bId = ord.branchId || ord.branch?.id || ord.branch?._id;
-      matchedBranch = branches.find((b) => String(b.id || b._id) === String(bId));
-    }
-
-    // 3. If explicit branchName on order
-    if (!matchedBranch && (ord.branchName || ord.branch?.name)) {
-      const bName = ord.branchName || ord.branch?.name;
-      matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
-    }
-
-    // 4. Match via deliveryArea or deliveryAddress (e.g. "Self Pickup at Premium Burger" or "Premium Burger")
-    if (!matchedBranch && (ord.deliveryArea || ord.deliveryAddress)) {
-      matchedBranch = branches.find(
-        (b) =>
-          (ord.deliveryArea && b.name.trim().toLowerCase() === ord.deliveryArea.trim().toLowerCase()) ||
-          (ord.deliveryAddress && ord.deliveryAddress.toLowerCase().includes(b.name.trim().toLowerCase()))
-      );
-    }
-
-    // 5. Match via order item branchId
-    if (!matchedBranch && Array.isArray(ord.items)) {
-      for (const item of ord.items) {
-        if (item.branchId) {
-          const b = branches.find((br) => String(br.id || br._id) === String(item.branchId));
-          if (b) {
-            matchedBranch = b;
-            break;
-          }
-        }
+    if (ord.orderType === "pickup" || ord.pickupBranchId || ord.pickupBranchName) {
+      if (ord.pickupBranchId || ord.pickupBranchName) {
+        matchedBranch = branches.find(
+          (b) =>
+            (ord.pickupBranchId && String(b.id || b._id) === String(ord.pickupBranchId)) ||
+            (ord.pickupBranchName && b.name.trim().toLowerCase() === ord.pickupBranchName.trim().toLowerCase())
+        );
+      }
+      if (!matchedBranch && (ord.branchId || ord.branch?.id || ord.branch?._id)) {
+        const bId = ord.branchId || ord.branch?.id || ord.branch?._id;
+        matchedBranch = branches.find((b) => String(b.id || b._id) === String(bId));
+      }
+      if (!matchedBranch && (ord.branchName || ord.branch?.name)) {
+        const bName = ord.branchName || ord.branch?.name;
+        matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
+      }
+    } else {
+      // Home Delivery order: check if explicitly assigned to a specific branch
+      if (ord.branchId || ord.branch?.id || ord.branch?._id) {
+        const bId = ord.branchId || ord.branch?.id || ord.branch?._id;
+        matchedBranch = branches.find((b) => String(b.id || b._id) === String(bId));
+      } else if (ord.branchName || ord.branch?.name) {
+        const bName = ord.branchName || ord.branch?.name;
+        matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
       }
     }
 
-    // 6. Only for Home Delivery orders without branch, match region branch
-    if (!matchedBranch && ord.orderType === "delivery" && ord.regionId) {
-      matchedBranch = branches.find((b) => b.regionId === ord.regionId);
-    }
+    const isGeneral = !matchedBranch && (ord.orderType === "delivery" || (!ord.pickupBranchId && !ord.branchId));
 
     const bId = matchedBranch
       ? String(matchedBranch.id ?? matchedBranch._id)
-      : (ord.pickupBranchId ? String(ord.pickupBranchId) : (ord.branchId ? String(ord.branchId) : ""));
+      : isGeneral
+      ? "general"
+      : (ord.pickupBranchId ? String(ord.pickupBranchId) : (ord.branchId ? String(ord.branchId) : "general"));
 
     const bName = matchedBranch
       ? matchedBranch.name
-      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || (ord.deliveryArea && ord.deliveryArea !== "Self Pickup" ? ord.deliveryArea : "General / Online Delivery"));
+      : isGeneral
+      ? "General / Online Delivery"
+      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || "General / Online Delivery");
 
     setFeedbackForm((prev) => ({
       ...prev,
@@ -696,8 +702,8 @@ export const Profile = () => {
     }));
     setSearchParams({
       tab: "reviews",
-      ...(bId ? { branchId: String(bId) } : {}),
-      ...(bName ? { branchName: bName } : {}),
+      branchId: String(bId),
+      branchName: bName,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -720,8 +726,8 @@ export const Profile = () => {
       setFoods(fds);
       setBranches(brs);
 
-      // 🎯 Auto-preselect branch from recent order if not explicitly specified
-      if (!branchIdParam && !branchNameParam && !activePickupBranch && ords.length > 0) {
+      // 🎯 Auto-preselect branch from recent order ONLY IF in pickup mode and not explicitly specified
+      if (!branchIdParam && !branchNameParam && fulfillmentMode === "pickup" && !activePickupBranch && ords.length > 0) {
         const recentWithBranch = ords.find(
           (o) => o.pickupBranchName || o.pickupBranchId || o.deliveryArea || o.branchName || o.branchId
         );
@@ -1745,27 +1751,29 @@ export const Profile = () => {
 
     setSubmittingFeedback(true);
     try {
-      const selectedBranch =
-        branches.find(
-          (b) =>
-            (feedbackForm.branchId && feedbackForm.branchId !== "general" && String(b.id || b._id) === String(feedbackForm.branchId)) ||
-            (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery" && b.name.trim().toLowerCase() === feedbackForm.branchName.trim().toLowerCase())
-        ) ||
-        (activePickupBranch && (!feedbackForm.branchId || String(activePickupBranch.id || activePickupBranch._id) === String(feedbackForm.branchId))
-          ? activePickupBranch
-          : null);
+      const isGeneralDelivery =
+        !feedbackForm.branchId ||
+        feedbackForm.branchId === "general" ||
+        feedbackForm.branchName === "General / Online Delivery";
+
+      const selectedBranch = isGeneralDelivery
+        ? null
+        : branches.find(
+            (b) =>
+              (feedbackForm.branchId && String(b.id || b._id) === String(feedbackForm.branchId)) ||
+              (feedbackForm.branchName && b.name.trim().toLowerCase() === feedbackForm.branchName.trim().toLowerCase())
+          ) ||
+          (fulfillmentMode === "pickup" && activePickupBranch && String(activePickupBranch.id || activePickupBranch._id) === String(feedbackForm.branchId)
+            ? activePickupBranch
+            : null);
 
       const finalBranchId = selectedBranch
         ? (selectedBranch.id ?? selectedBranch._id)
-        : (feedbackForm.branchId && feedbackForm.branchId !== "general"
-            ? Number(feedbackForm.branchId) || feedbackForm.branchId
-            : null);
+        : (isGeneralDelivery ? null : (Number(feedbackForm.branchId) || feedbackForm.branchId || null));
 
       const finalBranchName = selectedBranch
         ? selectedBranch.name
-        : (feedbackForm.branchName && feedbackForm.branchName !== "General / Online Delivery" && feedbackForm.branchId !== "general"
-            ? feedbackForm.branchName
-            : "General / Online Delivery");
+        : (isGeneralDelivery ? "General / Online Delivery" : (feedbackForm.branchName || "General / Online Delivery"));
 
       const formattedPhone = cleanPhone.startsWith("+88")
         ? cleanPhone
