@@ -18,6 +18,7 @@ export const ChartCard = ({
   className = '',
   colSpan = 1,
   height,
+  density = 'normal',
   maxCols = 3,
   onResize,
 }) => {
@@ -72,6 +73,13 @@ export const ChartCard = ({
     window.addEventListener('mouseup', handleMouseUp);
   };
 
+  const paddingClass =
+    density === 'compact'
+      ? 'p-3 sm:p-3.5'
+      : density === 'comfort'
+      ? 'p-5 sm:p-6'
+      : 'p-4 sm:p-5';
+
   return (
     <motion.div
       layout
@@ -79,20 +87,24 @@ export const ChartCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       style={{ minHeight: height ? `${height}px` : '280px' }}
-      className={`relative bg-white dark:bg-neutral-900 border rounded-2xl sm:rounded-3xl shadow-xs transition-all flex flex-col justify-between overflow-hidden p-4 sm:p-5 ${
+      className={`relative bg-white dark:bg-neutral-900 border rounded-2xl sm:rounded-3xl shadow-xs transition-all flex flex-col justify-between overflow-hidden ${paddingClass} ${
         isResizing
           ? 'border-primary-500 ring-2 ring-primary-500/30 shadow-md select-none'
           : 'border-neutral-200/75 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700'
       } ${className}`}
     >
       {/* Card Header */}
-      <div className="flex items-start justify-between gap-2.5 mb-3">
+      <div className={`flex items-start justify-between gap-2 ${density === 'compact' ? 'mb-2' : 'mb-3'}`}>
         <div className="min-w-0 flex-1">
-          <h3 className="font-display font-extrabold text-sm sm:text-base text-neutral-900 dark:text-white truncate">
+          <h3 className={`font-display font-extrabold text-neutral-900 dark:text-white truncate ${
+            density === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'
+          }`}>
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
+            <p className={`text-neutral-500 dark:text-neutral-400 truncate ${
+              density === 'compact' ? 'text-[10px] mt-0.5' : 'text-xs mt-0.5'
+            }`}>
               {subtitle}
             </p>
           )}

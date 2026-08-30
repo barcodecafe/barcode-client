@@ -249,6 +249,37 @@ export const AdminDashboard = () => {
     setIsExportModalOpen(true);
   };
 
+  // Height mode state ('small' | 'large')
+  const [heightMode, setHeightMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('admin_dashboard_height_mode');
+      return saved || 'small';
+    } catch {
+      return 'small';
+    }
+  });
+
+  const handleSetHeightMode = (mode) => {
+    setHeightMode(mode);
+    const targetHeight = mode === 'small' ? 205 : 320;
+    setCardSizes((prev) => {
+      const updated = {};
+      Object.keys(DEFAULT_CARD_SIZES).forEach((k) => {
+        updated[k] = {
+          ...(prev[k] || DEFAULT_CARD_SIZES[k]),
+          height: targetHeight,
+        };
+      });
+      try {
+        localStorage.setItem('admin_dashboard_height_mode', mode);
+        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 8)
@@ -260,7 +291,7 @@ export const AdminDashboard = () => {
     .map((t) => ({ label: t.month, value: t.revenue }));
 
   return (
-    <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
+    <div className="space-y-5 sm:space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
       {/* Header */}
       <motion.div
         initial="hidden"
@@ -272,12 +303,43 @@ export const AdminDashboard = () => {
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
             Dashboard Overview
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Real-time analytics across {summary?.totalBranches || 0} Barcode branches. Drag any card&apos;s bottom-right corner to resize.
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Real-time analytics across {summary?.totalBranches || 0} Barcode branches.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* ↕️ Height Switcher: Show Small / Show Large */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
+            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
+              Height:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSetHeightMode('small')}
+              title="Show Small (কমপ্যাক্ট হাইট - যাতে সব এক স্ক্রিনে ফিট হয়)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                heightMode === 'small'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <span>Small</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetHeightMode('large')}
+              title="Show Large (বড় বিস্তারিত ভিউ)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                heightMode === 'large'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <span>Large</span>
+            </button>
+          </div>
+
           {/* 🔲 Grid Columns Selector (1, 2, 3, 4 Cols) */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
             <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
@@ -287,7 +349,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(1)}
               title="1 Column (Full Width Rows)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 1
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -300,7 +362,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(2)}
               title="2 Columns Grid"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 2
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -313,7 +375,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(3)}
               title="3 Columns Grid (Standard 3x2)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 3
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -326,7 +388,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(4)}
               title="4 Columns Grid"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 4
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -391,7 +453,8 @@ export const AdminDashboard = () => {
           subtitle="Top branches this period"
           className={getCardColClass('branch')}
           colSpan={cardSizes.branch?.colSpan || 1}
-          height={cardSizes.branch?.height || 280}
+          height={cardSizes.branch?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
         >
@@ -399,7 +462,7 @@ export const AdminDashboard = () => {
             data={barData}
             valueFormatter={currency}
             barLabel="Revenue"
-            height={Math.max(140, (cardSizes.branch?.height || 280) - 100)}
+            height={heightMode === 'small' ? 120 : Math.max(140, (cardSizes.branch?.height || 320) - 100)}
           />
         </ChartCard>
 
@@ -410,14 +473,15 @@ export const AdminDashboard = () => {
           subtitle="Share of total order volume"
           className={getCardColClass('category')}
           colSpan={cardSizes.category?.colSpan || 1}
-          height={cardSizes.category?.height || 280}
+          height={cardSizes.category?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
         >
           <PieChart
             data={pieData}
             valueFormatter={compactNumber}
-            size={Math.min(200, Math.max(120, (cardSizes.category?.height || 280) - 110))}
+            size={heightMode === 'small' ? 115 : Math.min(190, Math.max(120, (cardSizes.category?.height || 320) - 110))}
           />
         </ChartCard>
 
@@ -428,7 +492,8 @@ export const AdminDashboard = () => {
           subtitle={`Monthly trajectory (${trendMonths} months)`}
           className={getCardColClass('trend')}
           colSpan={cardSizes.trend?.colSpan || 1}
-          height={cardSizes.trend?.height || 280}
+          height={cardSizes.trend?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -461,7 +526,7 @@ export const AdminDashboard = () => {
           <LineChart
             data={lineData}
             valueFormatter={currency}
-            height={Math.max(140, (cardSizes.trend?.height || 280) - 100)}
+            height={heightMode === 'small' ? 120 : Math.max(140, (cardSizes.trend?.height || 320) - 100)}
           />
         </ChartCard>
 
@@ -472,7 +537,8 @@ export const AdminDashboard = () => {
           subtitle="Radial order distribution"
           className={getCardColClass('dishes')}
           colSpan={cardSizes.dishes?.colSpan || 1}
-          height={cardSizes.dishes?.height || 280}
+          height={cardSizes.dishes?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -485,7 +551,7 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={Math.min(185, Math.max(125, (cardSizes.dishes?.height || 280) - 110))}
+            size={heightMode === 'small' ? 125 : Math.min(185, Math.max(125, (cardSizes.dishes?.height || 320) - 110))}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -497,7 +563,8 @@ export const AdminDashboard = () => {
           subtitle="VIP revenue contribution mosaic"
           className={getCardColClass('customers')}
           colSpan={cardSizes.customers?.colSpan || 1}
-          height={cardSizes.customers?.height || 280}
+          height={cardSizes.customers?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -510,7 +577,7 @@ export const AdminDashboard = () => {
           <TreemapChart
             items={topCustomers}
             maxItems={5}
-            density={(cardSizes.customers?.height || 280) < 250 ? 'compact' : 'normal'}
+            density={heightMode === 'small' ? 'compact' : 'normal'}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
@@ -523,7 +590,8 @@ export const AdminDashboard = () => {
           subtitle="Rider efficiency spider web"
           className={getCardColClass('riders')}
           colSpan={cardSizes.riders?.colSpan || 1}
-          height={cardSizes.riders?.height || 280}
+          height={cardSizes.riders?.height || (heightMode === 'small' ? 205 : 320)}
+          density={heightMode === 'small' ? 'compact' : 'normal'}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -536,7 +604,7 @@ export const AdminDashboard = () => {
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={Math.min(195, Math.max(130, (cardSizes.riders?.height || 280) - 100))}
+            size={heightMode === 'small' ? 130 : Math.min(195, Math.max(130, (cardSizes.riders?.height || 320) - 100))}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
@@ -554,5 +622,6 @@ export const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
 
 
