@@ -13,8 +13,6 @@ import {
   Columns3,
   Columns4,
   Rows3,
-  Minimize,
-  Maximize,
 } from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
@@ -41,6 +39,15 @@ import {
 
 const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
 const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
+
+const DEFAULT_CARD_SIZES = {
+  branch: { colSpan: 1, height: 280 },
+  category: { colSpan: 1, height: 280 },
+  trend: { colSpan: 1, height: 280 },
+  dishes: { colSpan: 1, height: 280 },
+  customers: { colSpan: 1, height: 280 },
+  riders: { colSpan: 1, height: 280 },
+};
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -72,12 +79,12 @@ export const AdminDashboard = () => {
     }
   });
 
-  const [cardDensity, setCardDensity] = useState(() => {
+  const [cardSizes, setCardSizes] = useState(() => {
     try {
-      const saved = localStorage.getItem('admin_dashboard_card_density');
-      return saved || 'normal'; // 'compact' | 'normal' | 'comfort'
+      const saved = localStorage.getItem('admin_dashboard_card_sizes');
+      return saved ? { ...DEFAULT_CARD_SIZES, ...JSON.parse(saved) } : DEFAULT_CARD_SIZES;
     } catch {
-      return 'normal';
+      return DEFAULT_CARD_SIZES;
     }
   });
 
@@ -90,13 +97,38 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleSetDensity = (density) => {
-    setCardDensity(density);
-    try {
-      localStorage.setItem('admin_dashboard_card_density', density);
-    } catch {
-      // ignore
+  const handleResizeCard = (cardId, newSettings) => {
+    setCardSizes((prev) => {
+      const updated = {
+        ...prev,
+        [cardId]: {
+          ...(prev[cardId] || DEFAULT_CARD_SIZES[cardId]),
+          ...newSettings,
+        },
+      };
+      try {
+        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
+  const getCardColClass = (cardKey) => {
+    const size = cardSizes[cardKey] || { colSpan: 1 };
+    const span = size.colSpan || 1;
+    if (span === 'full' || span >= gridCols) return 'col-span-full';
+    if (span === 2) {
+      if (gridCols === 2) return 'col-span-full md:col-span-2';
+      if (gridCols === 3) return 'col-span-full md:col-span-2 lg:col-span-2';
+      if (gridCols === 4) return 'col-span-full md:col-span-2 lg:col-span-2 xl:col-span-2';
     }
+    if (span === 3) {
+      if (gridCols <= 3) return 'col-span-full';
+      if (gridCols === 4) return 'col-span-full lg:col-span-3 xl:col-span-3';
+    }
+    return 'col-span-1';
   };
 
   const getGridColsClass = () => {
@@ -107,8 +139,6 @@ export const AdminDashboard = () => {
         return 'grid-cols-1 md:grid-cols-2';
       case 4:
         return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
-      case 6:
-        return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
       case 3:
       default:
         return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
@@ -188,13 +218,13 @@ export const AdminDashboard = () => {
           {[...Array(6)].map((_, j) => (
             <div
               key={j}
-              className="h-80 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between"
+              className="h-72 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between"
             >
               <div className="space-y-1.5">
                 <div className="w-36 h-5 bg-neutral-200 dark:bg-neutral-700 rounded-lg" />
                 <div className="w-48 h-3 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
               </div>
-              <div className="h-44 w-full bg-neutral-50 dark:bg-neutral-850 rounded-2xl flex items-center justify-center p-4">
+              <div className="h-40 w-full bg-neutral-50 dark:bg-neutral-850 rounded-2xl flex items-center justify-center p-4">
                 <div className="w-full h-full bg-neutral-200/50 dark:bg-neutral-800/50 rounded-xl" />
               </div>
             </div>
@@ -243,45 +273,12 @@ export const AdminDashboard = () => {
             Dashboard Overview
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Real-time analytics across {summary?.totalBranches || 0} Barcode branches.
+            Real-time analytics across {summary?.totalBranches || 0} Barcode branches. Drag any card&apos;s bottom-right corner to resize.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* 📐 Card Density / Scale Selector */}
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
-            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
-              Size:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleSetDensity('compact')}
-              title="Compact Size (ছোট - আরও কমপ্যাক্ট চার্ট)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                cardDensity === 'compact'
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Minimize className="w-3 h-3" />
-              <span>Compact</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSetDensity('normal')}
-              title="Standard Size (মিডিয়াম)"
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                cardDensity === 'normal'
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Maximize className="w-3 h-3" />
-              <span>Normal</span>
-            </button>
-          </div>
-
-          {/* 🔲 Grid Columns Selector (1, 2, 3, 4, 6 Cols) */}
+          {/* 🔲 Grid Columns Selector (1, 2, 3, 4 Cols) */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
             <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
               Cols:
@@ -290,7 +287,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(1)}
               title="1 Column (Full Width Rows)"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 1
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -303,7 +300,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(2)}
               title="2 Columns Grid"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 2
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -316,7 +313,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(3)}
               title="3 Columns Grid (Standard 3x2)"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 3
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -329,7 +326,7 @@ export const AdminDashboard = () => {
               type="button"
               onClick={() => handleSetGridCols(4)}
               title="4 Columns Grid"
-              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 gridCols === 4
                   ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
@@ -384,41 +381,56 @@ export const AdminDashboard = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 🎯 PRISTINE MINIMALIST CHARTS GRID (6 Charts Total)                       */}
+      {/* 🎯 DRAG-RESIZABLE PRISTINE CHARTS GRID (6 Charts Total)                   */}
       {/* ========================================================================= */}
       <div className={`grid gap-4 sm:gap-5 items-stretch ${getGridColsClass()}`}>
         {/* Card 1: Revenue by Branch (Bar Chart) */}
         <ChartCard
+          id="branch"
           title="Revenue by Branch"
           subtitle="Top branches this period"
-          density={cardDensity}
+          className={getCardColClass('branch')}
+          colSpan={cardSizes.branch?.colSpan || 1}
+          height={cardSizes.branch?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
         >
           <BarChart
             data={barData}
             valueFormatter={currency}
             barLabel="Revenue"
-            height={cardDensity === 'compact' ? 150 : 200}
+            height={Math.max(140, (cardSizes.branch?.height || 280) - 100)}
           />
         </ChartCard>
 
         {/* Card 2: Orders by Category (Donut / Pie Chart) */}
         <ChartCard
+          id="category"
           title="Orders by Category"
           subtitle="Share of total order volume"
-          density={cardDensity}
+          className={getCardColClass('category')}
+          colSpan={cardSizes.category?.colSpan || 1}
+          height={cardSizes.category?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
         >
           <PieChart
             data={pieData}
             valueFormatter={compactNumber}
-            size={cardDensity === 'compact' ? 125 : 155}
+            size={Math.min(200, Math.max(120, (cardSizes.category?.height || 280) - 110))}
           />
         </ChartCard>
 
         {/* Card 3: Revenue Growth Trend (Line Chart) */}
         <ChartCard
+          id="trend"
           title="Revenue Growth Trend"
           subtitle={`Monthly trajectory (${trendMonths} months)`}
-          density={cardDensity}
+          className={getCardColClass('trend')}
+          colSpan={cardSizes.trend?.colSpan || 1}
+          height={cardSizes.trend?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
           action={
             <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg">
               <button
@@ -449,15 +461,20 @@ export const AdminDashboard = () => {
           <LineChart
             data={lineData}
             valueFormatter={currency}
-            height={cardDensity === 'compact' ? 150 : 200}
+            height={Math.max(140, (cardSizes.trend?.height || 280) - 100)}
           />
         </ChartCard>
 
         {/* Card 4: Top Selling Dishes (Radial Bar Chart / Concentric Rings) */}
         <ChartCard
+          id="dishes"
           title="Top Selling Dishes"
           subtitle="Radial order distribution"
-          density={cardDensity}
+          className={getCardColClass('dishes')}
+          colSpan={cardSizes.dishes?.colSpan || 1}
+          height={cardSizes.dishes?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
           action={
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black">
               <Flame className="w-3 h-3" />
@@ -468,16 +485,21 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={cardDensity === 'compact' ? 135 : 165}
+            size={Math.min(185, Math.max(125, (cardSizes.dishes?.height || 280) - 110))}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
 
         {/* Card 5: Top Valued Customers (Treemap Chart / Weighted Mosaic) */}
         <ChartCard
+          id="customers"
           title="Top Valued Customers"
           subtitle="VIP revenue contribution mosaic"
-          density={cardDensity}
+          className={getCardColClass('customers')}
+          colSpan={cardSizes.customers?.colSpan || 1}
+          height={cardSizes.customers?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
           action={
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black">
               <User className="w-3 h-3" />
@@ -488,7 +510,7 @@ export const AdminDashboard = () => {
           <TreemapChart
             items={topCustomers}
             maxItems={5}
-            density={cardDensity}
+            density={(cardSizes.customers?.height || 280) < 250 ? 'compact' : 'normal'}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
@@ -496,9 +518,14 @@ export const AdminDashboard = () => {
 
         {/* Card 6: Top Delivery Riders (Radar / Spider Chart) */}
         <ChartCard
+          id="riders"
           title="Top Delivery Riders"
           subtitle="Rider efficiency spider web"
-          density={cardDensity}
+          className={getCardColClass('riders')}
+          colSpan={cardSizes.riders?.colSpan || 1}
+          height={cardSizes.riders?.height || 280}
+          maxCols={gridCols}
+          onResize={handleResizeCard}
           action={
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black">
               <Bike className="w-3 h-3" />
@@ -509,7 +536,7 @@ export const AdminDashboard = () => {
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={cardDensity === 'compact' ? 145 : 180}
+            size={Math.min(195, Math.max(130, (cardSizes.riders?.height || 280) - 100))}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
@@ -527,4 +554,5 @@ export const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
 
