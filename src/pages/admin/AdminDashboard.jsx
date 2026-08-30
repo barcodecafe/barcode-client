@@ -495,11 +495,11 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 4: Top Selling Dishes (Radial Bar Chart / Concentric Rings) */}
+        {/* Card 4: Top Selling Dishes (Ranked Bar Chart) */}
         <ChartCard
           id="dishes"
           title="Top Selling Dishes"
-          subtitle="Radial order distribution"
+          subtitle="Ranked by order volume"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -507,23 +507,22 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[9px] font-black">
               <Flame className="w-2.5 h-2.5" />
-              <span>Radial</span>
+              <span>Top 5</span>
             </div>
           }
         >
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={globalCardHeight < 240 ? 110 : 145}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
 
-        {/* Card 5: Top Valued Customers (Treemap Chart / Weighted Mosaic) */}
+        {/* Card 5: Top Valued Customers (VIP Customer Contribution Chart) */}
         <ChartCard
           id="customers"
           title="Top Valued Customers"
-          subtitle="VIP revenue contribution mosaic"
+          subtitle="VIP revenue contribution"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -531,24 +530,23 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
               <User className="w-2.5 h-2.5" />
-              <span>Treemap</span>
+              <span>VIPs</span>
             </div>
           }
         >
           <TreemapChart
             items={topCustomers}
             maxItems={5}
-            density={cardDensity}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
         </ChartCard>
 
-        {/* Card 6: Top Delivery Riders (Radar / Spider Chart) */}
+        {/* Card 6: Top Delivery Riders (Rider Performance Chart) */}
         <ChartCard
           id="riders"
           title="Top Delivery Riders"
-          subtitle="Rider efficiency spider web"
+          subtitle="Trips, acceptance & earnings"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -556,14 +554,13 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-black">
               <Bike className="w-2.5 h-2.5" />
-              <span>Radar</span>
+              <span>Fleet</span>
             </div>
           }
         >
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={globalCardHeight < 240 ? 115 : 155}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
