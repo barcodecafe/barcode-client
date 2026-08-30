@@ -199,38 +199,39 @@ export const RadarChart = ({
       </div>
 
       {/* 📋 Rider Legend & Comparison List */}
-      <div className="flex flex-col gap-2 w-full min-w-0 flex-1">
+      <div className="flex flex-col gap-1 w-full min-w-0 flex-1 justify-center">
         {riderPolygons.map((rider, i) => {
           const isSelected = selectedRiderIndex === i;
           return (
             <div
               key={rider.riderId || i}
+              title={`${rider.name} • ${rider.acceptanceRate || 100}% accept • ${rider.deliveries} trips • ${valueFormatter(rider.earnings || 0)}`}
               onMouseEnter={() => setSelectedRiderIndex(i)}
               onMouseLeave={() => setSelectedRiderIndex(null)}
               onClick={() => setSelectedRiderIndex((prev) => (prev === i ? null : i))}
-              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl cursor-pointer transition-all ${
+              className={`flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg cursor-pointer transition-all ${
                 isSelected
-                  ? 'bg-neutral-100 dark:bg-neutral-800 shadow-xs scale-[1.02]'
+                  ? 'bg-neutral-100 dark:bg-neutral-800 shadow-xs'
                   : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                  className="w-2 h-2 rounded-full shrink-0 shadow-xs"
                   style={{ backgroundColor: rider.style.stroke }}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
                     #{i + 1} {rider.name}
                   </p>
-                  <p className="text-[10px] text-neutral-400 truncate">
-                    {rider.acceptanceRate || 100}% accept • {rider.deliveries} trips
+                  <p className="text-[9px] text-neutral-400 truncate">
+                    {rider.acceptanceRate || 100}% acc • {rider.deliveries} trips
                   </p>
                 </div>
               </div>
 
               <span
-                className="text-xs font-black shrink-0 px-2 py-0.5 rounded-md"
+                className="text-[10px] sm:text-xs font-black shrink-0 px-1.5 py-0.5 rounded-md ml-1"
                 style={{
                   color: rider.style.stroke,
                   backgroundColor: `${rider.style.stroke}18`,

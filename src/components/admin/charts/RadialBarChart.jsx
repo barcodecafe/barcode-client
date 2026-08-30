@@ -101,9 +101,9 @@ export const RadialBarChart = ({
   const activeItem = hoveredIndex !== null ? rings[hoveredIndex] : null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6 w-full">
+    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full h-full min-w-0">
       {/* 🎯 Multi-Ring Concentric SVG Canvas */}
-      <div className="relative shrink-0">
+      <div className="relative shrink-0 flex items-center justify-center">
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {/* Background Track Rings */}
           {rings.map((ring) => (
@@ -145,25 +145,25 @@ export const RadialBarChart = ({
         </svg>
 
         {/* Center Dynamic Metric */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-1 text-center">
           {activeItem ? (
             <>
               <span
-                className="text-lg sm:text-xl font-black font-display tracking-tight leading-tight truncate max-w-[85px]"
+                className="text-base sm:text-lg font-black font-display tracking-tight leading-tight truncate max-w-[75px]"
                 style={{ color: activeItem.color }}
               >
                 {activeItem.orders}
               </span>
-              <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 truncate max-w-[85px] leading-tight">
+              <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-400 truncate max-w-[75px] leading-tight">
                 {activeItem.name}
               </span>
             </>
           ) : (
             <>
-              <span className="text-lg sm:text-xl font-black text-neutral-800 dark:text-neutral-100 font-display tracking-tight leading-tight">
+              <span className="text-base sm:text-lg font-black text-neutral-800 dark:text-neutral-100 font-display tracking-tight leading-tight">
                 {totalOrders}
               </span>
-              <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+              <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
                 Top Orders
               </span>
             </>
@@ -172,37 +172,38 @@ export const RadialBarChart = ({
       </div>
 
       {/* 📋 Interactive Legend & Rankings */}
-      <div className="flex flex-col gap-2 w-full min-w-0 flex-1">
+      <div className="flex flex-col gap-1 w-full min-w-0 flex-1 justify-center">
         {rings.map((ring, i) => {
           const isHovered = hoveredIndex === i;
           return (
             <div
               key={ring.id || i}
+              title={`${ring.name}: ${ring.orders} orders`}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className={`flex items-center justify-between gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer transition-all ${
+              className={`flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-lg cursor-pointer transition-all ${
                 isHovered
-                  ? 'bg-neutral-100 dark:bg-neutral-800 shadow-xs scale-[1.02]'
+                  ? 'bg-neutral-100 dark:bg-neutral-800 shadow-xs'
                   : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                  className="w-2 h-2 rounded-full shrink-0 shadow-xs"
                   style={{ backgroundColor: ring.color }}
                 />
-                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
+                <span className="text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
                   #{i + 1} {ring.name}
                 </span>
               </div>
               <span
-                className="text-xs font-black shrink-0 px-2 py-0.5 rounded-md"
+                className="text-[10px] sm:text-xs font-black shrink-0 px-1.5 py-0.2 rounded-md ml-1"
                 style={{
                   color: ring.color,
                   backgroundColor: `${ring.color}18`,
                 }}
               >
-                {ring.orders} orders
+                {ring.orders} ord
               </span>
             </div>
           );

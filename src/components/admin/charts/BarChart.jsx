@@ -51,22 +51,23 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
 
         {/* Bars */}
         <div
-          className="absolute inset-0 pl-12 pb-10 flex items-end"
-          style={{ gap: BAR_GAP }}
+          className="absolute inset-0 pl-11 pb-8 flex items-end"
+          style={{ gap: data.length > 5 ? 8 : 14 }}
         >
-          {data.map((d, i) => {
+          {data.slice(0, 6).map((d, i) => {
             const heightPct = (d.value / maxValue) * 100;
             const isHovered = hoveredIndex === i;
             return (
               <div
                 key={d.id ?? d.label}
+                title={`${d.fullLabel || d.label}: ${valueFormatter(d.value)}`}
                 className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0"
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 {/* Tooltip */}
                 {isHovered && (
-                  <div className="absolute -top-2 -translate-y-full z-10 px-2.5 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold whitespace-nowrap shadow-lg pointer-events-none">
+                  <div className="absolute -top-2 -translate-y-full z-10 px-2 py-1 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[11px] font-bold whitespace-nowrap shadow-lg pointer-events-none">
                     {d.fullLabel || d.label}: {valueFormatter(d.value)}
                     <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
                   </div>
@@ -75,7 +76,7 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${heightPct}%` }}
-                  transition={{ duration: 0.6, delay: i * 0.04, ease: 'easeOut' }}
+                  transition={{ duration: 0.5, delay: i * 0.04, ease: 'easeOut' }}
                   className={`w-full rounded-t-md transition-colors duration-200 ${
                     isHovered ? 'bg-primary-600' : 'bg-primary-500'
                   }`}
@@ -83,7 +84,7 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
                 />
 
                 {/* X-axis label */}
-                <span className="absolute -bottom-9 text-[10px] text-neutral-500 dark:text-neutral-400 text-center leading-tight max-w-full truncate w-full px-0.5">
+                <span className="absolute -bottom-7 text-[10px] sm:text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 text-center leading-tight max-w-full truncate w-full px-0.5">
                   {d.label}
                 </span>
               </div>
@@ -91,10 +92,6 @@ export const BarChart = ({ data, valueFormatter = (v) => v, barLabel = 'Revenue'
           })}
         </div>
       </div>
-
-      <p className="text-[11px] text-neutral-400 dark:text-neutral-600 mt-2 text-center sm:hidden">
-        Scroll or rotate device for full {barLabel.toLowerCase()} breakdown
-      </p>
     </div>
   );
 };

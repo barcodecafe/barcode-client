@@ -92,9 +92,9 @@ export const AdminDashboard = () => {
   const [globalCardHeight, setGlobalCardHeight] = useState(() => {
     try {
       const saved = localStorage.getItem('admin_dashboard_card_height');
-      return saved ? Number(saved) : 210;
+      return saved ? Number(saved) : 225;
     } catch {
-      return 210;
+      return 225;
     }
   });
 
@@ -109,7 +109,7 @@ export const AdminDashboard = () => {
 
   const handleSetHeightMode = (mode) => {
     setHeightMode(mode);
-    const targetHeight = mode === 'small' ? 210 : 320;
+    const targetHeight = mode === 'small' ? 225 : 330;
     setGlobalCardHeight(targetHeight);
     try {
       localStorage.setItem('admin_dashboard_height_mode', mode);
@@ -251,7 +251,7 @@ export const AdminDashboard = () => {
 
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 8)
+    .slice(0, 6)
     .map((b) => ({ id: b.branchId, label: b.shortName, fullLabel: b.name, value: b.revenue }));
 
   const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
@@ -431,7 +431,7 @@ export const AdminDashboard = () => {
             data={barData}
             valueFormatter={currency}
             barLabel="Revenue"
-            height={Math.max(110, globalCardHeight - 85)}
+            height={Math.max(105, globalCardHeight - 85)}
           />
         </ChartCard>
 
@@ -448,7 +448,7 @@ export const AdminDashboard = () => {
           <PieChart
             data={pieData}
             valueFormatter={compactNumber}
-            size={Math.min(150, Math.max(110, globalCardHeight - 95))}
+            size={globalCardHeight < 250 ? 105 : 135}
           />
         </ChartCard>
 
@@ -491,7 +491,7 @@ export const AdminDashboard = () => {
           <LineChart
             data={lineData}
             valueFormatter={currency}
-            height={Math.max(110, globalCardHeight - 85)}
+            height={Math.max(105, globalCardHeight - 85)}
           />
         </ChartCard>
 
@@ -514,7 +514,7 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={Math.min(155, Math.max(115, globalCardHeight - 85))}
+            size={globalCardHeight < 250 ? 110 : 145}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -563,7 +563,7 @@ export const AdminDashboard = () => {
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={Math.min(165, Math.max(120, globalCardHeight - 80))}
+            size={globalCardHeight < 250 ? 115 : 155}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
