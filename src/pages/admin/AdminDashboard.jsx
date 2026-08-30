@@ -53,6 +53,15 @@ export const AdminDashboard = () => {
   const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Layout & interactive controls state (Must be declared before any conditional return)
+  const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'performers' | null
+  const [activePerformerTab, setActivePerformerTab] = useState('dishes'); // 'dishes' | 'customers' | 'riders'
+  const [trendMonths, setTrendMonths] = useState(12);
+
+  const toggleExpand = (cardKey) => {
+    setExpandedCard((prev) => (prev === cardKey ? null : cardKey));
+  };
+
   useEffect(() => {
     let active = true;
 
@@ -150,14 +159,6 @@ export const AdminDashboard = () => {
       </div>
     );
   }
-
-  const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'performers' | null
-  const [activePerformerTab, setActivePerformerTab] = useState('dishes'); // 'dishes' | 'customers' | 'riders'
-  const [trendMonths, setTrendMonths] = useState(12);
-
-  const toggleExpand = (cardKey) => {
-    setExpandedCard((prev) => (prev === cardKey ? null : cardKey));
-  };
 
   const handleOpenSalesExport = async () => {
     if (orders.length === 0) {
