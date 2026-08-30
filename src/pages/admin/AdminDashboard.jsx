@@ -495,11 +495,11 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 4: Top Selling Dishes (MUI X Column Bar Chart) */}
+        {/* Card 4: Top Selling Dishes (MUI X Donut Chart) */}
         <ChartCard
           id="dishes"
           title="Top Selling Dishes"
-          subtitle="Ranked by order volume"
+          subtitle="Share of total dish orders"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -507,23 +507,22 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[9px] font-black">
               <Flame className="w-2.5 h-2.5" />
-              <span>Top 5</span>
+              <span>Donut</span>
             </div>
           }
         >
           <RadialBarChart
             items={topDishes}
-            maxItems={5}
-            height={Math.max(95, globalCardHeight - 80)}
+            maxItems={20}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
 
-        {/* Card 5: Top Valued Customers (MUI X Tiered Customer Donut Chart) */}
+        {/* Card 5: Top Valued Customers (MUI X Column Bar Chart) */}
         <ChartCard
           id="customers"
           title="Top Valued Customers"
-          subtitle="VIP revenue contribution breakdown"
+          subtitle="VIP customer spending comparison"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -531,13 +530,14 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
               <User className="w-2.5 h-2.5" />
-              <span>VIP Tiers</span>
+              <span>VIP Bars</span>
             </div>
           }
         >
           <TreemapChart
             items={topCustomers}
             maxItems={20}
+            height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
