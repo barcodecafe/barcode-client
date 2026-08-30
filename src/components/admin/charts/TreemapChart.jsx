@@ -46,6 +46,7 @@ export const TreemapChart = ({
   items = [],
   valueFormatter = (v) => v,
   maxItems = 5,
+  density = 'normal',
   emptyMessage = 'No customer spending data available',
 }) => {
   const [hoveredId, setHoveredId] = useState(null);
@@ -82,10 +83,17 @@ export const TreemapChart = ({
     };
   });
 
+  const gridHeight =
+    density === 'compact'
+      ? 'h-28 sm:h-32'
+      : density === 'comfort'
+      ? 'h-52 sm:h-56'
+      : 'h-40 sm:h-44';
+
   return (
-    <div className="w-full flex flex-col gap-2.5">
+    <div className="w-full flex flex-col gap-2">
       {/* 🧩 Proportional Mosaic Treemap Grid */}
-      <div className="grid grid-cols-12 gap-2 h-44 sm:h-48 w-full">
+      <div className={`grid grid-cols-12 gap-1.5 sm:gap-2 ${gridHeight} w-full`}>
         {/* Tile 1: Top Customer (Dominant Left/Upper Block) */}
         {tiles[0] && (
           <motion.div

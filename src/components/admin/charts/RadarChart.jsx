@@ -43,6 +43,7 @@ export const RadarChart = ({
   items = [],
   valueFormatter = (v) => v,
   maxItems = 3,
+  size = 180,
   emptyMessage = 'No rider delivery data available',
 }) => {
   const [selectedRiderIndex, setSelectedRiderIndex] = useState(null); // null = show all top 3
@@ -60,6 +61,10 @@ export const RadarChart = ({
     if (displayedRiders.length === 0) return 1;
     return Math.max(...displayedRiders.map((r) => r.earnings || 0), 1);
   }, [displayedRiders]);
+
+  const SIZE = size;
+  const CENTER = SIZE / 2;
+  const RADIUS = (SIZE / 2) * 0.70;
 
   if (!displayedRiders || displayedRiders.length === 0) {
     return (

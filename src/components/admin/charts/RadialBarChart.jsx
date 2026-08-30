@@ -43,6 +43,7 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 export const RadialBarChart = ({
   items = [],
   maxItems = 5,
+  size = 170,
   emptyMessage = 'No dish order data available',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -59,6 +60,12 @@ export const RadialBarChart = ({
   const totalOrders = useMemo(() => {
     return displayedItems.reduce((sum, d) => sum + (d.orders || 0), 0);
   }, [displayedItems]);
+
+  const SIZE = size;
+  const CENTER = SIZE / 2;
+  const BASE_RADIUS = (SIZE / 2) * 0.85;
+  const RING_THICKNESS = SIZE < 150 ? 7 : 8.5;
+  const RING_GAP = SIZE < 150 ? 2.5 : 3.5;
 
   const rings = useMemo(() => {
     return displayedItems.map((item, index) => {
@@ -80,7 +87,7 @@ export const RadialBarChart = ({
         darkBgTrack: colorScheme.darkBg,
       };
     });
-  }, [displayedItems, maxOrders]);
+  }, [displayedItems, maxOrders, BASE_RADIUS, RING_THICKNESS, RING_GAP]);
 
   if (!displayedItems || displayedItems.length === 0) {
     return (

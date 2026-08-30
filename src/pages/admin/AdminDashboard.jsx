@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Coins,
-  Wallet,
   DollarSign,
   ShoppingBag,
   Building2,
@@ -15,8 +13,8 @@ import {
   Columns3,
   Columns4,
   Rows3,
-  Crop,
-  RotateCcw,
+  Minimize,
+  Maximize,
 } from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
@@ -44,15 +42,6 @@ import {
 const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
 const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
 
-const DEFAULT_CARD_SIZES = {
-  branch: { colSpan: 1, height: 340 },
-  category: { colSpan: 1, height: 340 },
-  trend: { colSpan: 1, height: 340 },
-  dishes: { colSpan: 1, height: 340 },
-  customers: { colSpan: 1, height: 340 },
-  riders: { colSpan: 1, height: 340 },
-};
-
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -71,10 +60,8 @@ export const AdminDashboard = () => {
   const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Layout & interactive controls state
-  const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'dishes' | 'customers' | 'riders' | null
+  // Layout & Density controls
   const [trendMonths, setTrendMonths] = useState(12);
-  const [isCustomizeMode, setIsCustomizeMode] = useState(false);
 
   const [gridCols, setGridCols] = useState(() => {
     try {
@@ -85,12 +72,12 @@ export const AdminDashboard = () => {
     }
   });
 
-  const [cardSizes, setCardSizes] = useState(() => {
+  const [cardDensity, setCardDensity] = useState(() => {
     try {
-      const saved = localStorage.getItem('admin_dashboard_card_sizes');
-      return saved ? { ...DEFAULT_CARD_SIZES, ...JSON.parse(saved) } : DEFAULT_CARD_SIZES;
+      const saved = localStorage.getItem('admin_dashboard_card_density');
+      return saved || 'normal'; // 'compact' | 'normal' | 'comfort'
     } catch {
-      return DEFAULT_CARD_SIZES;
+      return 'normal';
     }
   });
 
@@ -103,61 +90,34 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleResizeCard = (cardId, newSettings) => {
-    setCardSizes((prev) => {
-      const updated = {
-        ...prev,
-        [cardId]: {
-          ...(prev[cardId] || DEFAULT_CARD_SIZES[cardId]),
-          ...newSettings,
-        },
-      };
-      try {
-        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
-  };
-
-  const handleResetLayout = () => {
-    setGridCols(3);
-    setExpandedCard(null);
-    setCardSizes(DEFAULT_CARD_SIZES);
+  const handleSetDensity = (density) => {
+    setCardDensity(density);
     try {
-      localStorage.setItem('admin_dashboard_grid_cols', '3');
-      localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(DEFAULT_CARD_SIZES));
+      localStorage.setItem('admin_dashboard_card_density', density);
     } catch {
       // ignore
     }
   };
 
-  const toggleExpand = (cardKey) => {
-    setExpandedCard((prev) => (prev === cardKey ? null : cardKey));
-  };
-
-  const getCardColClass = (cardKey) => {
-    if (expandedCard === cardKey) return 'col-span-full';
-    const size = cardSizes[cardKey] || { colSpan: 1 };
-    const span = size.colSpan || 1;
-    if (span === 'full' || span >= gridCols) return 'col-span-full';
-    if (span === 2) {
-      if (gridCols === 2) return 'col-span-full md:col-span-2';
-      if (gridCols === 3) return 'col-span-full md:col-span-2 lg:col-span-2';
-      if (gridCols === 4) return 'col-span-full md:col-span-2 lg:col-span-2 xl:col-span-2';
+  const getGridColsClass = () => {
+    switch (gridCols) {
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-1 md:grid-cols-2';
+      case 4:
+        return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
+      case 6:
+        return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
+      case 3:
+      default:
+        return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
     }
-    if (span === 3) {
-      if (gridCols <= 3) return 'col-span-full';
-      if (gridCols === 4) return 'col-span-full lg:col-span-3 xl:col-span-3';
-    }
-    return 'col-span-1';
   };
 
   useEffect(() => {
     let active = true;
 
-    // ⚡ Unified high-speed endpoint (single network roundtrip)
     getDashboardAll()
       .then((res) => {
         if (!active) return;
@@ -173,7 +133,6 @@ export const AdminDashboard = () => {
         }
       })
       .catch(() => {
-        // Fallback to separate endpoints if ever needed
         Promise.all([
           getDashboardSummary().catch(() => null),
           getRevenueByBranch().catch(() => []),
@@ -224,18 +183,8 @@ export const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Charts Skeleton: Dynamic Grid (6 Cards) */}
-        <div
-          className={`grid gap-5 sm:gap-6 ${
-            gridCols === 1
-              ? 'grid-cols-1'
-              : gridCols === 2
-              ? 'grid-cols-1 md:grid-cols-2'
-              : gridCols === 4
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-          }`}
-        >
+        {/* Charts Skeleton: Dynamic Grid */}
+        <div className={`grid gap-5 sm:gap-6 ${getGridColsClass()}`}>
           {[...Array(6)].map((_, j) => (
             <div
               key={j}
@@ -272,7 +221,7 @@ export const AdminDashboard = () => {
 
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, expandedCard === 'branch' ? 12 : 8)
+    .slice(0, 8)
     .map((b) => ({ id: b.branchId, label: b.shortName, fullLabel: b.name, value: b.revenue }));
 
   const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
@@ -294,15 +243,48 @@ export const AdminDashboard = () => {
             Dashboard Overview
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Real-time analytics across {summary?.totalBranches || 0} Barcode branches. Drag card corners or use grid buttons to customize layout.
+            Real-time analytics across {summary?.totalBranches || 0} Barcode branches.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* 🔲 Dynamic Grid Columns Selector (1, 2, 3, 4 Cols) */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* 📐 Card Density / Scale Selector */}
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
             <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
-              Grid:
+              Size:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSetDensity('compact')}
+              title="Compact Size (ছোট - আরও কমপ্যাক্ট চার্ট)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                cardDensity === 'compact'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Minimize className="w-3 h-3" />
+              <span>Compact</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetDensity('normal')}
+              title="Standard Size (মিডিয়াম)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                cardDensity === 'normal'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Maximize className="w-3 h-3" />
+              <span>Normal</span>
+            </button>
+          </div>
+
+          {/* 🔲 Grid Columns Selector (1, 2, 3, 4, 6 Cols) */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
+            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
+              Cols:
             </span>
             <button
               type="button"
@@ -358,36 +340,11 @@ export const AdminDashboard = () => {
             </button>
           </div>
 
-          {/* ✂️ Card Crop / Resize Mode Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsCustomizeMode((prev) => !prev)}
-            title="Toggle interactive card crop & resize handles"
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
-              isCustomizeMode
-                ? 'bg-primary-500 text-white shadow-primary-500/20 ring-2 ring-primary-500/40'
-                : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
-            }`}
-          >
-            <Crop className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isCustomizeMode ? 'Finish Resizing' : 'Resize Cards'}</span>
-          </button>
-
-          {/* 🔄 Reset Layout Button */}
-          <button
-            type="button"
-            onClick={handleResetLayout}
-            title="Reset grid columns and card sizes to default"
-            className="p-2 rounded-2xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all cursor-pointer shadow-xs"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-
           <button
             type="button"
             onClick={handleOpenSalesExport}
             disabled={isFetchingOrders}
-            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+            className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span className="hidden sm:inline">{isFetchingOrders ? "Loading..." : "Export Sales"}</span>
@@ -427,203 +384,136 @@ export const AdminDashboard = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 🎯 FULLY CUSTOMIZABLE RESIZABLE CHARTS GRID (6 Charts Total)              */}
+      {/* 🎯 PRISTINE MINIMALIST CHARTS GRID (6 Charts Total)                       */}
       {/* ========================================================================= */}
-      <div
-        className={`grid gap-5 sm:gap-6 items-stretch ${
-          gridCols === 1
-            ? 'grid-cols-1'
-            : gridCols === 2
-            ? 'grid-cols-1 md:grid-cols-2'
-            : gridCols === 4
-            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-            : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-        }`}
-      >
+      <div className={`grid gap-4 sm:gap-5 items-stretch ${getGridColsClass()}`}>
         {/* Card 1: Revenue by Branch (Bar Chart) */}
-        {(expandedCard === null || expandedCard === 'branch') && (
-          <ChartCard
-            id="branch"
-            title="Revenue by Branch"
-            subtitle={expandedCard === 'branch' ? "Full breakdown across all active branches" : "Top branches this period"}
-            className={getCardColClass('branch')}
-            isExpanded={expandedCard === 'branch'}
-            onToggleExpand={() => toggleExpand('branch')}
-            colSpan={cardSizes.branch?.colSpan || 1}
-            height={cardSizes.branch?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-          >
-            <BarChart
-              data={barData}
-              valueFormatter={currency}
-              barLabel="Revenue"
-              height={expandedCard === 'branch' ? 340 : Math.max(180, (cardSizes.branch?.height || 340) - 120)}
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Revenue by Branch"
+          subtitle="Top branches this period"
+          density={cardDensity}
+        >
+          <BarChart
+            data={barData}
+            valueFormatter={currency}
+            barLabel="Revenue"
+            height={cardDensity === 'compact' ? 150 : 200}
+          />
+        </ChartCard>
 
         {/* Card 2: Orders by Category (Donut / Pie Chart) */}
-        {(expandedCard === null || expandedCard === 'category') && (
-          <ChartCard
-            id="category"
-            title="Orders by Category"
-            subtitle="Share of total order volume"
-            className={getCardColClass('category')}
-            isExpanded={expandedCard === 'category'}
-            onToggleExpand={() => toggleExpand('category')}
-            colSpan={cardSizes.category?.colSpan || 1}
-            height={cardSizes.category?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-          >
-            <PieChart
-              data={pieData}
-              valueFormatter={compactNumber}
-              size={expandedCard === 'category' ? 220 : 160}
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Orders by Category"
+          subtitle="Share of total order volume"
+          density={cardDensity}
+        >
+          <PieChart
+            data={pieData}
+            valueFormatter={compactNumber}
+            size={cardDensity === 'compact' ? 125 : 155}
+          />
+        </ChartCard>
 
         {/* Card 3: Revenue Growth Trend (Line Chart) */}
-        {(expandedCard === null || expandedCard === 'trend') && (
-          <ChartCard
-            id="trend"
-            title="Revenue Growth Trend"
-            subtitle={`Monthly trajectory (${trendMonths} months)`}
-            className={getCardColClass('trend')}
-            isExpanded={expandedCard === 'trend'}
-            onToggleExpand={() => toggleExpand('trend')}
-            colSpan={cardSizes.trend?.colSpan || 1}
-            height={cardSizes.trend?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-            action={
-              <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setTrendMonths(6)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    trendMonths === 6
-                      ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                  }`}
-                >
-                  6M
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrendMonths(12)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    trendMonths === 12
-                      ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                  }`}
-                >
-                  12M
-                </button>
-              </div>
-            }
-          >
-            <LineChart
-              data={lineData}
-              valueFormatter={currency}
-              height={expandedCard === 'trend' ? 320 : Math.max(180, (cardSizes.trend?.height || 340) - 120)}
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Revenue Growth Trend"
+          subtitle={`Monthly trajectory (${trendMonths} months)`}
+          density={cardDensity}
+          action={
+            <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setTrendMonths(6)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  trendMonths === 6
+                    ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                6M
+              </button>
+              <button
+                type="button"
+                onClick={() => setTrendMonths(12)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  trendMonths === 12
+                    ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                12M
+              </button>
+            </div>
+          }
+        >
+          <LineChart
+            data={lineData}
+            valueFormatter={currency}
+            height={cardDensity === 'compact' ? 150 : 200}
+          />
+        </ChartCard>
 
         {/* Card 4: Top Selling Dishes (Radial Bar Chart / Concentric Rings) */}
-        {(expandedCard === null || expandedCard === 'dishes') && (
-          <ChartCard
-            id="dishes"
-            title="Top Selling Dishes"
-            subtitle={expandedCard === 'dishes' ? "Concentric order volume rings" : "Radial order distribution"}
-            className={getCardColClass('dishes')}
-            isExpanded={expandedCard === 'dishes'}
-            onToggleExpand={() => toggleExpand('dishes')}
-            colSpan={cardSizes.dishes?.colSpan || 1}
-            height={cardSizes.dishes?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-            action={
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/10 text-primary-600 dark:text-primary-400 text-xs font-black">
-                <Flame className="w-3.5 h-3.5" />
-                <span>Radial Chart</span>
-              </div>
-            }
-          >
-            <RadialBarChart
-              items={topDishes}
-              maxItems={expandedCard === 'dishes' || (cardSizes.dishes?.colSpan || 1) > 1 ? 8 : 5}
-              emptyMessage="No dish orders recorded yet"
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Top Selling Dishes"
+          subtitle="Radial order distribution"
+          density={cardDensity}
+          action={
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black">
+              <Flame className="w-3 h-3" />
+              <span>Radial</span>
+            </div>
+          }
+        >
+          <RadialBarChart
+            items={topDishes}
+            maxItems={5}
+            size={cardDensity === 'compact' ? 135 : 165}
+            emptyMessage="No dish orders recorded yet"
+          />
+        </ChartCard>
 
         {/* Card 5: Top Valued Customers (Treemap Chart / Weighted Mosaic) */}
-        {(expandedCard === null || expandedCard === 'customers') && (
-          <ChartCard
-            id="customers"
-            title="Top Valued Customers"
-            subtitle={expandedCard === 'customers' ? "VIP revenue contribution mosaic" : "Customer spend treemap"}
-            className={getCardColClass('customers')}
-            isExpanded={expandedCard === 'customers'}
-            onToggleExpand={() => toggleExpand('customers')}
-            colSpan={cardSizes.customers?.colSpan || 1}
-            height={cardSizes.customers?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-            action={
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black">
-                <User className="w-3.5 h-3.5" />
-                <span>Treemap</span>
-              </div>
-            }
-          >
-            <TreemapChart
-              items={topCustomers}
-              maxItems={expandedCard === 'customers' || (cardSizes.customers?.colSpan || 1) > 1 ? 8 : 5}
-              valueFormatter={currency}
-              emptyMessage="No customer spending recorded yet"
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Top Valued Customers"
+          subtitle="VIP revenue contribution mosaic"
+          density={cardDensity}
+          action={
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black">
+              <User className="w-3 h-3" />
+              <span>Treemap</span>
+            </div>
+          }
+        >
+          <TreemapChart
+            items={topCustomers}
+            maxItems={5}
+            density={cardDensity}
+            valueFormatter={currency}
+            emptyMessage="No customer spending recorded yet"
+          />
+        </ChartCard>
 
         {/* Card 6: Top Delivery Riders (Radar / Spider Chart) */}
-        {(expandedCard === null || expandedCard === 'riders') && (
-          <ChartCard
-            id="riders"
-            title="Top Delivery Riders"
-            subtitle={expandedCard === 'riders' ? "Multi-axis performance web" : "Rider efficiency spider web"}
-            className={getCardColClass('riders')}
-            isExpanded={expandedCard === 'riders'}
-            onToggleExpand={() => toggleExpand('riders')}
-            colSpan={cardSizes.riders?.colSpan || 1}
-            height={cardSizes.riders?.height || 340}
-            maxCols={gridCols}
-            onResize={handleResizeCard}
-            isCustomizeMode={isCustomizeMode}
-            action={
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-black">
-                <Bike className="w-3.5 h-3.5" />
-                <span>Radar Chart</span>
-              </div>
-            }
-          >
-            <RadarChart
-              items={topRiders}
-              maxItems={expandedCard === 'riders' || (cardSizes.riders?.colSpan || 1) > 1 ? 5 : 3}
-              valueFormatter={currency}
-              emptyMessage="No rider trips recorded yet"
-            />
-          </ChartCard>
-        )}
+        <ChartCard
+          title="Top Delivery Riders"
+          subtitle="Rider efficiency spider web"
+          density={cardDensity}
+          action={
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black">
+              <Bike className="w-3 h-3" />
+              <span>Radar</span>
+            </div>
+          }
+        >
+          <RadarChart
+            items={topRiders}
+            maxItems={3}
+            size={cardDensity === 'compact' ? 145 : 180}
+            valueFormatter={currency}
+            emptyMessage="No rider trips recorded yet"
+          />
+        </ChartCard>
       </div>
 
       {/* 📥 EXPORT SALES MODAL */}
@@ -636,4 +526,5 @@ export const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default AdminDashboard;
+
