@@ -249,10 +249,24 @@ export const AdminDashboard = () => {
     );
   }
 
+  const cleanBranchName = (name, shortName) => {
+    const raw = (shortName || name || '').trim();
+    const cleaned = raw
+      .replace(/^Barcode\s+(Cafe|Restaurant|Lounge|Diner|Express|Bistro|Group)?\s*[-–—:]\s*/i, '')
+      .replace(/^Barcode\s+/i, '')
+      .trim();
+    return cleaned || raw || 'Branch';
+  };
+
   const barData = [...revenueByBranch]
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 15)
-    .map((b) => ({ id: b.branchId, label: b.shortName, fullLabel: b.name, value: b.revenue }));
+    .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+    .slice(0, 10)
+    .map((b) => ({
+      id: b.branchId,
+      label: cleanBranchName(b.name, b.shortName),
+      fullLabel: b.name,
+      value: b.revenue || 0,
+    }));
 
   const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
   const lineData = revenueTrend
