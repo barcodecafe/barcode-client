@@ -67,7 +67,7 @@ export const AdminDashboard = () => {
   const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Layout & Density controls
+  // Layout & Density controls (ALL HOOKS DECLARED AT TOP BEFORE ANY RETURNS)
   const [trendMonths, setTrendMonths] = useState(12);
 
   const [gridCols, setGridCols] = useState(() => {
@@ -76,6 +76,15 @@ export const AdminDashboard = () => {
       return saved ? Number(saved) : 3;
     } catch {
       return 3;
+    }
+  });
+
+  const [heightMode, setHeightMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('admin_dashboard_height_mode');
+      return saved || 'small';
+    } catch {
+      return 'small';
     }
   });
 
@@ -95,6 +104,27 @@ export const AdminDashboard = () => {
     } catch {
       // ignore
     }
+  };
+
+  const handleSetHeightMode = (mode) => {
+    setHeightMode(mode);
+    const targetHeight = mode === 'small' ? 205 : 320;
+    setCardSizes((prev) => {
+      const updated = {};
+      Object.keys(DEFAULT_CARD_SIZES).forEach((k) => {
+        updated[k] = {
+          ...(prev[k] || DEFAULT_CARD_SIZES[k]),
+          height: targetHeight,
+        };
+      });
+      try {
+        localStorage.setItem('admin_dashboard_height_mode', mode);
+        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
   };
 
   const handleResizeCard = (cardId, newSettings) => {
@@ -189,6 +219,21 @@ export const AdminDashboard = () => {
     };
   }, []);
 
+  const handleOpenSalesExport = async () => {
+    if (orders.length === 0) {
+      try {
+        setIsFetchingOrders(true);
+        const data = await getAllOrders();
+        setOrders(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch orders for sales export:", err);
+      } finally {
+        setIsFetchingOrders(false);
+      }
+    }
+    setIsExportModalOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl animate-pulse">
@@ -233,52 +278,6 @@ export const AdminDashboard = () => {
       </div>
     );
   }
-
-  const handleOpenSalesExport = async () => {
-    if (orders.length === 0) {
-      try {
-        setIsFetchingOrders(true);
-        const data = await getAllOrders();
-        setOrders(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Failed to fetch orders for sales export:", err);
-      } finally {
-        setIsFetchingOrders(false);
-      }
-    }
-    setIsExportModalOpen(true);
-  };
-
-  // Height mode state ('small' | 'large')
-  const [heightMode, setHeightMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem('admin_dashboard_height_mode');
-      return saved || 'small';
-    } catch {
-      return 'small';
-    }
-  });
-
-  const handleSetHeightMode = (mode) => {
-    setHeightMode(mode);
-    const targetHeight = mode === 'small' ? 205 : 320;
-    setCardSizes((prev) => {
-      const updated = {};
-      Object.keys(DEFAULT_CARD_SIZES).forEach((k) => {
-        updated[k] = {
-          ...(prev[k] || DEFAULT_CARD_SIZES[k]),
-          height: targetHeight,
-        };
-      });
-      try {
-        localStorage.setItem('admin_dashboard_height_mode', mode);
-        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
-  };
 
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
