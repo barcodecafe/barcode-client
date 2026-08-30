@@ -495,7 +495,7 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 4: Top Selling Dishes (Ranked Bar Chart) */}
+        {/* Card 4: Top Selling Dishes (MUI X Column Bar Chart) */}
         <ChartCard
           id="dishes"
           title="Top Selling Dishes"
@@ -514,6 +514,7 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
+            height={Math.max(95, globalCardHeight - 80)}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>

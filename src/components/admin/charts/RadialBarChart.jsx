@@ -3,20 +3,23 @@ import { motion } from 'framer-motion';
 import { Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// RadialBarChart.jsx -> MUI X Inspired Ranked Progress Chart for Top Dishes
+// RadialBarChart.jsx -> MUI X Vertical Column Bar Chart for Top Selling Dishes
+// Styled exactly matching MUI X React Charts / Bars Overview
 // ---------------------------------------------------------------------------
 
-const PALETTE = [
-  { stroke: '#e02424', bg: '#fee2e2', darkBg: '#37181c' }, // #1 Primary Red
-  { stroke: '#f97316', bg: '#ffedd5', darkBg: '#3a2016' }, // #2 Orange
-  { stroke: '#eab308', bg: '#fef9c3', darkBg: '#382f14' }, // #3 Amber
-  { stroke: '#10b981', bg: '#d1fae5', darkBg: '#132d22' }, // #4 Emerald
-  { stroke: '#8b5cf6', bg: '#ede9fe', darkBg: '#2a1b3d' }, // #5 Purple
+const BAR_COLORS = [
+  '#3b82f6', // Royal Blue
+  '#f59e0b', // Amber / Gold
+  '#ef4444', // Crimson Red
+  '#10b981', // Emerald Green
+  '#8b5cf6', // Violet / Purple
+  '#ec4899', // Pink
 ];
 
 export const RadialBarChart = ({
   items = [],
   maxItems = 5,
+  height = 120,
   emptyMessage = 'No dish order data available',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -34,6 +37,8 @@ export const RadialBarChart = ({
     return displayedItems.reduce((sum, d) => sum + (d.orders || 0), 0);
   }, [displayedItems]);
 
+  const gridLines = [0, 0.33, 0.66, 1];
+
   if (!displayedItems || displayedItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-28 text-neutral-400 dark:text-neutral-500 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 p-4">
@@ -44,72 +49,92 @@ export const RadialBarChart = ({
   }
 
   return (
-    <div className="w-full flex flex-col justify-center gap-1.5 min-w-0 select-none">
-      {displayedItems.map((dish, i) => {
-        const orders = dish.orders || 0;
-        const pct = Math.max(5, Math.round((orders / maxOrders) * 100));
-        const sharePct = totalOrders > 0 ? Math.round((orders / totalOrders) * 100) : 0;
-        const colorScheme = PALETTE[i % PALETTE.length];
-        const isHovered = hoveredIndex === i;
+    <div className="w-full flex flex-col justify-between select-none">
+      {/* 📊 Chart Canvas with Y-Axis Gridlines & Vertical Bars */}
+      <div className="relative w-full" style={{ height: Math.max(90, height) }}>
+        {/* Y-axis guideline levels */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-1">
+          {gridLines
+            .slice()
+            .reverse()
+            .map((g, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-7 text-right shrink-0 leading-none">
+                  {Math.round(maxOrders * g)}
+                </span>
+                <div className="flex-1 border-b border-neutral-100 dark:border-neutral-800/80" />
+              </div>
+            ))}
+        </div>
 
-        return (
-          <div
-            key={dish.dishId || dish.name || i}
-            title={`${dish.name}: ${orders} orders (${sharePct}% of top dishes)`}
-            onMouseEnter={() => setHoveredIndex(i)}
-            onMouseLeave={() => setHoveredIndex(null)}
-            className={`flex flex-col gap-0.5 p-1.5 rounded-lg transition-all cursor-pointer ${
-              isHovered
-                ? 'bg-neutral-100/90 dark:bg-neutral-800/90 shadow-2xs'
-                : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
+        {/* Vertical Bars Container */}
+        <div
+          className="absolute inset-0 pl-9 flex items-end"
+          style={{ gap: displayedItems.length > 4 ? 8 : 14 }}
+        >
+          {displayedItems.map((dish, i) => {
+            const orders = dish.orders || 0;
+            const heightPct = (orders / maxOrders) * 100;
+            const sharePct = totalOrders > 0 ? Math.round((orders / totalOrders) * 100) : 0;
+            const isHovered = hoveredIndex === i;
+            const color = BAR_COLORS[i % BAR_COLORS.length];
+
+            return (
+              <div
+                key={dish.dishId || dish.name || i}
+                title={`${dish.name}: ${orders} orders (${sharePct}%)`}
+                className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0 cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                {/* Floating Tooltip */}
+                {isHovered && (
+                  <div className="absolute -top-2 -translate-y-full z-20 px-2.5 py-1 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none flex items-center gap-1.5 border border-white/10">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span>#{i + 1} {dish.name}:</span>
+                    <span className="font-black text-amber-300 dark:text-primary-600">{orders} orders</span>
+                    <span className="text-white/60 dark:text-neutral-500 font-semibold">({sharePct}%)</span>
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
+                  </div>
+                )}
+
+                {/* Vertical Column Bar */}
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(6, heightPct)}%` }}
+                  transition={{ duration: 0.45, delay: i * 0.04, ease: 'easeOut' }}
+                  className="w-full rounded-t-md transition-all duration-150"
+                  style={{
+                    backgroundColor: color,
+                    opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
+                    transform: isHovered ? 'scaleY(1.03)' : 'scaleY(1)',
+                    transformOrigin: 'bottom',
+                    boxShadow: isHovered ? `0 0 10px ${color}60` : 'none',
+                    minHeight: 4,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Guaranteed Visible X-Axis Dish Labels Row */}
+      <div className="flex items-center pl-9 mt-1.5 w-full" style={{ gap: displayedItems.length > 4 ? 8 : 14 }}>
+        {displayedItems.map((dish, i) => (
+          <span
+            key={`lbl-${dish.dishId || dish.name || i}`}
+            title={dish.name}
+            className={`flex-1 text-[9px] sm:text-[10px] text-center truncate px-0.5 leading-none transition-colors ${
+              hoveredIndex === i
+                ? 'font-black text-neutral-900 dark:text-white scale-105'
+                : 'font-semibold text-neutral-500 dark:text-neutral-400'
             }`}
           >
-            {/* Top row: Rank badge + Dish name + Orders count */}
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <span
-                  className="w-4 h-4 rounded-md text-[9px] font-black flex items-center justify-center shrink-0 text-white"
-                  style={{ backgroundColor: colorScheme.stroke }}
-                >
-                  {i + 1}
-                </span>
-                <span className="text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">
-                  {dish.name}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <span
-                  className="text-[10px] sm:text-[11px] font-black px-1.5 py-0.2 rounded"
-                  style={{
-                    color: colorScheme.stroke,
-                    backgroundColor: `${colorScheme.stroke}16`,
-                  }}
-                >
-                  {orders} orders
-                </span>
-                <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500">
-                  ({sharePct}%)
-                </span>
-              </div>
-            </div>
-
-            {/* Bottom row: MUI X Style Progress bar track & fill */}
-            <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.5, delay: i * 0.05, ease: 'easeOut' }}
-                className="h-full rounded-full"
-                style={{
-                  backgroundColor: colorScheme.stroke,
-                  boxShadow: isHovered ? `0 0 8px ${colorScheme.stroke}80` : 'none',
-                }}
-              />
-            </div>
-          </div>
-        );
-      })}
+            #{i + 1} {dish.name}
+          </span>
+        ))}
+      </div>
     </div>
   );
 };
