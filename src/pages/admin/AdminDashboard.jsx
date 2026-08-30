@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   DollarSign,
+  CircleDollarSign,
   ShoppingBag,
   Building2,
   Star,
   Flame,
   User,
   Bike,
+  Download,
   FileSpreadsheet,
   Columns2,
   Columns3,
