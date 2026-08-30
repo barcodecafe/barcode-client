@@ -74,8 +74,27 @@ export const PieChart = ({ data, valueFormatter = (v) => v, size = DEFAULT_SIZE 
     });
   }, [data, total]);
 
+  const displayedSegments = useMemo(() => {
+    if (segments.length <= 5) return segments;
+    const top4 = segments.slice(0, 4);
+    const rest = segments.slice(4);
+    const restValue = rest.reduce((sum, s) => sum + s.value, 0);
+    const restPct = ((restValue / total) * 100).toFixed(1);
+    return [
+      ...top4,
+      {
+        label: 'Others',
+        value: restValue,
+        pct: restPct,
+        color: '#94a3b8',
+        startAngle: top4[top4.length - 1].endAngle,
+        endAngle: 359.99,
+      },
+    ];
+  }, [segments, total]);
+
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 w-full">
       {/* Donut */}
       <div className="relative shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -96,10 +115,10 @@ export const PieChart = ({ data, valueFormatter = (v) => v, size = DEFAULT_SIZE 
                 d={describeArc(center, center, radius, seg.startAngle, seg.endAngle)}
                 fill="none"
                 stroke={seg.color}
-                strokeWidth={hoveredIndex === i ? stroke + 4 : stroke}
+                strokeWidth={hoveredIndex === i ? stroke + 3 : stroke}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: i * 0.08, ease: 'easeOut' }}
+                transition={{ duration: 0.5, delay: i * 0.05, ease: 'easeOut' }}
                 style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease' }}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
@@ -109,31 +128,31 @@ export const PieChart = ({ data, valueFormatter = (v) => v, size = DEFAULT_SIZE 
         </svg>
 
         {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
           {total === 0 ? (
             <>
-              <span className="text-xl font-extrabold text-neutral-400 dark:text-neutral-500 font-display">
+              <span className="text-base sm:text-lg font-extrabold text-neutral-400 dark:text-neutral-500 font-display">
                 0
               </span>
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+              <span className="text-[9px] text-neutral-400 dark:text-neutral-500">
                 No Orders
               </span>
             </>
           ) : hoveredIndex !== null && segments[hoveredIndex] ? (
             <>
-              <span className="text-xl font-extrabold text-neutral-800 dark:text-neutral-100 font-display">
+              <span className="text-base sm:text-lg font-extrabold text-neutral-800 dark:text-neutral-100 font-display">
                 {segments[hoveredIndex].pct}%
               </span>
-              <span className="text-[10px] text-neutral-500 dark:text-neutral-400 max-w-[90px] text-center truncate">
+              <span className="text-[9px] text-neutral-500 dark:text-neutral-400 max-w-[75px] truncate">
                 {segments[hoveredIndex].label}
               </span>
             </>
           ) : (
             <>
-              <span className="text-xl font-extrabold text-neutral-800 dark:text-neutral-100 font-display">
+              <span className="text-base sm:text-lg font-extrabold text-neutral-800 dark:text-neutral-100 font-display">
                 {valueFormatter(total)}
               </span>
-              <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+              <span className="text-[9px] text-neutral-500 dark:text-neutral-400">
                 Total Orders
               </span>
             </>
@@ -141,34 +160,32 @@ export const PieChart = ({ data, valueFormatter = (v) => v, size = DEFAULT_SIZE 
         </div>
       </div>
 
-      {/* Legend — min-w-0 lets it shrink beside the fixed-width donut in the
-          sm:flex-row layout; without it the legend can't shrink below its
-          content and pushes the dashboard into horizontal overflow. */}
-      <div className="flex flex-col gap-2.5 w-full min-w-0">
+      {/* Legend */}
+      <div className="flex flex-col gap-1.5 w-full min-w-0 flex-1">
         {total === 0 ? (
-          <div className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">
+          <div className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-4">
             No order data available
           </div>
         ) : (
-          segments.map((seg, i) => (
+          displayedSegments.map((seg, i) => (
             <div
               key={seg.label}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className={`flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
-                hoveredIndex === i ? 'bg-neutral-100 dark:bg-neutral-800' : ''
+              className={`flex items-center justify-between gap-2 px-2 py-1 rounded-lg cursor-pointer transition-colors duration-150 ${
+                hoveredIndex === i ? 'bg-neutral-100 dark:bg-neutral-800' : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  className="w-2 h-2 rounded-full shrink-0"
                   style={{ backgroundColor: seg.color }}
                 />
-                <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">
+                <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate">
                   {seg.label}
                 </span>
               </div>
-              <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 shrink-0">
+              <span className="text-xs font-extrabold text-neutral-800 dark:text-neutral-100 shrink-0">
                 {seg.pct}%
               </span>
             </div>

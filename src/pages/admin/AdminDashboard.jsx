@@ -41,12 +41,12 @@ const currency = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
 const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
 
 const DEFAULT_CARD_SIZES = {
-  branch: { colSpan: 1, height: 280 },
-  category: { colSpan: 1, height: 280 },
-  trend: { colSpan: 1, height: 280 },
-  dishes: { colSpan: 1, height: 280 },
-  customers: { colSpan: 1, height: 280 },
-  riders: { colSpan: 1, height: 280 },
+  branch: { colSpan: 1, height: 210 },
+  category: { colSpan: 1, height: 210 },
+  trend: { colSpan: 1, height: 210 },
+  dishes: { colSpan: 1, height: 210 },
+  customers: { colSpan: 1, height: 210 },
+  riders: { colSpan: 1, height: 210 },
 };
 
 const fadeInUp = {
@@ -108,7 +108,7 @@ export const AdminDashboard = () => {
 
   const handleSetHeightMode = (mode) => {
     setHeightMode(mode);
-    const targetHeight = mode === 'small' ? 205 : 320;
+    const targetHeight = mode === 'small' ? 210 : 320;
     setCardSizes((prev) => {
       const updated = {};
       Object.keys(DEFAULT_CARD_SIZES).forEach((k) => {

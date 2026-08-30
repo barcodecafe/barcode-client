@@ -55,11 +55,11 @@ export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => 
 
     const line = buildSmoothPath(pts);
     const area = pts.length > 0
-      ? `${line} L ${pts[pts.length - 1].x} ${HEIGHT - PADDING_BOTTOM} L ${pts[0].x} ${HEIGHT - PADDING_BOTTOM} Z`
+      ? `${line} L ${pts[pts.length - 1].x} ${height - PADDING_BOTTOM} L ${pts[0].x} ${height - PADDING_BOTTOM} Z`
       : '';
 
     return { points: pts, linePath: line, areaPath: area, maxValue: max, minValue: min };
-  }, [data]);
+  }, [data, height]);
 
   const handleMouseMove = (e) => {
     if (!svgRef.current || points.length === 0) return;
@@ -85,7 +85,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => 
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[220px] text-neutral-400 dark:text-neutral-500 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800">
+      <div className="flex flex-col items-center justify-center h-[200px] text-neutral-400 dark:text-neutral-500 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800">
         <p className="text-sm font-medium">No trend data available</p>
       </div>
     );
@@ -93,7 +93,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => 
 
   return (
     <div className="w-full">
-      <div className="relative w-full transition-all duration-300" style={{ height: height + 20 }}>
+      <div className="relative w-full transition-all duration-300" style={{ height: height + 10 }}>
         <svg
           ref={svgRef}
           viewBox={`0 0 ${WIDTH} ${height}`}
@@ -171,7 +171,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => 
               x1={points[hoveredIndex].x}
               x2={points[hoveredIndex].x}
               y1={PADDING_TOP}
-              y2={HEIGHT - PADDING_BOTTOM}
+              y2={height - PADDING_BOTTOM}
               stroke="#e02424"
               strokeWidth="1"
               strokeDasharray="3 3"
@@ -187,7 +187,7 @@ export const LineChart = ({ data, valueFormatter = (v) => v, height = 220 }) => 
             className="absolute z-10 px-2.5 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold whitespace-nowrap shadow-lg pointer-events-none -translate-x-1/2 -translate-y-full"
             style={{
               left: `${(points[hoveredIndex].x / WIDTH) * 100}%`,
-              top: `${(points[hoveredIndex].y / HEIGHT) * 100}%`,
+              top: `${(points[hoveredIndex].y / height) * 100}%`,
               marginTop: -10,
             }}
           >

@@ -86,7 +86,10 @@ export const ChartCard = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      style={{ minHeight: height ? `${height}px` : '280px' }}
+      style={{
+        height: height ? `${height}px` : '240px',
+        minHeight: height ? `${height}px` : '240px',
+      }}
       className={`relative bg-white dark:bg-neutral-900 border rounded-2xl sm:rounded-3xl shadow-xs transition-all flex flex-col justify-between overflow-hidden ${paddingClass} ${
         isResizing
           ? 'border-primary-500 ring-2 ring-primary-500/30 shadow-md select-none'
