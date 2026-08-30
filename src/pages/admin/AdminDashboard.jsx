@@ -75,6 +75,11 @@ export const AdminDashboard = () => {
   const [customersLimit, setCustomersLimit] = useState(10);
   const [ridersLimit, setRidersLimit] = useState(10);
 
+  // 🎛️ Metric Toggle Modes (By Volume vs By Money / Value)
+  const [dishesMetric, setDishesMetric] = useState('orders'); // 'orders' | 'revenue'
+  const [customersMetric, setCustomersMetric] = useState('spent'); // 'spent' | 'orders'
+  const [ridersMetric, setRidersMetric] = useState('trips'); // 'trips' | 'value'
+
   const [gridCols, setGridCols] = useState(() => {
     try {
       const saved = localStorage.getItem('admin_dashboard_grid_cols');
@@ -288,7 +293,7 @@ export const AdminDashboard = () => {
   const cardDensity = globalCardHeight < 220 ? 'compact' : 'normal';
 
   const renderLimitSwitcher = (value, onChange, options = [5, 10, 15, 'All']) => (
-    <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50">
+    <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50 shadow-2xs shrink-0">
       {options.map((opt) => {
         const isSelected = String(value).toLowerCase() === String(opt).toLowerCase();
         return (
@@ -303,6 +308,28 @@ export const AdminDashboard = () => {
             }`}
           >
             {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderMetricSwitcher = (value, onChange, options = []) => (
+    <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50 shadow-2xs shrink-0">
+      {options.map((opt) => {
+        const isSelected = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
+              isSelected
+                ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+            }`}
+          >
+            {opt.label}
           </button>
         );
       })}
@@ -339,112 +366,76 @@ export const AdminDashboard = () => {
               title="Show Small (কমপ্যাক্ট হাইট - যাতে সব এক স্ক্রিনে ফিট হয়)"
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 heightMode === 'small'
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <span>Small</span>
+              Small
             </button>
             <button
               type="button"
               onClick={() => handleSetHeightMode('large')}
-              title="Show Large (বড় বিস্তারিত ভিউ)"
+              title="Show Large (স্ট্যান্ডার্ড হাইট)"
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 heightMode === 'large'
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
-              <span>Large</span>
+              Large
             </button>
           </div>
 
-          {/* 🔲 Grid Columns Selector (1, 2, 3, 4 Cols) */}
+          {/* 🎛️ Column Selector Pill Switcher */}
           <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800/90 p-0.5 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
               Cols:
             </span>
-            <button
-              type="button"
-              onClick={() => handleSetGridCols(1)}
-              title="1 Column (Full Width Rows)"
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                gridCols === 1
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Rows3 className="w-3 h-3" />
-              <span>1</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSetGridCols(2)}
-              title="2 Columns Grid"
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                gridCols === 2
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Columns2 className="w-3 h-3" />
-              <span>2</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSetGridCols(3)}
-              title="3 Columns Grid (Standard 3x2)"
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                gridCols === 3
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Columns3 className="w-3 h-3" />
-              <span>3</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSetGridCols(4)}
-              title="4 Columns Grid"
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                gridCols === 4
-                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Columns4 className="w-3 h-3" />
-              <span>4</span>
-            </button>
+            {[1, 2, 3, 4].map((cols) => (
+              <button
+                key={cols}
+                type="button"
+                onClick={() => handleSetGridCols(cols)}
+                className={`w-6 h-6 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                  gridCols === cols
+                    ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+                title={`Show ${cols} column${cols > 1 ? 's' : ''} layout`}
+              >
+                {cols === 1 && <span className="text-[10px]">🔲 1</span>}
+                {cols === 2 && <span className="text-[10px]">🪟 2</span>}
+                {cols === 3 && <span className="text-[10px]">⊞ 3</span>}
+                {cols === 4 && <span className="text-[10px]">▦ 4</span>}
+              </button>
+            ))}
           </div>
 
           <button
             type="button"
-            onClick={handleOpenSalesExport}
-            disabled={isFetchingOrders}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-extrabold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-colors shadow-xs shadow-primary-600/20 cursor-pointer shrink-0"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isFetchingOrders ? "Loading..." : "Export Sales"}</span>
-            <span className="sm:hidden">Export</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Sales</span>
           </button>
         </div>
       </motion.div>
 
-      {/* 🎯 Stat Cards: 4 KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3">
+      {/* 4 Overview Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         <StatCard
-          icon={DollarSign}
-          label="Total Revenue" 
+          icon={CircleDollarSign}
+          label="Total Revenue"
           value={currency(summary?.totalRevenue || 0)}
-          changePct={summary?.revenueChangePct}
+          change={summary?.revenueChange}
           delay={0}
         />
         <StatCard
           icon={ShoppingBag}
           label="Total Orders"
-          value={compactNumber(summary?.totalOrders || 0)}
-          changePct={summary?.ordersChangePct}
+          value={summary?.totalOrders || 0}
+          change={summary?.orderChange}
           delay={0.05}
         />
         <StatCard
@@ -512,7 +503,7 @@ export const AdminDashboard = () => {
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50">
+            <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50 shadow-2xs">
               <button
                 type="button"
                 onClick={() => setTrendMonths(6)}
@@ -545,58 +536,85 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 4: Top Selling Dishes (MUI X Donut Chart) */}
+        {/* Card 4: Top Selling Dishes (MUI X Donut Chart with Orders vs Sales ৳ Mode) */}
         <ChartCard
           id="dishes"
           title="Top Selling Dishes"
-          subtitle="Share of total dish orders"
+          subtitle={dishesMetric === 'revenue' ? 'Ranked by total sales revenue (৳)' : 'Ranked by total dish order volume'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={renderLimitSwitcher(dishesLimit, setDishesLimit, [5, 10, 15, 'All'])}
+          action={
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {renderMetricSwitcher(dishesMetric, setDishesMetric, [
+                { label: 'Orders', value: 'orders' },
+                { label: 'Sales ৳', value: 'revenue' },
+              ])}
+              {renderLimitSwitcher(dishesLimit, setDishesLimit, [5, 10, 15, 'All'])}
+            </div>
+          }
         >
           <RadialBarChart
             items={topDishes}
             maxItems={currentDishesLimit}
+            mode={dishesMetric}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
 
-        {/* Card 5: Top Valued Customers (MUI X Column Bar Chart) */}
+        {/* Card 5: Top Valued Customers (MUI X Column Bar Chart with Spent ৳ vs Orders Mode) */}
         <ChartCard
           id="customers"
           title="Top Valued Customers"
-          subtitle="VIP customer spending comparison"
+          subtitle={customersMetric === 'orders' ? 'Ranked by total order frequency' : 'Ranked by lifetime spending (৳)'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={renderLimitSwitcher(customersLimit, setCustomersLimit, [5, 10, 15, 'All'])}
+          action={
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {renderMetricSwitcher(customersMetric, setCustomersMetric, [
+                { label: 'Spent ৳', value: 'spent' },
+                { label: 'Orders', value: 'orders' },
+              ])}
+              {renderLimitSwitcher(customersLimit, setCustomersLimit, [5, 10, 15, 'All'])}
+            </div>
+          }
         >
           <TreemapChart
             items={topCustomers}
             maxItems={currentCustomersLimit}
+            mode={customersMetric}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
         </ChartCard>
 
-        {/* Card 6: Top Delivery Riders (MUI X Multi-Series Comparison Line Chart) */}
+        {/* Card 6: Top Delivery Riders (MUI X Multi-Series Comparison Line Chart with Trips vs Delivered ৳ Mode) */}
         <ChartCard
           id="riders"
           title="Top Delivery Riders"
-          subtitle="Trips vs earnings comparison"
+          subtitle={ridersMetric === 'value' ? 'Ranked by total delivered value (৳)' : 'Ranked by completed delivery trips'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={renderLimitSwitcher(ridersLimit, setRidersLimit, [5, 10, 15, 'All'])}
+          action={
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {renderMetricSwitcher(ridersMetric, setRidersMetric, [
+                { label: 'Trips', value: 'trips' },
+                { label: 'Delivered ৳', value: 'value' },
+              ])}
+              {renderLimitSwitcher(ridersLimit, setRidersLimit, [5, 10, 15, 'All'])}
+            </div>
+          }
         >
           <RadarChart
             items={topRiders}
             maxItems={currentRidersLimit}
+            mode={ridersMetric}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"

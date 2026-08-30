@@ -4,7 +4,7 @@ import { Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // RadialBarChart.jsx -> MUI X Donut Chart for Top Selling Dishes
-// Displays both order volume AND total revenue generated (সবচেয়ে বেশি বিক্রিত টাকা)
+// Supports toggling between 'orders' (Volume) and 'revenue' (Taka collected)
 // ---------------------------------------------------------------------------
 
 const PALETTE = [
@@ -37,53 +37,88 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 export const RadialBarChart = ({
   items = [],
   maxItems = 20,
+  mode = 'orders', // 'orders' | 'revenue'
   emptyMessage = 'No dish order data available',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
+  // Sort items according to active metric mode
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      if (mode === 'revenue') {
+        const revA = a.revenue || (a.price || 0) * (a.orders || 0);
+        const revB = b.revenue || (b.price || 0) * (b.orders || 0);
+        return revB - revA;
+      }
+      return (b.orders || 0) - (a.orders || 0);
+    });
+  }, [items, mode]);
+
   const displayedItems = useMemo(() => {
-    return items.slice(0, maxItems);
-  }, [items, maxItems]);
+    return sortedItems.slice(0, maxItems);
+  }, [sortedItems, maxItems]);
 
   const totalOrders = useMemo(() => {
     return displayedItems.reduce((sum, d) => sum + (d.orders || 0), 0);
   }, [displayedItems]);
 
   const totalRevenue = useMemo(() => {
-    return displayedItems.reduce((sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)), 0);
+    return displayedItems.reduce(
+      (sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)),
+      0
+    );
   }, [displayedItems]);
+
+  const metricTotal = mode === 'revenue' ? totalRevenue : totalOrders;
 
   // Aggregate top 4 dishes + "Others" if > 5 dishes exist
   const segments = useMemo(() => {
-    if (totalOrders === 0 || displayedItems.length === 0) return [];
+    if (metricTotal === 0 || displayedItems.length === 0) return [];
 
     let list = [];
     if (displayedItems.length <= 5) {
-      list = displayedItems.map((d, i) => ({
-        label: d.name,
-        orders: d.orders || 0,
-        revenue: d.revenue || (d.price || 0) * (d.orders || 0),
-        rank: i + 1,
-        color: PALETTE[i % PALETTE.length],
-      }));
+      list = displayedItems.map((d, i) => {
+        const orders = d.orders || 0;
+        const revenue = d.revenue || (d.price || 0) * orders;
+        const value = mode === 'revenue' ? revenue : orders;
+        return {
+          label: d.name,
+          orders,
+          revenue,
+          value,
+          rank: i + 1,
+          color: PALETTE[i % PALETTE.length],
+        };
+      });
     } else {
       const top4 = displayedItems.slice(0, 4);
       const others = displayedItems.slice(4);
       const othersOrders = others.reduce((sum, d) => sum + (d.orders || 0), 0);
-      const othersRevenue = others.reduce((sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)), 0);
+      const othersRevenue = others.reduce(
+        (sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)),
+        0
+      );
+      const othersValue = mode === 'revenue' ? othersRevenue : othersOrders;
 
       list = [
-        ...top4.map((d, i) => ({
-          label: d.name,
-          orders: d.orders || 0,
-          revenue: d.revenue || (d.price || 0) * (d.orders || 0),
-          rank: i + 1,
-          color: PALETTE[i % PALETTE.length],
-        })),
+        ...top4.map((d, i) => {
+          const orders = d.orders || 0;
+          const revenue = d.revenue || (d.price || 0) * orders;
+          const value = mode === 'revenue' ? revenue : orders;
+          return {
+            label: d.name,
+            orders,
+            revenue,
+            value,
+            rank: i + 1,
+            color: PALETTE[i % PALETTE.length],
+          };
+        }),
         {
           label: `Other ${others.length} Dishes`,
           orders: othersOrders,
           revenue: othersRevenue,
+          value: othersValue,
           rank: '5+',
           color: '#64748b',
         },
@@ -92,18 +127,18 @@ export const RadialBarChart = ({
 
     let cumulativeAngle = 0;
     return list.map((item) => {
-      let angle = (item.orders / totalOrders) * 360;
+      let angle = (item.value / metricTotal) * 360;
       if (angle === 360) angle = 359.99;
       const segment = {
         ...item,
         startAngle: cumulativeAngle,
         endAngle: cumulativeAngle + angle,
-        pct: ((item.orders / totalOrders) * 100).toFixed(1),
+        pct: ((item.value / metricTotal) * 100).toFixed(1),
       };
       cumulativeAngle += angle;
       return segment;
     });
-  }, [displayedItems, totalOrders]);
+  }, [displayedItems, metricTotal, mode]);
 
   if (!displayedItems || displayedItems.length === 0) {
     return (
@@ -128,7 +163,7 @@ export const RadialBarChart = ({
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {segments.map((seg, i) => (
             <motion.path
-              key={seg.label}
+              key={`${seg.label}-${mode}`}
               d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
               fill="none"
               stroke={seg.color}
@@ -143,7 +178,7 @@ export const RadialBarChart = ({
           ))}
         </svg>
 
-        {/* Center Label: Total Dish Sales Revenue in ৳ or Active Dish Revenue */}
+        {/* Center Label: Dynamic according to mode */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
           {activeSegment ? (
             <>
@@ -151,33 +186,33 @@ export const RadialBarChart = ({
                 className="text-xs sm:text-sm font-black font-display tracking-tight leading-tight truncate max-w-[65px]"
                 style={{ color: activeSegment.color }}
               >
-                {currencyFormat(activeSegment.revenue)}
+                {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.orders} ord`}
               </span>
               <span className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 max-w-[65px] truncate">
-                {activeSegment.orders} ord ({activeSegment.pct}%)
+                {activeSegment.pct}% share
               </span>
             </>
           ) : (
             <>
               <span className="text-xs sm:text-sm font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
-                {currencyFormat(totalRevenue)}
+                {mode === 'revenue' ? currencyFormat(totalRevenue) : totalOrders}
               </span>
               <span className="text-[8px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter">
-                {totalOrders} Orders
+                {mode === 'revenue' ? 'Sales Revenue' : 'Total Orders'}
               </span>
             </>
           )}
         </div>
       </div>
 
-      {/* 📋 Interactive Dish Ranking Legend with Orders & Sales Revenue (৳) */}
+      {/* 📋 Interactive Dish Ranking Legend */}
       <div className="flex flex-col gap-0.5 w-full min-w-0 flex-1 justify-center">
         {segments.map((seg, i) => {
           const isHovered = hoveredIndex === i;
           return (
             <div
-              key={seg.label}
-              title={`${seg.label}: ${seg.orders} orders • ${currencyFormat(seg.revenue)} total sales (${seg.pct}%)`}
+              key={`${seg.label}-${mode}`}
+              title={`${seg.label}: ${seg.orders} orders • ${currencyFormat(seg.revenue)} sales (${seg.pct}%)`}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
               className={`flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-lg cursor-pointer transition-colors ${
@@ -196,21 +231,37 @@ export const RadialBarChart = ({
                 </span>
                 {i === 0 && (
                   <span className="px-1 py-0.1 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 text-[8px] font-black shrink-0">
-                    TOP
+                    {mode === 'revenue' ? 'MAX ৳' : 'TOP'}
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-1 shrink-0 ml-1">
-                <span
-                  className="text-[10px] sm:text-[11px] font-black"
-                  style={{ color: seg.color }}
-                >
-                  {currencyFormat(seg.revenue)}
-                </span>
-                <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
-                  ({seg.orders} ord)
-                </span>
+                {mode === 'revenue' ? (
+                  <>
+                    <span
+                      className="text-[10px] sm:text-[11px] font-black"
+                      style={{ color: seg.color }}
+                    >
+                      {currencyFormat(seg.revenue)}
+                    </span>
+                    <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
+                      ({seg.orders} ord)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="text-[10px] sm:text-[11px] font-black"
+                      style={{ color: seg.color }}
+                    >
+                      {seg.orders} ord
+                    </span>
+                    <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
+                      ({currencyFormat(seg.revenue)})
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           );

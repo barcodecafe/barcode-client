@@ -4,7 +4,7 @@ import { Bike } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // RadarChart.jsx -> MUI X Multi-Series Comparison Line Chart for Riders
-// Exactly matching Image 2: Multi-series comparison line chart (Trips vs Earnings)
+// Supports toggling between 'trips' (Volume) and 'value' (Delivered Value ৳)
 // ---------------------------------------------------------------------------
 
 const WIDTH = 500;
@@ -16,29 +16,40 @@ export const RadarChart = ({
   items = [],
   valueFormatter = (v) => v,
   maxItems = 15,
+  mode = 'trips', // 'trips' | 'value'
   height = 120,
   emptyMessage = 'No rider delivery data available',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const svgRef = useRef(null);
 
+  // Sort riders according to active metric mode
+  const sortedRiders = useMemo(() => {
+    return [...items].sort((a, b) => {
+      if (mode === 'value') {
+        return (b.deliveredValue || 0) - (a.deliveredValue || 0);
+      }
+      return (b.deliveries || 0) - (a.deliveries || 0);
+    });
+  }, [items, mode]);
+
   const displayedRiders = useMemo(() => {
-    return items.slice(0, Math.min(15, maxItems));
-  }, [items, maxItems]);
+    return sortedRiders.slice(0, Math.min(15, maxItems));
+  }, [sortedRiders, maxItems]);
 
   const maxTrips = useMemo(() => {
     if (displayedRiders.length === 0) return 1;
     return Math.max(...displayedRiders.map((r) => r.deliveries || 0), 1);
   }, [displayedRiders]);
 
-  const maxEarnings = useMemo(() => {
+  const maxDelivered = useMemo(() => {
     if (displayedRiders.length === 0) return 1;
-    return Math.max(...displayedRiders.map((r) => r.earnings || 0), 1);
+    return Math.max(...displayedRiders.map((r) => r.deliveredValue || r.earnings || 0), 1);
   }, [displayedRiders]);
 
-  const { tripsPoints, earningsPoints, tripsPath, earningsPath } = useMemo(() => {
+  const { tripsPoints, deliveredPoints, tripsPath, deliveredPath } = useMemo(() => {
     if (displayedRiders.length === 0) {
-      return { tripsPoints: [], earningsPoints: [], tripsPath: '', earningsPath: '' };
+      return { tripsPoints: [], deliveredPoints: [], tripsPath: '', deliveredPath: '' };
     }
 
     const usableWidth = WIDTH - PADDING_X * 2;
@@ -50,10 +61,11 @@ export const RadarChart = ({
       return { ...r, x, y, value: r.deliveries || 0 };
     });
 
-    const ePts = displayedRiders.map((r, i) => {
+    const dPts = displayedRiders.map((r, i) => {
       const x = PADDING_X + (i / Math.max(1, displayedRiders.length - 1)) * usableWidth;
-      const y = PADDING_TOP + usableHeight - ((r.earnings || 0) / maxEarnings) * usableHeight;
-      return { ...r, x, y, value: r.earnings || 0 };
+      const val = r.deliveredValue || r.earnings || 0;
+      const y = PADDING_TOP + usableHeight - (val / maxDelivered) * usableHeight;
+      return { ...r, x, y, value: val };
     });
 
     const buildPath = (pts) => {
@@ -71,11 +83,11 @@ export const RadarChart = ({
 
     return {
       tripsPoints: tPts,
-      earningsPoints: ePts,
+      deliveredPoints: dPts,
       tripsPath: buildPath(tPts),
-      earningsPath: buildPath(ePts),
+      deliveredPath: buildPath(dPts),
     };
-  }, [displayedRiders, maxTrips, maxEarnings, height]);
+  }, [displayedRiders, maxTrips, maxDelivered, height]);
 
   const handleMouseMove = (e) => {
     if (!svgRef.current || tripsPoints.length === 0) return;
@@ -110,7 +122,7 @@ export const RadarChart = ({
 
   const activeRider = hoveredIndex !== null ? displayedRiders[hoveredIndex] : null;
   const activeTripsPt = hoveredIndex !== null ? tripsPoints[hoveredIndex] : null;
-  const activeEarnPt = hoveredIndex !== null ? earningsPoints[hoveredIndex] : null;
+  const activeDeliveredPt = hoveredIndex !== null ? deliveredPoints[hoveredIndex] : null;
   const isDense = displayedRiders.length > 8;
 
   return (
@@ -170,10 +182,10 @@ export const RadarChart = ({
             />
           )}
 
-          {/* Series 2: Earnings (Amber Solid Line) */}
-          {earningsPath && (
+          {/* Series 2: Delivered Value (Amber Solid Line) */}
+          {deliveredPath && (
             <motion.path
-              d={earningsPath}
+              d={deliveredPath}
               fill="none"
               stroke="#f59e0b"
               strokeWidth="2.5"
@@ -187,7 +199,7 @@ export const RadarChart = ({
           {/* Static / Active Points for Trips */}
           {tripsPoints.map((pt, i) => (
             <circle
-              key={`t-${i}`}
+              key={`t-${i}-${mode}`}
               cx={pt.x}
               cy={pt.y}
               r={hoveredIndex === i ? 5 : isDense ? 2 : 3}
@@ -198,10 +210,10 @@ export const RadarChart = ({
             />
           ))}
 
-          {/* Static / Active Points for Earnings */}
-          {earningsPoints.map((pt, i) => (
+          {/* Static / Active Points for Delivered */}
+          {deliveredPoints.map((pt, i) => (
             <rect
-              key={`e-${i}`}
+              key={`e-${i}-${mode}`}
               x={pt.x - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
               y={pt.y - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
               width={hoveredIndex === i ? 8 : isDense ? 3 : 5}
@@ -234,12 +246,12 @@ export const RadarChart = ({
             className="absolute z-20 px-2.5 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none -translate-x-1/2 -translate-y-full flex flex-col gap-0.5 border border-white/10"
             style={{
               left: `${(activeTripsPt.x / WIDTH) * 100}%`,
-              top: `${(Math.min(activeTripsPt.y, activeEarnPt?.y || activeTripsPt.y) / Math.max(80, height - 15)) * 100}%`,
+              top: `${(Math.min(activeTripsPt.y, activeDeliveredPt?.y || activeTripsPt.y) / Math.max(80, height - 15)) * 100}%`,
               marginTop: -8,
             }}
           >
             <p className="font-black text-white dark:text-neutral-900 border-b border-white/10 dark:border-black/10 pb-0.5">
-              {activeRider.name}
+              #{hoveredIndex + 1} {activeRider.name}
             </p>
             <div className="flex items-center justify-between gap-2 text-[9px]">
               <span className="flex items-center gap-1 text-blue-400 dark:text-blue-600">
@@ -267,7 +279,7 @@ export const RadarChart = ({
       <div className="flex items-center justify-between px-2 mt-1 w-full pointer-events-none">
         {displayedRiders.map((r, i) => (
           <span
-            key={r.riderId || r.name || i}
+            key={`lbl-${r.riderId || r.name || i}-${mode}`}
             title={r.name}
             className={`${isDense ? 'text-[8px] max-w-[32px]' : 'text-[9px] sm:text-[10px] max-w-[55px]'} truncate text-center transition-colors leading-none ${
               hoveredIndex === i
@@ -275,7 +287,7 @@ export const RadarChart = ({
                 : 'text-neutral-400 dark:text-neutral-500 font-semibold'
             }`}
           >
-            {r.name.split(' ')[0]}
+            #{i + 1} {r.name.split(' ')[0]}
           </span>
         ))}
       </div>
