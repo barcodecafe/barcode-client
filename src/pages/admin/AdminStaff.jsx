@@ -498,22 +498,31 @@ export const AdminStaff = () => {
                   {/* Actions */}
                   {isSuperAdmin && (
                     <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
-                      <button
-                        onClick={() => handleOpenEditModal(staff)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit Permissions</span>
-                      </button>
+                      {isSuper ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold text-xs border border-purple-200 dark:border-purple-900/60">
+                          <Lock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                          <span>Master Account</span>
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleOpenEditModal(staff)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit Permissions</span>
+                          </button>
 
-                      {!isMe && staff.email !== 'admin@barcode.com' && (
-                        <button
-                          onClick={() => handleDelete(staff)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-600 dark:text-red-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
-                          title="Delete Staff"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                          {!isMe && (
+                            <button
+                              onClick={() => handleDelete(staff)}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-600 dark:text-red-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                              title="Delete Staff"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
