@@ -11,6 +11,10 @@ import {
   User,
   Bike,
   FileSpreadsheet,
+  LayoutGrid,
+  Columns2,
+  Columns3,
+  Rows3,
 } from 'lucide-react';
 
 import { StatCard } from '../../components/admin/StatCard';
@@ -57,6 +61,23 @@ export const AdminDashboard = () => {
   // Layout & interactive controls state (Must be declared before any conditional return)
   const [expandedCard, setExpandedCard] = useState(null); // 'branch' | 'category' | 'trend' | 'dishes' | 'customers' | 'riders' | null
   const [trendMonths, setTrendMonths] = useState(12);
+  const [gridCols, setGridCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem('admin_dashboard_grid_cols');
+      return saved ? Number(saved) : 3;
+    } catch {
+      return 3;
+    }
+  });
+
+  const handleSetGridCols = (cols) => {
+    setGridCols(cols);
+    try {
+      localStorage.setItem('admin_dashboard_grid_cols', cols);
+    } catch {
+      // ignore
+    }
+  };
 
   const toggleExpand = (cardKey) => {
     setExpandedCard((prev) => (prev === cardKey ? null : cardKey));
@@ -132,8 +153,16 @@ export const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Charts Skeleton: 2 Rows x 3 Columns (6 Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        {/* Charts Skeleton: Dynamic Grid (6 Cards) */}
+        <div
+          className={`grid gap-5 sm:gap-6 ${
+            gridCols === 1
+              ? 'grid-cols-1'
+              : gridCols === 2
+              ? 'grid-cols-1 md:grid-cols-2'
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          }`}
+        >
           {[...Array(6)].map((_, j) => (
             <div
               key={j}
@@ -192,18 +221,64 @@ export const AdminDashboard = () => {
             Dashboard Overview
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Real-time analytics across {summary?.totalBranches || 0} Barcode branches. Click expand on any card to zoom.
+            Real-time analytics across {summary?.totalBranches || 0} Barcode branches. Switch grid columns or click expand on any card to zoom.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* 🔲 Dynamic Grid Columns Selector */}
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/90 p-1 rounded-2xl border border-neutral-200/60 dark:border-neutral-700/60 shadow-xs">
+            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pl-2 pr-1 hidden sm:inline">
+              Layout:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSetGridCols(1)}
+              title="1 Column (Full Width Rows)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                gridCols === 1
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Rows3 className="w-3.5 h-3.5" />
+              <span>1 Col</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetGridCols(2)}
+              title="2 Columns Grid"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                gridCols === 2
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Columns2 className="w-3.5 h-3.5" />
+              <span>2 Cols</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetGridCols(3)}
+              title="3 Columns Grid (Standard 3x2)"
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                gridCols === 3
+                  ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Columns3 className="w-3.5 h-3.5" />
+              <span>3 Cols</span>
+            </button>
+          </div>
+
           {expandedCard && (
             <button
               type="button"
               onClick={() => setExpandedCard(null)}
               className="px-3 py-2 rounded-2xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
             >
-              Reset to 6-Card Grid
+              Reset View
             </button>
           )}
 
@@ -214,7 +289,8 @@ export const AdminDashboard = () => {
             className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>{isFetchingOrders ? "Loading Sales..." : "Export Sales to Excel"}</span>
+            <span className="hidden sm:inline">{isFetchingOrders ? "Loading..." : "Export Sales"}</span>
+            <span className="sm:hidden">Export</span>
           </button>
         </div>
       </motion.div>
@@ -250,9 +326,17 @@ export const AdminDashboard = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 🎯 CHARTS ROW 1: Branch Revenue (Bar) | Category (Donut) | Trend (Line)    */}
+      {/* 🎯 UNIFIED CHARTS GRID: Configurable 1, 2, or 3 Columns (6 Charts Total)    */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+      <div
+        className={`grid gap-5 sm:gap-6 items-stretch ${
+          gridCols === 1
+            ? 'grid-cols-1'
+            : gridCols === 2
+            ? 'grid-cols-1 md:grid-cols-2'
+            : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+        }`}
+      >
         {/* Card 1: Revenue by Branch */}
         {(expandedCard === null || expandedCard === 'branch') && (
           <ChartCard
@@ -330,12 +414,7 @@ export const AdminDashboard = () => {
             />
           </ChartCard>
         )}
-      </div>
 
-      {/* ========================================================================= */}
-      {/* 🎯 CHARTS ROW 2: Top Dishes (Bar) | Top Customers (Bar) | Top Riders (Bar) */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
         {/* Card 4: Top Selling Dishes */}
         {(expandedCard === null || expandedCard === 'dishes') && (
           <ChartCard
