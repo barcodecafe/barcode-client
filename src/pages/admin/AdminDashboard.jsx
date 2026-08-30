@@ -168,9 +168,9 @@ export const AdminDashboard = () => {
           getRevenueByBranch().catch(() => []),
           getOrdersByCategory().catch(() => []),
           getRevenueTrend(12).catch(() => []),
-          getTopDishes(5).catch(() => []),
-          getTopCustomers(5).catch(() => []),
-          getTopRiders(5).catch(() => []),
+          getTopDishes(15).catch(() => []),
+          getTopCustomers(15).catch(() => []),
+          getTopRiders(15).catch(() => []),
         ]).then(([summaryData, branchData, categoryData, trendData, dishesData, customersData, ridersData]) => {
           if (!active) return;
           setSummary(summaryData);
@@ -251,7 +251,7 @@ export const AdminDashboard = () => {
 
   const barData = [...revenueByBranch]
     .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 6)
+    .slice(0, 15)
     .map((b) => ({ id: b.branchId, label: b.shortName, fullLabel: b.name, value: b.revenue }));
 
   const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
@@ -507,13 +507,13 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[9px] font-black">
               <Flame className="w-2.5 h-2.5" />
-              <span>Donut</span>
+              <span>Top 15</span>
             </div>
           }
         >
           <RadialBarChart
             items={topDishes}
-            maxItems={20}
+            maxItems={15}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -530,13 +530,13 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
               <User className="w-2.5 h-2.5" />
-              <span>VIP Bars</span>
+              <span>Top 15 VIPs</span>
             </div>
           }
         >
           <TreemapChart
             items={topCustomers}
-            maxItems={20}
+            maxItems={15}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
@@ -555,7 +555,7 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black">
               <Bike className="w-2.5 h-2.5" />
-              <span>Multi-Series</span>
+              <span>Top 15</span>
             </div>
           }
         >

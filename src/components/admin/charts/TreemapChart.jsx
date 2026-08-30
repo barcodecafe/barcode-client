@@ -26,7 +26,7 @@ export const TreemapChart = ({
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const displayedItems = useMemo(() => {
-    return items.slice(0, Math.min(6, maxItems));
+    return items.slice(0, Math.min(15, maxItems));
   }, [items, maxItems]);
 
   const maxSpent = useMemo(() => {
@@ -48,6 +48,8 @@ export const TreemapChart = ({
       </div>
     );
   }
+
+  const isDense = displayedItems.length > 8;
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
@@ -71,7 +73,7 @@ export const TreemapChart = ({
         {/* Vertical Bars Container */}
         <div
           className="absolute inset-0 pl-11 flex items-end"
-          style={{ gap: displayedItems.length > 4 ? 8 : 14 }}
+          style={{ gap: isDense ? 4 : displayedItems.length > 5 ? 6 : 12 }}
         >
           {displayedItems.map((customer, i) => {
             const spent = customer.totalSpent || 0;
@@ -103,8 +105,8 @@ export const TreemapChart = ({
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${Math.max(6, heightPct)}%` }}
-                  transition={{ duration: 0.45, delay: i * 0.04, ease: 'easeOut' }}
-                  className="w-full rounded-t-md transition-all duration-150"
+                  transition={{ duration: 0.45, delay: i * 0.02, ease: 'easeOut' }}
+                  className="w-full rounded-t-sm sm:rounded-t-md transition-all duration-150"
                   style={{
                     backgroundColor: color,
                     opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
@@ -121,12 +123,15 @@ export const TreemapChart = ({
       </div>
 
       {/* Guaranteed Visible X-Axis Customer Labels Row */}
-      <div className="flex items-center pl-11 mt-1.5 w-full" style={{ gap: displayedItems.length > 4 ? 8 : 14 }}>
+      <div
+        className="flex items-center pl-11 mt-1.5 w-full"
+        style={{ gap: isDense ? 4 : displayedItems.length > 5 ? 6 : 12 }}
+      >
         {displayedItems.map((customer, i) => (
           <span
             key={`lbl-${customer.userId || customer.name || i}`}
             title={customer.name}
-            className={`flex-1 text-[9px] sm:text-[10px] text-center truncate px-0.5 leading-none transition-colors ${
+            className={`flex-1 ${isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
               hoveredIndex === i
                 ? 'font-black text-neutral-900 dark:text-white scale-105'
                 : 'font-semibold text-neutral-500 dark:text-neutral-400'

@@ -23,7 +23,7 @@ export const RadarChart = ({
   const svgRef = useRef(null);
 
   const displayedRiders = useMemo(() => {
-    return items.slice(0, Math.min(8, maxItems));
+    return items.slice(0, Math.min(15, maxItems));
   }, [items, maxItems]);
 
   const maxTrips = useMemo(() => {
@@ -111,6 +111,7 @@ export const RadarChart = ({
   const activeRider = hoveredIndex !== null ? displayedRiders[hoveredIndex] : null;
   const activeTripsPt = hoveredIndex !== null ? tripsPoints[hoveredIndex] : null;
   const activeEarnPt = hoveredIndex !== null ? earningsPoints[hoveredIndex] : null;
+  const isDense = displayedRiders.length > 8;
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
@@ -189,7 +190,7 @@ export const RadarChart = ({
               key={`t-${i}`}
               cx={pt.x}
               cy={pt.y}
-              r={hoveredIndex === i ? 5 : 3}
+              r={hoveredIndex === i ? 5 : isDense ? 2 : 3}
               fill="#3b82f6"
               stroke="#ffffff"
               strokeWidth="1.5"
@@ -201,10 +202,10 @@ export const RadarChart = ({
           {earningsPoints.map((pt, i) => (
             <rect
               key={`e-${i}`}
-              x={pt.x - (hoveredIndex === i ? 4 : 2.5)}
-              y={pt.y - (hoveredIndex === i ? 4 : 2.5)}
-              width={hoveredIndex === i ? 8 : 5}
-              height={hoveredIndex === i ? 8 : 5}
+              x={pt.x - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
+              y={pt.y - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
+              width={hoveredIndex === i ? 8 : isDense ? 3 : 5}
+              height={hoveredIndex === i ? 8 : isDense ? 3 : 5}
               fill="#f59e0b"
               stroke="#ffffff"
               strokeWidth="1.5"
@@ -262,7 +263,7 @@ export const RadarChart = ({
           <span
             key={r.riderId || r.name || i}
             title={r.name}
-            className={`text-[9px] sm:text-[10px] truncate max-w-[55px] text-center transition-colors leading-none ${
+            className={`${isDense ? 'text-[8px] max-w-[32px]' : 'text-[9px] sm:text-[10px] max-w-[55px]'} truncate text-center transition-colors leading-none ${
               hoveredIndex === i
                 ? 'text-neutral-900 dark:text-white font-black scale-105'
                 : 'text-neutral-400 dark:text-neutral-500 font-semibold'

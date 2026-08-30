@@ -34,7 +34,9 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
     );
   }
 
-  const displayedData = data.slice(0, 6);
+  const displayedData = data.slice(0, 15);
+
+  const isDense = displayedData.length > 8;
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
@@ -57,7 +59,7 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
         {/* Bars Container */}
         <div
           className="absolute inset-0 pl-11 flex items-end"
-          style={{ gap: displayedData.length > 5 ? 8 : 14 }}
+          style={{ gap: isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
         >
           {displayedData.map((d, i) => {
             const heightPct = ((d.value || 0) / maxValue) * 100;
@@ -86,8 +88,8 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${Math.max(5, heightPct)}%` }}
-                  transition={{ duration: 0.45, delay: i * 0.04, ease: 'easeOut' }}
-                  className="w-full rounded-t-md transition-all duration-150"
+                  transition={{ duration: 0.45, delay: i * 0.02, ease: 'easeOut' }}
+                  className="w-full rounded-t-sm sm:rounded-t-md transition-all duration-150"
                   style={{
                     backgroundColor: barColor,
                     opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
@@ -104,12 +106,15 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
       </div>
 
       {/* Guaranteed Visible X-Axis Labels Row */}
-      <div className="flex items-center pl-11 mt-1.5 w-full" style={{ gap: displayedData.length > 5 ? 8 : 14 }}>
+      <div
+        className="flex items-center pl-11 mt-1.5 w-full"
+        style={{ gap: isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
+      >
         {displayedData.map((d, i) => (
           <span
             key={`lbl-${d.id ?? d.label ?? i}`}
             title={d.fullLabel || d.label}
-            className={`flex-1 text-[9px] sm:text-[10px] text-center truncate px-0.5 leading-none transition-colors ${
+            className={`flex-1 ${isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
               hoveredIndex === i
                 ? 'font-black text-neutral-900 dark:text-white scale-105'
                 : 'font-semibold text-neutral-500 dark:text-neutral-400'
