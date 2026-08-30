@@ -11,7 +11,7 @@ const OrderContext = createContext();
 // Roles that are actually allowed to read the order list. GET /api/orders is
 // auth-gated, so anyone else fetching it just collects a 401 — see the gate in
 // the effect below for why that mattered.
-const ORDER_ROLES = ['admin', 'super_admin', 'superadmin', 'rider'];
+const ORDER_ROLES = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager', 'rider'];
 
 export const OrderProvider = ({ children }) => {
   const { user, isAuthLoaded } = useAuth();
@@ -39,7 +39,7 @@ export const OrderProvider = ({ children }) => {
 
   const role = String(user?.role || '').toLowerCase();
   const canReadOrders = Boolean(user) && ORDER_ROLES.includes(role);
-  const isAdmin = ['admin', 'super_admin', 'superadmin'].includes(role);
+  const isAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(role);
 
   const playNotificationSound = () => {
     if (!isAdmin) return;

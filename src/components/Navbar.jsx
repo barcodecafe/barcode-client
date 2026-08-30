@@ -14,7 +14,15 @@ import { BrandSearchBar } from './BrandSearchBar';
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
 
-const ROLE_LABELS = { admin: 'Administrator', rider: 'Delivery Rider', user: 'Customer' };
+const ROLE_LABELS = {
+  super_admin: 'Super Admin',
+  superadmin: 'Super Admin',
+  admin: 'Administrator',
+  manager: 'Restaurant Manager',
+  restaurant_manager: 'Restaurant Manager',
+  rider: 'Delivery Rider',
+  user: 'Customer',
+};
 
 const getInitials = (name) => {
   if (!name) return 'U';

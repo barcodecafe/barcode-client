@@ -31,7 +31,7 @@ import { useAuth } from '../context/AuthContext';
 const passwordOk = (p) => p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p);
 
 export const RiderApplication = () => {
-  const { user, isAuthenticated, registerRider } = useAuth();
+  const { user, isAuthenticated, isAdmin, registerRider } = useAuth();
   const navigate = useNavigate(); // Navigation Hook
 
   const [form, setForm] = useState({
@@ -179,7 +179,7 @@ export const RiderApplication = () => {
   }
 
   // Admin User Check
-  if (isAuthenticated && user?.role === 'admin') {
+  if (isAuthenticated && isAdmin) {
     return (
       <CenteredCard
         icon={<User className="w-8 h-8 text-indigo-500" />}

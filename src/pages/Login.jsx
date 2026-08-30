@@ -40,10 +40,22 @@ const VARIANTS = {
   },
 };
 
-const LOGIN_ROUTE = { admin: '/admin/login', rider: '/rider/login', user: '/login' };
+const LOGIN_ROUTE = {
+  admin: '/admin/login',
+  super_admin: '/admin/login',
+  superadmin: '/admin/login',
+  manager: '/admin/login',
+  restaurant_manager: '/admin/login',
+  rider: '/rider/login',
+  user: '/login',
+};
 
-const wrongDoorMessage = (role) =>
-  `You signed in with ${role === 'admin' ? 'an administrator' : role === 'rider' ? 'a rider' : 'a customer'} account. Please use the ${role} login below.`;
+const wrongDoorMessage = (role) => {
+  const isStaff = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(role);
+  const accountType = isStaff ? 'an administrator/staff' : role === 'rider' ? 'a rider' : 'a customer';
+  const portalName = isStaff ? 'admin' : role === 'rider' ? 'rider' : 'customer';
+  return `You signed in with ${accountType} account. Please use the ${portalName} login below.`;
+};
 
 export const Login = ({ variant = 'user' }) => {
   const cfg = VARIANTS[variant] || VARIANTS.user;
@@ -88,7 +100,7 @@ export const Login = ({ variant = 'user' }) => {
 
       const loggedInUser = await login(payload);
 
-      const isActorAdmin = ['admin', 'super_admin', 'superadmin'].includes(
+      const isActorAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(
         String(loggedInUser?.role || '').toLowerCase()
       );
 

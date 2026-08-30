@@ -27,7 +27,7 @@ export const RootLayout = () => {
 
   // 🔔 Global Delivery Toast Listener for logged in customers
   useEffect(() => {
-    if (!user || user.role === 'admin' || user.role === 'rider') return;
+    if (!user || isAdmin || user.role === 'rider') return;
 
     const handleDeliveryBroadcast = (data) => {
       const order = data?.order || data;
