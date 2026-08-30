@@ -88,12 +88,13 @@ export const AdminDashboard = () => {
     }
   });
 
-  const [cardSizes, setCardSizes] = useState(() => {
+  // 🔄 Synchronized Global Card Height across ALL cards
+  const [globalCardHeight, setGlobalCardHeight] = useState(() => {
     try {
-      const saved = localStorage.getItem('admin_dashboard_card_sizes');
-      return saved ? { ...DEFAULT_CARD_SIZES, ...JSON.parse(saved) } : DEFAULT_CARD_SIZES;
+      const saved = localStorage.getItem('admin_dashboard_card_height');
+      return saved ? Number(saved) : 210;
     } catch {
-      return DEFAULT_CARD_SIZES;
+      return 210;
     }
   });
 
@@ -109,56 +110,25 @@ export const AdminDashboard = () => {
   const handleSetHeightMode = (mode) => {
     setHeightMode(mode);
     const targetHeight = mode === 'small' ? 210 : 320;
-    setCardSizes((prev) => {
-      const updated = {};
-      Object.keys(DEFAULT_CARD_SIZES).forEach((k) => {
-        updated[k] = {
-          ...(prev[k] || DEFAULT_CARD_SIZES[k]),
-          height: targetHeight,
-        };
-      });
+    setGlobalCardHeight(targetHeight);
+    try {
+      localStorage.setItem('admin_dashboard_height_mode', mode);
+      localStorage.setItem('admin_dashboard_card_height', targetHeight);
+    } catch {
+      // ignore
+    }
+  };
+
+  // When ANY single card is resized via drag, ALL cards update their height synchronously!
+  const handleResizeCard = (_cardId, newSettings) => {
+    if (newSettings && newSettings.height) {
+      setGlobalCardHeight(newSettings.height);
       try {
-        localStorage.setItem('admin_dashboard_height_mode', mode);
-        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
+        localStorage.setItem('admin_dashboard_card_height', newSettings.height);
       } catch {
         // ignore
       }
-      return updated;
-    });
-  };
-
-  const handleResizeCard = (cardId, newSettings) => {
-    setCardSizes((prev) => {
-      const updated = {
-        ...prev,
-        [cardId]: {
-          ...(prev[cardId] || DEFAULT_CARD_SIZES[cardId]),
-          ...newSettings,
-        },
-      };
-      try {
-        localStorage.setItem('admin_dashboard_card_sizes', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
-  };
-
-  const getCardColClass = (cardKey) => {
-    const size = cardSizes[cardKey] || { colSpan: 1 };
-    const span = size.colSpan || 1;
-    if (span === 'full' || span >= gridCols) return 'col-span-full';
-    if (span === 2) {
-      if (gridCols === 2) return 'col-span-full md:col-span-2';
-      if (gridCols === 3) return 'col-span-full md:col-span-2 lg:col-span-2';
-      if (gridCols === 4) return 'col-span-full md:col-span-2 lg:col-span-2 xl:col-span-2';
     }
-    if (span === 3) {
-      if (gridCols <= 3) return 'col-span-full';
-      if (gridCols === 4) return 'col-span-full lg:col-span-3 xl:col-span-3';
-    }
-    return 'col-span-1';
   };
 
   const getGridColsClass = () => {
@@ -263,13 +233,13 @@ export const AdminDashboard = () => {
           {[...Array(6)].map((_, j) => (
             <div
               key={j}
-              className="h-72 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between"
+              className="h-56 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between"
             >
               <div className="space-y-1.5">
                 <div className="w-36 h-5 bg-neutral-200 dark:bg-neutral-700 rounded-lg" />
                 <div className="w-48 h-3 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
               </div>
-              <div className="h-40 w-full bg-neutral-50 dark:bg-neutral-850 rounded-2xl flex items-center justify-center p-4">
+              <div className="h-32 w-full bg-neutral-50 dark:bg-neutral-850 rounded-2xl flex items-center justify-center p-4">
                 <div className="w-full h-full bg-neutral-200/50 dark:bg-neutral-800/50 rounded-xl" />
               </div>
             </div>
@@ -288,6 +258,8 @@ export const AdminDashboard = () => {
   const lineData = revenueTrend
     .slice(trendMonths === 6 ? -6 : -12)
     .map((t) => ({ label: t.month, value: t.revenue }));
+
+  const cardDensity = globalCardHeight < 250 ? 'compact' : 'normal';
 
   return (
     <div className="space-y-5 sm:space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
@@ -442,7 +414,7 @@ export const AdminDashboard = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 🎯 DRAG-RESIZABLE PRISTINE CHARTS GRID (6 Charts Total)                   */}
+      {/* 🎯 SYNCHRONIZED EQUAL HEIGHT CHARTS GRID (6 Charts Total)                 */}
       {/* ========================================================================= */}
       <div className={`grid gap-4 sm:gap-5 items-stretch ${getGridColsClass()}`}>
         {/* Card 1: Revenue by Branch (Bar Chart) */}
@@ -450,10 +422,8 @@ export const AdminDashboard = () => {
           id="branch"
           title="Revenue by Branch"
           subtitle="Top branches this period"
-          className={getCardColClass('branch')}
-          colSpan={cardSizes.branch?.colSpan || 1}
-          height={cardSizes.branch?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
         >
@@ -461,7 +431,7 @@ export const AdminDashboard = () => {
             data={barData}
             valueFormatter={currency}
             barLabel="Revenue"
-            height={heightMode === 'small' ? 120 : Math.max(140, (cardSizes.branch?.height || 320) - 100)}
+            height={Math.max(110, globalCardHeight - 85)}
           />
         </ChartCard>
 
@@ -470,17 +440,15 @@ export const AdminDashboard = () => {
           id="category"
           title="Orders by Category"
           subtitle="Share of total order volume"
-          className={getCardColClass('category')}
-          colSpan={cardSizes.category?.colSpan || 1}
-          height={cardSizes.category?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
         >
           <PieChart
             data={pieData}
             valueFormatter={compactNumber}
-            size={heightMode === 'small' ? 115 : Math.min(190, Math.max(120, (cardSizes.category?.height || 320) - 110))}
+            size={Math.min(150, Math.max(110, globalCardHeight - 95))}
           />
         </ChartCard>
 
@@ -489,10 +457,8 @@ export const AdminDashboard = () => {
           id="trend"
           title="Revenue Growth Trend"
           subtitle={`Monthly trajectory (${trendMonths} months)`}
-          className={getCardColClass('trend')}
-          colSpan={cardSizes.trend?.colSpan || 1}
-          height={cardSizes.trend?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -525,7 +491,7 @@ export const AdminDashboard = () => {
           <LineChart
             data={lineData}
             valueFormatter={currency}
-            height={heightMode === 'small' ? 120 : Math.max(140, (cardSizes.trend?.height || 320) - 100)}
+            height={Math.max(110, globalCardHeight - 85)}
           />
         </ChartCard>
 
@@ -534,10 +500,8 @@ export const AdminDashboard = () => {
           id="dishes"
           title="Top Selling Dishes"
           subtitle="Radial order distribution"
-          className={getCardColClass('dishes')}
-          colSpan={cardSizes.dishes?.colSpan || 1}
-          height={cardSizes.dishes?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -550,7 +514,7 @@ export const AdminDashboard = () => {
           <RadialBarChart
             items={topDishes}
             maxItems={5}
-            size={heightMode === 'small' ? 125 : Math.min(185, Math.max(125, (cardSizes.dishes?.height || 320) - 110))}
+            size={Math.min(155, Math.max(115, globalCardHeight - 85))}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -560,10 +524,8 @@ export const AdminDashboard = () => {
           id="customers"
           title="Top Valued Customers"
           subtitle="VIP revenue contribution mosaic"
-          className={getCardColClass('customers')}
-          colSpan={cardSizes.customers?.colSpan || 1}
-          height={cardSizes.customers?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -576,7 +538,7 @@ export const AdminDashboard = () => {
           <TreemapChart
             items={topCustomers}
             maxItems={5}
-            density={heightMode === 'small' ? 'compact' : 'normal'}
+            density={cardDensity}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
           />
@@ -587,10 +549,8 @@ export const AdminDashboard = () => {
           id="riders"
           title="Top Delivery Riders"
           subtitle="Rider efficiency spider web"
-          className={getCardColClass('riders')}
-          colSpan={cardSizes.riders?.colSpan || 1}
-          height={cardSizes.riders?.height || (heightMode === 'small' ? 205 : 320)}
-          density={heightMode === 'small' ? 'compact' : 'normal'}
+          height={globalCardHeight}
+          density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
@@ -603,7 +563,7 @@ export const AdminDashboard = () => {
           <RadarChart
             items={topRiders}
             maxItems={3}
-            size={heightMode === 'small' ? 130 : Math.min(195, Math.max(130, (cardSizes.riders?.height || 320) - 100))}
+            size={Math.min(165, Math.max(120, globalCardHeight - 80))}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
           />
