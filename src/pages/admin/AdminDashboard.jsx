@@ -69,6 +69,11 @@ export const AdminDashboard = () => {
 
   // Layout & Density controls (ALL HOOKS DECLARED AT TOP BEFORE ANY RETURNS)
   const [trendMonths, setTrendMonths] = useState(12);
+  const [branchLimit, setBranchLimit] = useState(10);
+  const [categoryLimit, setCategoryLimit] = useState('All');
+  const [dishesLimit, setDishesLimit] = useState(10);
+  const [customersLimit, setCustomersLimit] = useState(10);
+  const [ridersLimit, setRidersLimit] = useState(10);
 
   const [gridCols, setGridCols] = useState(() => {
     try {
@@ -258,9 +263,10 @@ export const AdminDashboard = () => {
     return cleaned || raw || 'Branch';
   };
 
+  const currentBranchLimit = branchLimit === 'All' ? revenueByBranch.length : Number(branchLimit);
   const barData = [...revenueByBranch]
     .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
-    .slice(0, 10)
+    .slice(0, currentBranchLimit)
     .map((b) => ({
       id: b.branchId,
       label: cleanBranchName(b.name, b.shortName),
@@ -268,12 +274,40 @@ export const AdminDashboard = () => {
       value: b.revenue || 0,
     }));
 
-  const pieData = ordersByCategory.map((c) => ({ label: c.category, value: c.value }));
+  const currentCategoryLimit = categoryLimit === 'All' ? ordersByCategory.length : Number(categoryLimit);
+  const pieData = ordersByCategory.slice(0, currentCategoryLimit).map((c) => ({ label: c.category, value: c.value }));
+  
   const lineData = revenueTrend
     .slice(trendMonths === 6 ? -6 : -12)
     .map((t) => ({ label: t.month, value: t.revenue }));
 
+  const currentDishesLimit = dishesLimit === 'All' ? Math.max(topDishes.length, 50) : Number(dishesLimit);
+  const currentCustomersLimit = customersLimit === 'All' ? Math.max(topCustomers.length, 50) : Number(customersLimit);
+  const currentRidersLimit = ridersLimit === 'All' ? Math.max(topRiders.length, 50) : Number(ridersLimit);
+
   const cardDensity = globalCardHeight < 220 ? 'compact' : 'normal';
+
+  const renderLimitSwitcher = (value, onChange, options = [5, 10, 15, 'All']) => (
+    <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50">
+      {options.map((opt) => {
+        const isSelected = String(value).toLowerCase() === String(opt).toLowerCase();
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
+              isSelected
+                ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="space-y-3 sm:space-y-4 w-full max-w-full">
@@ -435,11 +469,12 @@ export const AdminDashboard = () => {
         <ChartCard
           id="branch"
           title="Revenue by Branch"
-          subtitle="Top branches this period"
+          subtitle="Branch sales leaderboard"
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
+          action={renderLimitSwitcher(branchLimit, setBranchLimit, [5, 10, 15, 'All'])}
         >
           <BarChart
             data={barData}
@@ -458,6 +493,7 @@ export const AdminDashboard = () => {
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
+          action={renderLimitSwitcher(categoryLimit, setCategoryLimit, [5, 'All'])}
         >
           <PieChart
             data={pieData}
@@ -476,13 +512,13 @@ export const AdminDashboard = () => {
           maxCols={gridCols}
           onResize={handleResizeCard}
           action={
-            <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg">
+            <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/50 dark:border-neutral-700/50">
               <button
                 type="button"
                 onClick={() => setTrendMonths(6)}
-                className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
                   trendMonths === 6
-                    ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
+                    ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                 }`}
               >
@@ -491,9 +527,9 @@ export const AdminDashboard = () => {
               <button
                 type="button"
                 onClick={() => setTrendMonths(12)}
-                className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
                   trendMonths === 12
-                    ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
+                    ? 'bg-white dark:bg-neutral-900 text-primary-600 dark:text-primary-400 shadow-xs font-black'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                 }`}
               >
@@ -518,16 +554,11 @@ export const AdminDashboard = () => {
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={
-            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-500/10 text-primary-600 dark:text-primary-400 text-[9px] font-black">
-              <Flame className="w-2.5 h-2.5" />
-              <span>Top 15</span>
-            </div>
-          }
+          action={renderLimitSwitcher(dishesLimit, setDishesLimit, [5, 10, 15, 'All'])}
         >
           <RadialBarChart
             items={topDishes}
-            maxItems={15}
+            maxItems={currentDishesLimit}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
@@ -541,16 +572,11 @@ export const AdminDashboard = () => {
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={
-            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black">
-              <User className="w-2.5 h-2.5" />
-              <span>Top 15 VIPs</span>
-            </div>
-          }
+          action={renderLimitSwitcher(customersLimit, setCustomersLimit, [5, 10, 15, 'All'])}
         >
           <TreemapChart
             items={topCustomers}
-            maxItems={15}
+            maxItems={currentCustomersLimit}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No customer spending recorded yet"
@@ -566,16 +592,11 @@ export const AdminDashboard = () => {
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={
-            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black">
-              <Bike className="w-2.5 h-2.5" />
-              <span>Top 15</span>
-            </div>
-          }
+          action={renderLimitSwitcher(ridersLimit, setRidersLimit, [5, 10, 15, 'All'])}
         >
           <RadarChart
             items={topRiders}
-            maxItems={15}
+            maxItems={currentRidersLimit}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
             emptyMessage="No rider trips recorded yet"
