@@ -262,7 +262,7 @@ export const AdminDashboard = () => {
   const cardDensity = globalCardHeight < 250 ? 'compact' : 'normal';
 
   return (
-    <div className="space-y-5 sm:space-y-6 w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl">
+    <div className="space-y-5 sm:space-y-6 w-full max-w-full">
       {/* Header */}
       <motion.div
         initial="hidden"
