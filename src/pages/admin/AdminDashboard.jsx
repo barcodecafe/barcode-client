@@ -18,6 +18,7 @@ import { ChartCard } from '../../components/admin/charts/ChartCard';
 import { BarChart } from '../../components/admin/charts/BarChart';
 import { PieChart } from '../../components/admin/charts/PieChart';
 import { LineChart } from '../../components/admin/charts/LineChart';
+import { RankingBarChart } from '../../components/admin/charts/RankingBarChart';
 import { ExportSalesModal } from '../../components/ExportSalesModal';
 import { getAllOrders } from '../../services/ordersService';
 
@@ -339,14 +340,18 @@ export const AdminDashboard = () => {
           </ChartCard>
         )}
 
-        {/* Card 4: Top Performers (Tabbed / Expandable) */}
+        {/* Card 4: Top Performers (Tabbed / Expandable with Visual Bar Charts) */}
         {(expandedCard === null || expandedCard === 'performers') && (
           <ChartCard
             title="Top Performers"
             subtitle={
               expandedCard === 'performers'
-                ? "Full side-by-side performance matrix"
-                : "Top contributors to sales & operations"
+                ? "Full performance matrix with visual ranking charts"
+                : activePerformerTab === 'dishes'
+                ? "Top selling menu dishes by order volume"
+                : activePerformerTab === 'customers'
+                ? "Top valued customers by total spending"
+                : "Top active riders by completed delivery trips"
             }
             className={expandedCard === 'performers' ? 'col-span-full' : 'xl:col-span-2'}
             isExpanded={expandedCard === 'performers'}
@@ -357,188 +362,137 @@ export const AdminDashboard = () => {
                   <button
                     type="button"
                     onClick={() => setActivePerformerTab('dishes')}
-                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       activePerformerTab === 'dishes'
                         ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                     }`}
                   >
-                    <Flame className="w-3 h-3" />
+                    <Flame className="w-3.5 h-3.5" />
                     <span>Dishes</span>
+                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
+                      {topDishes.length}
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActivePerformerTab('customers')}
-                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       activePerformerTab === 'customers'
-                        ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400'
+                        ? 'bg-white dark:bg-neutral-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                     }`}
                   >
-                    <User className="w-3 h-3" />
+                    <User className="w-3.5 h-3.5" />
                     <span>Customers</span>
+                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
+                      {topCustomers.length}
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActivePerformerTab('riders')}
-                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       activePerformerTab === 'riders'
-                        ? 'bg-white dark:bg-neutral-900 text-primary-500 shadow-xs'
-                        : 'text-neutral-500 dark:text-neutral-400'
+                        ? 'bg-white dark:bg-neutral-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                     }`}
                   >
-                    <Bike className="w-3 h-3" />
+                    <Bike className="w-3.5 h-3.5" />
                     <span>Riders</span>
+                    <span className="text-[10px] px-1 py-0.2 rounded-full bg-neutral-200/60 dark:bg-neutral-700 font-extrabold">
+                      {topRiders.length}
+                    </span>
                   </button>
                 </div>
               )
             }
           >
-            {/* If Expanded: Show All 3 in a balanced 3-column grid */}
+            {/* If Expanded: Show All 3 in a balanced 3-column visual ranking chart grid */}
             {expandedCard === 'performers' ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                {/* 1. Top Dishes */}
-                <div className="space-y-3 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-primary-500 flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5" />
-                    Top Selling Dishes
-                  </h4>
-                  <div className="flex flex-col gap-2">
-                    {topDishes.map((dish, i) => (
-                      <div key={dish.id || i} className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]">
-                          {i + 1}. {dish.name}
-                        </span>
-                        <span className="text-xs font-extrabold text-primary-500 shrink-0">
-                          {dish.orders ?? 0} orders
-                        </span>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                {/* 1. Top Dishes Chart */}
+                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
+                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-primary-500 flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5" />
+                      Top Selling Dishes
+                    </h4>
+                    <span className="text-[10px] font-bold text-neutral-400">By Orders</span>
                   </div>
+                  <RankingBarChart
+                    items={topDishes}
+                    type="dishes"
+                    maxItems={8}
+                    emptyMessage="No dish order data available"
+                  />
                 </div>
 
-                {/* 2. Top Customers */}
-                <div className="space-y-3 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5" />
-                    Top Valued Customers
-                  </h4>
-                  <div className="flex flex-col gap-2">
-                    {topCustomers.slice(0, 5).map((customer, i) => (
-                      <div key={customer._id || i} className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]">
-                          #{i + 1} {customer.name || 'Customer'}
-                        </span>
-                        <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0">
-                          {currency(customer.totalSpent || 0)}
-                        </span>
-                      </div>
-                    ))}
+                {/* 2. Top Customers Chart */}
+                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
+                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      Top Valued Customers
+                    </h4>
+                    <span className="text-[10px] font-bold text-neutral-400">By Total Spend</span>
                   </div>
+                  <RankingBarChart
+                    items={topCustomers}
+                    type="customers"
+                    maxItems={8}
+                    valueFormatter={currency}
+                    emptyMessage="No customer spending data available"
+                  />
                 </div>
 
-                {/* 3. Top Riders */}
-                <div className="space-y-3 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                    <Bike className="w-3.5 h-3.5" />
-                    Top Delivery Riders
-                  </h4>
-                  <div className="flex flex-col gap-2">
-                    {topRiders.slice(0, 5).map((rider, i) => (
-                      <div key={rider.riderId || i} className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]">
-                          #{i + 1} {rider.name}
-                        </span>
-                        <span className="text-xs font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">
-                          {rider.deliveries} trips
-                        </span>
-                      </div>
-                    ))}
+                {/* 3. Top Riders Chart */}
+                <div className="space-y-3.5 p-4 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800">
+                  <div className="flex items-center justify-between pb-1 border-b border-neutral-200/60 dark:border-neutral-800">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                      <Bike className="w-3.5 h-3.5" />
+                      Top Delivery Riders
+                    </h4>
+                    <span className="text-[10px] font-bold text-neutral-400">By Completed Trips</span>
                   </div>
+                  <RankingBarChart
+                    items={topRiders}
+                    type="riders"
+                    maxItems={8}
+                    valueFormatter={currency}
+                    emptyMessage="No rider delivery data available"
+                  />
                 </div>
               </div>
             ) : (
-              /* When in standard Split View: Show the active selected Tab */
-              <div className="flex flex-col gap-1">
-                {activePerformerTab === 'dishes' &&
-                  topDishes.slice(0, 5).map((dish, i) => (
-                    <div
-                      key={dish.id || i}
-                      className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
-                    >
-                      <span className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-bold flex items-center justify-center shrink-0">
-                        {i + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
-                          {dish.name}
-                        </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {dish.category}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 text-primary-500 font-bold text-sm shrink-0">
-                        <Flame className="w-3.5 h-3.5" />
-                        {dish.orders ?? 0}
-                      </div>
-                    </div>
-                  ))}
-
-                {activePerformerTab === 'customers' &&
-                  (topCustomers.length > 0 ? (
-                    topCustomers.slice(0, 5).map((customer, i) => (
-                      <div
-                        key={customer._id || i}
-                        className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
-                      >
-                        <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center justify-center shrink-0">
-                          #{i + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
-                            {customer.name || customer.fullName || 'Customer'}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {customer.orderCount ?? 0} Orders placed
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm shrink-0">
-                          {currency(customer.totalSpent || 0)}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-neutral-400 py-6 text-center">No customer data available</p>
-                  ))}
-
-                {activePerformerTab === 'riders' &&
-                  (topRiders.length > 0 ? (
-                    topRiders.slice(0, 5).map((rider, i) => (
-                      <div
-                        key={rider.riderId || i}
-                        className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
-                      >
-                        <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold flex items-center justify-center shrink-0">
-                          #{rider.rank || i + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
-                            {rider.name}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {rider.deliveries} deliveries ({rider.acceptanceRate || 100}% accepted)
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="text-xs font-extrabold text-primary-500">
-                            {currency(rider.earnings || 0)}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-neutral-400 py-6 text-center">No rider data available</p>
-                  ))}
+              /* Standard View: Rich Visual Ranking Bar Chart for Active Tab */
+              <div className="py-1">
+                {activePerformerTab === 'dishes' && (
+                  <RankingBarChart
+                    items={topDishes}
+                    type="dishes"
+                    maxItems={5}
+                    emptyMessage="No dish orders recorded yet"
+                  />
+                )}
+                {activePerformerTab === 'customers' && (
+                  <RankingBarChart
+                    items={topCustomers}
+                    type="customers"
+                    maxItems={5}
+                    valueFormatter={currency}
+                    emptyMessage="No customer spending recorded yet"
+                  />
+                )}
+                {activePerformerTab === 'riders' && (
+                  <RankingBarChart
+                    items={topRiders}
+                    type="riders"
+                    maxItems={5}
+                    valueFormatter={currency}
+                    emptyMessage="No rider trips recorded yet"
+                  />
+                )}
               </div>
             )}
           </ChartCard>
