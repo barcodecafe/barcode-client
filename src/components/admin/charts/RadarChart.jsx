@@ -115,7 +115,7 @@ export const RadarChart = ({
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
-      {/* 🏷️ Top Legend Indicator (Trips vs Earnings) */}
+      {/* 🏷️ Top Legend Indicator (Trips vs Delivered Value) */}
       <div className="flex items-center justify-end gap-3 px-2 mb-1">
         <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-500 dark:text-neutral-400">
           <span className="w-2.5 h-0.5 bg-blue-500 border-t border-dashed border-blue-500" />
@@ -123,7 +123,7 @@ export const RadarChart = ({
         </div>
         <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-500 dark:text-neutral-400">
           <span className="w-2.5 h-0.5 bg-amber-500" />
-          <span>Earnings (uv)</span>
+          <span>Delivered (uv)</span>
         </div>
       </div>
 
@@ -246,6 +246,12 @@ export const RadarChart = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Trips:
               </span>
               <span className="font-bold">{activeRider.deliveries || 0}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 text-[9px]">
+              <span className="flex items-center gap-1 text-emerald-400 dark:text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Delivered:
+              </span>
+              <span className="font-bold">{valueFormatter(activeRider.deliveredValue || 0)}</span>
             </div>
             <div className="flex items-center justify-between gap-2 text-[9px]">
               <span className="flex items-center gap-1 text-amber-400 dark:text-amber-600">
