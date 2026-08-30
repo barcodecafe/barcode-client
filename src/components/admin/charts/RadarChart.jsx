@@ -100,9 +100,9 @@ export const RadarChart = ({
   const webLevels = [0.25, 0.5, 0.75, 1.0];
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full">
+    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full h-full min-w-0">
       {/* 🕸️ SVG Radar / Spider Web Canvas */}
-      <div className="relative shrink-0">
+      <div className="relative shrink-0 flex items-center justify-center">
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {/* Concentric Grid Webs */}
           {webLevels.map((level, lvlIdx) => {

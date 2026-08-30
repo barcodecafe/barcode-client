@@ -91,47 +91,44 @@ export const TreemapChart = ({
       : 'h-40 sm:h-44';
 
   return (
-    <div className="w-full h-full flex flex-col justify-center">
+    <div className="w-full h-full flex flex-col justify-center min-w-0">
       {/* 🧩 Proportional Mosaic Treemap Grid */}
-      <div className="grid grid-cols-12 gap-1.5 sm:gap-2 w-full h-full min-h-[140px]">
+      <div className="grid grid-cols-12 gap-1.5 w-full h-full min-h-[120px]">
         {/* Tile 1: Top Customer (Dominant Left Block) */}
         {tiles[0] && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0 }}
+            transition={{ duration: 0.3, delay: 0 }}
             onMouseEnter={() => setHoveredId(tiles[0].userId || 0)}
             onMouseLeave={() => setHoveredId(null)}
-            className={`col-span-12 sm:col-span-6 relative rounded-xl p-2.5 sm:p-3 bg-gradient-to-br ${tiles[0].style.bgGradient} border ${tiles[0].style.border} text-white shadow-sm flex flex-col justify-between overflow-hidden cursor-pointer transition-all hover:brightness-110`}
+            className={`col-span-12 sm:col-span-6 relative rounded-xl p-2 sm:p-2.5 bg-gradient-to-br ${tiles[0].style.bgGradient} border ${tiles[0].style.border} text-white shadow-xs flex flex-col justify-between overflow-hidden cursor-pointer transition-all hover:brightness-110`}
           >
-            <div className="flex items-start justify-between gap-1.5 z-10">
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${tiles[0].style.badge} shadow-xs`}>
+            <div className="flex items-center justify-between gap-1 z-10">
+              <span className={`px-1.5 py-0.2 rounded-md text-[9px] ${tiles[0].style.badge} shadow-xs`}>
                 #{tiles[0].rank} VIP
               </span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs">
+              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-white/20 backdrop-blur-xs">
                 {tiles[0].sharePct}% Share
               </span>
             </div>
 
-            <div className="z-10 mt-auto pt-1">
-              <h4 className="text-xs sm:text-sm font-extrabold truncate drop-shadow-xs">
+            <div className="z-10 mt-1">
+              <h4 className="text-xs font-black truncate drop-shadow-xs leading-tight">
                 {tiles[0].name}
               </h4>
-              <p className="text-[10px] text-white/80 truncate">
-                {tiles[0].email || `${tiles[0].orderCount || 0} orders`}
-              </p>
               <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/15">
-                <span className="text-xs sm:text-sm font-black text-amber-300">
+                <span className="text-xs font-black text-amber-300 leading-none">
                   {valueFormatter(tiles[0].spent)}
                 </span>
-                <span className="text-[9px] font-bold text-white/70">
+                <span className="text-[9px] font-bold text-white/80 leading-none">
                   {tiles[0].orderCount || 0} orders
                 </span>
               </div>
             </div>
 
             {/* Subtle background decoration */}
-            <div className="absolute -right-4 -bottom-4 w-16 h-16 rounded-full bg-white/10 blur-lg pointer-events-none" />
+            <div className="absolute -right-4 -bottom-4 w-12 h-12 rounded-full bg-white/10 blur-md pointer-events-none" />
           </motion.div>
         )}
 
@@ -142,29 +139,29 @@ export const TreemapChart = ({
               key={tile.userId || i + 1}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: (i + 1) * 0.08 }}
+              transition={{ duration: 0.3, delay: (i + 1) * 0.05 }}
               onMouseEnter={() => setHoveredId(tile.userId || i + 1)}
               onMouseLeave={() => setHoveredId(null)}
-              className={`relative rounded-xl p-2 bg-gradient-to-br ${tile.style.bgGradient} border ${tile.style.border} text-white shadow-xs flex flex-col justify-between overflow-hidden cursor-pointer transition-all hover:brightness-110`}
+              className={`relative rounded-xl p-1.5 bg-gradient-to-br ${tile.style.bgGradient} border ${tile.style.border} text-white shadow-2xs flex flex-col justify-between overflow-hidden cursor-pointer transition-all hover:brightness-110`}
             >
               <div className="flex items-center justify-between gap-1 z-10">
-                <span className={`px-1 py-0.2 rounded text-[9px] ${tile.style.badge}`}>
+                <span className={`px-1 py-0.2 rounded text-[8px] ${tile.style.badge}`}>
                   #{tile.rank}
                 </span>
-                <span className="text-[9px] font-extrabold text-white/80">
+                <span className="text-[8px] font-bold text-white/80">
                   {tile.sharePct}%
                 </span>
               </div>
 
-              <div className="z-10 mt-1">
-                <p className="text-[11px] font-extrabold truncate leading-tight">
+              <div className="z-10 mt-0.5">
+                <p className="text-[10px] font-bold truncate leading-tight">
                   {tile.name}
                 </p>
                 <div className="flex items-center justify-between mt-0.5">
-                  <span className="text-[11px] font-black text-amber-300">
+                  <span className="text-[10px] font-black text-amber-300 leading-none">
                     {valueFormatter(tile.spent)}
                   </span>
-                  <span className="text-[9px] font-semibold text-white/70">
+                  <span className="text-[8px] font-medium text-white/70 leading-none">
                     {tile.orderCount || 0} ord
                   </span>
                 </div>
