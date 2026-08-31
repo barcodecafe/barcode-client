@@ -514,6 +514,7 @@ export const AdminDashboard = () => {
             data={pieData}
             mode={categoryMetric}
             gridCols={gridCols}
+            height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={compactNumber}
           />
         </ChartCard>
