@@ -647,20 +647,65 @@ export const AdminDishes = () => {
     }
   };
 
-  // 🎯 Quick 1-Tap Kitchen Stock Toggle (In Stock ↔ Sold Out)
+  // 🎯 Helper to get Stock / Active status scoped to Manager branch or Global
+  const getFoodStockStatus = useCallback(
+    (foodItem) => {
+      if (isManager && managerAssignedBranches.length > 0) {
+        const branchId = managerAssignedBranches[0];
+        const isUnavail =
+          Array.isArray(foodItem.unavailableBranchIds) &&
+          foodItem.unavailableBranchIds.map(Number).includes(Number(branchId));
+        return foodItem.isAvailable !== false && !isUnavail;
+      }
+      return foodItem.isAvailable !== false && foodItem.isAvailable !== "false";
+    },
+    [isManager, managerAssignedBranches]
+  );
+
+  const getFoodActiveStatus = useCallback(
+    (foodItem) => {
+      if (isManager && managerAssignedBranches.length > 0) {
+        const branchId = managerAssignedBranches[0];
+        const isDeact =
+          Array.isArray(foodItem.inactiveBranchIds) &&
+          foodItem.inactiveBranchIds.map(Number).includes(Number(branchId));
+        return foodItem.isActive !== false && !isDeact;
+      }
+      return foodItem.isActive !== false && foodItem.isActive !== "false";
+    },
+    [isManager, managerAssignedBranches]
+  );
+
+  // 🎯 Quick 1-Tap Kitchen Stock Toggle (In Stock ↔ Sold Out) with Branch Scoping
   const handleToggleStock = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const isCurrentlyAvailable = foodItem.isAvailable !== false && foodItem.isAvailable !== "false";
+    const isCurrentlyAvailable = getFoodStockStatus(foodItem);
     const nextVal = !isCurrentlyAvailable;
+    const branchIdToPass = isManager && managerAssignedBranches.length > 0 ? managerAssignedBranches[0] : undefined;
+
     try {
       setFoods((prev) =>
-        prev.map((f) =>
-          String(f.id || f._id) === String(targetId)
-            ? { ...f, isAvailable: nextVal }
-            : f
-        )
+        prev.map((f) => {
+          if (String(f.id || f._id) !== String(targetId)) return f;
+          if (isManager && branchIdToPass) {
+            const currentUnavail = Array.isArray(f.unavailableBranchIds)
+              ? [...f.unavailableBranchIds.map(Number)]
+              : [];
+            const updatedUnavail = nextVal
+              ? currentUnavail.filter((id) => id !== Number(branchIdToPass))
+              : currentUnavail.includes(Number(branchIdToPass))
+              ? currentUnavail
+              : [...currentUnavail, Number(branchIdToPass)];
+            return { ...f, unavailableBranchIds: updatedUnavail };
+          }
+          return { ...f, isAvailable: nextVal };
+        })
       );
-      const res = await updateFood(targetId, { isAvailable: nextVal });
+
+      const payload = { isAvailable: nextVal };
+      if (branchIdToPass) payload.branchId = branchIdToPass;
+
+      const res = await updateFood(targetId, payload);
       const updatedDoc = res?.data || res;
       if (updatedDoc && typeof updatedDoc === "object") {
         setFoods((prev) =>
@@ -677,20 +722,36 @@ export const AdminDishes = () => {
     }
   };
 
-  // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Inactive/Hidden)
+  // 🎯 Quick 1-Tap Active Menu Toggle (Active ↔ Inactive/Hidden) with Branch Scoping
   const handleToggleActive = async (foodItem) => {
     const targetId = foodItem.id || foodItem._id;
-    const isCurrentlyActive = foodItem.isActive !== false && foodItem.isActive !== "false";
+    const isCurrentlyActive = getFoodActiveStatus(foodItem);
     const nextVal = !isCurrentlyActive;
+    const branchIdToPass = isManager && managerAssignedBranches.length > 0 ? managerAssignedBranches[0] : undefined;
+
     try {
       setFoods((prev) =>
-        prev.map((f) =>
-          String(f.id || f._id) === String(targetId)
-            ? { ...f, isActive: nextVal }
-            : f
-        )
+        prev.map((f) => {
+          if (String(f.id || f._id) !== String(targetId)) return f;
+          if (isManager && branchIdToPass) {
+            const currentInactive = Array.isArray(f.inactiveBranchIds)
+              ? [...f.inactiveBranchIds.map(Number)]
+              : [];
+            const updatedInactive = nextVal
+              ? currentInactive.filter((id) => id !== Number(branchIdToPass))
+              : currentInactive.includes(Number(branchIdToPass))
+              ? currentInactive
+              : [...currentInactive, Number(branchIdToPass)];
+            return { ...f, inactiveBranchIds: updatedInactive };
+          }
+          return { ...f, isActive: nextVal };
+        })
       );
-      const res = await updateFood(targetId, { isActive: nextVal });
+
+      const payload = { isActive: nextVal };
+      if (branchIdToPass) payload.branchId = branchIdToPass;
+
+      const res = await updateFood(targetId, payload);
       const updatedDoc = res?.data || res;
       if (updatedDoc && typeof updatedDoc === "object") {
         setFoods((prev) =>
@@ -1463,7 +1524,11 @@ export const AdminDishes = () => {
               onReorder={handleFoodReorder}
               className="flex flex-col gap-3"
             >
-              {filteredFoods.map((food) => (
+              {filteredFoods.map((food) => {
+                const isDishInStock = getFoodStockStatus(food);
+                const isDishActive = getFoodActiveStatus(food);
+
+                return (
                 <Reorder.Item
                   key={food.id || food._id}
                   value={food}
@@ -1492,21 +1557,21 @@ export const AdminDishes = () => {
                         {/* 🎯 International Restaurant Standard Status Badges */}
                         <span
                           className={`text-[10px] px-2 py-0.5 font-extrabold rounded-md border ${
-                            food.isAvailable !== false
+                            isDishInStock
                               ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60"
                               : "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/60"
                           }`}
                         >
-                          {food.isAvailable !== false ? "🟢 In Stock" : "🔴 Sold Out"}
+                          {isDishInStock ? "🟢 In Stock" : "🔴 Sold Out"}
                         </span>
                         <span
                           className={`text-[10px] px-2 py-0.5 font-extrabold rounded-md border ${
-                            food.isActive !== false
+                            isDishActive
                               ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60"
                               : "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60"
                           }`}
                         >
-                          {food.isActive !== false ? "👁️ Active" : "🚫 Inactive"}
+                          {isDishActive ? "👁️ Active" : "🚫 Inactive"}
                         </span>
                         {food.promoCode && (
                           <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200">
@@ -1597,27 +1662,27 @@ export const AdminDishes = () => {
                       {/* 🎯 Stock Quick 1-Tap Toggle */}
                       <button
                         onClick={() => handleToggleStock(food)}
-                        title={food.isAvailable !== false ? "Click to mark as Sold Out Today" : "Click to mark as In Stock"}
+                        title={isDishInStock ? "Click to mark as Sold Out Today" : "Click to mark as In Stock"}
                         className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer border ${
-                          food.isAvailable !== false
+                          isDishInStock
                             ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100"
                             : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-100"
                         }`}
                       >
-                        {food.isAvailable !== false ? "In Stock" : "Sold Out"}
+                        {isDishInStock ? "In Stock" : "Sold Out"}
                       </button>
 
                       {/* 🎯 Active Quick 1-Tap Toggle */}
                       <button
                         onClick={() => handleToggleActive(food)}
-                        title={food.isActive !== false ? "Click to set as Inactive (Hide from Menu)" : "Click to set as Active (Show on Menu)"}
+                        title={isDishActive ? "Click to set as Inactive (Hide from Menu)" : "Click to set as Active (Show on Menu)"}
                         className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer border ${
-                          food.isActive !== false
+                          isDishActive
                             ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100"
                             : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100"
                         }`}
                       >
-                        {food.isActive !== false ? "Active" : "Inactive"}
+                        {isDishActive ? "Active" : "Inactive"}
                       </button>
 
                       {!isManager && (
@@ -1641,7 +1706,8 @@ export const AdminDishes = () => {
                     </div>
                   </div>
                 </Reorder.Item>
-              ))}
+                );
+              })}
             </Reorder.Group>
           )}
         </>
