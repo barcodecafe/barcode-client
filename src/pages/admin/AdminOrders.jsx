@@ -404,9 +404,16 @@ export const AdminOrders = () => {
     if (result.status === "fulfilled") {
       const transformed = transform(result.value);
       if (label === "orders" && Array.isArray(transformed)) {
+        let branchFiltered = transformed;
+        if (isManager && managerAssignedBranches.length > 0) {
+          branchFiltered = transformed.filter((o) => {
+            const orderBranchId = Number(o.branchId || o.pickupBranchId);
+            return managerAssignedBranches.includes(orderBranchId);
+          });
+        }
         setOrders((prevOrders) => {
           const prevMap = new Map(prevOrders.map((o) => [String(o._id || o.id), o]));
-          return transformed.map((newOrder) => {
+          return branchFiltered.map((newOrder) => {
             const key = String(newOrder._id || newOrder.id);
             const prev = prevMap.get(key);
             if (prev && Array.isArray(prev.chatHistory) && prev.chatHistory.length > 0) {
