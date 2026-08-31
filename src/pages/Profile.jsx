@@ -522,6 +522,9 @@ export const Profile = () => {
   const tabParam = searchParams.get("tab");
   const branchIdParam = searchParams.get("branchId");
   const branchNameParam = searchParams.get("branchName");
+  const orderIdParam = searchParams.get("orderId");
+  const riderIdParam = searchParams.get("riderId");
+  const riderNameParam = searchParams.get("riderName");
 
   const VALID_TABS = [
     "overview",
