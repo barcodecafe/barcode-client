@@ -58,7 +58,7 @@ import {
 } from "../services/foodsService";
 import { getAllBranches } from "../services/branchesService";
 import { submitFeedback, getMyFeedbacks } from "../services/feedbackService";
-import { getCustomerTier, membershipIdOf } from "./admin/AdminCustomers";
+import { getCustomerTier, membershipIdOf } from "../utils/customerTier";
 import StarRatingInput from "../components/StarRatingInput";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas-pro";
@@ -2608,7 +2608,7 @@ export const Profile = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
             >
-              {sectionContent[activeSection]()}
+              {(sectionContent[activeSection] || renderOverview)()}
             </motion.div>
           </div>
         </div>

@@ -24,16 +24,16 @@ const RiderLayout = lazy(() => import('../layouts/RiderLayout').then((m) => ({ d
 const BrandLayout = lazy(() => import('../layouts/BrandLayout').then((m) => ({ default: m.BrandLayout || m.default })));
 
 // ⚡ Lazy-loaded secondary & utility pages for instant initial bundle loading
-const ForgotPassword = lazy(() => import('../pages/ForgotPassword').then((m) => ({ default: m.ForgotPassword })));
-const Profile = lazy(() => import('../pages/Profile').then((m) => ({ default: m.Profile })));
-const Checkout = lazy(() => import('../pages/Checkout').then((m) => ({ default: m.Checkout })));
-const OrderTracking = lazy(() => import('../pages/OrderTracking').then((m) => ({ default: m.OrderTracking })));
-const PaymentResult = lazy(() => import('../pages/PaymentResult').then((m) => ({ default: m.PaymentResult })));
-const PaymentDemo = lazy(() => import('../pages/PaymentDemo').then((m) => ({ default: m.PaymentDemo })));
-const PublicMembership = lazy(() => import('../pages/PublicMembership').then((m) => ({ default: m.PublicMembership })));
-const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
-const TermsOfService = lazy(() => import('../pages/TermsOfService').then((m) => ({ default: m.TermsOfService })));
-const RiderApplication = lazy(() => import('../pages/RiderApplication').then((m) => ({ default: m.RiderApplication })));
+const ForgotPassword = lazy(() => import('../pages/ForgotPassword').then((m) => ({ default: m.ForgotPassword || m.default })));
+const Profile = lazy(() => import('../pages/Profile').then((m) => ({ default: m.Profile || m.default })));
+const Checkout = lazy(() => import('../pages/Checkout').then((m) => ({ default: m.Checkout || m.default })));
+const OrderTracking = lazy(() => import('../pages/OrderTracking').then((m) => ({ default: m.OrderTracking || m.default })));
+const PaymentResult = lazy(() => import('../pages/PaymentResult').then((m) => ({ default: m.PaymentResult || m.default })));
+const PaymentDemo = lazy(() => import('../pages/PaymentDemo').then((m) => ({ default: m.PaymentDemo || m.default })));
+const PublicMembership = lazy(() => import('../pages/PublicMembership').then((m) => ({ default: m.PublicMembership || m.default })));
+const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy || m.default })));
+const TermsOfService = lazy(() => import('../pages/TermsOfService').then((m) => ({ default: m.TermsOfService || m.default })));
+const RiderApplication = lazy(() => import('../pages/RiderApplication').then((m) => ({ default: m.RiderApplication || m.default })));
 
 // 🚚 Lazy-loaded Rider pages
 const RiderOverview = lazy(() => import('../pages/rider/RiderOverview'));
@@ -70,6 +70,7 @@ import { FulfillmentSelectorModal } from '../components/FulfillmentSelectorModal
 import { ScrollToTop } from '../components/ScrollToTop';
 import { NormalizePath } from '../components/NormalizePath';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { OrderProvider } from '../context/OrderContext';
 import { Toaster } from 'react-hot-toast';
 
@@ -122,108 +123,110 @@ export const AppRoutes = () => {
                     },
                   }} 
                 />
-                <Suspense fallback={<PageFallbackSpinner />}>
-                  <Routes>
-                  {/* Public / User Routes */}
-                  <Route path="/" element={<RootLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="branches" element={<Branches />} />
-                    <Route path="branches/:id" element={<BranchDetail />} />
-                    <Route path="brands" element={<Brands />} />
-                    <Route path="menu" element={<Menu />} />
-                    <Route path="menu/:id" element={<DishDetail />} />
-                    <Route path="dish/:id" element={<DishDetail />} />
-                    <Route path="food/:id" element={<DishDetail />} />
-                    <Route path="about" element={<About />} />
-                    <Route path="login" element={<Login variant="user" />} />
-                    <Route path="signup" element={<SignUp />} />
-                    <Route path="forgot-password" element={<ForgotPassword />} /> 
-                    <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="checkout" element={<Checkout />} />
-                    <Route path="rider-application" element={<RiderApplication />} />
-                    <Route path="order-tracking/:id" element={<OrderTracking />} />
-                    
-                    {/* 📄 নতুন পলিসি রাউটস */}
-                    <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="terms-of-service" element={<TermsOfService />} />
+                <ErrorBoundary>
+                  <Suspense fallback={<PageFallbackSpinner />}>
+                    <Routes>
+                      {/* Public / User Routes */}
+                      <Route path="/" element={<RootLayout />}>
+                        <Route index element={<Home />} />
+                        <Route path="branches" element={<Branches />} />
+                        <Route path="branches/:id" element={<BranchDetail />} />
+                        <Route path="brands" element={<Brands />} />
+                        <Route path="menu" element={<Menu />} />
+                        <Route path="menu/:id" element={<DishDetail />} />
+                        <Route path="dish/:id" element={<DishDetail />} />
+                        <Route path="food/:id" element={<DishDetail />} />
+                        <Route path="about" element={<About />} />
+                        <Route path="login" element={<Login variant="user" />} />
+                        <Route path="signup" element={<SignUp />} />
+                        <Route path="forgot-password" element={<ForgotPassword />} /> 
+                        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="checkout" element={<Checkout />} />
+                        <Route path="rider-application" element={<RiderApplication />} />
+                        <Route path="order-tracking/:id" element={<OrderTracking />} />
+                        
+                        {/* 📄 নতুন পলিসি রাউটস */}
+                        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="terms-of-service" element={<TermsOfService />} />
 
-                    <Route path="payment/success" element={<PaymentResult variant="success" />} />
-                    <Route path="payment/fail" element={<PaymentResult variant="fail" />} />
-                    <Route path="payment/cancel" element={<PaymentResult variant="cancel" />} />
-                    <Route path="payment/demo" element={<PaymentDemo />} />
-                    <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
-                  </Route>
+                        <Route path="payment/success" element={<PaymentResult variant="success" />} />
+                        <Route path="payment/fail" element={<PaymentResult variant="fail" />} />
+                        <Route path="payment/cancel" element={<PaymentResult variant="cancel" />} />
+                        <Route path="payment/demo" element={<PaymentDemo />} />
+                        <Route path="*" element={<div className="p-16 text-center text-2xl font-bold">404 - Page Not Found</div>} />
+                      </Route>
 
-                  {/* Brand microsites */}
-                  <Route path="/brands/:slug" element={<BrandLayout />}>
-                    <Route index element={<BrandHome />} />
-                    <Route path="branches" element={<BrandBranches />} />
-                    <Route path="branches/:id" element={<BrandBranchDetail />} />
-                    <Route path="menu" element={<BrandMenu />} />
-                    <Route path="about" element={<BrandAbout />} />
-                    <Route path="menu/:id" element={<DishDetail />} />
-                    <Route path="dish/:id" element={<DishDetail />} />
-                    <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="terms-of-service" element={<TermsOfService />} />
-                    <Route path="rider-application" element={<RiderApplication />} />
-                  </Route>
+                      {/* Brand microsites */}
+                      <Route path="/brands/:slug" element={<BrandLayout />}>
+                        <Route index element={<BrandHome />} />
+                        <Route path="branches" element={<BrandBranches />} />
+                        <Route path="branches/:id" element={<BrandBranchDetail />} />
+                        <Route path="menu" element={<BrandMenu />} />
+                        <Route path="about" element={<BrandAbout />} />
+                        <Route path="menu/:id" element={<DishDetail />} />
+                        <Route path="dish/:id" element={<DishDetail />} />
+                        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="terms-of-service" element={<TermsOfService />} />
+                        <Route path="rider-application" element={<RiderApplication />} />
+                      </Route>
 
-                  {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}
-                  <Route path="/membership/:id" element={<PublicMembership />} />
-                  <Route path="/membership-verify/:id" element={<PublicMembership />} />
+                      {/* 🪪 Public Digital Membership Verification (Accessible to everyone, non-redirected) */}
+                      <Route path="/membership/:id" element={<PublicMembership />} />
+                      <Route path="/membership-verify/:id" element={<PublicMembership />} />
 
-                  {/* Role Login Portals */}
-                  <Route path="/admin/login" element={<Login variant="admin" />} />
-                  <Route path="/rider/login" element={<Login variant="rider" />} />
+                      {/* Role Login Portals */}
+                      <Route path="/admin/login" element={<Login variant="admin" />} />
+                      <Route path="/rider/login" element={<Login variant="rider" />} />
 
-                  {/* 🚚 Rider Portal (Nested Sub-routes) */}
-                  <Route
-                    path="/rider"
-                    element={
-                      <ProtectedRoute requireRider>
-                        <RiderLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<RiderOverview />} />
-                    <Route path="orders" element={<RiderOrders />} />
-                    <Route path="settlement" element={<RiderSettlement />} />
-                  </Route>
+                      {/* 🚚 Rider Portal (Nested Sub-routes) */}
+                      <Route
+                        path="/rider"
+                        element={
+                          <ProtectedRoute requireRider>
+                            <RiderLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<RiderOverview />} />
+                        <Route path="orders" element={<RiderOrders />} />
+                        <Route path="settlement" element={<RiderSettlement />} />
+                      </Route>
 
-                  {/* 🛡️ Admin Dashboard */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute requireAdmin>
-                        <AdminLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<ProtectedRoute permission="dashboard"><AdminDashboard /></ProtectedRoute>} />
-                    <Route path="dishes" element={<ProtectedRoute permission="dishes"><AdminDishes /></ProtectedRoute>} />
-                    <Route path="brands" element={<ProtectedRoute permission="brands"><AdminBrands /></ProtectedRoute>} />
-                    <Route path="regions" element={<ProtectedRoute permission="regions"><AdminRegions /></ProtectedRoute>} />
-                    <Route path="branches" element={<ProtectedRoute permission="branches"><AdminBranches /></ProtectedRoute>} />
-                    <Route path="orders" element={<ProtectedRoute permission="orders"><AdminOrders /></ProtectedRoute>} />
-                    <Route path="fleet-overview" element={<ProtectedRoute permission="fleet"><AdminRidersFleet /></ProtectedRoute>} />
-                    <Route path="add-rider" element={<ProtectedRoute permission="add_rider"><AdminAddRider /></ProtectedRoute>} />
-                    <Route path="customers" element={<ProtectedRoute permission="customers"><AdminCustomers /></ProtectedRoute>} />
-                    <Route path="reviews" element={<ProtectedRoute permission="reviews"><AdminReviews /></ProtectedRoute>} />
-                    <Route path="coupons" element={<ProtectedRoute permission="coupons"><AdminCoupons /></ProtectedRoute>} />
-                    <Route path="free-delivery" element={<ProtectedRoute permission="free_delivery"><AdminFreeDelivery /></ProtectedRoute>} />
-                    <Route path="hero" element={<ProtectedRoute permission="hero"><AdminHero /></ProtectedRoute>} />
-                    <Route path="about" element={<ProtectedRoute permission="about"><AdminAbout /></ProtectedRoute>} />
-                    <Route path="policies" element={<ProtectedRoute permission="policies"><AdminPolicies /></ProtectedRoute>} />
-                    <Route path="rider-applications" element={<ProtectedRoute permission="rider_applications"><AdminRiders /></ProtectedRoute>} />
-                    <Route path="settings" element={<ProtectedRoute permission="settings"><AdminSettings /></ProtectedRoute>} />
-                    <Route path="staff" element={<ProtectedRoute permission="staff_management"><AdminStaff /></ProtectedRoute>} />
-                  </Route>
-                </Routes>
-              </Suspense>
+                      {/* 🛡️ Admin Dashboard */}
+                      <Route
+                        path="/admin"
+                        element={
+                          <ProtectedRoute requireAdmin>
+                            <AdminLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<ProtectedRoute permission="dashboard"><AdminDashboard /></ProtectedRoute>} />
+                        <Route path="dishes" element={<ProtectedRoute permission="dishes"><AdminDishes /></ProtectedRoute>} />
+                        <Route path="brands" element={<ProtectedRoute permission="brands"><AdminBrands /></ProtectedRoute>} />
+                        <Route path="regions" element={<ProtectedRoute permission="regions"><AdminRegions /></ProtectedRoute>} />
+                        <Route path="branches" element={<ProtectedRoute permission="branches"><AdminBranches /></ProtectedRoute>} />
+                        <Route path="orders" element={<ProtectedRoute permission="orders"><AdminOrders /></ProtectedRoute>} />
+                        <Route path="fleet-overview" element={<ProtectedRoute permission="fleet"><AdminRidersFleet /></ProtectedRoute>} />
+                        <Route path="add-rider" element={<ProtectedRoute permission="add_rider"><AdminAddRider /></ProtectedRoute>} />
+                        <Route path="customers" element={<ProtectedRoute permission="customers"><AdminCustomers /></ProtectedRoute>} />
+                        <Route path="reviews" element={<ProtectedRoute permission="reviews"><AdminReviews /></ProtectedRoute>} />
+                        <Route path="coupons" element={<ProtectedRoute permission="coupons"><AdminCoupons /></ProtectedRoute>} />
+                        <Route path="free-delivery" element={<ProtectedRoute permission="free_delivery"><AdminFreeDelivery /></ProtectedRoute>} />
+                        <Route path="hero" element={<ProtectedRoute permission="hero"><AdminHero /></ProtectedRoute>} />
+                        <Route path="about" element={<ProtectedRoute permission="about"><AdminAbout /></ProtectedRoute>} />
+                        <Route path="policies" element={<ProtectedRoute permission="policies"><AdminPolicies /></ProtectedRoute>} />
+                        <Route path="rider-applications" element={<ProtectedRoute permission="rider_applications"><AdminRiders /></ProtectedRoute>} />
+                        <Route path="settings" element={<ProtectedRoute permission="settings"><AdminSettings /></ProtectedRoute>} />
+                        <Route path="staff" element={<ProtectedRoute permission="staff_management"><AdminStaff /></ProtectedRoute>} />
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
               </OrderProvider>
-            </BranchProvider>
-          </CartProvider>
+              </BranchProvider>
+            </CartProvider>
           </FulfillmentProvider>
         </FavoritesProvider>
       </SettingsProvider>
