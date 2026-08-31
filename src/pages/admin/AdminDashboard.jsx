@@ -72,12 +72,13 @@ export const AdminDashboard = () => {
   // Layout & Density controls (ALL HOOKS DECLARED AT TOP BEFORE ANY RETURNS)
   const [trendMonths, setTrendMonths] = useState(12);
   const [branchLimit, setBranchLimit] = useState(10);
-  const [categoryLimit, setCategoryLimit] = useState('All');
+  const [categoryLimit, setCategoryLimit] = useState(10);
   const [dishesLimit, setDishesLimit] = useState(10);
   const [customersLimit, setCustomersLimit] = useState(10);
   const [ridersLimit, setRidersLimit] = useState(10);
 
   // 🎛️ Metric Toggle Modes (By Volume vs By Money / Value)
+  const [categoryMetric, setCategoryMetric] = useState('orders'); // 'orders' | 'revenue'
   const [dishesMetric, setDishesMetric] = useState('orders'); // 'orders' | 'revenue'
   const [customersMetric, setCustomersMetric] = useState('orders'); // 'orders' | 'spent'
   const [ridersMetric, setRidersMetric] = useState('trips'); // 'trips' | 'value'
@@ -282,7 +283,20 @@ export const AdminDashboard = () => {
     }));
 
   const currentCategoryLimit = categoryLimit === 'All' ? ordersByCategory.length : Number(categoryLimit);
-  const pieData = ordersByCategory.slice(0, currentCategoryLimit).map((c) => ({ label: c.category, value: c.value }));
+  const pieData = [...ordersByCategory]
+    .sort((a, b) => {
+      if (categoryMetric === 'revenue') {
+        return (b.revenue || 0) - (a.revenue || 0);
+      }
+      return (b.quantity || b.value || 0) - (a.quantity || a.value || 0);
+    })
+    .slice(0, currentCategoryLimit)
+    .map((c) => ({
+      label: c.category,
+      value: categoryMetric === 'revenue' ? (c.revenue || 0) : (c.quantity || c.value || 0),
+      quantity: c.quantity || c.value || 0,
+      revenue: c.revenue || 0,
+    }));
   
   const lineData = revenueTrend
     .slice(trendMonths === 6 ? -6 : -12)
@@ -477,21 +491,29 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 2: Orders by Category (Donut / Pie Chart) */}
+        {/* Card 2: Orders by Category (Donut Chart with Orders vs Sales ৳ Mode) */}
         <ChartCard
           id="category"
           title="Orders by Category"
-          subtitle="Share of total order volume"
+          subtitle={categoryMetric === 'revenue' ? 'Ranked by total category sales revenue (৳)' : 'Share of total order volume'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
           onResize={handleResizeCard}
-          action={renderLimitSwitcher(categoryLimit, setCategoryLimit, [5, 'All'])}
+          action={
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {renderMetricSwitcher(categoryMetric, setCategoryMetric, [
+                { label: 'Orders', value: 'orders' },
+                { label: 'Sales ৳', value: 'revenue' },
+              ])}
+              {renderLimitSwitcher(categoryLimit, setCategoryLimit, [5, 10, 15, 'All'])}
+            </div>
+          }
         >
           <PieChart
             data={pieData}
+            mode={categoryMetric}
             valueFormatter={compactNumber}
-            size={globalCardHeight < 240 ? 105 : 135}
           />
         </ChartCard>
 
