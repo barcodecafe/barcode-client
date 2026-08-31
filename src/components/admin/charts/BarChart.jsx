@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 // ---------------------------------------------------------------------------
-// BarChart.jsx - MUI X Inspired Multi-Color Branch Bar Chart
+// BarChart.jsx - Multi-Color Branch Bar Chart
+// Renders all branches seamlessly when 'All' is selected, with dynamic
+// gap & typography scaling to prevent text clipping.
 // ---------------------------------------------------------------------------
 
 const PALETTE = [
@@ -34,14 +36,16 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
     );
   }
 
-  const displayedData = data.slice(0, 15);
+  // Render all passed data points without artificial slicing
+  const displayedData = data;
 
+  const isVeryDense = displayedData.length > 15;
   const isDense = displayedData.length > 8;
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
       <div className="relative w-full" style={{ height }}>
-        {/* Y-axis guideline levels (MUI X Style) */}
+        {/* Y-axis guideline levels */}
         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-1">
           {gridLines
             .slice()
@@ -59,7 +63,7 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
         {/* Bars Container */}
         <div
           className="absolute inset-0 pl-11 flex items-end"
-          style={{ gap: isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
+          style={{ gap: isVeryDense ? 2 : isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
         >
           {displayedData.map((d, i) => {
             const heightPct = ((d.value || 0) / maxValue) * 100;
@@ -74,11 +78,11 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
-                {/* MUI X Style Floating Tooltip */}
+                {/* Floating Tooltip */}
                 {isHovered && (
                   <div className="absolute -top-2 -translate-y-full z-20 px-2.5 py-1 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none flex items-center gap-1.5 border border-white/10">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
-                    <span>{d.fullLabel || d.label}:</span>
+                    <span>#{i + 1} {d.fullLabel || d.label}:</span>
                     <span className="font-black text-amber-300 dark:text-primary-600">{valueFormatter(d.value)}</span>
                     <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
                   </div>
@@ -108,13 +112,13 @@ export const BarChart = ({ data = [], valueFormatter = (v) => v, barLabel = 'Rev
       {/* Guaranteed Visible X-Axis Labels Row */}
       <div
         className="flex items-center pl-11 mt-1.5 w-full"
-        style={{ gap: isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
+        style={{ gap: isVeryDense ? 2 : isDense ? 4 : displayedData.length > 5 ? 6 : 12 }}
       >
         {displayedData.map((d, i) => (
           <span
             key={`lbl-${d.id ?? d.label ?? i}`}
             title={d.fullLabel || d.label}
-            className={`flex-1 ${isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
+            className={`flex-1 ${isVeryDense ? 'text-[7px]' : isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
               hoveredIndex === i
                 ? 'font-black text-neutral-900 dark:text-white scale-105'
                 : 'font-semibold text-neutral-500 dark:text-neutral-400'
