@@ -4,7 +4,7 @@ import { Bike } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // RadarChart.jsx -> Column Bar Chart for Top Delivery Riders
-// Supports toggling between 'trips' (Volume) and 'value' (Delivered Value ৳)
+// Supports toggling between 'trips' (Deliveries) and 'value' (Delivered Value ৳)
 // ---------------------------------------------------------------------------
 
 const RIDER_BAR_COLORS = [
@@ -23,7 +23,7 @@ export const RadarChart = ({
   items = [],
   valueFormatter = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`,
   maxItems = 15,
-  mode = 'trips', // 'trips' | 'value'
+  mode = 'trips', // 'trips' (Deliveries) | 'value' (Delivered Value)
   height = 120,
   emptyMessage = 'No rider delivery data available',
 }) => {
@@ -99,9 +99,9 @@ export const RadarChart = ({
           style={{ gap: isDense ? 4 : displayedRiders.length > 5 ? 6 : 12 }}
         >
           {displayedRiders.map((rider, i) => {
-            const trips = rider.deliveries || 0;
+            const deliveries = rider.deliveries || 0;
             const deliveredVal = rider.deliveredValue || rider.earnings || 0;
-            const metricVal = mode === 'value' ? deliveredVal : trips;
+            const metricVal = mode === 'value' ? deliveredVal : deliveries;
             const heightPct = (metricVal / maxValue) * 100;
             const isHovered = hoveredIndex === i;
             const color = RIDER_BAR_COLORS[i % RIDER_BAR_COLORS.length];
@@ -109,7 +109,7 @@ export const RadarChart = ({
             return (
               <div
                 key={`${rider.riderId || rider._id || rider.name || i}-${mode}`}
-                title={`${rider.name}: ${trips} trips • ${valueFormatter(deliveredVal)}`}
+                title={`${rider.name}: ${deliveries} deliveries • ${valueFormatter(deliveredVal)}`}
                 className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0 cursor-pointer"
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
@@ -120,10 +120,10 @@ export const RadarChart = ({
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                     <span>#{i + 1} {rider.name}:</span>
                     <span className="font-black text-amber-300 dark:text-primary-600">
-                      {mode === 'value' ? valueFormatter(deliveredVal) : `${trips} trips`}
+                      {mode === 'value' ? valueFormatter(deliveredVal) : `${deliveries} deliveries`}
                     </span>
                     <span className="text-white/60 dark:text-neutral-500 font-semibold">
-                      ({mode === 'value' ? `${trips} trips` : valueFormatter(deliveredVal)})
+                      ({mode === 'value' ? `${deliveries} del` : valueFormatter(deliveredVal)})
                     </span>
                     <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
                   </div>

@@ -596,11 +596,11 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 6: Top Delivery Riders (Column Bar Chart with Trips vs Delivered ৳ Mode) */}
+        {/* Card 6: Top Delivery Riders (Column Bar Chart with Deliveries vs Delivered Value ৳ Mode) */}
         <ChartCard
           id="riders"
           title="Top Delivery Riders"
-          subtitle={ridersMetric === 'value' ? 'Ranked by total delivered value (৳)' : 'Ranked by completed delivery trips'}
+          subtitle={ridersMetric === 'value' ? 'Ranked by total delivered order value (৳)' : 'Ranked by completed deliveries'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -608,8 +608,8 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 flex-wrap justify-end">
               {renderMetricSwitcher(ridersMetric, setRidersMetric, [
-                { label: 'Trips', value: 'trips' },
-                { label: 'Delivered ৳', value: 'value' },
+                { label: 'Deliveries', value: 'trips' },
+                { label: 'Delivered Value ৳', value: 'value' },
               ])}
               {renderLimitSwitcher(ridersLimit, setRidersLimit, [5, 10, 15, 'All'])}
             </div>
@@ -621,7 +621,7 @@ export const AdminDashboard = () => {
             mode={ridersMetric}
             height={Math.max(95, globalCardHeight - 80)}
             valueFormatter={currency}
-            emptyMessage="No rider trips recorded yet"
+            emptyMessage="No rider deliveries recorded yet"
           />
         </ChartCard>
       </div>
