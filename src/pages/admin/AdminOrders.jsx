@@ -12,11 +12,13 @@ import {
   FileSpreadsheet,
   Search,
   Filter,
+  Building2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { ExportSalesModal } from "../../components/ExportSalesModal";
 import {
@@ -338,9 +340,10 @@ const getStatusColor = (status) => {
 };
 
 export const AdminOrders = () => {
+  const { user: currentUser } = useAuth();
   const [orders, setOrders] = useState([]);
   const [riders, setRiders] = useState([]);
-  const [, setBranches] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -350,6 +353,19 @@ export const AdminOrders = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [adjustments, setAdjustments] = useState({});
   const [isExportSalesModalOpen, setIsExportSalesModalOpen] = useState(false);
+
+  const isManager = ['manager', 'restaurant_manager'].includes(currentUser?.role);
+  const managerAssignedBranches = Array.isArray(currentUser?.assignedBranches)
+    ? currentUser.assignedBranches.map(Number)
+    : [];
+
+  const managedBranchNames = useMemo(() => {
+    if (!isManager || managerAssignedBranches.length === 0) return '';
+    return branches
+      .filter((b) => managerAssignedBranches.includes(Number(b.id)))
+      .map((b) => b.name)
+      .join(', ');
+  }, [isManager, managerAssignedBranches, branches]);
 
   // 🎯 Search, Filter & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -1432,9 +1448,17 @@ export const AdminOrders = () => {
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
-            Orders & Live Chat
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+              Orders & Live Chat
+            </h1>
+            {isManager && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold shadow-xs">
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{managedBranchNames ? `Branch: ${managedBranchNames}` : 'All Outlets'}</span>
+              </span>
+            )}
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             Monitor incoming food deliveries, update delivery stages, and chat
             with customers/riders.

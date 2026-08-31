@@ -27,7 +27,9 @@ import {
   FolderPlus,
   CheckCircle2,
   Loader2,
+  Building2,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import {
   getAllFoods,
   createFood,
@@ -56,6 +58,7 @@ import { socket } from "../../services/socket";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 export const AdminDishes = () => {
+  const { user: currentUser } = useAuth();
   const [foods, setFoods] = useState([]);
   const [branches, setBranches] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -69,6 +72,19 @@ export const AdminDishes = () => {
   const latestOrderedCategoryOrderRef = useRef([]);
   const isSelfReorderingRef = useRef(false);
   const orderSyncStatusRef = useRef("idle");
+
+  const isManager = ['manager', 'restaurant_manager'].includes(currentUser?.role);
+  const managerAssignedBranches = Array.isArray(currentUser?.assignedBranches)
+    ? currentUser.assignedBranches.map(Number)
+    : [];
+
+  const managedBranchNames = useMemo(() => {
+    if (!isManager || managerAssignedBranches.length === 0) return '';
+    return branches
+      .filter((b) => managerAssignedBranches.includes(Number(b.id)))
+      .map((b) => b.name)
+      .join(', ');
+  }, [isManager, managerAssignedBranches, branches]);
 
   const setSyncStatus = (status) => {
     orderSyncStatusRef.current = status;
@@ -1168,9 +1184,16 @@ export const AdminDishes = () => {
         selectedCategory === "All" ||
         f.category?.trim().toLowerCase() ===
           selectedCategory.trim().toLowerCase();
-      return matchesSearch && matchesCategory;
+
+      let matchesBranch = true;
+      if (isManager && managerAssignedBranches.length > 0) {
+        const fBranchIds = Array.isArray(f.branchIds) ? f.branchIds.map(Number) : [];
+        matchesBranch = fBranchIds.length === 0 || fBranchIds.some((bid) => managerAssignedBranches.includes(bid));
+      }
+
+      return matchesSearch && matchesCategory && matchesBranch;
     });
-  }, [foods, search, selectedCategory]);
+  }, [foods, search, selectedCategory, isManager, managerAssignedBranches]);
 
   const isCouponActive = formData.promoCode !== "";
   const isOfferActive = formData.offerType !== "none";
@@ -1182,10 +1205,16 @@ export const AdminDishes = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
               Manage Menu Items
             </h1>
+            {isManager && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold shadow-xs">
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{managedBranchNames ? `Branch: ${managedBranchNames}` : 'All Outlets'}</span>
+              </span>
+            )}
             {orderSyncStatus === "saving" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse border border-amber-500/20">
                 <Loader2 className="w-3 h-3 animate-spin" /> Saving order...

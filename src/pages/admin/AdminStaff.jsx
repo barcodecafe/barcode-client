@@ -42,6 +42,7 @@ import {
   updateStaffUser,
   deleteStaffUser,
 } from '../../services/staffService';
+import { getAllBranches } from '../../services/branchesService';
 
 export const ALL_PERMISSIONS = [
   { key: 'dashboard', label: 'Dashboard Overview', desc: 'Analytics, revenue, orders chart', icon: LayoutDashboard, category: 'Analytics' },
@@ -68,6 +69,7 @@ export const AdminStaff = () => {
   const { user: currentUser, isSuperAdmin } = useAuth();
 
   const [staffList, setStaffList] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -83,9 +85,20 @@ export const AdminStaff = () => {
     email: '',
     phone: '',
     password: '',
-    role: 'admin',
+    role: 'manager',
     permissions: [],
+    assignedBranches: [],
   });
+
+  const loadBranches = async () => {
+    try {
+      const res = await getAllBranches();
+      const list = Array.isArray(res) ? res : res?.data || [];
+      setBranches(list);
+    } catch (err) {
+      console.error('Failed to load branches:', err);
+    }
+  };
 
   const loadStaff = async () => {
     try {
@@ -104,6 +117,7 @@ export const AdminStaff = () => {
 
   useEffect(() => {
     loadStaff();
+    loadBranches();
   }, []);
 
   const filteredStaff = useMemo(() => {
@@ -140,8 +154,9 @@ export const AdminStaff = () => {
       email: '',
       phone: '',
       password: '',
-      role: 'admin',
-      permissions: ALL_PERMISSIONS.map((p) => p.key).filter((k) => k !== 'staff_management'),
+      role: 'manager',
+      permissions: ['orders', 'dishes', 'dashboard'],
+      assignedBranches: [],
     });
     setIsModalOpen(true);
   };
@@ -154,14 +169,27 @@ export const AdminStaff = () => {
       email: staff.email || '',
       phone: staff.phone || '',
       password: '', // leave empty to keep unchanged
-      role: staff.role || 'admin',
+      role: staff.role || 'manager',
       permissions: isSuper
         ? ALL_PERMISSIONS.map((p) => p.key)
         : Array.isArray(staff.permissions)
         ? staff.permissions
         : [],
+      assignedBranches: Array.isArray(staff.assignedBranches)
+        ? staff.assignedBranches.map(Number)
+        : [],
     });
     setIsModalOpen(true);
+  };
+
+  const handleToggleBranch = (branchId) => {
+    const bId = Number(branchId);
+    setFormData((prev) => {
+      const current = Array.isArray(prev.assignedBranches) ? prev.assignedBranches : [];
+      const exists = current.includes(bId);
+      const next = exists ? current.filter((id) => id !== bId) : [...current, bId];
+      return { ...prev, assignedBranches: next };
+    });
   };
 
   const handleTogglePermission = (permKey) => {
@@ -213,6 +241,9 @@ export const AdminStaff = () => {
         permissions: ['super_admin', 'superadmin'].includes(formData.role)
           ? ALL_PERMISSIONS.map((p) => p.key)
           : formData.permissions,
+        assignedBranches: ['manager', 'restaurant_manager'].includes(formData.role)
+          ? formData.assignedBranches
+          : [],
       };
 
       if (formData.password.trim()) {
@@ -477,6 +508,21 @@ export const AdminStaff = () => {
                         </span>
                       )}
 
+                      {/* Assigned Branches for Managers */}
+                      {['manager', 'restaurant_manager'].includes(staff.role) && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Building2 className="w-3 h-3 text-amber-500 shrink-0" />
+                          <span className="text-[9px] sm:text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
+                            {Array.isArray(staff.assignedBranches) && staff.assignedBranches.length > 0
+                              ? branches
+                                  .filter((b) => staff.assignedBranches.includes(Number(b.id)))
+                                  .map((b) => b.name)
+                                  .join(', ') || `Branch #${staff.assignedBranches.join(', #')}`
+                              : 'All Outlets'}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Permissions Tags on the same line */}
                       <div className="flex items-center shrink-0">
                         {isSuper ? (
@@ -673,6 +719,66 @@ export const AdminStaff = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Branch Assignment (For Restaurant Managers) */}
+                {['manager', 'restaurant_manager'].includes(formData.role) && (
+                  <div className="space-y-2 pt-2.5 border-t border-neutral-100 dark:border-neutral-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-neutral-900 dark:text-white flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-amber-500" />
+                          Assigned Restaurant Branch / Outlet *
+                        </h4>
+                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                          Select which branch(es) this manager will control. They will only see & manage orders, dishes, and metrics for selected branches.
+                        </p>
+                      </div>
+                      {branches.length > 0 && (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
+                          {formData.assignedBranches.length === 0
+                            ? 'All Outlets (Global)'
+                            : `${formData.assignedBranches.length} Branch(es) Selected`}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                      {branches.map((b) => {
+                        const bId = Number(b.id);
+                        const isSelected = formData.assignedBranches.includes(bId);
+                        return (
+                          <div
+                            key={b.id}
+                            onClick={() => handleToggleBranch(bId)}
+                            className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center gap-2 select-none ${
+                              isSelected
+                                ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 shadow-2xs'
+                                : 'bg-neutral-50/70 dark:bg-neutral-950/40 border-neutral-200/70 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700'
+                            }`}
+                          >
+                            <div
+                              className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 transition-all ${
+                                isSelected
+                                  ? 'bg-amber-500 text-white'
+                                  : 'border border-neutral-300 dark:border-neutral-700'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[11px] font-black text-neutral-900 dark:text-white truncate block">
+                                {b.name}
+                              </span>
+                              <span className="text-[9px] text-neutral-500 dark:text-neutral-400 truncate block">
+                                {b.location || 'Outlet'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Permissions Matrix */}
                 <div className="space-y-2.5 pt-2.5 border-t border-neutral-100 dark:border-neutral-800">
