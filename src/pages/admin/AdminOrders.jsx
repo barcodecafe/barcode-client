@@ -400,16 +400,45 @@ export const AdminOrders = () => {
       .catch((err) => console.error("Failed to load chat history in Admin:", err));
   }, [activeChatOrderId]);
 
+  const checkOrderBelongsToManager = useCallback(
+    (ord) => {
+      if (!isManager || managerAssignedBranches.length === 0) return true;
+      if (!ord) return false;
+
+      const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
+      if (Number.isFinite(orderBranchId) && managerAssignedBranches.includes(orderBranchId)) {
+        return true;
+      }
+
+      // Check legacy/previous orders via branch name and zones
+      const managedBranches = (branches || []).filter((b) =>
+        managerAssignedBranches.includes(Number(b.id))
+      );
+      for (const b of managedBranches) {
+        const bName = (b.name || "").trim().toLowerCase();
+        if (bName) {
+          if (String(ord.pickupBranchName || "").trim().toLowerCase() === bName) return true;
+          if (String(ord.user?.pickArea || "").toLowerCase().includes(bName)) return true;
+          if (String(ord.user?.address || "").toLowerCase().includes(bName)) return true;
+        }
+        const zones = (b.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase());
+        const area = String(ord.deliveryArea || "").trim().toLowerCase();
+        if (area && zones.includes(area)) return true;
+        if (b.regionId && Number(ord.regionId) === Number(b.regionId)) return true;
+      }
+
+      return false;
+    },
+    [isManager, managerAssignedBranches, branches]
+  );
+
   const applyResult = (result, setter, transform, label) => {
     if (result.status === "fulfilled") {
       const transformed = transform(result.value);
       if (label === "orders" && Array.isArray(transformed)) {
         let branchFiltered = transformed;
         if (isManager && managerAssignedBranches.length > 0) {
-          branchFiltered = transformed.filter((o) => {
-            const orderBranchId = Number(o.branchId || o.pickupBranchId);
-            return managerAssignedBranches.includes(orderBranchId);
-          });
+          branchFiltered = transformed.filter(checkOrderBelongsToManager);
         }
         setOrders((prevOrders) => {
           const prevMap = new Map(prevOrders.map((o) => [String(o._id || o.id), o]));
@@ -495,8 +524,7 @@ export const AdminOrders = () => {
 
       // 🔒 Restaurant Manager Scoping: Only process new orders matching manager assigned branches
       if (isManager && managerAssignedBranches.length > 0) {
-        const orderBranchId = Number(newOrder.branchId || newOrder.pickupBranchId);
-        if (!managerAssignedBranches.includes(orderBranchId)) {
+        if (!checkOrderBelongsToManager(newOrder)) {
           return;
         }
       }
@@ -1355,10 +1383,7 @@ export const AdminOrders = () => {
 
     // 0. Restaurant Manager Scoping Safeguard
     if (isManager && managerAssignedBranches.length > 0) {
-      list = list.filter((ord) => {
-        const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
-        return managerAssignedBranches.includes(orderBranchId);
-      });
+      list = list.filter(checkOrderBelongsToManager);
     }
 
     // 1. Status Filter
