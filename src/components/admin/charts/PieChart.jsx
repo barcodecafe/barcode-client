@@ -4,8 +4,8 @@ import { PieChart as PieIcon } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // PieChart.jsx -> Modern Interactive Donut Chart for Categories
-// Dynamically expands/shrinks based on grid columns (1, 2, 3, 4) and card height,
-// filling available space with zero awkward gaps.
+// Seamlessly adapts across lg laptop screens and 2xl, 3xl, 4xl wide monitors,
+// expanding the donut shape and utilizing the full card width with zero dead gaps.
 // ---------------------------------------------------------------------------
 
 const CATEGORY_PALETTE = [
@@ -91,22 +91,6 @@ export const PieChart = ({
     });
   }, [data, total, mode]);
 
-  // Dynamic Donut pixel size calculated from gridCols & card height
-  const donutPx = useMemo(() => {
-    const safeHeight = Math.max(90, height);
-    if (gridCols === 1) {
-      return Math.min(220, Math.max(150, safeHeight + 25));
-    }
-    if (gridCols === 2) {
-      return Math.min(195, Math.max(140, safeHeight + 15));
-    }
-    if (gridCols === 3) {
-      return Math.min(145, Math.max(110, safeHeight - 5));
-    }
-    // gridCols === 4
-    return Math.min(125, Math.max(95, safeHeight - 20));
-  }, [gridCols, height]);
-
   if (!data || data.length === 0 || total === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-28 text-neutral-400 dark:text-neutral-500 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 p-4">
@@ -115,8 +99,6 @@ export const PieChart = ({
       </div>
     );
   }
-
-  const isCompact = gridCols >= 3;
 
   // Vector canvas dimensions
   const SIZE = 180;
@@ -127,11 +109,18 @@ export const PieChart = ({
   const activeSegment = hoveredIndex !== null && segments[hoveredIndex] ? segments[hoveredIndex] : null;
 
   return (
-    <div className="flex flex-row items-center gap-3 sm:gap-5 w-full h-full min-w-0 select-none">
-      {/* 🎯 Dynamic Donut Shape (Expands to fill space on Cols: 1, 2, and Large height) */}
+    <div className="flex flex-row items-center justify-between gap-3 sm:gap-6 2xl:gap-8 w-full h-full min-w-0 select-none">
+      {/* 🎯 Responsive Donut SVG Canvas (Auto-scales for lg vs 2xl/3xl/4xl) */}
       <div
-        className="relative shrink-0 flex items-center justify-center aspect-square transition-all duration-300"
-        style={{ width: donutPx, height: donutPx }}
+        className={`relative shrink-0 flex items-center justify-center aspect-square transition-all duration-200 ${
+          gridCols === 1
+            ? 'w-[160px] h-[160px] sm:w-[190px] sm:h-[190px] 2xl:w-[220px] 2xl:h-[220px]'
+            : gridCols === 2
+            ? 'w-[140px] h-[140px] sm:w-[170px] sm:h-[170px] 2xl:w-[200px] 2xl:h-[200px]'
+            : gridCols === 3
+            ? 'w-[115px] h-[115px] sm:w-[125px] sm:h-[125px] xl:w-[140px] xl:h-[140px] 2xl:w-[180px] 2xl:h-[180px] 3xl:w-[205px] 3xl:h-[205px]'
+            : 'w-[100px] h-[100px] sm:w-[115px] sm:h-[115px] 2xl:w-[145px] 2xl:h-[145px]'
+        }`}
       >
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
@@ -160,27 +149,27 @@ export const PieChart = ({
           {activeSegment ? (
             <>
               <span
-                className={`${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base lg:text-lg 2xl:text-xl'} font-black font-display tracking-tight leading-tight`}
+                className="text-xs sm:text-sm xl:text-base 2xl:text-xl font-black font-display tracking-tight leading-tight"
                 style={{ color: activeSegment.color }}
               >
                 {activeSegment.pct}%
               </span>
-              <span className={`${isCompact ? 'text-[8px] sm:text-[9px] max-w-[65px]' : 'text-[9px] sm:text-[11px] max-w-[85px]'} font-bold text-neutral-800 dark:text-neutral-100 truncate leading-tight`}>
+              <span className="text-[8px] sm:text-[9px] xl:text-[10px] 2xl:text-xs font-bold text-neutral-800 dark:text-neutral-100 max-w-[65px] xl:max-w-[85px] truncate leading-tight">
                 {activeSegment.label}
               </span>
-              <span className={`${isCompact ? 'text-[7px] sm:text-[8px]' : 'text-[8px] sm:text-[9px]'} font-semibold text-neutral-400 dark:text-neutral-500 leading-tight`}>
+              <span className="text-[7px] sm:text-[8px] xl:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500 leading-tight">
                 {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.quantity} ord`}
               </span>
             </>
           ) : (
             <>
-              <span className={`${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base lg:text-lg 2xl:text-xl'} font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight`}>
+              <span className="text-xs sm:text-sm xl:text-base 2xl:text-xl font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
                 {mode === 'revenue' ? currencyFormat(totalRevenue) : compactNumber(totalQuantity)}
               </span>
-              <span className={`${isCompact ? 'text-[7px] sm:text-[8px]' : 'text-[8px] sm:text-[9px]'} font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter leading-tight`}>
+              <span className="text-[7px] sm:text-[8px] xl:text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter leading-tight">
                 {mode === 'revenue' ? 'Sales' : 'Total'}
               </span>
-              <span className={`${isCompact ? 'text-[7px] sm:text-[8px]' : 'text-[8px] sm:text-[9px]'} font-semibold text-neutral-500 dark:text-neutral-400 leading-tight`}>
+              <span className="text-[7px] sm:text-[8px] xl:text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 leading-tight">
                 {segments.length} Cat
               </span>
             </>
@@ -188,7 +177,7 @@ export const PieChart = ({
         </div>
       </div>
 
-      {/* 📋 Legend: Fills the remaining area cleanly */}
+      {/* 📋 Legend: Fills the entire right card width gracefully without dead space */}
       <div className="flex-1 min-w-0 w-full h-full flex flex-col justify-center">
         <div
           className="w-full flex flex-col gap-0.5 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800"
@@ -204,7 +193,7 @@ export const PieChart = ({
                 title={`${seg.label}: ${seg.quantity} orders • ${currencyFormat(seg.revenue)} (${seg.pct}%)`}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className={`flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-lg cursor-pointer transition-colors duration-150 min-w-0 ${
+                className={`flex items-center justify-between gap-2 px-2 py-0.5 rounded-lg cursor-pointer transition-colors duration-150 min-w-0 ${
                   isHovered
                     ? 'bg-neutral-100 dark:bg-neutral-800 shadow-2xs'
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
@@ -213,14 +202,14 @@ export const PieChart = ({
                 {/* Left: Dot + Category Name */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-150"
+                    className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 rounded-full shrink-0 transition-transform duration-150"
                     style={{
                       backgroundColor: seg.color,
                       transform: isHovered ? 'scale(1.4)' : 'scale(1)',
                     }}
                   />
                   <span
-                    className={`text-[10px] sm:text-[11px] truncate transition-colors ${
+                    className={`text-[10px] sm:text-[11px] 2xl:text-xs truncate transition-colors ${
                       isHovered
                         ? 'font-black text-neutral-900 dark:text-white'
                         : 'font-semibold text-neutral-700 dark:text-neutral-300'
@@ -230,39 +219,37 @@ export const PieChart = ({
                   </span>
                 </div>
 
-                {/* Right: Numbers */}
-                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                {/* Right: Full Details on 2xl/3xl/4xl and clean compact on lg */}
+                <div className="flex items-center gap-1.5 2xl:gap-2.5 shrink-0 whitespace-nowrap">
                   {mode === 'revenue' ? (
                     <>
                       <span
-                        className="text-[10px] sm:text-[11px] font-black shrink-0"
+                        className="text-[10px] sm:text-[11px] 2xl:text-xs font-black shrink-0"
                         style={{ color: isHovered ? seg.color : undefined }}
                       >
                         {currencyFormat(seg.revenue)}
                       </span>
-                      {!isCompact && (
-                        <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0">
-                          ({seg.quantity} ord)
-                        </span>
-                      )}
+                      <span className="text-[8px] sm:text-[9px] 2xl:text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0 hidden sm:inline 2xl:inline">
+                        ({seg.quantity} ord)
+                      </span>
                     </>
                   ) : (
                     <>
                       <span
-                        className="text-[10px] sm:text-[11px] font-black shrink-0"
+                        className="text-[10px] sm:text-[11px] 2xl:text-xs font-black shrink-0"
                         style={{ color: isHovered ? seg.color : undefined }}
                       >
                         {seg.quantity} ord
                       </span>
-                      {!isCompact && hasRevenue && (
-                        <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0">
+                      {hasRevenue && (
+                        <span className="text-[8px] sm:text-[9px] 2xl:text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0 hidden sm:inline 2xl:inline">
                           ({currencyFormat(seg.revenue)})
                         </span>
                       )}
                     </>
                   )}
                   <span
-                    className={`text-[10px] sm:text-[11px] font-extrabold w-9 text-right shrink-0 ${
+                    className={`text-[10px] sm:text-[11px] 2xl:text-xs font-extrabold w-9 2xl:w-11 text-right shrink-0 ${
                       isHovered ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'
                     }`}
                   >
