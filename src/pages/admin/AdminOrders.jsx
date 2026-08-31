@@ -409,31 +409,65 @@ export const AdminOrders = () => {
         .filter((n) => Number.isFinite(n));
       if (ids.length === 0) return true;
 
-      const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
+      const isPickupOrder =
+        ord.orderType === "pickup" ||
+        ord.deliveryArea === "Self Pickup" ||
+        String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
+        String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
+        String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+
+      const targetBranches = (branches || []).filter((b) => ids.includes(Number(b.id)));
+
+      // ── 1. SELF-PICKUP MATCHING LOGIC (Directly bound to pickup outlet) ──
+      if (isPickupOrder) {
+        const pBranchId = Number(ord.pickupBranchId || ord.branchId);
+        if (Number.isFinite(pBranchId) && ids.includes(pBranchId)) {
+          return true;
+        }
+
+        const ordPickupName = String(ord.pickupBranchName || "").trim().toLowerCase();
+        const ordPickArea = String(ord.user?.pickArea || "").trim().toLowerCase();
+        const ordAddress = String(ord.user?.address || ord.deliveryAddress || "").toLowerCase();
+
+        for (const b of targetBranches) {
+          const bName = (b.name || "").trim().toLowerCase();
+          if (bName) {
+            if (ordPickupName && (ordPickupName === bName || ordPickupName.includes(bName) || bName.includes(ordPickupName))) {
+              return true;
+            }
+            if (ordPickArea && (ordPickArea.includes(bName) || bName.includes(ordPickArea))) {
+              return true;
+            }
+            if (ordAddress && ordAddress.includes(bName)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      // ── 2. DELIVERY ORDER MATCHING LOGIC (Bound to fulfilling kitchen / branch zones) ──
+      const orderBranchId = Number(ord.branchId);
       if (Number.isFinite(orderBranchId) && ids.includes(orderBranchId)) {
         return true;
       }
 
-      // Check legacy/previous orders via branch name and zones
-      const targetBranches = (branches || []).filter((b) => ids.includes(Number(b.id)));
       for (const b of targetBranches) {
         const bName = (b.name || "").trim().toLowerCase();
         if (bName) {
-          const ordPickupName = String(ord.pickupBranchName || "").trim().toLowerCase();
-          if (ordPickupName && (ordPickupName === bName || ordPickupName.includes(bName) || bName.includes(ordPickupName))) {
-            return true;
-          }
-          const ordPickArea = String(ord.user?.pickArea || ord.deliveryArea || "").toLowerCase();
-          const ordAddress = String(ord.user?.address || ord.deliveryAddress || "").toLowerCase();
-          if (ordPickArea.includes(bName) || ordAddress.includes(bName)) {
+          const pickArea = String(ord.user?.pickArea || "").toLowerCase();
+          const addr = String(ord.user?.address || "").toLowerCase();
+          if (pickArea.includes(bName) || addr.includes(bName)) {
             return true;
           }
         }
+
         const zones = (b.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase()).filter(Boolean);
         const area = String(ord.deliveryArea || ord.user?.pickArea || "").trim().toLowerCase();
         if (area && zones.some((zn) => area.includes(zn) || zn.includes(area))) {
           return true;
         }
+
         if (b.regionId && Number(ord.regionId) === Number(b.regionId)) {
           return true;
         }
@@ -1416,6 +1450,24 @@ export const AdminOrders = () => {
     return counts;
   }, [baseOrders]);
 
+  // 🎯 Dynamic counts for Order Type (Delivery vs Self-Pickup within current branch scope)
+  const orderTypeCounts = useMemo(() => {
+    let delivery = 0;
+    let pickup = 0;
+    baseOrders.forEach((ord) => {
+      if (!ord) return;
+      const isPickup =
+        ord.orderType === "pickup" ||
+        ord.deliveryArea === "Self Pickup" ||
+        String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
+        String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
+        String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+      if (isPickup) pickup += 1;
+      else delivery += 1;
+    });
+    return { all: baseOrders.length, delivery, pickup };
+  }, [baseOrders]);
+
   // 🎯 Filtered Orders list
   const filteredOrders = useMemo(() => {
     let list = baseOrders;
@@ -1672,9 +1724,9 @@ export const AdminOrders = () => {
             }}
             className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
           >
-            <option value="all">📦 All Types</option>
-            <option value="delivery">🚚 Delivery Only</option>
-            <option value="pickup">🛍️ Pickup Only</option>
+            <option value="all">📦 All Types ({orderTypeCounts.all})</option>
+            <option value="delivery">🚚 Delivery Only ({orderTypeCounts.delivery})</option>
+            <option value="pickup">🛍️ Self Pickup Only ({orderTypeCounts.pickup})</option>
           </select>
 
           {/* Payment Status */}
@@ -1810,15 +1862,31 @@ export const AdminOrders = () => {
                         </td>
 
                         <td className="px-3 py-3 sm:px-4">
-                          <span
-                            className="block text-neutral-600 dark:text-neutral-300 font-light truncate max-w-[140px] 2xl:max-w-[200px]"
-                            title={ord.user?.address || ord.deliveryAddress}
-                          >
-                            {ord.user?.address || ord.deliveryAddress || "-"}
-                          </span>
-                          <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]">
-                            {ord.user?.pickArea || ord.area || ""}
-                          </span>
+                          {isPickupOrder ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                                <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                                <span className="truncate max-w-[140px] 2xl:max-w-[200px]" title={ord.pickupBranchName || ord.user?.pickArea}>
+                                  {ord.pickupBranchName || ord.user?.pickArea?.replace(/^Self Pickup at /i, '').trim() || "Pickup Outlet"}
+                                </span>
+                              </span>
+                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]" title={ord.user?.address || ord.deliveryAddress}>
+                                {ord.user?.address && !ord.user.address.toLowerCase().includes("self pickup") ? ord.user.address : "Customer In-Store Collection"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span
+                                className="block text-neutral-700 dark:text-neutral-200 font-medium text-xs truncate max-w-[140px] 2xl:max-w-[200px]"
+                                title={ord.user?.address || ord.deliveryAddress}
+                              >
+                                {ord.user?.address || ord.deliveryAddress || "-"}
+                              </span>
+                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]">
+                                📍 {ord.deliveryArea || ord.user?.pickArea || "Standard Delivery Area"}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-3 py-3 sm:px-4 font-bold text-primary-500 whitespace-nowrap">
