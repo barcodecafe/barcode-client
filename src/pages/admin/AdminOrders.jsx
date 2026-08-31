@@ -372,6 +372,7 @@ export const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [branchFilter, setBranchFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -1344,10 +1345,49 @@ export const AdminOrders = () => {
   const advanceAmount = isPaidOrder ? grandTotal : 0;
   const remainingAmount = isRejectedOrder ? 0 : isPaidOrder ? 0 : grandTotal;
 
+  const isOrderMatchingSelectedBranch = useCallback(
+    (ord, targetBranchId) => {
+      if (!ord) return false;
+      if (!targetBranchId || targetBranchId === "all") return true;
+
+      const bid = Number(targetBranchId);
+      const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
+      if (Number.isFinite(orderBranchId) && orderBranchId === bid) return true;
+
+      const targetBranch = branches.find((b) => Number(b.id) === bid);
+      if (targetBranch) {
+        const bName = (targetBranch.name || "").trim().toLowerCase();
+        if (bName) {
+          if (String(ord.pickupBranchName || "").trim().toLowerCase() === bName) return true;
+          if (String(ord.user?.pickArea || "").toLowerCase().includes(bName)) return true;
+          if (String(ord.user?.address || "").toLowerCase().includes(bName)) return true;
+        }
+        const zones = (targetBranch.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase());
+        const area = String(ord.deliveryArea || "").trim().toLowerCase();
+        if (area && zones.includes(area)) return true;
+        if (targetBranch.regionId && Number(ord.regionId) === Number(targetBranch.regionId)) return true;
+      }
+
+      return false;
+    },
+    [branches]
+  );
+
+  // 🎯 Base orders for count calculation & filtering
+  const baseOrders = useMemo(() => {
+    let list = orders.filter(Boolean);
+    if (isManager && managerAssignedBranches.length > 0) {
+      list = list.filter(checkOrderBelongsToManager);
+    } else if (!isManager && branchFilter !== "all") {
+      list = list.filter((ord) => isOrderMatchingSelectedBranch(ord, branchFilter));
+    }
+    return list;
+  }, [orders, isManager, managerAssignedBranches, checkOrderBelongsToManager, branchFilter, isOrderMatchingSelectedBranch]);
+
   // 🎯 Status counts for quick filter tabs
   const orderCounts = useMemo(() => {
     const counts = {
-      all: orders.length,
+      all: baseOrders.length,
       pending: 0,
       preparing: 0,
       ready: 0,
@@ -1356,7 +1396,7 @@ export const AdminOrders = () => {
       rejected: 0,
     };
 
-    orders.forEach((ord) => {
+    baseOrders.forEach((ord) => {
       if (!ord) return;
       const st = String(ord.status || "").trim().toLowerCase();
       if (st === "placed" || st === "pending" || st === "awaiting payment" || st === "awaiting_payment" || !st) {
@@ -1375,16 +1415,11 @@ export const AdminOrders = () => {
     });
 
     return counts;
-  }, [orders]);
+  }, [baseOrders]);
 
   // 🎯 Filtered Orders list
   const filteredOrders = useMemo(() => {
-    let list = orders.filter(Boolean);
-
-    // 0. Restaurant Manager Scoping Safeguard
-    if (isManager && managerAssignedBranches.length > 0) {
-      list = list.filter(checkOrderBelongsToManager);
-    }
+    let list = baseOrders;
 
     // 1. Status Filter
     if (statusFilter !== "all") {
@@ -1453,7 +1488,7 @@ export const AdminOrders = () => {
     }
 
     return list;
-  }, [orders, statusFilter, orderTypeFilter, paymentFilter, searchQuery]);
+  }, [baseOrders, statusFilter, orderTypeFilter, paymentFilter, searchQuery]);
 
   // 🎯 Pagination Calculations
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
@@ -1610,6 +1645,25 @@ export const AdminOrders = () => {
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Branch Filter (Super Admin & Sub-Admin Only) */}
+          {!isManager && (
+            <select
+              value={branchFilter}
+              onChange={(e) => {
+                setBranchFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+            >
+              <option value="all">🏢 All Branches ({branches.length})</option>
+              {branches.map((b) => (
+                <option key={b.id} value={String(b.id)}>
+                  📍 {b.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Order Type */}
           <select
             value={orderTypeFilter}
