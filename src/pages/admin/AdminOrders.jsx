@@ -486,6 +486,14 @@ export const AdminOrders = () => {
       const newId = String(newOrder.id || newOrder._id || newOrder.orderId || "");
       if (!newId) return;
 
+      // 🔒 Restaurant Manager Scoping: Only process new orders matching manager assigned branches
+      if (isManager && managerAssignedBranches.length > 0) {
+        const orderBranchId = Number(newOrder.branchId || newOrder.pickupBranchId);
+        if (!managerAssignedBranches.includes(orderBranchId)) {
+          return;
+        }
+      }
+
       setOrders((prev) => {
         const exists = prev.some((o) => String(o?.id || o?._id || o?.orderId) === newId);
         if (exists) {
@@ -1337,6 +1345,14 @@ export const AdminOrders = () => {
   // 🎯 Filtered Orders list
   const filteredOrders = useMemo(() => {
     let list = orders.filter(Boolean);
+
+    // 0. Restaurant Manager Scoping Safeguard
+    if (isManager && managerAssignedBranches.length > 0) {
+      list = list.filter((ord) => {
+        const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
+        return managerAssignedBranches.includes(orderBranchId);
+      });
+    }
 
     // 1. Status Filter
     if (statusFilter !== "all") {
