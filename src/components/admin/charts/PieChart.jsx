@@ -4,8 +4,8 @@ import { PieChart as PieIcon } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // PieChart.jsx -> Modern Interactive Donut Chart for Categories
-// Sized prominently on lg/2xl/3xl/4xl screens with expanding donut and
-// compact right-aligned legend where category names sit close to their values.
+// Dynamically adjusts donut size and legend density based on gridCols / screen,
+// ensuring zero text-overlap on 3 & 4 column layouts on all screens.
 // ---------------------------------------------------------------------------
 
 const CATEGORY_PALETTE = [
@@ -47,6 +47,7 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 export const PieChart = ({
   data = [],
   mode = 'orders', // 'orders' | 'revenue'
+  gridCols = 3,
   valueFormatter = (v) => v,
   emptyMessage = 'No category order data available',
 }) => {
@@ -98,8 +99,10 @@ export const PieChart = ({
     );
   }
 
-  // Large crisp vector canvas
-  const SIZE = 180;
+  const isCompact = gridCols >= 3;
+
+  // Vector canvas dimensions
+  const SIZE = 160;
   const CENTER = SIZE / 2;
   const RADIUS = SIZE * 0.38;
   const STROKE = SIZE * 0.17;
@@ -107,70 +110,74 @@ export const PieChart = ({
   const activeSegment = hoveredIndex !== null && segments[hoveredIndex] ? segments[hoveredIndex] : null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 w-full h-full min-w-0 select-none">
-      {/* 🎯 Expanding Large Donut SVG Canvas (Takes space on 2xl/3xl/4xl) */}
-      <div className="relative flex-1 flex items-center justify-center min-w-0 h-full py-1">
-        <div className="relative w-[130px] h-[130px] sm:w-[150px] sm:h-[150px] md:w-[160px] md:h-[160px] lg:w-[170px] lg:h-[170px] xl:w-[185px] xl:h-[185px] 2xl:w-[200px] 2xl:h-[200px] max-h-full aspect-square flex items-center justify-center">
-          <svg
-            viewBox={`0 0 ${SIZE} ${SIZE}`}
-            className="w-full h-full transform -rotate-90 drop-shadow-xs overflow-visible"
-          >
-            {segments.map((seg, i) => (
-              <motion.path
-                key={`${seg.label}-${mode}`}
-                d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={hoveredIndex === i ? STROKE + 4 : STROKE}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: i * 0.03, ease: 'easeOut' }}
-                style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, opacity 0.2s ease' }}
-                opacity={hoveredIndex === null || hoveredIndex === i ? 1 : 0.4}
-                onMouseEnter={() => setHoveredIndex(i)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              />
-            ))}
-          </svg>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 w-full h-full min-w-0 select-none">
+      {/* 🎯 Donut SVG Canvas (Scaled to fit without crowding 3/4 column layouts) */}
+      <div
+        className={`relative shrink-0 flex items-center justify-center ${
+          isCompact
+            ? 'w-[105px] h-[105px] sm:w-[115px] sm:h-[115px] xl:w-[125px] xl:h-[125px]'
+            : 'w-[130px] h-[130px] sm:w-[155px] sm:h-[155px] 2xl:w-[185px] 2xl:h-[185px] flex-1'
+        }`}
+      >
+        <svg
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="w-full h-full transform -rotate-90 drop-shadow-xs overflow-visible"
+        >
+          {segments.map((seg, i) => (
+            <motion.path
+              key={`${seg.label}-${mode}`}
+              d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={hoveredIndex === i ? STROKE + 4 : STROKE}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.45, delay: i * 0.02, ease: 'easeOut' }}
+              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, opacity 0.2s ease' }}
+              opacity={hoveredIndex === null || hoveredIndex === i ? 1 : 0.4}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            />
+          ))}
+        </svg>
 
-          {/* Center Summary Label */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1.5">
-            {activeSegment ? (
-              <>
-                <span
-                  className="text-base sm:text-lg 2xl:text-xl font-black font-display tracking-tight leading-tight"
-                  style={{ color: activeSegment.color }}
-                >
-                  {activeSegment.pct}%
-                </span>
-                <span className="text-[10px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-100 max-w-[85px] truncate">
-                  {activeSegment.label}
-                </span>
-                <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500">
-                  {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.quantity} ord`}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-base sm:text-lg 2xl:text-xl font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
-                  {mode === 'revenue' ? currencyFormat(totalRevenue) : compactNumber(totalQuantity)}
-                </span>
-                <span className="text-[8px] sm:text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter">
-                  {mode === 'revenue' ? 'Category Sales' : 'Total Orders'}
-                </span>
-                <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-500 dark:text-neutral-400">
-                  {segments.length} Categories
-                </span>
-              </>
-            )}
-          </div>
+        {/* Center Summary Label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
+          {activeSegment ? (
+            <>
+              <span
+                className={`${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base 2xl:text-lg'} font-black font-display tracking-tight leading-tight`}
+                style={{ color: activeSegment.color }}
+              >
+                {activeSegment.pct}%
+              </span>
+              <span className="text-[8px] sm:text-[9px] font-bold text-neutral-800 dark:text-neutral-100 max-w-[65px] truncate leading-tight">
+                {activeSegment.label}
+              </span>
+              <span className="text-[7px] sm:text-[8px] font-semibold text-neutral-400 dark:text-neutral-500 leading-tight">
+                {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.quantity} ord`}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className={`${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base 2xl:text-lg'} font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight`}>
+                {mode === 'revenue' ? currencyFormat(totalRevenue) : compactNumber(totalQuantity)}
+              </span>
+              <span className="text-[7px] sm:text-[8px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter leading-tight">
+                {mode === 'revenue' ? 'Sales' : 'Total'}
+              </span>
+              <span className="text-[7px] sm:text-[8px] font-semibold text-neutral-500 dark:text-neutral-400 leading-tight">
+                {segments.length} Cat
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* 📋 Right-Aligned Compact Legend (Names sit close to their numbers on 2xl/3xl/4xl) */}
-      <div className="shrink-0 w-full sm:w-auto min-w-[210px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-[330px] 2xl:max-w-[360px]">
+      {/* 📋 Legend: Right-Aligned, zero-wrap clean tabular format */}
+      <div className="flex-1 min-w-0 w-full max-w-full">
         <div
-          className="w-full flex flex-col gap-0.5 max-h-[170px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800"
+          className="w-full flex flex-col gap-0.5 max-h-[165px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800"
         >
           {segments.map((seg, i) => {
             const isHovered = hoveredIndex === i;
@@ -182,19 +189,19 @@ export const PieChart = ({
                 title={`${seg.label}: ${seg.quantity} orders • ${currencyFormat(seg.revenue)} (${seg.pct}%)`}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className={`flex items-center justify-between gap-2 px-2 py-0.5 rounded-lg cursor-pointer transition-all duration-150 ${
+                className={`flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded-lg cursor-pointer transition-colors duration-150 min-w-0 ${
                   isHovered
                     ? 'bg-neutral-100 dark:bg-neutral-800 shadow-2xs'
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
                 }`}
               >
-                {/* Left: Dot + Category Name (Placed close to metrics) */}
+                {/* Left: Dot + Category Name (Cleanly truncated, never overflows) */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span
-                    className="w-2 h-2 rounded-full shrink-0 transition-transform duration-150"
+                    className="w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-150"
                     style={{
                       backgroundColor: seg.color,
-                      transform: isHovered ? 'scale(1.3)' : 'scale(1)',
+                      transform: isHovered ? 'scale(1.4)' : 'scale(1)',
                     }}
                   />
                   <span
@@ -208,37 +215,39 @@ export const PieChart = ({
                   </span>
                 </div>
 
-                {/* Right: Quantity, Sales ৳ and Percentage */}
-                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                {/* Right: Numbers with zero wrapping */}
+                <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                   {mode === 'revenue' ? (
                     <>
                       <span
-                        className="text-[10px] sm:text-[11px] font-black"
+                        className="text-[10px] sm:text-[11px] font-black shrink-0"
                         style={{ color: isHovered ? seg.color : undefined }}
                       >
                         {currencyFormat(seg.revenue)}
                       </span>
-                      <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500">
-                        ({seg.quantity} ord)
-                      </span>
+                      {!isCompact && (
+                        <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0">
+                          ({seg.quantity} ord)
+                        </span>
+                      )}
                     </>
                   ) : (
                     <>
                       <span
-                        className="text-[10px] sm:text-[11px] font-black"
+                        className="text-[10px] sm:text-[11px] font-black shrink-0"
                         style={{ color: isHovered ? seg.color : undefined }}
                       >
                         {seg.quantity} ord
                       </span>
-                      {hasRevenue && (
-                        <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500">
+                      {!isCompact && hasRevenue && (
+                        <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0">
                           ({currencyFormat(seg.revenue)})
                         </span>
                       )}
                     </>
                   )}
                   <span
-                    className={`text-[10px] sm:text-[11px] font-extrabold w-10 text-right ${
+                    className={`text-[10px] sm:text-[11px] font-extrabold w-9 text-right shrink-0 ${
                       isHovered ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'
                     }`}
                   >

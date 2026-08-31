@@ -513,6 +513,7 @@ export const AdminDashboard = () => {
           <PieChart
             data={pieData}
             mode={categoryMetric}
+            gridCols={gridCols}
             valueFormatter={compactNumber}
           />
         </ChartCard>
