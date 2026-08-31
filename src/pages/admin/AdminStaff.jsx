@@ -436,59 +436,61 @@ export const AdminStaff = () => {
               return (
                 <div
                   key={staffId}
-                  className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-2.5 sm:p-3 2xl:p-3.5 flex items-center justify-between gap-2.5 hover:border-primary-500/40 transition-all shadow-xs"
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-primary-500/40 transition-all shadow-xs"
                 >
-                  {/* Left: Avatar + Details */}
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {/* Brand Gradient Avatar */}
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 rounded-lg bg-gradient-to-tr from-primary-600 to-amber-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs shadow-primary-500/20 shrink-0">
+                  {/* Left: Primary Red Avatar + 1-Line Streamlined Details */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {/* 2️⃣ Primary Red Avatar */}
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs shadow-primary-500/20 shrink-0">
                       {staff.name ? staff.name.charAt(0).toUpperCase() : 'S'}
                     </div>
 
-                    <div className="space-y-0.5 min-w-0 flex-1">
-                      {/* Name + Role Badge + (You) */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="text-xs sm:text-sm font-black text-neutral-900 dark:text-white truncate">
-                          {staff.name}
-                        </h3>
-                        {getRoleBadge(staff.role)}
-                        {isMe && (
-                          <span className="px-1 py-0.2 rounded text-[8px] sm:text-[9px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-                            (You)
-                          </span>
-                        )}
-                      </div>
+                    {/* 1️⃣ All Info in 1 Clean Single Line */}
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 flex-wrap">
+                      {/* Name */}
+                      <h3 className="text-xs sm:text-sm font-black text-neutral-900 dark:text-white truncate shrink-0">
+                        {staff.name}
+                      </h3>
+
+                      {/* Role Badge */}
+                      {getRoleBadge(staff.role)}
+
+                      {/* (You) Tag */}
+                      {isMe && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shrink-0">
+                          (You)
+                        </span>
+                      )}
 
                       {/* Contact Info */}
-                      <div className="flex items-center gap-2.5 text-[10px] text-neutral-500 dark:text-neutral-400">
-                        {staff.email && (
-                          <span className="flex items-center gap-1 truncate">
-                            <Mail className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                            <span className="truncate">{staff.email}</span>
-                          </span>
-                        )}
-                        {staff.phone && (
-                          <span className="flex items-center gap-1 shrink-0">
-                            <Phone className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                            <span>{staff.phone}</span>
-                          </span>
-                        )}
-                      </div>
+                      {staff.email && (
+                        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
+                          <Mail className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <span>{staff.email}</span>
+                        </span>
+                      )}
 
-                      {/* Permissions Tags */}
-                      <div className="pt-0.5">
+                      {staff.phone && (
+                        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
+                          <Phone className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <span>{staff.phone}</span>
+                        </span>
+                      )}
+
+                      {/* Permissions Tags on the same line */}
+                      <div className="flex items-center shrink-0">
                         {isSuper ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-1.5 py-0.2 rounded border border-primary-200 dark:border-primary-900/50">
+                          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-900/50">
                             <Sparkles className="w-2.5 h-2.5 text-primary-500" />
                             Full Access (All {ALL_PERMISSIONS.length} Tabs)
                           </span>
                         ) : perms.length === 0 ? (
-                          <span className="text-[9px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.2 rounded">
-                            No permissions granted
+                          <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
+                            No perms
                           </span>
                         ) : (
                           <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[9px] font-bold text-neutral-500">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-500">
                               Perms ({perms.length}):
                             </span>
                             {perms.slice(0, 3).map((pKey) => {
@@ -496,14 +498,14 @@ export const AdminStaff = () => {
                               return (
                                 <span
                                   key={pKey}
-                                  className="text-[8px] font-bold px-1 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/70 dark:border-neutral-700"
+                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/70 dark:border-neutral-700"
                                 >
                                   {pObj ? pObj.label : pKey}
                                 </span>
                               );
                             })}
                             {perms.length > 3 && (
-                              <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
                                 +{perms.length - 3}
                               </span>
                             )}
