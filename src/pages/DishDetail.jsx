@@ -64,7 +64,7 @@ export const DishDetail = () => {
   const { cart, addToCart, updateCartQuantity, openCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { selectedBranchId } = useBranch();
-  const { ensureFulfillmentSelected } = useFulfillment();
+  const { ensureFulfillmentSelected, isPickup, selectedBranch: fulfillmentBranch } = useFulfillment();
 
   const [food, setFood] = useState(null);
   const foodRef = useRef(food);
@@ -473,7 +473,16 @@ export const DishDetail = () => {
     (f) => f && f.isActive !== false && String(f?.id || f?._id) !== String(food?.id || food?._id)
   );
 
-  const isSoldOut = food ? (food.isAvailable === false || food.isAvailable === "false") : false;
+  const effectiveBranchId =
+    branchId ||
+    (isPickup && fulfillmentBranch ? (fulfillmentBranch.id || fulfillmentBranch._id) : selectedBranchId);
+
+  const isBranchUnavailable =
+    effectiveBranchId &&
+    Array.isArray(food?.unavailableBranchIds) &&
+    food.unavailableBranchIds.map(Number).includes(Number(effectiveBranchId));
+
+  const isSoldOut = food ? (food.isAvailable === false || food.isAvailable === "false" || !!isBranchUnavailable) : false;
 
   return (
     /* 🎯 Global site-container class applied */

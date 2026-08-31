@@ -22,13 +22,13 @@ export function processCustomerFoods(foodsList) {
 
 /** GET /api/foods */
 export async function getAllFoods() {
-  return apiClient.get('/foods');
+  return apiClient.get(`/foods?_t=${Date.now()}`);
 }
 
 /** GET /api/foods?category=Mains */
 export async function getFoodsByCategory(category) {
-  if (!category || category === 'All') return apiClient.get('/foods');
-  return apiClient.get(`/foods?category=${encodeURIComponent(category)}`);
+  if (!category || category === 'All') return apiClient.get(`/foods?_t=${Date.now()}`);
+  return apiClient.get(`/foods?category=${encodeURIComponent(category)}&_t=${Date.now()}`);
 }
 
 /** GET /api/foods/:id */
@@ -38,18 +38,18 @@ export async function getFoodById(id) {
 
 /** GET /api/foods/popular?limit=6 — admin's "Mark as Popular" picks + best sellers */
 export async function getPopularFoods(limit = 6) {
-  return apiClient.get(`/foods/popular?limit=${limit}`);
+  return apiClient.get(`/foods/popular?limit=${limit}&_t=${Date.now()}`);
 }
 
 /** GET /api/foods/featured?limit=6 — only the dishes admin picked for Featured Menu */
 export async function getFeaturedFoods(limit = 6) {
-  return apiClient.get(`/foods/featured?limit=${limit}`);
+  return apiClient.get(`/foods/featured?limit=${limit}&_t=${Date.now()}`);
 }
 
 /** GET /api/branches/:branchId/menu (falls back to all foods for branchId 0/none) */
 export async function getFoodsByBranch(branchId) {
-  if (!branchId || Number(branchId) === 0) return apiClient.get('/foods');
-  return apiClient.get(`/branches/${Number(branchId)}/menu`);
+  if (!branchId || Number(branchId) === 0) return apiClient.get(`/foods?_t=${Date.now()}`);
+  return apiClient.get(`/branches/${Number(branchId)}/menu?_t=${Date.now()}`);
 }
 
 /** GET /api/foods/search?q=... */

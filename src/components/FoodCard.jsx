@@ -31,17 +31,21 @@ const FoodCard = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { ensureFulfillmentSelected } = useFulfillment();
+  const { ensureFulfillmentSelected, isPickup, selectedBranch } = useFulfillment();
+
+  const effectiveBranchId =
+    branchId ||
+    (isPickup && selectedBranch ? (selectedBranch.id || selectedBranch._id) : null);
 
   // 🎯 Branch-based Price Adjustment Logic
   let rawBasePrice = Number(food?.price) || 0;
   let adjustVal = 0;
   if (
-    branchId &&
+    effectiveBranchId &&
     food?.branchPrices &&
-    food.branchPrices[String(branchId)] !== undefined
+    food.branchPrices[String(effectiveBranchId)] !== undefined
   ) {
-    adjustVal = Number(food.branchPrices[String(branchId)]) || 0;
+    adjustVal = Number(food.branchPrices[String(effectiveBranchId)]) || 0;
   }
 
   const hasVariations =
@@ -56,7 +60,6 @@ const FoodCard = ({
       .map((v) => Number(v.price))
       .filter((p) => !isNaN(p) && p > 0)
       .map((p) => Math.max(0, p + adjustVal));
-
     if (validVarPrices.length > 0) {
       basePrice = Math.min(...validVarPrices);
     }
@@ -66,7 +69,6 @@ const FoodCard = ({
     basePrice = Math.max(0, rawBasePrice + adjustVal) || 0;
   }
 
-  // 🎯 BOGO / Special Offer Check
   const offerLabel = getFoodOfferLabel(food);
 
   const hasDiscount = !offerLabel && hasFoodDiscount(food);
@@ -75,7 +77,7 @@ const FoodCard = ({
     : basePrice;
 
   const foodId = food?.id !== undefined && food?.id !== null ? food.id : food?._id;
-  const foodDetailLink = `/menu/${foodId}${branchId ? `?branchId=${branchId}` : ""}`;
+  const foodDetailLink = `/menu/${foodId}${effectiveBranchId ? `?branchId=${effectiveBranchId}` : ""}`;
 
   const handleCardClick = (e) => {
     // If the click is on a button or an interactive link, let it handle its own event
@@ -85,8 +87,13 @@ const FoodCard = ({
     navigate(foodDetailLink);
   };
 
+  const isBranchUnavailable =
+    effectiveBranchId &&
+    Array.isArray(food?.unavailableBranchIds) &&
+    food.unavailableBranchIds.map(Number).includes(Number(effectiveBranchId));
+
   // 🎯 International Restaurant Standard Sold Out Check
-  const isSoldOut = food?.isAvailable === false;
+  const isSoldOut = food?.isAvailable === false || !!isBranchUnavailable;
 
   return (
     <motion.div
