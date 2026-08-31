@@ -4,8 +4,8 @@ import { PieChart as PieIcon } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // PieChart.jsx -> Modern Interactive Donut Chart for Categories
-// Supports 10+ Categories, dynamic sizing on lg/2xl/3xl screens,
-// dual metric display (Quantity Orders & Sales ৳ Revenue), and no forced "Others".
+// Sized prominently on lg/2xl/3xl/4xl screens with expanding donut and
+// compact right-aligned legend where category names sit close to their values.
 // ---------------------------------------------------------------------------
 
 const CATEGORY_PALETTE = [
@@ -68,7 +68,7 @@ export const PieChart = ({
     return data.reduce((sum, d) => sum + (d.revenue || 0), 0);
   }, [data]);
 
-  // Compute proportional segments for EVERY category without artificial truncation
+  // Compute proportional segments for EVERY category
   const segments = useMemo(() => {
     if (total === 0 || !data || data.length === 0) return [];
     let cumulativeAngle = 0;
@@ -98,78 +98,79 @@ export const PieChart = ({
     );
   }
 
-  // Sizing optimized for balanced proportions across all screen sizes
-  const SIZE = 150;
+  // Large crisp vector canvas
+  const SIZE = 180;
   const CENTER = SIZE / 2;
   const RADIUS = SIZE * 0.38;
   const STROKE = SIZE * 0.17;
 
   const activeSegment = hoveredIndex !== null && segments[hoveredIndex] ? segments[hoveredIndex] : null;
-  const isDense = segments.length > 6;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-6 w-full h-full min-w-0 select-none">
-      {/* 🎯 Larger Responsive Donut SVG Canvas */}
-      <div className="relative shrink-0 flex items-center justify-center w-[130px] h-[130px] sm:w-[145px] sm:h-[145px] lg:w-[155px] lg:h-[155px]">
-        <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="w-full h-full transform -rotate-90 drop-shadow-xs"
-        >
-          {segments.map((seg, i) => (
-            <motion.path
-              key={`${seg.label}-${mode}`}
-              d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={hoveredIndex === i ? STROKE + 4 : STROKE}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: i * 0.03, ease: 'easeOut' }}
-              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, opacity 0.2s ease' }}
-              opacity={hoveredIndex === null || hoveredIndex === i ? 1 : 0.45}
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            />
-          ))}
-        </svg>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 w-full h-full min-w-0 select-none">
+      {/* 🎯 Expanding Large Donut SVG Canvas (Takes space on 2xl/3xl/4xl) */}
+      <div className="relative flex-1 flex items-center justify-center min-w-0 h-full py-1">
+        <div className="relative w-[130px] h-[130px] sm:w-[150px] sm:h-[150px] md:w-[160px] md:h-[160px] lg:w-[170px] lg:h-[170px] xl:w-[185px] xl:h-[185px] 2xl:w-[200px] 2xl:h-[200px] max-h-full aspect-square flex items-center justify-center">
+          <svg
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            className="w-full h-full transform -rotate-90 drop-shadow-xs overflow-visible"
+          >
+            {segments.map((seg, i) => (
+              <motion.path
+                key={`${seg.label}-${mode}`}
+                d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth={hoveredIndex === i ? STROKE + 4 : STROKE}
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 0.5, delay: i * 0.03, ease: 'easeOut' }}
+                style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, opacity 0.2s ease' }}
+                opacity={hoveredIndex === null || hoveredIndex === i ? 1 : 0.4}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            ))}
+          </svg>
 
-        {/* Center Label: Interactive summary */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
-          {activeSegment ? (
-            <>
-              <span
-                className="text-sm sm:text-base font-black font-display tracking-tight leading-tight"
-                style={{ color: activeSegment.color }}
-              >
-                {activeSegment.pct}%
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-neutral-800 dark:text-neutral-100 max-w-[70px] truncate">
-                {activeSegment.label}
-              </span>
-              <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
-                {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.quantity} ord`}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-sm sm:text-base font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
-                {mode === 'revenue' ? currencyFormat(totalRevenue) : compactNumber(totalQuantity)}
-              </span>
-              <span className="text-[8px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter">
-                {mode === 'revenue' ? 'Category Sales' : 'Total Orders'}
-              </span>
-              <span className="text-[8px] font-semibold text-neutral-500 dark:text-neutral-400">
-                {segments.length} Categories
-              </span>
-            </>
-          )}
+          {/* Center Summary Label */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1.5">
+            {activeSegment ? (
+              <>
+                <span
+                  className="text-base sm:text-lg 2xl:text-xl font-black font-display tracking-tight leading-tight"
+                  style={{ color: activeSegment.color }}
+                >
+                  {activeSegment.pct}%
+                </span>
+                <span className="text-[10px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-100 max-w-[85px] truncate">
+                  {activeSegment.label}
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500">
+                  {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.quantity} ord`}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-base sm:text-lg 2xl:text-xl font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
+                  {mode === 'revenue' ? currencyFormat(totalRevenue) : compactNumber(totalQuantity)}
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter">
+                  {mode === 'revenue' ? 'Category Sales' : 'Total Orders'}
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-500 dark:text-neutral-400">
+                  {segments.length} Categories
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 📋 Tight Compact Legend List (No excessive gap on 2xl/3xl/4xl) */}
-      <div className="flex-1 w-full min-w-0 max-w-full sm:max-w-md lg:max-w-lg">
+      {/* 📋 Right-Aligned Compact Legend (Names sit close to their numbers on 2xl/3xl/4xl) */}
+      <div className="shrink-0 w-full sm:w-auto min-w-[210px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-[330px] 2xl:max-w-[360px]">
         <div
-          className={`w-full flex flex-col gap-0.5 max-h-[165px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800`}
+          className="w-full flex flex-col gap-0.5 max-h-[170px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800"
         >
           {segments.map((seg, i) => {
             const isHovered = hoveredIndex === i;
@@ -187,7 +188,7 @@ export const PieChart = ({
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
                 }`}
               >
-                {/* Left: Dot + Category Name */}
+                {/* Left: Dot + Category Name (Placed close to metrics) */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span
                     className="w-2 h-2 rounded-full shrink-0 transition-transform duration-150"
@@ -208,7 +209,7 @@ export const PieChart = ({
                 </div>
 
                 {/* Right: Quantity, Sales ৳ and Percentage */}
-                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
                   {mode === 'revenue' ? (
                     <>
                       <span
@@ -230,7 +231,7 @@ export const PieChart = ({
                         {seg.quantity} ord
                       </span>
                       {hasRevenue && (
-                        <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500 hidden xs:inline">
+                        <span className="text-[8px] sm:text-[9px] font-semibold text-neutral-400 dark:text-neutral-500">
                           ({currencyFormat(seg.revenue)})
                         </span>
                       )}
