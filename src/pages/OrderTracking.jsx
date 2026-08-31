@@ -149,15 +149,24 @@ export const OrderTracking = () => {
     const isPickup = order?.orderType === "pickup" || Boolean(order?.pickupBranchId || order?.pickupBranchName);
     const branchId = isPickup
       ? (order?.pickupBranchId || order?.branchId || order?.branch?.id || order?.branch?._id || "")
-      : (order?.branchId || order?.branch?.id || order?.branch?._id || "general");
+      : "home_delivery";
     const branchName = isPickup
       ? (order?.pickupBranchName || order?.branchName || order?.branch?.name || "")
-      : (order?.branchName || order?.branch?.name || "General / Online Delivery");
+      : "Home Delivery";
 
     const query = new URLSearchParams();
     query.set("tab", "reviews");
-    query.set("branchId", String(branchId || (isPickup ? "" : "general")));
-    query.set("branchName", branchName || (isPickup ? "" : "General / Online Delivery"));
+    query.set("branchId", String(branchId));
+    query.set("branchName", branchName);
+    if (order?._id || order?.id) {
+      query.set("orderId", String(order._id || order.id));
+    }
+    if (order?.riderId || order?.rider?._id || order?.rider?.id) {
+      query.set("riderId", String(order.riderId || order.rider?._id || order.rider?.id));
+    }
+    if (order?.riderName || order?.rider?.name) {
+      query.set("riderName", String(order.riderName || order.rider?.name));
+    }
     navigate(`/profile?${query.toString()}`);
   };
 

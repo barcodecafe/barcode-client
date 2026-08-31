@@ -5,6 +5,7 @@ import {
   Star,
   Search,
   Building2,
+  Bike,
   Phone,
   Mail,
   Calendar,
@@ -503,7 +504,7 @@ export const AdminReviews = () => {
                     <div className="flex items-center gap-1.5 sm:gap-2 self-start sm:self-center shrink-0">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[11px] font-semibold">
                         <Building2 className="w-3 h-3 text-primary-500" />
-                        {fb.branchName || 'General / Delivery'}
+                        {fb.branchName === 'home_delivery' || fb.branchName === 'Home Delivery' || !fb.branchId ? '🚚 Home Delivery' : (fb.branchName || 'Home Delivery')}
                       </span>
                       <span className="text-[11px] text-neutral-400">
                         {formatDate(fb.createdAt)}
@@ -536,6 +537,13 @@ export const AdminReviews = () => {
                         <HeartHandshake className="w-3 h-3 text-indigo-500 shrink-0" />
                         <span>Staff Behavior: <strong>{formatScore(fb.staffBehavior)}/5</strong></span>
                       </div>
+
+                      {fb.riderRating ? (
+                        <div className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300 font-semibold flex items-center gap-1">
+                          <Bike className="w-3 h-3 text-orange-500 shrink-0" />
+                          <span>Rider Rating: <strong>{formatScore(fb.riderRating)}/5</strong></span>
+                        </div>
+                      ) : null}
                     </div>
 
                     {/* Marketing & Retention Badges */}
@@ -549,9 +557,9 @@ export const AdminReviews = () => {
                     </div>
                   </div>
 
-                  {/* Qualitative Feedback Sections (Slim Inline / 3-Column Grid) */}
-                  {(fb.likedMost || fb.improvements || fb.comments) && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 pt-1 border-t border-neutral-100 dark:border-neutral-800/50">
+                  {/* Qualitative Feedback Sections (Slim Inline / 3 or 4-Column Grid) */}
+                  {(fb.likedMost || fb.improvements || fb.comments || fb.riderFeedback) && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-1.5 pt-1 border-t border-neutral-100 dark:border-neutral-800/50">
                       {fb.likedMost && (
                         <div className="px-2.5 py-1.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-neutral-800/50 flex items-start gap-1.5">
                           <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
@@ -570,6 +578,17 @@ export const AdminReviews = () => {
                           </span>
                           <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug font-normal">
                             {fb.improvements}
+                          </p>
+                        </div>
+                      )}
+
+                      {fb.riderFeedback && (
+                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-neutral-800/50 flex items-start gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 shrink-0 mt-0.5">
+                            Rider Note:
+                          </span>
+                          <p className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-snug font-normal">
+                            {fb.riderFeedback}
                           </p>
                         </div>
                       )}

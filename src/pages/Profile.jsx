@@ -36,6 +36,7 @@ import {
   Send,
   Check,
   Building2,
+  Bike,
   Download,
   X,
   Copy,
@@ -531,11 +532,16 @@ export const Profile = () => {
     userName: "",
     phone: "",
     email: "",
-    branchId: branchIdParam || activePickupId || (isPickupMode ? "" : "general"),
-    branchName: branchNameParam || activePickupName || (isPickupMode ? "" : "General / Online Delivery"),
+    orderId: orderIdParam || "",
+    branchId: branchIdParam || activePickupId || (isPickupMode ? "" : "home_delivery"),
+    branchName: branchNameParam || activePickupName || (isPickupMode ? "" : "Home Delivery"),
     foodQuality: 0,
     serviceSpeed: 0,
     staffBehavior: 0,
+    riderId: riderIdParam || "",
+    riderName: riderNameParam || "",
+    riderRating: 0,
+    riderFeedback: "",
     likedMost: "",
     improvements: "",
     comments: "",
@@ -567,11 +573,19 @@ export const Profile = () => {
 
   useEffect(() => {
     if (branchIdParam || branchNameParam) {
-      if (branchIdParam === "general" || branchNameParam === "General / Online Delivery") {
+      if (
+        branchIdParam === "general" ||
+        branchIdParam === "home_delivery" ||
+        branchNameParam === "General / Online Delivery" ||
+        branchNameParam === "Home Delivery"
+      ) {
         setFeedbackForm((prev) => ({
           ...prev,
-          branchId: "general",
-          branchName: "General / Online Delivery",
+          branchId: "home_delivery",
+          branchName: "Home Delivery",
+          orderId: orderIdParam || prev.orderId,
+          riderId: riderIdParam || prev.riderId,
+          riderName: riderNameParam || prev.riderName,
         }));
       } else {
         const matched = branches.find(
@@ -581,11 +595,14 @@ export const Profile = () => {
           ...prev,
           branchId: matched ? String(matched.id ?? matched._id) : (branchIdParam || prev.branchId),
           branchName: matched ? matched.name : (branchNameParam || prev.branchName),
+          orderId: orderIdParam || prev.orderId,
+          riderId: riderIdParam || prev.riderId,
+          riderName: riderNameParam || prev.riderName,
         }));
       }
     } else if (fulfillmentMode === "pickup" && activePickupBranch) {
       setFeedbackForm((prev) => {
-        if (!prev.branchId || prev.branchId === "general") {
+        if (!prev.branchId || prev.branchId === "general" || prev.branchId === "home_delivery") {
           return {
             ...prev,
             branchId: String(activePickupBranch.id ?? activePickupBranch._id ?? ""),
@@ -596,17 +613,17 @@ export const Profile = () => {
       });
     } else if (fulfillmentMode === "delivery") {
       setFeedbackForm((prev) => {
-        if (!prev.branchId || (prev.branchId !== "general" && !branchIdParam)) {
+        if (!prev.branchId || (prev.branchId !== "home_delivery" && !branchIdParam)) {
           return {
             ...prev,
-            branchId: "general",
-            branchName: "General / Online Delivery",
+            branchId: "home_delivery",
+            branchName: "Home Delivery",
           };
         }
         return prev;
       });
     }
-  }, [branches, branchIdParam, branchNameParam, fulfillmentMode, activePickupBranch]);
+  }, [branches, branchIdParam, branchNameParam, orderIdParam, riderIdParam, riderNameParam, fulfillmentMode, activePickupBranch]);
 
   useEffect(() => {
     if (tabParam && VALID_TABS.includes(tabParam)) {
@@ -654,7 +671,8 @@ export const Profile = () => {
     let matchedBranch = null;
 
     // 1. If Self-Pickup order, strictly match by pickup branch ID or Name
-    if (ord.orderType === "pickup" || ord.pickupBranchId || ord.pickupBranchName) {
+    const isPickup = ord.orderType === "pickup" || Boolean(ord.pickupBranchId || ord.pickupBranchName);
+    if (isPickup) {
       if (ord.pickupBranchId || ord.pickupBranchName) {
         matchedBranch = branches.find(
           (b) =>
@@ -670,36 +688,35 @@ export const Profile = () => {
         const bName = ord.branchName || ord.branch?.name;
         matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
       }
-    } else {
-      // Home Delivery order: check if explicitly assigned to a specific branch
-      if (ord.branchId || ord.branch?.id || ord.branch?._id) {
-        const bId = ord.branchId || ord.branch?.id || ord.branch?._id;
-        matchedBranch = branches.find((b) => String(b.id || b._id) === String(bId));
-      } else if (ord.branchName || ord.branch?.name) {
-        const bName = ord.branchName || ord.branch?.name;
-        matchedBranch = branches.find((b) => b.name.trim().toLowerCase() === bName.trim().toLowerCase());
-      }
     }
 
-    const isGeneral = !matchedBranch && (ord.orderType === "delivery" || (!ord.pickupBranchId && !ord.branchId));
-
-    const bId = matchedBranch
+    const bId = isPickup && matchedBranch
       ? String(matchedBranch.id ?? matchedBranch._id)
-      : isGeneral
-      ? "general"
-      : (ord.pickupBranchId ? String(ord.pickupBranchId) : (ord.branchId ? String(ord.branchId) : "general"));
+      : isPickup && ord.pickupBranchId
+      ? String(ord.pickupBranchId)
+      : "home_delivery";
 
-    const bName = matchedBranch
+    const bName = isPickup && matchedBranch
       ? matchedBranch.name
-      : isGeneral
-      ? "General / Online Delivery"
-      : (ord.pickupBranchName || ord.branchName || ord.branch?.name || "General / Online Delivery");
+      : isPickup && ord.pickupBranchName
+      ? ord.pickupBranchName
+      : "Home Delivery";
+
+    const ordId = String(ord._id || ord.id || "");
+    const rId = String(ord.riderId || ord.rider?._id || ord.rider?.id || "");
+    const rName = ord.riderName || ord.rider?.name || "";
 
     setFeedbackForm((prev) => ({
       ...prev,
       branchId: bId,
       branchName: bName,
+      orderId: ordId,
+      riderId: rId,
+      riderName: rName,
+      riderRating: 0,
+      riderFeedback: "",
     }));
+
     setSearchParams({
       tab: "reviews",
       branchId: String(bId),
@@ -1658,6 +1675,13 @@ export const Profile = () => {
     const isPhoneValid = /^(?:\+88|88)?01[3-9]\d{8}$/.test(
       (feedbackForm.phone || "").trim()
     );
+    const isHomeDelivery =
+      !feedbackForm.branchId ||
+      feedbackForm.branchId === "home_delivery" ||
+      feedbackForm.branchId === "general" ||
+      String(feedbackForm.branchName || "").toLowerCase().includes("home") ||
+      String(feedbackForm.branchName || "").toLowerCase().includes("delivery");
+
     const criteria = [
       {
         id: "food",
@@ -1674,6 +1698,15 @@ export const Profile = () => {
         label: "Staff Behavior Rating",
         done: feedbackForm.staffBehavior > 0,
       },
+      ...(isHomeDelivery
+        ? [
+            {
+              id: "rider",
+              label: "Rider & Delivery Rating",
+              done: feedbackForm.riderRating > 0,
+            },
+          ]
+        : []),
       {
         id: "heard",
         label: "How You Heard About Us",
@@ -1733,6 +1766,21 @@ export const Profile = () => {
       return;
     }
 
+    const isHomeDelivery =
+      !feedbackForm.branchId ||
+      feedbackForm.branchId === "home_delivery" ||
+      feedbackForm.branchId === "general" ||
+      String(feedbackForm.branchName || "").toLowerCase().includes("home") ||
+      String(feedbackForm.branchName || "").toLowerCase().includes("delivery");
+
+    if (isHomeDelivery && feedbackForm.riderRating < 1) {
+      setFeedbackNotice({
+        ok: false,
+        text: "Please provide a rating for Delivery Service & Rider.",
+      });
+      return;
+    }
+
     if (!feedbackForm.heardFrom) {
       setFeedbackNotice({
         ok: false,
@@ -1751,12 +1799,7 @@ export const Profile = () => {
 
     setSubmittingFeedback(true);
     try {
-      const isGeneralDelivery =
-        !feedbackForm.branchId ||
-        feedbackForm.branchId === "general" ||
-        feedbackForm.branchName === "General / Online Delivery";
-
-      const selectedBranch = isGeneralDelivery
+      const selectedBranch = isHomeDelivery
         ? null
         : branches.find(
             (b) =>
@@ -1767,13 +1810,17 @@ export const Profile = () => {
             ? activePickupBranch
             : null);
 
-      const finalBranchId = selectedBranch
+      const finalBranchId = isHomeDelivery
+        ? "home_delivery"
+        : selectedBranch
         ? (selectedBranch.id ?? selectedBranch._id)
-        : (isGeneralDelivery ? null : (Number(feedbackForm.branchId) || feedbackForm.branchId || null));
+        : (Number(feedbackForm.branchId) || feedbackForm.branchId || null);
 
-      const finalBranchName = selectedBranch
+      const finalBranchName = isHomeDelivery
+        ? "Home Delivery"
+        : selectedBranch
         ? selectedBranch.name
-        : (isGeneralDelivery ? "General / Online Delivery" : (feedbackForm.branchName || "General / Online Delivery"));
+        : (feedbackForm.branchName || "Home Delivery");
 
       const formattedPhone = cleanPhone.startsWith("+88")
         ? cleanPhone
@@ -1785,11 +1832,16 @@ export const Profile = () => {
         userName: feedbackForm.userName.trim(),
         phone: formattedPhone,
         email: feedbackForm.email.trim(),
+        orderId: feedbackForm.orderId || null,
         branchId: finalBranchId,
         branchName: finalBranchName,
         foodQuality: Number(feedbackForm.foodQuality),
         serviceSpeed: Number(feedbackForm.serviceSpeed),
         staffBehavior: Number(feedbackForm.staffBehavior),
+        riderId: feedbackForm.riderId || null,
+        riderName: feedbackForm.riderName || "",
+        riderRating: isHomeDelivery && feedbackForm.riderRating ? Number(feedbackForm.riderRating) : null,
+        riderFeedback: isHomeDelivery && feedbackForm.riderFeedback ? feedbackForm.riderFeedback.trim() : "",
         likedMost: feedbackForm.likedMost.trim(),
         improvements: feedbackForm.improvements.trim(),
         comments: feedbackForm.comments.trim(),
@@ -1812,6 +1864,8 @@ export const Profile = () => {
         foodQuality: 0,
         serviceSpeed: 0,
         staffBehavior: 0,
+        riderRating: 0,
+        riderFeedback: "",
         likedMost: "",
         improvements: "",
         comments: "",
@@ -1994,6 +2048,56 @@ export const Profile = () => {
                   showLabel={true}
                 />
               </div>
+
+              {/* Delivery Service & Rider Rating (Only for Home Delivery) */}
+              {(!feedbackForm.branchId ||
+                feedbackForm.branchId === "home_delivery" ||
+                feedbackForm.branchId === "general" ||
+                String(feedbackForm.branchName || "").toLowerCase().includes("home") ||
+                String(feedbackForm.branchName || "").toLowerCase().includes("delivery")) && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-3.5">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-sm">
+                    <Bike className="w-4 h-4 text-amber-500" />
+                    <span>Delivery Service & Rider Rating <span className="text-red-500">*</span></span>
+                    {feedbackForm.riderName && (
+                      <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">
+                        (Rider: {feedbackForm.riderName})
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    How satisfied were you with the delivery speed, parcel packaging, and rider behavior?
+                  </p>
+                  <div className="space-y-2">
+                    <StarRatingInput
+                      value={feedbackForm.riderRating}
+                      onChange={(val) =>
+                        setFeedbackForm((prev) => ({
+                          ...prev,
+                          riderRating: val,
+                        }))
+                      }
+                      size="md"
+                      showLabel={true}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Rider Experience Notes (Optional)</label>
+                    <input
+                      type="text"
+                      value={feedbackForm.riderFeedback || ""}
+                      onChange={(e) =>
+                        setFeedbackForm((prev) => ({
+                          ...prev,
+                          riderFeedback: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. Prompt delivery, polite behavior, food arrived intact..."
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. Qualitative Feedback */}
@@ -2093,7 +2197,7 @@ export const Profile = () => {
                         className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-sm"
-                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                            : "bg-neutral-50 dark:bg-neutral-955 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
                         }`}
                       >
                         {item.label}
@@ -2124,7 +2228,7 @@ export const Profile = () => {
                         className={`px-4 py-2.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary-500 text-white border-primary-500 shadow-sm"
-                            : "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
+                            : "bg-neutral-50 dark:bg-neutral-955 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-primary-500/40 hover:text-primary-500"
                         }`}
                       >
                         {item.label}
@@ -2190,14 +2294,14 @@ export const Profile = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>
-                    Branch Visited
+                    Branch Visited / Order Mode
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <select
                       value={
                         feedbackForm.branchId ||
-                        (branches.find((b) => b.name === feedbackForm.branchName)?.id ?? "")
+                        (branches.find((b) => b.name === feedbackForm.branchName)?.id ?? "home_delivery")
                       }
                       onChange={(e) => {
                         const val = e.target.value;
@@ -2205,16 +2309,15 @@ export const Profile = () => {
                         setFeedbackForm((prev) => ({
                           ...prev,
                           branchId: val,
-                          branchName: matched ? matched.name : (val === "general" ? "General / Online Delivery" : ""),
+                          branchName: matched ? matched.name : (val === "home_delivery" ? "Home Delivery" : ""),
                         }));
                       }}
                       className={`${inputClass} pl-10`}
                     >
-                      <option value="">-- Choose Branch / Outlet --</option>
-                      <option value="general">General / Online Delivery</option>
+                      <option value="home_delivery">🚚 Home Delivery</option>
                       {branches.map((b) => (
                         <option key={b.id || b._id} value={b.id || b._id}>
-                          {b.name} {b.location ? `(${b.location})` : ""}
+                          🏢 {b.name} {b.location ? `(${b.location})` : ""}
                         </option>
                       ))}
                     </select>
@@ -2256,11 +2359,13 @@ export const Profile = () => {
                       userName: user.name || "",
                       phone: user.phone || "",
                       email: user.email || "",
-                      branchId: "",
-                      branchName: "General / Online Delivery",
+                      branchId: "home_delivery",
+                      branchName: "Home Delivery",
                       foodQuality: 0,
                       serviceSpeed: 0,
                       staffBehavior: 0,
+                      riderRating: 0,
+                      riderFeedback: "",
                       likedMost: "",
                       improvements: "",
                       comments: "",
