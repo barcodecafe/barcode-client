@@ -609,6 +609,22 @@ export const AdminDishes = () => {
     });
   };
 
+  const handleSelectAllBranches = () => {
+    const allIds = branches.map((b) => String(b._id || b.id));
+    setFormData((prev) => ({
+      ...prev,
+      branchIds: allIds,
+    }));
+  };
+
+  const handleDeselectAllBranches = () => {
+    setFormData((prev) => ({
+      ...prev,
+      branchIds: [],
+      branchPrices: {},
+    }));
+  };
+
   const handleBranchPriceChange = (branchId, value) => {
     const targetId = String(branchId);
     setFormData((prev) => ({
@@ -1533,8 +1549,12 @@ export const AdminDishes = () => {
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                         <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
                         {(food.branchIds || []).length === 0 ? (
-                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-                            All branches
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+                            No branch assigned
+                          </span>
+                        ) : (food.branchIds || []).length >= branches.length && branches.length > 0 ? (
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                            All branches ({food.branchIds.length})
                           </span>
                         ) : (
                           <>
@@ -2003,12 +2023,47 @@ export const AdminDishes = () => {
 
                 {/* Branch Availability Section */}
                 <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-800/60 space-y-3">
-                  <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">
-                    Available Branches
-                    <span className="normal-case text-amber-600 dark:text-amber-400 ml-2 font-semibold">
-                      (If no branch is selected, all branches will be displayed by default)
-                    </span>
-                  </label>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider block">
+                        Available Branches / Outlets
+                      </label>
+                      <div className="text-[11px] mt-0.5">
+                        {formData.branchIds.length === 0 ? (
+                          <span className="text-rose-500 font-semibold">
+                            ⚠️ No branch selected (Dish will not appear in any outlet)
+                          </span>
+                        ) : formData.branchIds.length === branches.length && branches.length > 0 ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                            🌐 All {branches.length} Branches Selected (Global Menu)
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                            📍 {formData.branchIds.length} of {branches.length} Branches Selected
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllBranches}
+                        className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/50 hover:bg-primary-100 dark:hover:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border border-primary-200 dark:border-primary-800"
+                        title="Select All Outlets"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" /> Select All ({branches.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAllBranches}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border border-neutral-200 dark:border-neutral-700"
+                        title="Clear All Selections"
+                      >
+                        <Square className="w-3.5 h-3.5" /> Clear All
+                      </button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {branches.map((b) => {
                       const bId = String(b._id || b.id);
