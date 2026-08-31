@@ -401,36 +401,55 @@ export const AdminOrders = () => {
       .catch((err) => console.error("Failed to load chat history in Admin:", err));
   }, [activeChatOrderId]);
 
-  const checkOrderBelongsToManager = useCallback(
-    (ord) => {
-      if (!isManager || managerAssignedBranches.length === 0) return true;
+  const isOrderMatchingBranch = useCallback(
+    (ord, branchIds) => {
       if (!ord) return false;
+      const ids = (Array.isArray(branchIds) ? branchIds : [branchIds])
+        .map(Number)
+        .filter((n) => Number.isFinite(n));
+      if (ids.length === 0) return true;
 
       const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
-      if (Number.isFinite(orderBranchId) && managerAssignedBranches.includes(orderBranchId)) {
+      if (Number.isFinite(orderBranchId) && ids.includes(orderBranchId)) {
         return true;
       }
 
       // Check legacy/previous orders via branch name and zones
-      const managedBranches = (branches || []).filter((b) =>
-        managerAssignedBranches.includes(Number(b.id))
-      );
-      for (const b of managedBranches) {
+      const targetBranches = (branches || []).filter((b) => ids.includes(Number(b.id)));
+      for (const b of targetBranches) {
         const bName = (b.name || "").trim().toLowerCase();
         if (bName) {
-          if (String(ord.pickupBranchName || "").trim().toLowerCase() === bName) return true;
-          if (String(ord.user?.pickArea || "").toLowerCase().includes(bName)) return true;
-          if (String(ord.user?.address || "").toLowerCase().includes(bName)) return true;
+          const ordPickupName = String(ord.pickupBranchName || "").trim().toLowerCase();
+          if (ordPickupName && (ordPickupName === bName || ordPickupName.includes(bName) || bName.includes(ordPickupName))) {
+            return true;
+          }
+          const ordPickArea = String(ord.user?.pickArea || ord.deliveryArea || "").toLowerCase();
+          const ordAddress = String(ord.user?.address || ord.deliveryAddress || "").toLowerCase();
+          if (ordPickArea.includes(bName) || ordAddress.includes(bName)) {
+            return true;
+          }
         }
-        const zones = (b.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase());
-        const area = String(ord.deliveryArea || "").trim().toLowerCase();
-        if (area && zones.includes(area)) return true;
-        if (b.regionId && Number(ord.regionId) === Number(b.regionId)) return true;
+        const zones = (b.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase()).filter(Boolean);
+        const area = String(ord.deliveryArea || ord.user?.pickArea || "").trim().toLowerCase();
+        if (area && zones.some((zn) => area.includes(zn) || zn.includes(area))) {
+          return true;
+        }
+        if (b.regionId && Number(ord.regionId) === Number(b.regionId)) {
+          return true;
+        }
       }
 
       return false;
     },
-    [isManager, managerAssignedBranches, branches]
+    [branches]
+  );
+
+  const checkOrderBelongsToManager = useCallback(
+    (ord) => {
+      if (!isManager || managerAssignedBranches.length === 0) return true;
+      return isOrderMatchingBranch(ord, managerAssignedBranches);
+    },
+    [isManager, managerAssignedBranches, isOrderMatchingBranch]
   );
 
   const applyResult = (result, setter, transform, label) => {
@@ -1347,30 +1366,10 @@ export const AdminOrders = () => {
 
   const isOrderMatchingSelectedBranch = useCallback(
     (ord, targetBranchId) => {
-      if (!ord) return false;
       if (!targetBranchId || targetBranchId === "all") return true;
-
-      const bid = Number(targetBranchId);
-      const orderBranchId = Number(ord.branchId || ord.pickupBranchId);
-      if (Number.isFinite(orderBranchId) && orderBranchId === bid) return true;
-
-      const targetBranch = branches.find((b) => Number(b.id) === bid);
-      if (targetBranch) {
-        const bName = (targetBranch.name || "").trim().toLowerCase();
-        if (bName) {
-          if (String(ord.pickupBranchName || "").trim().toLowerCase() === bName) return true;
-          if (String(ord.user?.pickArea || "").toLowerCase().includes(bName)) return true;
-          if (String(ord.user?.address || "").toLowerCase().includes(bName)) return true;
-        }
-        const zones = (targetBranch.deliveryZones || []).map((z) => (z.name || "").trim().toLowerCase());
-        const area = String(ord.deliveryArea || "").trim().toLowerCase();
-        if (area && zones.includes(area)) return true;
-        if (targetBranch.regionId && Number(ord.regionId) === Number(targetBranch.regionId)) return true;
-      }
-
-      return false;
+      return isOrderMatchingBranch(ord, [targetBranchId]);
     },
-    [branches]
+    [isOrderMatchingBranch]
   );
 
   // 🎯 Base orders for count calculation & filtering
