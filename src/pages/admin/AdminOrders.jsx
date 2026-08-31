@@ -1411,11 +1411,11 @@ export const AdminOrders = () => {
     let list = orders.filter(Boolean);
     if (isManager && managerAssignedBranches.length > 0) {
       list = list.filter(checkOrderBelongsToManager);
-    } else if (!isManager && branchFilter !== "all") {
+    } else if (!isManager && orderTypeFilter === "pickup" && branchFilter !== "all") {
       list = list.filter((ord) => isOrderMatchingSelectedBranch(ord, branchFilter));
     }
     return list;
-  }, [orders, isManager, managerAssignedBranches, checkOrderBelongsToManager, branchFilter, isOrderMatchingSelectedBranch]);
+  }, [orders, isManager, managerAssignedBranches, checkOrderBelongsToManager, orderTypeFilter, branchFilter, isOrderMatchingSelectedBranch]);
 
   // 🎯 Status counts for quick filter tabs
   const orderCounts = useMemo(() => {
@@ -1696,30 +1696,15 @@ export const AdminOrders = () => {
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Branch Filter (Super Admin & Sub-Admin Only) */}
-          {!isManager && (
-            <select
-              value={branchFilter}
-              onChange={(e) => {
-                setBranchFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
-            >
-              <option value="all">🏢 All Branches ({branches.length})</option>
-              {branches.map((b) => (
-                <option key={b.id} value={String(b.id)}>
-                  📍 {b.name}
-                </option>
-              ))}
-            </select>
-          )}
-
           {/* Order Type */}
           <select
             value={orderTypeFilter}
             onChange={(e) => {
-              setOrderTypeFilter(e.target.value);
+              const val = e.target.value;
+              setOrderTypeFilter(val);
+              if (val !== "pickup") {
+                setBranchFilter("all");
+              }
               setCurrentPage(1);
             }}
             className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
@@ -1728,6 +1713,25 @@ export const AdminOrders = () => {
             <option value="delivery">🚚 Delivery Only ({orderTypeCounts.delivery})</option>
             <option value="pickup">🛍️ Self Pickup Only ({orderTypeCounts.pickup})</option>
           </select>
+
+          {/* Pickup Branch Filter (Shown only when 'Self Pickup Only' is active) */}
+          {!isManager && orderTypeFilter === "pickup" && (
+            <select
+              value={branchFilter}
+              onChange={(e) => {
+                setBranchFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold focus:outline-none cursor-pointer transition-all"
+            >
+              <option value="all">🏢 All Pickup Outlets ({branches.length})</option>
+              {branches.map((b) => (
+                <option key={b.id} value={String(b.id)}>
+                  📍 {b.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Payment Status */}
           <select
