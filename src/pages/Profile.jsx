@@ -389,7 +389,7 @@ const OrderCard = ({ order, expanded, onToggle, onRateExperience }) => {
   const isDelivered = order.status === "Delivered";
 
   return (
-    <div className="rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/30 dark:bg-neutral-950/20 overflow-hidden">
+    <div className="rounded-2xl border border-neutral-100 dark:border-neutral-850 bg-neutral-50/30 dark:bg-neutral-950/20 overflow-hidden transition-all">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
         <div className="flex items-start gap-3 min-w-0">
           <div className="w-11 h-11 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
@@ -458,7 +458,57 @@ const OrderCard = ({ order, expanded, onToggle, onRateExperience }) => {
           )}
         </div>
       </div>
-      {/* ...বাকি কোড... */}
+
+      {/* Expanded Order Details */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            className="border-t border-neutral-100 dark:border-neutral-800 p-4 space-y-3 bg-white/60 dark:bg-neutral-900/40"
+          >
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                Order Items
+              </span>
+              <div className="space-y-1.5">
+                {(order.items || []).map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between text-xs py-1 border-b border-neutral-100 dark:border-neutral-800/60 last:border-0"
+                  >
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                      {item.quantity}x {item.name}
+                    </span>
+                    <span className="font-semibold text-neutral-600 dark:text-neutral-300">
+                      {taka(Number(item.price || 0) * Number(item.quantity || 1))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 text-xs text-neutral-500">
+              <div>
+                {order.orderType === "pickup" || order.pickupBranchName ? (
+                  <span>
+                    🛍️ <strong>Pickup Outlet:</strong> {order.pickupBranchName || "Selected Outlet"}
+                  </span>
+                ) : (
+                  <span>
+                    📍 <strong>Delivery Address:</strong> {order.deliveryAddress || order.user?.address || "Home Delivery"}
+                  </span>
+                )}
+              </div>
+              <div className="font-bold text-neutral-800 dark:text-neutral-100">
+                Total Amount: {taka(order.total)}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -949,15 +999,20 @@ export const Profile = () => {
     [favoriteIds, foods],
   );
 
-  if (!isAuthLoaded) {
+  useEffect(() => {
+    if (isAuthLoaded && !user) {
+      navigate("/login", { replace: true, state: { from: location } });
+    }
+  }, [isAuthLoaded, user, navigate, location]);
+
+  if (!isAuthLoaded || !user) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
         <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-neutral-400">Loading your profile...</p>
       </div>
     );
   }
-
-  if (!user) return null;
 
   const firstName = (user.name || "there").trim().split(" ")[0];
 
