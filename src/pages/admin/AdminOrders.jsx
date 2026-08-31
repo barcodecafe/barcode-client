@@ -1696,23 +1696,25 @@ export const AdminOrders = () => {
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Order Type */}
-          <select
-            value={orderTypeFilter}
-            onChange={(e) => {
-              const val = e.target.value;
-              setOrderTypeFilter(val);
-              if (val !== "pickup") {
-                setBranchFilter("all");
-              }
-              setCurrentPage(1);
-            }}
-            className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
-          >
-            <option value="all">📦 All Types ({orderTypeCounts.all})</option>
-            <option value="delivery">🚚 Delivery Only ({orderTypeCounts.delivery})</option>
-            <option value="pickup">🛍️ Self Pickup Only ({orderTypeCounts.pickup})</option>
-          </select>
+          {/* Order Type (Super Admin & Sub-Admin Only) */}
+          {!isManager && (
+            <select
+              value={orderTypeFilter}
+              onChange={(e) => {
+                const val = e.target.value;
+                setOrderTypeFilter(val);
+                if (val !== "pickup") {
+                  setBranchFilter("all");
+                }
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+            >
+              <option value="all">📦 All Types ({orderTypeCounts.all})</option>
+              <option value="delivery">🚚 Delivery Only ({orderTypeCounts.delivery})</option>
+              <option value="pickup">🛍️ Self Pickup Only ({orderTypeCounts.pickup})</option>
+            </select>
+          )}
 
           {/* Pickup Branch Filter (Shown only when 'Self Pickup Only' is active) */}
           {!isManager && orderTypeFilter === "pickup" && (
