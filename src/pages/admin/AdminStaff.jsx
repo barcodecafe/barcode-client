@@ -421,7 +421,7 @@ export const AdminStaff = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2 sm:gap-2.5 2xl:gap-3">
+          <div className="flex flex-col gap-2 sm:gap-2.5">
             {filteredStaff.map((staff) => {
               const staffId = staff.id || staff._id;
               const isSuper = ['super_admin', 'superadmin'].includes(staff.role);
