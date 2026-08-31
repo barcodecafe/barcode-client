@@ -22,7 +22,7 @@ export const TreemapChart = ({
   items = [],
   valueFormatter = (v) => v,
   maxItems = 20,
-  mode = 'spent', // 'spent' | 'orders'
+  mode = 'orders', // 'orders' | 'spent'
   height = 120,
   emptyMessage = 'No customer spending data available',
 }) => {
@@ -39,7 +39,7 @@ export const TreemapChart = ({
   }, [items, mode]);
 
   const displayedItems = useMemo(() => {
-    return sortedItems.slice(0, Math.min(15, maxItems));
+    return sortedItems.slice(0, maxItems);
   }, [sortedItems, maxItems]);
 
   const maxValue = useMemo(() => {

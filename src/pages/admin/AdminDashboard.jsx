@@ -79,7 +79,7 @@ export const AdminDashboard = () => {
 
   // 🎛️ Metric Toggle Modes (By Volume vs By Money / Value)
   const [dishesMetric, setDishesMetric] = useState('orders'); // 'orders' | 'revenue'
-  const [customersMetric, setCustomersMetric] = useState('spent'); // 'spent' | 'orders'
+  const [customersMetric, setCustomersMetric] = useState('orders'); // 'orders' | 'spent'
   const [ridersMetric, setRidersMetric] = useState('trips'); // 'trips' | 'value'
 
   const [gridCols, setGridCols] = useState(() => {
@@ -538,7 +538,7 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 4: Top Selling Dishes (MUI X Donut Chart with Orders vs Sales ৳ Mode) */}
+        {/* Card 4: Top Selling Dishes (Column Bar Chart with Orders vs Sales ৳ Mode) */}
         <ChartCard
           id="dishes"
           title="Top Selling Dishes"
@@ -561,15 +561,17 @@ export const AdminDashboard = () => {
             items={topDishes}
             maxItems={currentDishesLimit}
             mode={dishesMetric}
+            height={Math.max(95, globalCardHeight - 80)}
+            valueFormatter={currency}
             emptyMessage="No dish orders recorded yet"
           />
         </ChartCard>
 
-        {/* Card 5: Top Valued Customers (MUI X Column Bar Chart with Spent ৳ vs Orders Mode) */}
+        {/* Card 5: Top Valued Customers (Column Bar Chart with Orders vs Spent ৳ Mode) */}
         <ChartCard
           id="customers"
           title="Top Valued Customers"
-          subtitle={customersMetric === 'orders' ? 'Ranked by total order frequency' : 'Ranked by lifetime spending (৳)'}
+          subtitle={customersMetric === 'spent' ? 'Ranked by lifetime spending (৳)' : 'Ranked by total order frequency'}
           height={globalCardHeight}
           density={cardDensity}
           maxCols={gridCols}
@@ -577,8 +579,8 @@ export const AdminDashboard = () => {
           action={
             <div className="flex items-center gap-1 flex-wrap justify-end">
               {renderMetricSwitcher(customersMetric, setCustomersMetric, [
-                { label: 'Spent ৳', value: 'spent' },
                 { label: 'Orders', value: 'orders' },
+                { label: 'Spent ৳', value: 'spent' },
               ])}
               {renderLimitSwitcher(customersLimit, setCustomersLimit, [5, 10, 15, 'All'])}
             </div>
@@ -594,7 +596,7 @@ export const AdminDashboard = () => {
           />
         </ChartCard>
 
-        {/* Card 6: Top Delivery Riders (MUI X Multi-Series Comparison Line Chart with Trips vs Delivered ৳ Mode) */}
+        {/* Card 6: Top Delivery Riders (Column Bar Chart with Trips vs Delivered ৳ Mode) */}
         <ChartCard
           id="riders"
           title="Top Delivery Riders"

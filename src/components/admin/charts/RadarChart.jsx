@@ -1,115 +1,64 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Bike } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// RadarChart.jsx -> MUI X Multi-Series Comparison Line Chart for Riders
+// RadarChart.jsx -> Column Bar Chart for Top Delivery Riders
 // Supports toggling between 'trips' (Volume) and 'value' (Delivered Value ৳)
 // ---------------------------------------------------------------------------
 
-const WIDTH = 500;
-const PADDING_X = 24;
-const PADDING_TOP = 14;
-const PADDING_BOTTOM = 22;
+const RIDER_BAR_COLORS = [
+  '#3b82f6', // Blue #1 TOP
+  '#8b5cf6', // Violet #2
+  '#06b6d4', // Cyan #3
+  '#10b981', // Emerald #4
+  '#f59e0b', // Amber #5
+  '#ec4899', // Pink #6
+  '#e02424', // Red #7
+];
+
+const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
 
 export const RadarChart = ({
   items = [],
-  valueFormatter = (v) => v,
+  valueFormatter = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`,
   maxItems = 15,
   mode = 'trips', // 'trips' | 'value'
   height = 120,
   emptyMessage = 'No rider delivery data available',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const svgRef = useRef(null);
 
   // Sort riders according to active metric mode
   const sortedRiders = useMemo(() => {
     return [...items].sort((a, b) => {
       if (mode === 'value') {
-        return (b.deliveredValue || 0) - (a.deliveredValue || 0);
+        const valA = a.deliveredValue || a.earnings || 0;
+        const valB = b.deliveredValue || b.earnings || 0;
+        return valB - valA;
       }
       return (b.deliveries || 0) - (a.deliveries || 0);
     });
   }, [items, mode]);
 
   const displayedRiders = useMemo(() => {
-    return sortedRiders.slice(0, Math.min(15, maxItems));
+    return sortedRiders.slice(0, maxItems);
   }, [sortedRiders, maxItems]);
 
-  const maxTrips = useMemo(() => {
+  const maxValue = useMemo(() => {
     if (displayedRiders.length === 0) return 1;
-    return Math.max(...displayedRiders.map((r) => r.deliveries || 0), 1);
-  }, [displayedRiders]);
+    return Math.max(
+      ...displayedRiders.map((r) => {
+        if (mode === 'value') {
+          return r.deliveredValue || r.earnings || 0;
+        }
+        return r.deliveries || 0;
+      }),
+      1
+    );
+  }, [displayedRiders, mode]);
 
-  const maxDelivered = useMemo(() => {
-    if (displayedRiders.length === 0) return 1;
-    return Math.max(...displayedRiders.map((r) => r.deliveredValue || r.earnings || 0), 1);
-  }, [displayedRiders]);
-
-  const { tripsPoints, deliveredPoints, tripsPath, deliveredPath } = useMemo(() => {
-    if (displayedRiders.length === 0) {
-      return { tripsPoints: [], deliveredPoints: [], tripsPath: '', deliveredPath: '' };
-    }
-
-    const usableWidth = WIDTH - PADDING_X * 2;
-    const usableHeight = Math.max(40, height - PADDING_TOP - PADDING_BOTTOM);
-
-    const tPts = displayedRiders.map((r, i) => {
-      const x = PADDING_X + (i / Math.max(1, displayedRiders.length - 1)) * usableWidth;
-      const y = PADDING_TOP + usableHeight - ((r.deliveries || 0) / maxTrips) * usableHeight;
-      return { ...r, x, y, value: r.deliveries || 0 };
-    });
-
-    const dPts = displayedRiders.map((r, i) => {
-      const x = PADDING_X + (i / Math.max(1, displayedRiders.length - 1)) * usableWidth;
-      const val = r.deliveredValue || r.earnings || 0;
-      const y = PADDING_TOP + usableHeight - (val / maxDelivered) * usableHeight;
-      return { ...r, x, y, value: val };
-    });
-
-    const buildPath = (pts) => {
-      if (pts.length < 2) return '';
-      let path = `M ${pts[0].x} ${pts[0].y}`;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const p0 = pts[i];
-        const p1 = pts[i + 1];
-        const cpX1 = p0.x + (p1.x - p0.x) * 0.45;
-        const cpX2 = p1.x - (p1.x - p0.x) * 0.45;
-        path += ` C ${cpX1} ${p0.y}, ${cpX2} ${p1.y}, ${p1.x} ${p1.y}`;
-      }
-      return path;
-    };
-
-    return {
-      tripsPoints: tPts,
-      deliveredPoints: dPts,
-      tripsPath: buildPath(tPts),
-      deliveredPath: buildPath(dPts),
-    };
-  }, [displayedRiders, maxTrips, maxDelivered, height]);
-
-  const handleMouseMove = (e) => {
-    if (!svgRef.current || tripsPoints.length === 0) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const svgX = (mouseX / rect.width) * WIDTH;
-
-    let closestIndex = 0;
-    let minDiff = Math.abs(tripsPoints[0].x - svgX);
-    for (let i = 1; i < tripsPoints.length; i++) {
-      const diff = Math.abs(tripsPoints[i].x - svgX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIndex = i;
-      }
-    }
-    setHoveredIndex(closestIndex);
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredIndex(null);
-  };
+  const gridLines = [0, 0.33, 0.66, 1];
 
   if (!displayedRiders || displayedRiders.length === 0) {
     return (
@@ -120,174 +69,103 @@ export const RadarChart = ({
     );
   }
 
-  const activeRider = hoveredIndex !== null ? displayedRiders[hoveredIndex] : null;
-  const activeTripsPt = hoveredIndex !== null ? tripsPoints[hoveredIndex] : null;
-  const activeDeliveredPt = hoveredIndex !== null ? deliveredPoints[hoveredIndex] : null;
   const isDense = displayedRiders.length > 8;
 
   return (
     <div className="w-full flex flex-col justify-between select-none">
-      {/* 🏷️ Top Legend Indicator (Trips vs Delivered Value) */}
-      <div className="flex items-center justify-end gap-3 px-2 mb-1">
-        <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-500 dark:text-neutral-400">
-          <span className="w-2.5 h-0.5 bg-blue-500 border-t border-dashed border-blue-500" />
-          <span>Trips (pv)</span>
+      {/* 📊 Chart Canvas with Y-Axis Gridlines & Vertical Bars */}
+      <div className="relative w-full" style={{ height: Math.max(90, height) }}>
+        {/* Y-axis guideline levels */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-1">
+          {gridLines
+            .slice()
+            .reverse()
+            .map((g, idx) => {
+              const tickVal = Math.round(maxValue * g);
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-9 text-right shrink-0 leading-none">
+                    {mode === 'value' ? valueFormatter(tickVal) : compactNumber(tickVal)}
+                  </span>
+                  <div className="flex-1 border-b border-neutral-100 dark:border-neutral-800/80" />
+                </div>
+              );
+            })}
         </div>
-        <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-500 dark:text-neutral-400">
-          <span className="w-2.5 h-0.5 bg-amber-500" />
-          <span>Delivered (uv)</span>
-        </div>
-      </div>
 
-      {/* 📈 Multi-Series SVG Line Canvas */}
-      <div className="relative w-full" style={{ height: Math.max(80, height - 15) }}>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${WIDTH} ${Math.max(80, height - 15)}`}
-          className="w-full h-full overflow-visible"
-          preserveAspectRatio="none"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
+        {/* Vertical Bars Container */}
+        <div
+          className="absolute inset-0 pl-11 flex items-end"
+          style={{ gap: isDense ? 4 : displayedRiders.length > 5 ? 6 : 12 }}
         >
-          {/* Horizontal Gridlines */}
-          {[0, 0.5, 1].map((g, idx) => {
-            const y = PADDING_TOP + (Math.max(80, height - 15) - PADDING_TOP - PADDING_BOTTOM) * g;
+          {displayedRiders.map((rider, i) => {
+            const trips = rider.deliveries || 0;
+            const deliveredVal = rider.deliveredValue || rider.earnings || 0;
+            const metricVal = mode === 'value' ? deliveredVal : trips;
+            const heightPct = (metricVal / maxValue) * 100;
+            const isHovered = hoveredIndex === i;
+            const color = RIDER_BAR_COLORS[i % RIDER_BAR_COLORS.length];
+
             return (
-              <line
-                key={idx}
-                x1={PADDING_X}
-                x2={WIDTH - PADDING_X}
-                y1={y}
-                y2={y}
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeDasharray={idx === 1 ? '3 3' : 'none'}
-                className="text-neutral-200/70 dark:text-neutral-800/80"
-              />
+              <div
+                key={`${rider.riderId || rider._id || rider.name || i}-${mode}`}
+                title={`${rider.name}: ${trips} trips • ${valueFormatter(deliveredVal)}`}
+                className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0 cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                {/* Floating Tooltip */}
+                {isHovered && (
+                  <div className="absolute -top-2 -translate-y-full z-20 px-2.5 py-1 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none flex items-center gap-1.5 border border-white/10">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span>#{i + 1} {rider.name}:</span>
+                    <span className="font-black text-amber-300 dark:text-primary-600">
+                      {mode === 'value' ? valueFormatter(deliveredVal) : `${trips} trips`}
+                    </span>
+                    <span className="text-white/60 dark:text-neutral-500 font-semibold">
+                      ({mode === 'value' ? `${trips} trips` : valueFormatter(deliveredVal)})
+                    </span>
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
+                  </div>
+                )}
+
+                {/* Vertical Column Bar */}
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(6, heightPct)}%` }}
+                  transition={{ duration: 0.45, delay: i * 0.02, ease: 'easeOut' }}
+                  className="w-full rounded-t-sm sm:rounded-t-md transition-all duration-150"
+                  style={{
+                    backgroundColor: color,
+                    opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
+                    transform: isHovered ? 'scaleY(1.03)' : 'scaleY(1)',
+                    transformOrigin: 'bottom',
+                    boxShadow: isHovered ? `0 0 10px ${color}60` : 'none',
+                    minHeight: 4,
+                  }}
+                />
+              </div>
             );
           })}
-
-          {/* Series 1: Trips (Blue Dashed Line) */}
-          {tripsPath && (
-            <motion.path
-              d={tripsPath}
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2.2"
-              strokeDasharray="4 3"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.6 }}
-            />
-          )}
-
-          {/* Series 2: Delivered Value (Amber Solid Line) */}
-          {deliveredPath && (
-            <motion.path
-              d={deliveredPath}
-              fill="none"
-              stroke="#f59e0b"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.8 }}
-            />
-          )}
-
-          {/* Static / Active Points for Trips */}
-          {tripsPoints.map((pt, i) => (
-            <circle
-              key={`t-${i}-${mode}`}
-              cx={pt.x}
-              cy={pt.y}
-              r={hoveredIndex === i ? 5 : isDense ? 2 : 3}
-              fill="#3b82f6"
-              stroke="#ffffff"
-              strokeWidth="1.5"
-              className="pointer-events-none shadow-xs"
-            />
-          ))}
-
-          {/* Static / Active Points for Delivered */}
-          {deliveredPoints.map((pt, i) => (
-            <rect
-              key={`e-${i}-${mode}`}
-              x={pt.x - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
-              y={pt.y - (hoveredIndex === i ? 4 : isDense ? 1.5 : 2.5)}
-              width={hoveredIndex === i ? 8 : isDense ? 3 : 5}
-              height={hoveredIndex === i ? 8 : isDense ? 3 : 5}
-              fill="#f59e0b"
-              stroke="#ffffff"
-              strokeWidth="1.5"
-              className="pointer-events-none shadow-xs"
-            />
-          ))}
-
-          {/* Crosshair on Hover */}
-          {activeTripsPt && (
-            <line
-              x1={activeTripsPt.x}
-              x2={activeTripsPt.x}
-              y1={PADDING_TOP}
-              y2={Math.max(80, height - 15) - PADDING_BOTTOM}
-              stroke="#64748b"
-              strokeWidth="1"
-              strokeDasharray="2 2"
-              className="pointer-events-none opacity-60"
-            />
-          )}
-        </svg>
-
-        {/* 🪟 MUI X Floating Multi-Series Tooltip */}
-        {activeRider && activeTripsPt && (
-          <div
-            className="absolute z-20 px-2.5 py-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none -translate-x-1/2 -translate-y-full flex flex-col gap-0.5 border border-white/10"
-            style={{
-              left: `${(activeTripsPt.x / WIDTH) * 100}%`,
-              top: `${(Math.min(activeTripsPt.y, activeDeliveredPt?.y || activeTripsPt.y) / Math.max(80, height - 15)) * 100}%`,
-              marginTop: -8,
-            }}
-          >
-            <p className="font-black text-white dark:text-neutral-900 border-b border-white/10 dark:border-black/10 pb-0.5">
-              #{hoveredIndex + 1} {activeRider.name}
-            </p>
-            <div className="flex items-center justify-between gap-2 text-[9px]">
-              <span className="flex items-center gap-1 text-blue-400 dark:text-blue-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Trips:
-              </span>
-              <span className="font-bold">{activeRider.deliveries || 0}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-[9px]">
-              <span className="flex items-center gap-1 text-emerald-400 dark:text-emerald-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Delivered:
-              </span>
-              <span className="font-bold">{valueFormatter(activeRider.deliveredValue || 0)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-[9px]">
-              <span className="flex items-center gap-1 text-amber-400 dark:text-amber-600">
-                <span className="w-1.5 h-1.5 rounded-xs bg-amber-500" /> Earnings:
-              </span>
-              <span className="font-bold">{valueFormatter(activeRider.earnings || 0)}</span>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Guaranteed Visible X-axis Rider Labels */}
-      <div className="flex items-center justify-between px-2 mt-1 w-full pointer-events-none">
-        {displayedRiders.map((r, i) => (
+      {/* Guaranteed Visible X-Axis Rider Labels Row */}
+      <div
+        className="flex items-center pl-11 mt-1.5 w-full"
+        style={{ gap: isDense ? 4 : displayedRiders.length > 5 ? 6 : 12 }}
+      >
+        {displayedRiders.map((rider, i) => (
           <span
-            key={`lbl-${r.riderId || r.name || i}-${mode}`}
-            title={r.name}
-            className={`${isDense ? 'text-[8px] max-w-[32px]' : 'text-[9px] sm:text-[10px] max-w-[55px]'} truncate text-center transition-colors leading-none ${
+            key={`lbl-${rider.riderId || rider._id || rider.name || i}-${mode}`}
+            title={rider.name}
+            className={`flex-1 ${isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
               hoveredIndex === i
-                ? 'text-neutral-900 dark:text-white font-black scale-105'
-                : 'text-neutral-400 dark:text-neutral-500 font-semibold'
+                ? 'font-black text-neutral-900 dark:text-white scale-105'
+                : 'font-semibold text-neutral-500 dark:text-neutral-400'
             }`}
           >
-            #{i + 1} {r.name.split(' ')[0]}
+            #{i + 1} {rider.name.split(' ')[0]}
           </span>
         ))}
       </div>

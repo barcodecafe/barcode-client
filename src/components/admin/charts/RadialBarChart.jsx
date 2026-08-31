@@ -3,42 +3,30 @@ import { motion } from 'framer-motion';
 import { Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// RadialBarChart.jsx -> MUI X Donut Chart for Top Selling Dishes
+// RadialBarChart.jsx -> Column Bar Chart for Top Selling Dishes
 // Supports toggling between 'orders' (Volume) and 'revenue' (Taka collected)
 // ---------------------------------------------------------------------------
 
-const PALETTE = [
+const DISH_BAR_COLORS = [
   '#e02424', // Primary Red (Top Dish #1)
   '#f97316', // Orange (#2)
   '#f59e0b', // Amber (#3)
   '#10b981', // Emerald (#4)
-  '#8b5cf6', // Purple (#5)
-  '#64748b', // Slate (Others)
+  '#8b5cf6', // Violet (#5)
+  '#06b6d4', // Cyan (#6)
+  '#ec4899', // Pink (#7)
+  '#3b82f6', // Blue (#8)
 ];
 
-const currencyFormat = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`;
-
-function polarToCartesian(cx, cy, r, angleDeg) {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
-  return {
-    x: cx + r * Math.cos(angleRad),
-    y: cy + r * Math.sin(angleRad),
-  };
-}
-
-function describeArc(cx, cy, r, startAngle, endAngle) {
-  const clampedEnd = Math.min(endAngle, 359.99);
-  const start = polarToCartesian(cx, cy, r, clampedEnd);
-  const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = clampedEnd - startAngle <= 180 ? '0' : '1';
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-}
+const compactNumber = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v);
 
 export const RadialBarChart = ({
   items = [],
-  maxItems = 20,
+  valueFormatter = (v) => `৳${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`,
+  maxItems = 15,
   mode = 'orders', // 'orders' | 'revenue'
-  emptyMessage = 'No dish order data available',
+  height = 120,
+  emptyMessage = 'No dish orders recorded yet',
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
@@ -58,87 +46,20 @@ export const RadialBarChart = ({
     return sortedItems.slice(0, maxItems);
   }, [sortedItems, maxItems]);
 
-  const totalOrders = useMemo(() => {
-    return displayedItems.reduce((sum, d) => sum + (d.orders || 0), 0);
-  }, [displayedItems]);
-
-  const totalRevenue = useMemo(() => {
-    return displayedItems.reduce(
-      (sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)),
-      0
+  const maxValue = useMemo(() => {
+    if (displayedItems.length === 0) return 1;
+    return Math.max(
+      ...displayedItems.map((d) => {
+        if (mode === 'revenue') {
+          return d.revenue || (d.price || 0) * (d.orders || 0);
+        }
+        return d.orders || 0;
+      }),
+      1
     );
-  }, [displayedItems]);
+  }, [displayedItems, mode]);
 
-  const metricTotal = mode === 'revenue' ? totalRevenue : totalOrders;
-
-  // Aggregate top 4 dishes + "Others" if > 5 dishes exist
-  const segments = useMemo(() => {
-    if (metricTotal === 0 || displayedItems.length === 0) return [];
-
-    let list = [];
-    if (displayedItems.length <= 5) {
-      list = displayedItems.map((d, i) => {
-        const orders = d.orders || 0;
-        const revenue = d.revenue || (d.price || 0) * orders;
-        const value = mode === 'revenue' ? revenue : orders;
-        return {
-          label: d.name,
-          orders,
-          revenue,
-          value,
-          rank: i + 1,
-          color: PALETTE[i % PALETTE.length],
-        };
-      });
-    } else {
-      const top4 = displayedItems.slice(0, 4);
-      const others = displayedItems.slice(4);
-      const othersOrders = others.reduce((sum, d) => sum + (d.orders || 0), 0);
-      const othersRevenue = others.reduce(
-        (sum, d) => sum + (d.revenue || (d.price || 0) * (d.orders || 0)),
-        0
-      );
-      const othersValue = mode === 'revenue' ? othersRevenue : othersOrders;
-
-      list = [
-        ...top4.map((d, i) => {
-          const orders = d.orders || 0;
-          const revenue = d.revenue || (d.price || 0) * orders;
-          const value = mode === 'revenue' ? revenue : orders;
-          return {
-            label: d.name,
-            orders,
-            revenue,
-            value,
-            rank: i + 1,
-            color: PALETTE[i % PALETTE.length],
-          };
-        }),
-        {
-          label: `Other ${others.length} Dishes`,
-          orders: othersOrders,
-          revenue: othersRevenue,
-          value: othersValue,
-          rank: '5+',
-          color: '#64748b',
-        },
-      ];
-    }
-
-    let cumulativeAngle = 0;
-    return list.map((item) => {
-      let angle = (item.value / metricTotal) * 360;
-      if (angle === 360) angle = 359.99;
-      const segment = {
-        ...item,
-        startAngle: cumulativeAngle,
-        endAngle: cumulativeAngle + angle,
-        pct: ((item.value / metricTotal) * 100).toFixed(1),
-      };
-      cumulativeAngle += angle;
-      return segment;
-    });
-  }, [displayedItems, metricTotal, mode]);
+  const gridLines = [0, 0.33, 0.66, 1];
 
   if (!displayedItems || displayedItems.length === 0) {
     return (
@@ -149,123 +70,105 @@ export const RadialBarChart = ({
     );
   }
 
-  const SIZE = 110;
-  const CENTER = SIZE / 2;
-  const RADIUS = SIZE * 0.38;
-  const STROKE = SIZE * 0.18;
-
-  const activeSegment = hoveredIndex !== null ? segments[hoveredIndex] : null;
+  const isDense = displayedItems.length > 8;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full h-full min-w-0 select-none">
-      {/* 🎯 Donut SVG Canvas */}
-      <div className="relative shrink-0 flex items-center justify-center">
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-          {segments.map((seg, i) => (
-            <motion.path
-              key={`${seg.label}-${mode}`}
-              d={describeArc(CENTER, CENTER, RADIUS, seg.startAngle, seg.endAngle)}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={hoveredIndex === i ? STROKE + 3 : STROKE}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: i * 0.05, ease: 'easeOut' }}
-              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease' }}
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            />
-          ))}
-        </svg>
+    <div className="w-full flex flex-col justify-between select-none">
+      {/* 📊 Chart Canvas with Y-Axis Gridlines & Vertical Bars */}
+      <div className="relative w-full" style={{ height: Math.max(90, height) }}>
+        {/* Y-axis guideline levels */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-1">
+          {gridLines
+            .slice()
+            .reverse()
+            .map((g, idx) => {
+              const tickVal = Math.round(maxValue * g);
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-9 text-right shrink-0 leading-none">
+                    {mode === 'revenue' ? valueFormatter(tickVal) : compactNumber(tickVal)}
+                  </span>
+                  <div className="flex-1 border-b border-neutral-100 dark:border-neutral-800/80" />
+                </div>
+              );
+            })}
+        </div>
 
-        {/* Center Label: Dynamic according to mode */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
-          {activeSegment ? (
-            <>
-              <span
-                className="text-xs sm:text-sm font-black font-display tracking-tight leading-tight truncate max-w-[65px]"
-                style={{ color: activeSegment.color }}
+        {/* Vertical Bars Container */}
+        <div
+          className="absolute inset-0 pl-11 flex items-end"
+          style={{ gap: isDense ? 4 : displayedItems.length > 5 ? 6 : 12 }}
+        >
+          {displayedItems.map((dish, i) => {
+            const orders = dish.orders || 0;
+            const revenue = dish.revenue || (dish.price || 0) * orders;
+            const metricVal = mode === 'revenue' ? revenue : orders;
+            const heightPct = (metricVal / maxValue) * 100;
+            const isHovered = hoveredIndex === i;
+            const color = DISH_BAR_COLORS[i % DISH_BAR_COLORS.length];
+
+            return (
+              <div
+                key={`${dish.id || dish.name || i}-${mode}`}
+                title={`${dish.name}: ${orders} orders • ${valueFormatter(revenue)}`}
+                className="relative flex-1 h-full flex flex-col justify-end items-center min-w-0 cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
               >
-                {mode === 'revenue' ? currencyFormat(activeSegment.revenue) : `${activeSegment.orders} ord`}
-              </span>
-              <span className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 max-w-[65px] truncate">
-                {activeSegment.pct}% share
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-xs sm:text-sm font-black text-neutral-900 dark:text-neutral-100 font-display tracking-tight leading-tight">
-                {mode === 'revenue' ? currencyFormat(totalRevenue) : totalOrders}
-              </span>
-              <span className="text-[8px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-tighter">
-                {mode === 'revenue' ? 'Sales Revenue' : 'Total Orders'}
-              </span>
-            </>
-          )}
+                {/* Floating Tooltip */}
+                {isHovered && (
+                  <div className="absolute -top-2 -translate-y-full z-20 px-2.5 py-1 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] font-bold whitespace-nowrap shadow-xl pointer-events-none flex items-center gap-1.5 border border-white/10">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span>#{i + 1} {dish.name}:</span>
+                    <span className="font-black text-amber-300 dark:text-primary-600">
+                      {mode === 'revenue' ? valueFormatter(revenue) : `${orders} orders`}
+                    </span>
+                    <span className="text-white/60 dark:text-neutral-500 font-semibold">
+                      ({mode === 'revenue' ? `${orders} ord` : valueFormatter(revenue)})
+                    </span>
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-900 dark:border-t-neutral-100" />
+                  </div>
+                )}
+
+                {/* Vertical Column Bar */}
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(6, heightPct)}%` }}
+                  transition={{ duration: 0.45, delay: i * 0.02, ease: 'easeOut' }}
+                  className="w-full rounded-t-sm sm:rounded-t-md transition-all duration-150"
+                  style={{
+                    backgroundColor: color,
+                    opacity: hoveredIndex === null || isHovered ? 1 : 0.45,
+                    transform: isHovered ? 'scaleY(1.03)' : 'scaleY(1)',
+                    transformOrigin: 'bottom',
+                    boxShadow: isHovered ? `0 0 10px ${color}60` : 'none',
+                    minHeight: 4,
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 📋 Interactive Dish Ranking Legend */}
-      <div className="flex flex-col gap-0.5 w-full min-w-0 flex-1 justify-center">
-        {segments.map((seg, i) => {
-          const isHovered = hoveredIndex === i;
-          return (
-            <div
-              key={`${seg.label}-${mode}`}
-              title={`${seg.label}: ${seg.orders} orders • ${currencyFormat(seg.revenue)} sales (${seg.pct}%)`}
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              className={`flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-lg cursor-pointer transition-colors ${
-                isHovered
-                  ? 'bg-neutral-100 dark:bg-neutral-800 shadow-2xs'
-                  : 'hover:bg-neutral-50 dark:hover:bg-neutral-850'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <span
-                  className="w-2 h-2 rounded-full shrink-0 shadow-2xs"
-                  style={{ backgroundColor: seg.color }}
-                />
-                <span className="text-[10px] sm:text-[11px] font-bold text-neutral-800 dark:text-neutral-200 truncate">
-                  {typeof seg.rank === 'number' ? `#${seg.rank}` : seg.rank} {seg.label}
-                </span>
-                {i === 0 && (
-                  <span className="px-1 py-0.1 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 text-[8px] font-black shrink-0">
-                    {mode === 'revenue' ? 'MAX ৳' : 'TOP'}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0 ml-1">
-                {mode === 'revenue' ? (
-                  <>
-                    <span
-                      className="text-[10px] sm:text-[11px] font-black"
-                      style={{ color: seg.color }}
-                    >
-                      {currencyFormat(seg.revenue)}
-                    </span>
-                    <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
-                      ({seg.orders} ord)
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span
-                      className="text-[10px] sm:text-[11px] font-black"
-                      style={{ color: seg.color }}
-                    >
-                      {seg.orders} ord
-                    </span>
-                    <span className="text-[8px] font-semibold text-neutral-400 dark:text-neutral-500">
-                      ({currencyFormat(seg.revenue)})
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* Guaranteed Visible X-Axis Dish Labels Row */}
+      <div
+        className="flex items-center pl-11 mt-1.5 w-full"
+        style={{ gap: isDense ? 4 : displayedItems.length > 5 ? 6 : 12 }}
+      >
+        {displayedItems.map((dish, i) => (
+          <span
+            key={`lbl-${dish.id || dish.name || i}-${mode}`}
+            title={dish.name}
+            className={`flex-1 ${isDense ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'} text-center truncate px-0.5 leading-none transition-colors ${
+              hoveredIndex === i
+                ? 'font-black text-neutral-900 dark:text-white scale-105'
+                : 'font-semibold text-neutral-500 dark:text-neutral-400'
+            }`}
+          >
+            #{i + 1} {dish.name.split(' ')[0]}
+          </span>
+        ))}
       </div>
     </div>
   );
