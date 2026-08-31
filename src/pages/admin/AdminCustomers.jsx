@@ -221,7 +221,6 @@ export const AdminCustomers = () => {
       const payload = {
         name: editForm.name.trim(),
         email: editForm.email.trim(),
-        phone: editForm.phone.trim(),
         pickArea: editForm.pickArea.trim(),
         address: editForm.address.trim(),
         points: Math.max(0, Number(editForm.points) || 0),
@@ -932,17 +931,19 @@ export const AdminCustomers = () => {
               {/* Mobile Number & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Mobile Number
+                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1 flex items-center justify-between">
+                    <span>Mobile Number</span>
+                    <span className="text-[10px] text-neutral-400 font-normal">Non-editable</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
                       type="tel"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      readOnly
+                      disabled
                       placeholder="01712345678"
-                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900/80 text-neutral-500 dark:text-neutral-400 cursor-not-allowed select-none focus:outline-none"
                     />
                   </div>
                 </div>
