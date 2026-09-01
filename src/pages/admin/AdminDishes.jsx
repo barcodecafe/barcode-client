@@ -525,9 +525,10 @@ export const AdminDishes = () => {
 
     setImagePreview(food.image || null);
 
-    const formattedBranches = (food.branchIds || [])
-      .map(String)
-      .filter(Boolean);
+    const formattedBranches = (Array.isArray(food.branchIds) ? food.branchIds : [])
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .map(String);
 
     const formattedBranchPrices = {};
     if (food.branchPrices) {
@@ -588,7 +589,7 @@ export const AdminDishes = () => {
   const handleBranchToggle = (branchId) => {
     const targetId = String(branchId);
     setFormData((prev) => {
-      const isSelected = prev.branchIds.includes(targetId);
+      const isSelected = prev.branchIds.map(String).includes(targetId);
       let updatedBranchIds;
       let updatedPrices = { ...prev.branchPrices };
 
@@ -610,7 +611,10 @@ export const AdminDishes = () => {
   };
 
   const handleSelectAllBranches = () => {
-    const allIds = branches.map((b) => String(b._id || b.id));
+    const allIds = branches
+      .map((b) => (b.id !== undefined && b.id !== null ? b.id : b._id))
+      .filter(Boolean)
+      .map(String);
     setFormData((prev) => ({
       ...prev,
       branchIds: allIds,
@@ -1197,7 +1201,9 @@ export const AdminDishes = () => {
         category: categoryName,
         categoryOrder,
         variantLabel: formData.variantLabel?.trim(),
-        branchIds: formData.branchIds.map(Number),
+        branchIds: formData.branchIds
+          .map(Number)
+          .filter((n) => Number.isFinite(n) && n > 0),
         branchPrices: parsedBranchPrices,
         addons: cleanedAddons,
         variations: (formData.variations || []).map((v) => ({
@@ -1247,10 +1253,19 @@ export const AdminDishes = () => {
     }
   };
 
-  const branchNameById = useMemo(
-    () => new Map(branches.map((b) => [String(b._id || b.id || ""), b.name])),
-    [branches],
-  );
+  const branchNameById = useMemo(() => {
+    const map = new Map();
+    branches.forEach((b) => {
+      if (b.id !== undefined && b.id !== null) {
+        map.set(String(b.id), b.name);
+        map.set(Number(b.id), b.name);
+      }
+      if (b._id) {
+        map.set(String(b._id), b.name);
+      }
+    });
+    return map;
+  }, [branches]);
 
   const filteredFoods = useMemo(() => {
     return foods.filter((f) => {
@@ -1613,32 +1628,47 @@ export const AdminDishes = () => {
 
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                         <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
-                        {(food.branchIds || []).length === 0 ? (
-                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-                            No branch assigned
-                          </span>
-                        ) : (food.branchIds || []).length >= branches.length && branches.length > 0 ? (
-                          <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
-                            All branches ({food.branchIds.length})
-                          </span>
-                        ) : (
-                          <>
-                            {food.branchIds.slice(0, 3).map((bid) => (
-                              <span
-                                key={bid}
-                                className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500"
-                              >
-                                {branchNameById.get(String(bid)) ||
-                                  `Branch #${bid}`}
+                        {(() => {
+                          const validBranchIds = (Array.isArray(food.branchIds) ? food.branchIds : [])
+                            .map(Number)
+                            .filter((n) => Number.isFinite(n) && n > 0);
+
+                          if (validBranchIds.length === 0) {
+                            return (
+                              <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+                                No branch assigned
                               </span>
-                            ))}
-                            {food.branchIds.length > 3 && (
-                              <span className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
-                                +{food.branchIds.length - 3} more
+                            );
+                          }
+
+                          if (validBranchIds.length >= branches.length && branches.length > 0) {
+                            return (
+                              <span className="text-[10px] px-1.5 py-0.5 font-bold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                                All branches ({validBranchIds.length})
                               </span>
-                            )}
-                          </>
-                        )}
+                            );
+                          }
+
+                          return (
+                            <>
+                              {validBranchIds.slice(0, 3).map((bid) => (
+                                <span
+                                  key={bid}
+                                  className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-500"
+                                >
+                                  {branchNameById.get(String(bid)) ||
+                                    branchNameById.get(bid) ||
+                                    `Branch #${bid}`}
+                                </span>
+                              ))}
+                              {validBranchIds.length > 3 && (
+                                <span className="text-[10px] px-1.5 py-0.5 font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                                  +{validBranchIds.length - 3} more
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
