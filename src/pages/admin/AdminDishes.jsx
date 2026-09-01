@@ -154,6 +154,7 @@ export const AdminDishes = () => {
   });
 
   const standardVariantLabels = ["Size", "Weight", "Portion", "Piece"];
+  const [isSavingDish, setIsSavingDish] = useState(false);
 
   // 🎯 Category Dishes Count for smart badges & safe deletions
   const categoryDishesCount = useMemo(() => {
@@ -1170,6 +1171,7 @@ export const AdminDishes = () => {
     e.preventDefault();
 
     try {
+      setIsSavingDish(true);
       const categoryName = formData.category?.trim();
       const existingCategoryIndex = sortedCategories.findIndex(
         (c) => c.toLowerCase() === categoryName.toLowerCase(),
@@ -1179,7 +1181,7 @@ export const AdminDishes = () => {
         existingCategoryIndex !== -1 ? existingCategoryIndex + 1 : 999;
 
       const parsedBranchPrices = {};
-      Object.entries(formData.branchPrices).forEach(([key, val]) => {
+      Object.entries(formData.branchPrices || {}).forEach(([key, val]) => {
         const parsedVal = parseFloat(val);
         if (!isNaN(parsedVal)) {
           parsedBranchPrices[key] = parsedVal;
@@ -1227,29 +1229,45 @@ export const AdminDishes = () => {
           : null,
       };
 
+      // ⚡ 1. Instantly close modal & perform smooth optimistic UI update
+      setIsModalOpen(false);
+
       let newFoodsList;
+      if (editingFood) {
+        newFoodsList = foods.map((f) =>
+          (f.id || f._id) === (editingFood.id || editingFood._id) ? { ...f, ...cleanedFormData } : f,
+        );
+      } else {
+        newFoodsList = [{ ...cleanedFormData, id: Date.now() }, ...foods];
+      }
+      setFoods(newFoodsList);
+      setSortedCategories(processCategories(newFoodsList));
+
+      // ⚡ 2. Execute save in background smoothly
       if (editingFood) {
         const updated = await updateFood(
           editingFood.id || editingFood._id,
           cleanedFormData,
         );
-        newFoodsList = foods.map((f) =>
-          (f.id || f._id) === (editingFood.id || editingFood._id) ? (updated || cleanedFormData) : f,
-        );
-        setFoods(newFoodsList);
+        if (updated) {
+          setFoods((prev) =>
+            prev.map((f) =>
+              (f.id || f._id) === (editingFood.id || editingFood._id) ? { ...f, ...updated } : f,
+            ),
+          );
+        }
       } else {
         const created = await createFood(cleanedFormData);
-        newFoodsList = [created || cleanedFormData, ...foods];
-        setFoods(newFoodsList);
+        if (created) {
+          setFoods((prev) => [created, ...prev.filter((f) => f.id !== newFoodsList[0].id)]);
+        }
       }
-
-      const updatedCats = processCategories(newFoodsList);
-      setSortedCategories(updatedCats);
-
-      setIsModalOpen(false);
-      await syncFromServer();
     } catch (err) {
+      console.error("Error saving dish details:", err);
       alert("Error saving dish details: " + (err?.response?.data?.message || err?.message || ""));
+      await syncFromServer();
+    } finally {
+      setIsSavingDish(false);
     }
   };
 
@@ -2613,15 +2631,23 @@ export const AdminDishes = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm font-semibold cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                    className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm font-semibold cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold cursor-pointer hover:bg-primary-600 shadow-md shadow-primary-500/20"
+                    disabled={isSavingDish}
+                    className="px-5 py-2 rounded-xl bg-primary-500 text-white text-sm font-bold cursor-pointer hover:bg-primary-600 shadow-md shadow-primary-500/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-60"
                   >
-                    {editingFood ? "Save Changes" : "Create Dish"}
+                    {isSavingDish ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>{editingFood ? "Save Changes" : "Create Dish"}</span>
+                    )}
                   </button>
                 </div>
               </form>
