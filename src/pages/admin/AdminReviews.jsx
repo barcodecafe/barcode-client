@@ -80,6 +80,7 @@ export const AdminReviews = () => {
   const [branches, setBranches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all' | 'branch' | 'rider'
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedRating, setSelectedRating] = useState('all');
   const [selectedRetention, setSelectedRetention] = useState('all');
@@ -141,6 +142,8 @@ export const AdminReviews = () => {
         avgFood: '0.0',
         avgSpeed: '0.0',
         avgStaff: '0.0',
+        avgRider: '0.0',
+        riderCount: 0,
         retentionRate: '0%',
       };
     }
@@ -149,6 +152,10 @@ export const AdminReviews = () => {
     const sumSpeed = feedbacks.reduce((acc, f) => acc + Number(f.serviceSpeed || 0), 0);
     const sumStaff = feedbacks.reduce((acc, f) => acc + Number(f.staffBehavior || 0), 0);
 
+    const riderFeedbacks = feedbacks.filter((f) => Number(f.riderRating) > 0);
+    const sumRider = riderFeedbacks.reduce((acc, f) => acc + Number(f.riderRating || 0), 0);
+    const avgRider = riderFeedbacks.length > 0 ? (sumRider / riderFeedbacks.length).toFixed(1) : '5.0';
+
     const definitelyCount = feedbacks.filter((f) => String(f.visitAgain).toLowerCase() === 'definitely').length;
 
     return {
@@ -156,6 +163,8 @@ export const AdminReviews = () => {
       avgFood: (sumFood / total).toFixed(1),
       avgSpeed: (sumSpeed / total).toFixed(1),
       avgStaff: (sumStaff / total).toFixed(1),
+      avgRider,
+      riderCount: riderFeedbacks.length,
       retentionRate: `${Math.round((definitelyCount / total) * 100)}%`,
     };
   }, [feedbacks]);
@@ -163,15 +172,25 @@ export const AdminReviews = () => {
   // Filtered Feedbacks
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((f) => {
+      // Category filter (All | Branch | Rider)
+      if (categoryFilter === 'rider' && !f.riderRating && !f.riderFeedback) {
+        return false;
+      }
+      if (categoryFilter === 'branch' && (String(f.branchId) === 'home_delivery' || String(f.branchName || '').toLowerCase().includes('delivery'))) {
+        return false;
+      }
+
       // Search
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
         const matchName = String(f.userName || '').toLowerCase().includes(query);
         const matchPhone = String(f.phone || '').toLowerCase().includes(query);
+        const matchRider = String(f.riderName || '').toLowerCase().includes(query);
+        const matchRiderNote = String(f.riderFeedback || '').toLowerCase().includes(query);
         const matchLiked = String(f.likedMost || '').toLowerCase().includes(query);
         const matchImp = String(f.improvements || '').toLowerCase().includes(query);
         const matchComments = String(f.comments || '').toLowerCase().includes(query);
-        if (!matchName && !matchPhone && !matchLiked && !matchImp && !matchComments) {
+        if (!matchName && !matchPhone && !matchRider && !matchRiderNote && !matchLiked && !matchImp && !matchComments) {
           return false;
         }
       }
@@ -186,8 +205,10 @@ export const AdminReviews = () => {
 
       // Rating filter
       if (selectedRating !== 'all') {
-        const minRating = Number(selectedRating);
-        const avgScore = (Number(f.foodQuality || 0) + Number(f.serviceSpeed || 0) + Number(f.staffBehavior || 0)) / 3;
+        const avgScore = categoryFilter === 'rider'
+          ? Number(f.riderRating || 0)
+          : (Number(f.foodQuality || 0) + Number(f.serviceSpeed || 0) + Number(f.staffBehavior || 0)) / 3;
+
         if (selectedRating === 'low' && avgScore > 2.5) return false;
         if (selectedRating === '5' && avgScore < 4.5) return false;
         if (selectedRating === '4' && (avgScore < 3.5 || avgScore >= 4.5)) return false;
@@ -210,7 +231,7 @@ export const AdminReviews = () => {
 
       return true;
     });
-  }, [feedbacks, searchTerm, selectedBranch, selectedRating, selectedRetention, selectedChannel]);
+  }, [feedbacks, categoryFilter, searchTerm, selectedBranch, selectedRating, selectedRetention, selectedChannel]);
 
   return (
     <div className="space-y-6">
@@ -247,9 +268,9 @@ export const AdminReviews = () => {
       </motion.div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Total Reviews */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Total Reviews
@@ -258,13 +279,13 @@ export const AdminReviews = () => {
               {metrics.total}
             </p>
           </div>
-          <div className="p-3 rounded-2xl bg-primary-500/10 text-primary-500">
+          <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500">
             <Users className="w-5 h-5" />
           </div>
         </div>
 
         {/* Food Quality */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Food Quality
@@ -276,13 +297,13 @@ export const AdminReviews = () => {
               <span className="text-xs text-neutral-400 font-semibold">/ 5.0</span>
             </div>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
             <Star className="w-5 h-5 fill-current" />
           </div>
         </div>
 
         {/* Service Speed */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Service Speed
@@ -294,13 +315,13 @@ export const AdminReviews = () => {
               <span className="text-xs text-neutral-400 font-semibold">/ 5.0</span>
             </div>
           </div>
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
             <Zap className="w-5 h-5" />
           </div>
         </div>
 
         {/* Staff Hospitality */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Staff Behavior
@@ -312,13 +333,31 @@ export const AdminReviews = () => {
               <span className="text-xs text-neutral-400 font-semibold">/ 5.0</span>
             </div>
           </div>
-          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500">
+          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500">
             <HeartHandshake className="w-5 h-5" />
           </div>
         </div>
 
+        {/* Rider Avg Rating */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              Rider Rating
+            </span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <p className="font-display text-2xl font-black text-orange-500">
+                {metrics.avgRider}
+              </p>
+              <span className="text-xs text-neutral-400 font-semibold">/ 5.0</span>
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500">
+            <Bike className="w-5 h-5" />
+          </div>
+        </div>
+
         {/* Retention Rate */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Retention Rate
@@ -327,10 +366,49 @@ export const AdminReviews = () => {
               {metrics.retentionRate}
             </p>
           </div>
-          <div className="p-3 rounded-2xl bg-primary-500/10 text-primary-500">
+          <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500">
             <ThumbsUp className="w-5 h-5" />
           </div>
         </div>
+      </div>
+
+      {/* Category Tabs (All / Branch / Rider) */}
+      <div className="flex items-center gap-1.5 p-1 bg-neutral-100 dark:bg-neutral-800/60 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setCategoryFilter('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            categoryFilter === 'all'
+              ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-xs'
+              : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
+          }`}
+        >
+          All Reviews ({feedbacks.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setCategoryFilter('branch')}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            categoryFilter === 'branch'
+              ? 'bg-white dark:bg-neutral-700 text-primary-600 dark:text-primary-400 shadow-xs'
+              : 'text-neutral-500 hover:text-primary-600 dark:hover:text-neutral-200'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Branch Dining ({feedbacks.filter((f) => String(f.branchId) !== 'home_delivery').length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setCategoryFilter('rider')}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            categoryFilter === 'rider'
+              ? 'bg-white dark:bg-neutral-700 text-orange-600 dark:text-orange-400 shadow-xs'
+              : 'text-neutral-500 hover:text-orange-600 dark:hover:text-neutral-200'
+          }`}
+        >
+          <Bike className="w-3.5 h-3.5" />
+          <span>Rider & Delivery ({metrics.riderCount})</span>
+        </button>
       </div>
 
       {/* Filter & Search Bar */}

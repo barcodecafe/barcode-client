@@ -19,6 +19,12 @@ export async function getAllFeedbacks(filters = {}) {
   return res?.data || res;
 }
 
+/** GET /api/feedbacks/rider/:riderId — Get rider performance reviews & notes */
+export async function getRiderFeedbacks(riderId) {
+  const res = await apiClient.get(`/feedbacks/rider/${riderId}`);
+  return res?.data || res;
+}
+
 /** DELETE /api/feedbacks/:id — Admin: Delete feedback */
 export async function deleteFeedback(id) {
   const res = await apiClient.delete(`/feedbacks/${id}`);

@@ -23,6 +23,10 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Star,
+  MessageSquare,
+  Calendar,
+  ShieldCheck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -32,6 +36,7 @@ import {
   updateRiderProfile,
   deleteRider,
 } from "../../services/ridersService";
+import { getRiderFeedbacks } from "../../services/feedbackService";
 import {
   buildDailySettlementLog,
   businessDateKey,
@@ -57,6 +62,26 @@ export const RidersFleetOverview = ({
   const [selectedRider, setSelectedRider] = useState(null);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // 🎯 Rider Customer Reviews Modal State
+  const [reviewRider, setReviewRider] = useState(null);
+  const [riderFeedbacksData, setRiderFeedbacksData] = useState(null);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+
+  const handleOpenReviewsModal = async (rider) => {
+    setReviewRider(rider);
+    setLoadingFeedbacks(true);
+    try {
+      const res = await getRiderFeedbacks(rider.id);
+      const data = res?.data || res || { feedbacks: [], avgRating: rider.rating || 5, totalReviews: rider.reviewCount || 0 };
+      setRiderFeedbacksData(data);
+    } catch (err) {
+      console.error("Failed to load rider feedbacks:", err);
+      setRiderFeedbacksData({ feedbacks: [], avgRating: rider.rating || 5, totalReviews: rider.reviewCount || 0 });
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
 
   // Add/Edit Form State
   const [formData, setFormData] = useState({
@@ -405,6 +430,17 @@ export const RidersFleetOverview = ({
                         {r.status}
                       </span>
 
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReviewsModal(r)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-extrabold cursor-pointer transition-all active:scale-95"
+                        title={`Customer Rating: ${Number(r.rating || 5).toFixed(1)}/5 (${r.reviewCount || 0} reviews) — Click to view feedback`}
+                      >
+                        <Star className="w-2.5 h-2.5 fill-current text-amber-500" />
+                        <span>{Number(r.rating || 5).toFixed(1)}</span>
+                        <span className="text-[8px] opacity-75 font-normal">({r.reviewCount || 0})</span>
+                      </button>
+
                       {isFreelance ? (
                         <span
                           className="px-1.5 py-0.2 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[9px] font-bold flex items-center gap-0.5 truncate max-w-[170px]"
@@ -645,6 +681,17 @@ export const RidersFleetOverview = ({
                       >
                         {r.status}
                       </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReviewsModal(r)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 cursor-pointer transition-all active:scale-95"
+                        title={`Customer Rating: ${Number(r.rating || 5).toFixed(1)}/5 (${r.reviewCount || 0} reviews) — Click to view feedback`}
+                      >
+                        <Star className="w-2.5 h-2.5 fill-current text-amber-500" />
+                        <span>{Number(r.rating || 5).toFixed(1)}</span>
+                        <span className="text-[7.5px] opacity-75 font-normal">({r.reviewCount || 0})</span>
+                      </button>
                     </div>
                   </div>
 
@@ -1343,6 +1390,144 @@ export const RidersFleetOverview = ({
           </div>
         </div>
       )}
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* ⭐ RIDER PERFORMANCE & CUSTOMER REVIEWS MODAL              */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {reviewRider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-4 bg-neutral-50/50 dark:bg-neutral-950/40">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-extrabold text-lg">
+                  {reviewRider.name?.charAt(0)?.toUpperCase() || "R"}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-extrabold text-base sm:text-lg text-neutral-800 dark:text-white">
+                      {reviewRider.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      {reviewRider.employmentType || "permanent"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {reviewRider.phone} {reviewRider.vehicle ? `• ${reviewRider.vehicle}` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setReviewRider(null)}
+                className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scorecard Hero Banner */}
+            <div className="p-5 bg-gradient-to-r from-amber-500/10 via-primary-500/5 to-emerald-500/10 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-3xl sm:text-4xl font-black text-amber-500 flex items-center gap-1">
+                  <Star className="w-8 h-8 fill-current" />
+                  <span>
+                    {Number(riderFeedbacksData?.avgRating ?? reviewRider.rating ?? 5).toFixed(1)}
+                  </span>
+                  <span className="text-xs text-neutral-400 font-bold self-end mb-1">/ 5.0</span>
+                </div>
+                <div className="border-l border-neutral-200 dark:border-neutral-700 pl-4">
+                  <p className="text-xs font-bold text-neutral-700 dark:text-neutral-200">
+                    Total Customer Reviews: {riderFeedbacksData?.totalReviews ?? reviewRider.reviewCount ?? 0}
+                  </p>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Ratings derived from delivered orders & rider behavior logs.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body - Reviews List */}
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-3.5">
+              {loadingFeedbacks ? (
+                <div className="py-12 flex items-center justify-center">
+                  <div className="w-7 h-7 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : !riderFeedbacksData?.feedbacks || riderFeedbacksData.feedbacks.length === 0 ? (
+                <div className="text-center py-12 text-neutral-400 space-y-2">
+                  <MessageSquare className="w-10 h-10 mx-auto stroke-1 text-neutral-300 dark:text-neutral-600" />
+                  <p className="text-xs font-bold">No individual feedback submitted for this rider yet.</p>
+                  <p className="text-[11px] text-neutral-400 max-w-sm mx-auto">
+                    Customer ratings and behavior comments for Home Delivery orders will appear here automatically.
+                  </p>
+                </div>
+              ) : (
+                riderFeedbacksData.feedbacks.map((fb, idx) => (
+                  <div
+                    key={fb._id || idx}
+                    className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-200/70 dark:border-neutral-800/70 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-neutral-800 dark:text-neutral-200">
+                          {fb.userName || "Customer"}
+                        </span>
+                        {fb.phone && (
+                          <span className="text-[10px] text-neutral-400 font-mono">({fb.phone})</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-extrabold">
+                          <Star className="w-3 h-3 fill-current" />
+                          <span>{fb.riderRating || 5}/5</span>
+                        </div>
+                        {fb.createdAt && (
+                          <span className="text-[10px] text-neutral-400">
+                            {new Date(fb.createdAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {fb.riderFeedback ? (
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span className="text-[9px] font-black uppercase text-orange-500 mr-1.5 tracking-wider">
+                          Rider Note:
+                        </span>
+                        "{fb.riderFeedback}"
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-neutral-400 italic">No text comment left with rating.</p>
+                    )}
+
+                    {fb.orderId && (
+                      <div className="text-[10px] text-neutral-400 font-mono flex items-center gap-1">
+                        <span>Order Ref: #{String(fb.orderId).slice(-6)}</span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-end bg-neutral-50/50 dark:bg-neutral-950/40">
+              <button
+                type="button"
+                onClick={() => setReviewRider(null)}
+                className="px-5 py-2 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ────────────────────────────────────────────────────────── */}
       {/* 📥 EXPORT EARNINGS TO EXCEL / CSV MODAL                    */}
       {/* ────────────────────────────────────────────────────────── */}
