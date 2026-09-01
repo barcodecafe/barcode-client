@@ -86,7 +86,7 @@ export const Branches = () => {
   const filteredBranches = useMemo(
     () =>
       branches.filter((branch) => {
-        return activeRegion === 'All' || branch.regionId === activeRegion;
+        return activeRegion === 'All' || String(branch.regionId) === String(activeRegion);
       }),
     [branches, activeRegion]
   );
