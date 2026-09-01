@@ -34,6 +34,9 @@ import {
   X,
   Lock,
   Crown,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -146,6 +149,86 @@ export const AdminStaff = () => {
     const managers = staffList.filter((s) => ['manager', 'restaurant_manager'].includes(s.role)).length;
     return { total, superAdmins, subAdmins, managers };
   }, [staffList]);
+
+  // 🎯 Collapsible 3 Role Sections State (Super Admin, Sub-Admin, Restaurant Manager)
+  const [expandedRoles, setExpandedRoles] = useState({
+    super_admin: true,
+    admin: true,
+    manager: true,
+  });
+
+  useEffect(() => {
+    if (searchQuery.trim() || roleFilter !== 'all') {
+      setExpandedRoles({ super_admin: true, admin: true, manager: true });
+    }
+  }, [searchQuery, roleFilter]);
+
+  const toggleRoleExpand = (roleKey) => {
+    setExpandedRoles((prev) => ({
+      ...prev,
+      [roleKey]: !prev[roleKey],
+    }));
+  };
+
+  const toggleAllRoles = (expandState) => {
+    setExpandedRoles({
+      super_admin: expandState,
+      admin: expandState,
+      manager: expandState,
+    });
+  };
+
+  // Group filtered staff into the 3 core role sections
+  const roleSections = useMemo(() => {
+    const superAdminsList = filteredStaff.filter((s) => ['super_admin', 'superadmin'].includes(s.role));
+    const subAdminsList = filteredStaff.filter((s) => s.role === 'admin');
+    const managersList = filteredStaff.filter((s) => ['manager', 'restaurant_manager'].includes(s.role));
+
+    return [
+      {
+        key: 'super_admin',
+        label: 'Super Admin',
+        desc: 'Master full-access administrators across all platform modules',
+        icon: Crown,
+        badgeCls: 'bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-500/20',
+        countBadgeCls: 'bg-primary-500 text-white shadow-xs shadow-primary-500/25',
+        headerCls: 'hover:border-primary-500/50 bg-gradient-to-r from-primary-500/5 via-transparent to-transparent',
+        count: stats.superAdmins,
+        filteredCount: superAdminsList.length,
+        list: superAdminsList,
+      },
+      {
+        key: 'admin',
+        label: 'Sub-Admin',
+        desc: 'Assigned managers with operational access and custom permissions',
+        icon: Shield,
+        badgeCls: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700',
+        countBadgeCls: 'bg-neutral-700 dark:bg-neutral-300 text-white dark:text-neutral-900',
+        headerCls: 'hover:border-neutral-400 dark:hover:border-neutral-600 bg-gradient-to-r from-neutral-500/5 via-transparent to-transparent',
+        count: stats.subAdmins,
+        filteredCount: subAdminsList.length,
+        list: subAdminsList,
+      },
+      {
+        key: 'manager',
+        label: 'Restaurant Manager',
+        desc: 'Outlet branch supervisors for live orders, kitchen flow & menu control',
+        icon: UserCheck,
+        badgeCls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+        countBadgeCls: 'bg-amber-500 text-white shadow-xs shadow-amber-500/25',
+        headerCls: 'hover:border-amber-500/50 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent',
+        count: stats.managers,
+        filteredCount: managersList.length,
+        list: managersList,
+      },
+    ].filter((sec) => {
+      if (roleFilter === 'all') return true;
+      if (roleFilter === 'super_admin') return sec.key === 'super_admin';
+      if (roleFilter === 'admin') return sec.key === 'admin';
+      if (roleFilter === 'manager') return sec.key === 'manager';
+      return true;
+    });
+  }, [filteredStaff, stats, roleFilter]);
 
   const handleOpenAddModal = () => {
     setEditingStaff(null);
@@ -436,8 +519,33 @@ export const AdminStaff = () => {
         </div>
       </div>
 
-      {/* 👥 Staff Members: 1 Column on lg (Fits entire screen without scroll) & 2 Columns on 2xl/3xl/4xl (Fills full wide screen) */}
-      <div className="w-full">
+      {/* 👥 Staff Roles & Accounts Directory (3 Interactive Role Rows) */}
+      <div className="w-full space-y-3">
+        {/* Controls: Expand/Collapse All */}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Account Groups by Role ({roleSections.length} Roles)
+          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggleAllRoles(true)}
+              className="text-[10px] sm:text-[11px] font-bold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer"
+            >
+              Expand All
+            </button>
+            <span className="text-neutral-300 dark:text-neutral-700">•</span>
+            <button
+              type="button"
+              onClick={() => toggleAllRoles(false)}
+              className="text-[10px] sm:text-[11px] font-bold text-neutral-500 dark:text-neutral-400 hover:underline cursor-pointer"
+            >
+              Collapse All
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl">
             <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -452,146 +560,225 @@ export const AdminStaff = () => {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 sm:gap-2.5">
-            {filteredStaff.map((staff) => {
-              const staffId = staff.id || staff._id;
-              const isSuper = ['super_admin', 'superadmin'].includes(staff.role);
-              const perms = isSuper
-                ? ALL_PERMISSIONS.map((p) => p.key)
-                : Array.isArray(staff.permissions)
-                ? staff.permissions
-                : [];
-
-              const isMe = String(currentUser?.id || currentUser?._id) === String(staffId);
+          <div className="space-y-3">
+            {roleSections.map((section) => {
+              const isExpanded = !!expandedRoles[section.key];
+              const IconComponent = section.icon;
 
               return (
                 <div
-                  key={staffId}
-                  className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-primary-500/40 transition-all shadow-xs"
+                  key={section.key}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-xs transition-all"
                 >
-                  {/* Left: Primary Red Avatar + 1-Line Streamlined Details */}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {/* 2️⃣ Primary Red Avatar */}
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs shadow-primary-500/20 shrink-0">
-                      {staff.name ? staff.name.charAt(0).toUpperCase() : 'S'}
-                    </div>
+                  {/* 🎯 Interactive Role Header Row (Click or Hover) */}
+                  <div
+                    onClick={() => toggleRoleExpand(section.key)}
+                    className={`p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer select-none transition-all group ${section.headerCls} hover:bg-neutral-50/80 dark:hover:bg-neutral-850/50`}
+                  >
+                    {/* Left: Role Icon + Title + Description */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold border transition-transform group-hover:scale-105 shrink-0 ${section.badgeCls}`}
+                      >
+                        <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
 
-                    {/* 1️⃣ All Info in 1 Clean Single Line */}
-                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 flex-wrap">
-                      {/* Name */}
-                      <h3 className="text-xs sm:text-sm font-black text-neutral-900 dark:text-white truncate shrink-0">
-                        {staff.name}
-                      </h3>
-
-                      {/* Role Badge */}
-                      {getRoleBadge(staff.role)}
-
-                      {/* (You) Tag */}
-                      {isMe && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shrink-0">
-                          (You)
-                        </span>
-                      )}
-
-                      {/* Contact Info */}
-                      {staff.email && (
-                        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
-                          <Mail className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <span>{staff.email}</span>
-                        </span>
-                      )}
-
-                      {staff.phone && (
-                        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
-                          <Phone className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <span>{staff.phone}</span>
-                        </span>
-                      )}
-
-                      {/* Assigned Branches for Managers */}
-                      {['manager', 'restaurant_manager'].includes(staff.role) && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Building2 className="w-3 h-3 text-amber-500 shrink-0" />
-                          <span className="text-[9px] sm:text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
-                            {Array.isArray(staff.assignedBranches) && staff.assignedBranches.length > 0
-                              ? branches
-                                  .filter((b) => staff.assignedBranches.includes(Number(b.id)))
-                                  .map((b) => b.name)
-                                  .join(', ') || `Branch #${staff.assignedBranches.join(', #')}`
-                              : 'All Outlets'}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-xs sm:text-sm 2xl:text-base font-black text-neutral-900 dark:text-white">
+                            {section.label}
+                          </h2>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${section.countBadgeCls}`}
+                          >
+                            {section.filteredCount}{' '}
+                            {section.filteredCount === 1 ? 'Account' : 'Accounts'}
                           </span>
                         </div>
-                      )}
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
+                          {section.desc}
+                        </p>
+                      </div>
+                    </div>
 
-                      {/* Permissions Tags on the same line */}
-                      <div className="flex items-center shrink-0">
-                        {isSuper ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-900/50">
-                            <Sparkles className="w-2.5 h-2.5 text-primary-500" />
-                            Full Access (All {ALL_PERMISSIONS.length} Tabs)
-                          </span>
-                        ) : perms.length === 0 ? (
-                          <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
-                            No perms
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-500">
-                              Perms ({perms.length}):
-                            </span>
-                            {perms.slice(0, 3).map((pKey) => {
-                              const pObj = ALL_PERMISSIONS.find((p) => p.key === pKey);
-                              return (
-                                <span
-                                  key={pKey}
-                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/70 dark:border-neutral-700"
-                                >
-                                  {pObj ? pObj.label : pKey}
-                                </span>
-                              );
-                            })}
-                            {perms.length > 3 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
-                                +{perms.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                    {/* Right: Expand Toggle Indicator */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-bold text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200 hidden sm:inline">
+                        {isExpanded ? 'Hide accounts' : 'View accounts'}
+                      </span>
+                      <div
+                        className={`w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 flex items-center justify-center transition-transform duration-200 ${
+                          isExpanded ? 'rotate-180 bg-primary-500/10 text-primary-500' : ''
+                        }`}
+                      >
+                        <ChevronDown className="w-4 h-4" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  {isSuperAdmin && (
-                    <div className="flex items-center gap-1 shrink-0 self-center">
-                      {isSuper ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-[10px] border border-neutral-200 dark:border-neutral-700">
-                          <Lock className="w-2.5 h-2.5 text-neutral-500" />
-                          <span>Master</span>
-                        </span>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleOpenEditModal(staff)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-bold text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer shadow-2xs"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Edit</span>
-                          </button>
+                  {/* 📂 Collapsible Accounts List under this Role */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22, ease: 'easeInOut' }}
+                        className="border-t border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/40 dark:bg-neutral-950/30 p-2 sm:p-2.5 space-y-2"
+                      >
+                        {section.list.length === 0 ? (
+                          <div className="text-center py-4 text-neutral-400 text-xs font-medium">
+                            No {section.label} accounts found matching current search.
+                          </div>
+                        ) : (
+                          section.list.map((staff) => {
+                            const staffId = staff.id || staff._id;
+                            const isSuper = ['super_admin', 'superadmin'].includes(staff.role);
+                            const perms = isSuper
+                              ? ALL_PERMISSIONS.map((p) => p.key)
+                              : Array.isArray(staff.permissions)
+                              ? staff.permissions
+                              : [];
 
-                          {!isMe && (
-                            <button
-                              onClick={() => handleDelete(staff)}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-600 dark:text-red-400 font-bold transition-all active:scale-95 cursor-pointer"
-                              title="Delete Staff"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
+                            const isMe = String(currentUser?.id || currentUser?._id) === String(staffId);
+
+                            return (
+                              <div
+                                key={staffId}
+                                className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-primary-500/40 transition-all shadow-2xs"
+                              >
+                                {/* Left: Avatar + Details */}
+                                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                                  <div className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg bg-primary-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs shadow-primary-500/20 shrink-0">
+                                    {staff.name ? staff.name.charAt(0).toUpperCase() : 'S'}
+                                  </div>
+
+                                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 flex-wrap">
+                                    {/* Name */}
+                                    <h3 className="text-xs sm:text-sm font-black text-neutral-900 dark:text-white truncate shrink-0">
+                                      {staff.name}
+                                    </h3>
+
+                                    {/* Role Badge */}
+                                    {getRoleBadge(staff.role)}
+
+                                    {/* (You) Tag */}
+                                    {isMe && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shrink-0">
+                                        (You)
+                                      </span>
+                                    )}
+
+                                    {/* Contact Info */}
+                                    {staff.email && (
+                                      <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
+                                        <Mail className="w-3 h-3 text-neutral-400 shrink-0" />
+                                        <span>{staff.email}</span>
+                                      </span>
+                                    )}
+
+                                    {staff.phone && (
+                                      <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
+                                        <Phone className="w-3 h-3 text-neutral-400 shrink-0" />
+                                        <span>{staff.phone}</span>
+                                      </span>
+                                    )}
+
+                                    {/* Assigned Branches for Managers */}
+                                    {['manager', 'restaurant_manager'].includes(staff.role) && (
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Building2 className="w-3 h-3 text-amber-500 shrink-0" />
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
+                                          {Array.isArray(staff.assignedBranches) &&
+                                          staff.assignedBranches.length > 0
+                                            ? branches
+                                                .filter((b) =>
+                                                  staff.assignedBranches.includes(Number(b.id))
+                                                )
+                                                .map((b) => b.name)
+                                                .join(', ') ||
+                                              `Branch #${staff.assignedBranches.join(', #')}`
+                                            : 'All Outlets'}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {/* Permissions Tags */}
+                                    <div className="flex items-center shrink-0">
+                                      {isSuper ? (
+                                        <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-900/50">
+                                          <Sparkles className="w-2.5 h-2.5 text-primary-500" />
+                                          Full Access (All {ALL_PERMISSIONS.length} Tabs)
+                                        </span>
+                                      ) : perms.length === 0 ? (
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
+                                          No perms
+                                        </span>
+                                      ) : (
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          <span className="text-[9px] sm:text-[10px] font-bold text-neutral-500">
+                                            Perms ({perms.length}):
+                                          </span>
+                                          {perms.slice(0, 3).map((pKey) => {
+                                            const pObj = ALL_PERMISSIONS.find((p) => p.key === pKey);
+                                            return (
+                                              <span
+                                                key={pKey}
+                                                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/70 dark:border-neutral-700"
+                                              >
+                                                {pObj ? pObj.label : pKey}
+                                              </span>
+                                            );
+                                          })}
+                                          {perms.length > 3 && (
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
+                                              +{perms.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Actions */}
+                                {isSuperAdmin && (
+                                  <div className="flex items-center gap-1 shrink-0 self-center">
+                                    {isSuper ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold text-[10px] border border-neutral-200 dark:border-neutral-700">
+                                        <Lock className="w-2.5 h-2.5 text-neutral-500" />
+                                        <span>Master</span>
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => handleOpenEditModal(staff)}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-bold text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                          <span>Edit</span>
+                                        </button>
+
+                                        {!isMe && (
+                                          <button
+                                            onClick={() => handleDelete(staff)}
+                                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-600 dark:text-red-400 font-bold transition-all active:scale-95 cursor-pointer"
+                                            title="Delete Staff"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
