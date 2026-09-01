@@ -35,6 +35,7 @@ import { getAllRegions } from "../../services/regionsService";
 import { getAllBrandsAdmin } from "../../services/brandsService";
 import { socket } from "../../services/socket";
 import LeafletMap from "../../components/LeafletMap";
+import { toast } from "react-hot-toast";
 
 const parseLatLngFromUrl = (url) => {
   if (!url) return null;
@@ -310,6 +311,25 @@ export const AdminBranches = () => {
       ...prev,
       deliveryZones: prev.deliveryZones.filter((_, i) => i !== index),
     }));
+  };
+
+  const populateZonesFromRegion = (regId, showNotification = true) => {
+    const targetReg = regions.find((r) => Number(r.id) === Number(regId));
+    if (!targetReg || !Array.isArray(targetReg.deliveryZones) || targetReg.deliveryZones.length === 0) {
+      if (showNotification) toast.error("Selected region has no delivery areas configured yet.");
+      return;
+    }
+    const populated = targetReg.deliveryZones.map((z) => ({
+      name: z.name,
+      charge: typeof z.charge === "number" ? z.charge : (targetReg.defaultDeliveryCharge || 100),
+    }));
+    setFormData((prev) => ({
+      ...prev,
+      regionId: Number(regId),
+      deliveryZones: populated,
+      defaultDeliveryCharge: typeof targetReg.defaultDeliveryCharge === "number" ? targetReg.defaultDeliveryCharge : prev.defaultDeliveryCharge,
+    }));
+    if (showNotification) toast.success(`Loaded ${populated.length} delivery areas from ${targetReg.name}!`);
   };
 
   const handleInputChange = (e) => {
@@ -1077,20 +1097,42 @@ export const AdminBranches = () => {
                       </label>
                       <select
                         value={formData.regionId ?? ""}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            regionId: e.target.value
-                              ? Number(e.target.value)
-                              : null,
-                          }))
-                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const newRegId = val ? Number(val) : null;
+                          const targetReg = regions.find((r) => Number(r.id) === newRegId);
+
+                          setFormData((prev) => {
+                            let nextZones = prev.deliveryZones;
+                            let nextDefaultCharge = prev.defaultDeliveryCharge;
+
+                            // If this branch has no delivery zones yet, auto-populate from the selected region's delivery areas!
+                            if (targetReg && Array.isArray(targetReg.deliveryZones) && targetReg.deliveryZones.length > 0) {
+                              if (prev.deliveryZones.length === 0) {
+                                nextZones = targetReg.deliveryZones.map((z) => ({
+                                  name: z.name,
+                                  charge: typeof z.charge === "number" ? z.charge : (targetReg.defaultDeliveryCharge || 100),
+                                }));
+                                if (typeof targetReg.defaultDeliveryCharge === "number") {
+                                  nextDefaultCharge = targetReg.defaultDeliveryCharge;
+                                }
+                              }
+                            }
+
+                            return {
+                              ...prev,
+                              regionId: newRegId,
+                              deliveryZones: nextZones,
+                              defaultDeliveryCharge: nextDefaultCharge,
+                            };
+                          });
+                        }}
                         className={field}
                       >
                         <option value="">— No region —</option>
                         {regions.map((r) => (
                           <option key={r.id || r._id} value={r.id || r._id}>
-                            {r.name}
+                            {r.name} ({Array.isArray(r.deliveryZones) ? r.deliveryZones.length : 0} Areas)
                           </option>
                         ))}
                       </select>
@@ -1114,9 +1156,22 @@ export const AdminBranches = () => {
                   {/* Delivery Zones */}
                   <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/40 border border-amber-200/50 dark:border-neutral-800 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Truck className="w-4 h-4" /> Delivery Zones
-                      </label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Truck className="w-4 h-4" /> Delivery Zones ({formData.deliveryZones.length})
+                        </label>
+                        {formData.regionId && (
+                          <button
+                            type="button"
+                            onClick={() => populateZonesFromRegion(formData.regionId)}
+                            className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 border border-amber-500/20 rounded-md font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                            title="Auto-fill delivery areas configured for this region"
+                          >
+                            <RefreshCw className="w-2.5 h-2.5" />
+                            <span>Auto-fill from Region</span>
+                          </button>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={handleAddZone}
