@@ -23,3 +23,10 @@ export async function deleteStaffUser(id) {
   const res = await apiClient.delete(`/users/staff/${id}`);
   return res?.data || res;
 }
+
+/** 🧹 DELETE /api/users/cleanup-non-admin */
+export async function cleanupNonAdminUsers() {
+  const res = await apiClient.delete('/users/cleanup-non-admin');
+  return res?.data || res;
+}
+

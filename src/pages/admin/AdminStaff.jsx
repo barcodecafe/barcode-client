@@ -44,6 +44,7 @@ import {
   createStaffUser,
   updateStaffUser,
   deleteStaffUser,
+  cleanupNonAdminUsers,
 } from '../../services/staffService';
 import { getAllBranches } from '../../services/branchesService';
 
@@ -375,6 +376,50 @@ export const AdminStaff = () => {
     }
   };
 
+  const [cleaningUp, setCleaningUp] = useState(false);
+
+  const handleCleanupNonAdminUsers = async () => {
+    const result = await Swal.fire({
+      title: '⚠️ Purge All Non-Admin Accounts?',
+      html: `
+        <div class="text-left text-xs space-y-2 p-1">
+          <p class="text-red-600 font-black text-sm">This action will permanently delete:</p>
+          <ul class="list-disc pl-5 text-neutral-600 dark:text-neutral-300 space-y-1 font-semibold">
+            <li>All Customer & User accounts</li>
+            <li>All Rider accounts</li>
+            <li>All Restaurant Manager accounts</li>
+          </ul>
+          <p class="text-emerald-600 dark:text-emerald-400 font-black mt-3">
+            ✓ ONLY Super Admins and Sub-Admins will remain safe.
+          </p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e02424',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Purge Non-Admin Users',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setCleaningUp(true);
+        const res = await cleanupNonAdminUsers();
+        await Swal.fire(
+          'Purge Completed!',
+          res?.message || 'Successfully removed all non-admin accounts.',
+          'success'
+        );
+        loadStaff();
+      } catch (err) {
+        toast.error(err?.response?.data?.message || err?.message || 'Failed to cleanup accounts');
+      } finally {
+        setCleaningUp(false);
+      }
+    }
+  };
+
   // Brand-aligned role badges
   const getRoleBadge = (role) => {
     if (['super_admin', 'superadmin'].includes(role)) {
@@ -419,13 +464,25 @@ export const AdminStaff = () => {
         </div>
 
         {isSuperAdmin && (
-          <button
-            onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 2xl:px-4 2xl:py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-black text-xs shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Add New Staff</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleCleanupNonAdminUsers}
+              disabled={cleaningUp}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 2xl:px-3.5 2xl:py-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/80 font-bold text-xs active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+              title="Delete all users except Super Admin and Sub-Admin"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{cleaningUp ? 'Purging Users...' : 'Purge Non-Admin Users'}</span>
+            </button>
+
+            <button
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 2xl:px-4 2xl:py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-black text-xs shadow-md shadow-primary-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Add New Staff</span>
+            </button>
+          </div>
         )}
       </div>
 
