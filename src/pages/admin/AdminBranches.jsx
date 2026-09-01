@@ -682,9 +682,9 @@ export const AdminBranches = () => {
                           </span>
                         )}
 
-                        {Array.isArray(branch.deliveryZones) && branch.deliveryZones.length > 0 && (
+                        {zoneCount > 0 && (
                           <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 flex items-center gap-1">
-                            <Truck className="w-3 h-3" /> {branch.deliveryZones.length} Zones
+                            <Truck className="w-3 h-3" /> {zoneCount} Delivery Areas
                           </span>
                         )}
                       </div>
@@ -819,9 +819,9 @@ export const AdminBranches = () => {
                         </span>
                       )}
 
-                      {Array.isArray(branch.deliveryZones) && branch.deliveryZones.length > 0 && (
+                      {zoneCount > 0 && (
                         <span className="text-[10px] px-2 py-0.5 font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 flex items-center gap-1">
-                          <Truck className="w-3 h-3" /> {branch.deliveryZones.length} Zones
+                          <Truck className="w-3 h-3" /> {zoneCount} Delivery Areas
                         </span>
                       )}
                     </div>
@@ -1197,98 +1197,68 @@ export const AdminBranches = () => {
                     />
                   </div>
 
-                  {/* Delivery Zones */}
-                  <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/40 border border-amber-200/50 dark:border-neutral-800 space-y-3">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <Truck className="w-4 h-4" /> Delivery Zones ({formData.deliveryZones.length})
-                        </label>
-                        {formData.regionId && (
-                          <button
-                            type="button"
-                            onClick={() => populateZonesFromRegion(formData.regionId)}
-                            className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 border border-amber-500/20 rounded-md font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
-                            title="Auto-fill delivery areas configured for this region"
-                          >
-                            <RefreshCw className="w-2.5 h-2.5" />
-                            <span>Auto-fill from Region</span>
-                          </button>
+                  {/* 🚚 Centralized Region Delivery Coverage Card */}
+                  {(() => {
+                    const activeRegion = regions.find((r) => Number(r.id) === Number(formData.regionId));
+                    if (!activeRegion) {
+                      return (
+                        <div className="mt-4 p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-center text-xs text-neutral-400">
+                          Select an <span className="font-bold text-neutral-700 dark:text-neutral-300">Assigned Region</span> above to automatically link delivery coverage areas.
+                        </div>
+                      );
+                    }
+
+                    const zones = Array.isArray(activeRegion.deliveryZones) ? activeRegion.deliveryZones : [];
+
+                    return (
+                      <div className="mt-4 p-4 rounded-2xl bg-amber-50/40 dark:bg-neutral-950/40 border border-amber-200/60 dark:border-neutral-800 space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                              <Truck className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+                                Delivery Coverage ({zones.length} Areas)
+                              </h4>
+                              <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                                Auto-inherited from <span className="font-bold text-amber-700 dark:text-amber-400">{activeRegion.name} Region</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-300 dark:border-amber-800">
+                            Default Fee: ৳{activeRegion.defaultDeliveryCharge ?? 100}
+                          </span>
+                        </div>
+
+                        {zones.length > 0 ? (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                              Covered Delivery Areas:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                              {zones.map((z, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-2xs"
+                                >
+                                  <span>{z.name}</span>
+                                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                                    ৳{z.charge}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-neutral-400 italic py-1">
+                            No delivery areas configured for {activeRegion.name} yet. You can add areas on the Regions management page.
+                          </div>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleAddZone}
-                        className="text-xs px-2.5 py-1 bg-primary-500 text-white font-bold rounded-lg hover:bg-primary-600 cursor-pointer shadow-xs"
-                      >
-                        + Add Zone
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 shrink-0">
-                        Default Charge
-                      </span>
-                      <div className="relative w-32">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">
-                          ৳
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={formData.defaultDeliveryCharge}
-                          onChange={(e) =>
-                            setFormData((p) => ({
-                              ...p,
-                              defaultDeliveryCharge:
-                                parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                          className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                    </div>
-
-                    {formData.deliveryZones.map((z, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          placeholder="Area name (e.g. GEC Circle)"
-                          value={z.name}
-                          onChange={(e) =>
-                            handleZoneChange(index, "name", e.target.value)
-                          }
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                          required
-                        />
-                        <div className="relative w-28 shrink-0">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">
-                            ৳
-                          </span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="Charge"
-                            value={z.charge}
-                            onChange={(e) =>
-                              handleZoneChange(index, "charge", e.target.value)
-                            }
-                            className="w-full pl-6 pr-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            required
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveZone(index)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800 shrink-0">
