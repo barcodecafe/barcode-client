@@ -633,6 +633,8 @@ export const AdminBranches = () => {
               const rev = revenueMap[branch.id];
               const brandName = brandNameMap.get(String(branch.brandId));
               const regionName = regionNameMap.get(String(branch.regionId));
+              const branchRegion = regions.find((r) => Number(r.id) === Number(branch.regionId));
+              const zoneCount = branchRegion?.deliveryZones?.length || (Array.isArray(branch.deliveryZones) ? branch.deliveryZones.length : 0);
 
               return (
                 <div
@@ -764,6 +766,8 @@ export const AdminBranches = () => {
             const rev = revenueMap[branch.id];
             const brandName = brandNameMap.get(String(branch.brandId));
             const regionName = regionNameMap.get(String(branch.regionId));
+            const branchRegion = regions.find((r) => Number(r.id) === Number(branch.regionId));
+            const zoneCount = branchRegion?.deliveryZones?.length || (Array.isArray(branch.deliveryZones) ? branch.deliveryZones.length : 0);
 
             return (
               <Reorder.Item
