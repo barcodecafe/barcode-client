@@ -2162,8 +2162,8 @@ export const AdminDishes = () => {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {branches.map((b) => {
-                      const bId = String(b._id || b.id);
-                      const isSelected = formData.branchIds.includes(bId);
+                      const bId = String(b.id !== undefined && b.id !== null ? b.id : b._id);
+                      const isSelected = formData.branchIds.map(String).includes(bId);
 
                       const adjustValue = formData.branchPrices[bId] ?? "";
                       const finalPrice =
