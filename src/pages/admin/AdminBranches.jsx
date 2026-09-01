@@ -227,6 +227,19 @@ export const AdminBranches = () => {
 
   const openAddModal = () => {
     setEditingBranch(null);
+    const defaultRegion = regions.length > 0 ? regions[0] : null;
+    const defaultRegId = defaultRegion ? Number(defaultRegion.id) : null;
+    const defaultZones =
+      defaultRegion && Array.isArray(defaultRegion.deliveryZones)
+        ? defaultRegion.deliveryZones.map((z) => ({
+            name: z.name,
+            charge:
+              typeof z.charge === "number"
+                ? z.charge
+                : defaultRegion.defaultDeliveryCharge || 100,
+          }))
+        : [];
+
     setFormData({
       name: "",
       location: "",
@@ -239,11 +252,15 @@ export const AdminBranches = () => {
       capacity: 150,
       features: "Premium Seating, AC Venue, Wi-Fi Access, Parking Available",
       brandId: null,
-      regionId: null,
+      regionId: defaultRegId,
       lat: null,
       lng: null,
-      deliveryZones: [],
-      defaultDeliveryCharge: 100,
+      deliveryZones: defaultZones,
+      defaultDeliveryCharge:
+        defaultRegion &&
+        typeof defaultRegion.defaultDeliveryCharge === "number"
+          ? defaultRegion.defaultDeliveryCharge
+          : 100,
     });
     setMapLinkInput("");
     setFormError("");
@@ -252,6 +269,38 @@ export const AdminBranches = () => {
 
   const openEditModal = (branch) => {
     setEditingBranch(branch);
+    const regId = typeof branch.regionId === "number" ? branch.regionId : null;
+    const targetRegion = regions.find((r) => Number(r.id) === Number(regId));
+
+    let zones =
+      Array.isArray(branch.deliveryZones) && branch.deliveryZones.length > 0
+        ? branch.deliveryZones.map((z) => ({ ...z }))
+        : [];
+
+    let defCharge =
+      typeof branch.defaultDeliveryCharge === "number"
+        ? branch.defaultDeliveryCharge
+        : 100;
+
+    // 🎯 If the branch has NO delivery zones saved yet, but has an assigned region, auto-populate all areas from that region!
+    if (
+      zones.length === 0 &&
+      targetRegion &&
+      Array.isArray(targetRegion.deliveryZones) &&
+      targetRegion.deliveryZones.length > 0
+    ) {
+      zones = targetRegion.deliveryZones.map((z) => ({
+        name: z.name,
+        charge:
+          typeof z.charge === "number"
+            ? z.charge
+            : targetRegion.defaultDeliveryCharge || 100,
+      }));
+      if (typeof targetRegion.defaultDeliveryCharge === "number") {
+        defCharge = targetRegion.defaultDeliveryCharge;
+      }
+    }
+
     setFormData({
       name: branch.name,
       location: branch.location,
@@ -265,16 +314,11 @@ export const AdminBranches = () => {
         ? branch.features.join(", ")
         : branch.features || "",
       brandId: typeof branch.brandId === "number" ? branch.brandId : null,
-      regionId: typeof branch.regionId === "number" ? branch.regionId : null,
+      regionId: regId,
       lat: typeof branch.lat === "number" ? branch.lat : null,
       lng: typeof branch.lng === "number" ? branch.lng : null,
-      deliveryZones: Array.isArray(branch.deliveryZones)
-        ? branch.deliveryZones.map((z) => ({ ...z }))
-        : [],
-      defaultDeliveryCharge:
-        typeof branch.defaultDeliveryCharge === "number"
-          ? branch.defaultDeliveryCharge
-          : 100,
+      deliveryZones: zones,
+      defaultDeliveryCharge: defCharge,
     });
     setMapLinkInput("");
     setFormError("");
