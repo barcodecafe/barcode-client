@@ -459,7 +459,7 @@ export const RiderLayout = () => {
         <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white md:hidden"
+            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer transition-colors"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
