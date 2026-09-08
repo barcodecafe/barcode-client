@@ -1760,18 +1760,18 @@ export const AdminOrders = () => {
       <div className="w-full flex flex-col gap-6">
         {/* 🎯 Ultra-wide Table Container Optimization */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
-          <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="w-full overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse table-auto">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
-                  <th className="px-3 py-3.5 sm:px-4">Order ID</th>
-                  <th className="px-3 py-3.5 sm:px-4">Customer</th>
-                  <th className="px-3 py-3.5 sm:px-4">Address</th>
-                  <th className="px-3 py-3.5 sm:px-4">Total Amount</th>
-                  <th className="px-3 py-3.5 sm:px-4">Order Action</th>
-                  <th className="px-3 py-3.5 sm:px-4">Delivery Status</th>
-                  <th className="px-3 py-3.5 sm:px-4">Assigned Rider</th>
-                  <th className="px-3 py-3.5 sm:px-4 text-right">Actions</th>
+                  <th className="px-2 py-3 sm:px-3">Order ID</th>
+                  <th className="px-2 py-3 sm:px-3">Customer</th>
+                  <th className="px-2 py-3 sm:px-3">Address</th>
+                  <th className="px-2 py-3 sm:px-3">Total Amount</th>
+                  <th className="px-2 py-3 sm:px-3">Order Action</th>
+                  <th className="px-2 py-3 sm:px-3">Delivery Status</th>
+                  <th className="px-2 py-3 sm:px-3">Assigned Rider</th>
+                  <th className="px-2 py-3 sm:px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1836,7 +1836,7 @@ export const AdminOrders = () => {
                       >
                         <td
                           onClick={() => setSelectedOrderDetails(ord)}
-                          className="px-3 py-3 sm:px-4 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                          className="px-2 py-2.5 sm:px-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
                           title={ordId}
                         >
                           {formatShortOrderId(ordId)}
@@ -1858,8 +1858,8 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4">
-                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[120px] 2xl:max-w-[160px]">
+                        <td className="px-2 py-2.5 sm:px-3">
+                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px] 2xl:max-w-[160px]">
                             {ord.user?.name || ord.customerName || "Guest"}
                           </span>
                           <span className="block text-[10px] text-neutral-400 mt-0.5">
@@ -1867,39 +1867,39 @@ export const AdminOrders = () => {
                           </span>
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4">
+                        <td className="px-2 py-2.5 sm:px-3">
                           {isPickupOrder ? (
                             <div>
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
                                 <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                                <span className="truncate max-w-[140px] 2xl:max-w-[200px]" title={ord.pickupBranchName || ord.user?.pickArea}>
+                                <span className="truncate max-w-[130px] 2xl:max-w-[200px]" title={ord.pickupBranchName || ord.user?.pickArea}>
                                   {ord.pickupBranchName || ord.user?.pickArea?.replace(/^Self Pickup at /i, '').trim() || "Pickup Outlet"}
                                 </span>
                               </span>
-                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]" title={ord.user?.address || ord.deliveryAddress}>
+                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[200px]" title={ord.user?.address || ord.deliveryAddress}>
                                 {ord.user?.address && !ord.user.address.toLowerCase().includes("self pickup") ? ord.user.address : "Customer In-Store Collection"}
                               </span>
                             </div>
                           ) : (
                             <div>
                               <span
-                                className="block text-neutral-700 dark:text-neutral-200 font-medium text-xs truncate max-w-[140px] 2xl:max-w-[200px]"
+                                className="block text-neutral-700 dark:text-neutral-200 font-medium text-xs truncate max-w-[130px] 2xl:max-w-[200px]"
                                 title={ord.user?.address || ord.deliveryAddress}
                               >
                                 {ord.user?.address || ord.deliveryAddress || "-"}
                               </span>
-                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[140px] 2xl:max-w-[200px]">
+                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[200px]">
                                 📍 {ord.deliveryArea || ord.user?.pickArea || "Standard Delivery Area"}
                               </span>
                             </div>
                           )}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4 font-bold text-primary-500 whitespace-nowrap">
+                        <td className="px-2 py-2.5 sm:px-3 font-bold text-primary-500 whitespace-nowrap">
                           ৳{Number(ord.total || ord.grandTotal || 0).toFixed(2)}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
+                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
                           {isPendingUnhandled ? (
                             <div className="flex gap-1">
                               <button
@@ -1932,7 +1932,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
+                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
                           {isPendingUnhandled ? (
                             <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
                               Pending
@@ -1991,7 +1991,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4 whitespace-nowrap">
+                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
                           {isPickupOrder ? (
                             <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] uppercase tracking-wide inline-flex items-center gap-1">
                               🛍️ Self-Pickup
@@ -2008,7 +2008,7 @@ export const AdminOrders = () => {
                                 onChange={(e) =>
                                   handleAssignRider(ordId, e.target.value)
                                 }
-                                className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[140px] 2xl:max-w-[180px] ${
+                                className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[130px] 2xl:max-w-[180px] ${
                                   isPendingUnhandled ||
                                   isRejected ||
                                   ord.status === "Delivered"
@@ -2077,7 +2077,7 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-3 py-3 sm:px-4 text-right whitespace-nowrap">
+                        <td className="px-2 py-2.5 sm:px-3 text-right whitespace-nowrap">
                           <button
                             onClick={() => setActiveChatOrderId(ordId)}
                             className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
