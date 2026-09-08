@@ -1841,7 +1841,7 @@ export const AdminOrders = () => {
                         >
                           {formatShortOrderId(ordId)}
                           <span
-                            className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[8px] uppercase tracking-wide font-extrabold ${
+                            className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[7px] leading-tight uppercase tracking-wider font-bold ${
                               isPickupOrder
                                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                                 : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
@@ -1851,7 +1851,7 @@ export const AdminOrders = () => {
                           </span>
                           {badge && (
                             <span
-                              className={`block mt-0.5 w-fit px-1.5 py-0.5 rounded border text-[8px] uppercase tracking-wide ${badge.tone}`}
+                              className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[7px] leading-tight uppercase tracking-wider ${badge.tone}`}
                             >
                               {badge.label}
                             </span>
