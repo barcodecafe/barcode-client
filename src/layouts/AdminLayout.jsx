@@ -353,10 +353,10 @@ export const AdminLayout = () => {
         </header>
 
         {/* 🎯 dynamic responsive container */}
-        <main className="flex-grow py-2 sm:py-2.5 lg:py-3 w-full">
+        <main className={`flex-grow py-2 sm:py-2.5 lg:py-3 w-full transition-all duration-250 ${isDrawerOpen ? 'admin-sidebar-open' : 'admin-sidebar-closed'}`}>
           <div className="w-full px-2.5 sm:px-4 lg:px-4 xl:px-6 max-w-full">
             <ErrorBoundary key={location.pathname}>
-              <Outlet />
+              <Outlet context={{ isDrawerOpen }} />
             </ErrorBoundary>
           </div>
         </main>

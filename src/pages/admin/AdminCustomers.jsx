@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { getAllUsers, posLookupCustomer, adminUpdateCustomer } from '../../services/authService';
 import { getTopCustomers } from '../../services/analyticsService';
 import {
@@ -40,6 +41,9 @@ const taka = (n) => `৳${(Number(n) || 0).toLocaleString('en-US', { minimumFrac
 const MEDAL = ['🥇', '🥈', '🥉'];
 
 export const AdminCustomers = () => {
+  const outletContext = useOutletContext();
+  const isDrawerOpen = Boolean(outletContext?.isDrawerOpen);
+
   const [customers, setCustomers] = useState([]);
   const [spendByUser, setSpendByUser] = useState({});
   const [loading, setLoading] = useState(true);
@@ -369,21 +373,25 @@ export const AdminCustomers = () => {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className={`space-y-4 sm:space-y-6 relative transition-all duration-200 ${isDrawerOpen ? 'space-y-3 sm:space-y-4' : 'space-y-6'}`}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+          <h1 className={`font-display font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 transition-all ${
+            isDrawerOpen ? 'text-lg sm:text-xl xl:text-2xl' : 'text-2xl sm:text-3xl'
+          }`}>
             Customers Registry
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className={`text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1 transition-all ${
+            isDrawerOpen ? 'text-xs xl:text-xs' : 'text-sm'
+          }`}>
             Registered customer accounts with their spending tiers, loyalty badges, and POS scan information.
           </p>
         </div>
 
         {/* 🎯 POS / Barcode Scanner Quick Search */}
-        <form onSubmit={handlePosLookup} className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <form onSubmit={handlePosLookup} className={`relative w-full transition-all ${isDrawerOpen ? 'md:w-72' : 'md:w-80'}`}>
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 ${isDrawerOpen ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
           <input
             type="text"
             placeholder="Scan Barcode / QR / Phone / ID..."
@@ -392,7 +400,9 @@ export const AdminCustomers = () => {
               setPosSearchQuery(e.target.value);
               if (scannedCustomer) setScannedCustomer(null);
             }}
-            className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 shadow-xs"
+            className={`w-full rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 shadow-xs transition-all ${
+              isDrawerOpen ? 'pl-8.5 pr-8.5 py-1.5 text-xs' : 'pl-10 pr-10 py-2.5 text-xs sm:text-sm'
+            }`}
           />
           {posSearchQuery && (
             <button
@@ -401,7 +411,7 @@ export const AdminCustomers = () => {
                 setPosSearchQuery('');
                 setScannedCustomer(null);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-0.5"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -413,21 +423,27 @@ export const AdminCustomers = () => {
 
       {/* 🎯 POS Live Scanned Customer Detail Banner */}
       {scannedCustomer && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-neutral-900 via-neutral-850 to-neutral-900 text-white border border-primary-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 animate-fade-in">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-2xl shrink-0">
+        <div className={`rounded-2xl bg-gradient-to-r from-neutral-900 via-neutral-850 to-neutral-900 text-white border border-primary-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between animate-fade-in transition-all ${
+          isDrawerOpen ? 'p-3 sm:p-4 gap-3.5' : 'p-5 gap-5'
+        }`}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className={`rounded-2xl bg-primary-500/20 border border-primary-500/30 flex items-center justify-center shrink-0 ${
+              isDrawerOpen ? 'w-10 h-10 text-xl' : 'w-14 h-14 text-2xl'
+            }`}>
               {getCustomerTier(scannedCustomer.totalSpent).icon}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-lg text-white">
+                <h3 className={`font-bold text-white ${isDrawerOpen ? 'text-sm sm:text-base' : 'text-lg'}`}>
                   {scannedCustomer.user?.name}
                 </h3>
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${getCustomerTier(scannedCustomer.totalSpent).color}`}>
+                <span className={`inline-flex items-center gap-1 rounded-full font-black border ${
+                  isDrawerOpen ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-xs'
+                } ${getCustomerTier(scannedCustomer.totalSpent).color}`}>
                   {getCustomerTier(scannedCustomer.totalSpent).icon} {getCustomerTier(scannedCustomer.totalSpent).badge}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-300 mt-1 font-mono">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-neutral-300 mt-1 font-mono">
                 <span className="text-primary-400 font-bold">
                   {membershipIdOf(scannedCustomer.user)}
                 </span>
@@ -439,30 +455,30 @@ export const AdminCustomers = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs shrink-0">
-            <div className="bg-neutral-800/80 px-3.5 py-2 rounded-xl border border-neutral-700 text-center">
-              <span className="block text-[10px] text-neutral-400 uppercase font-bold">Total Spent</span>
-              <span className="font-black text-sm text-emerald-400">{taka(scannedCustomer.totalSpent)}</span>
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 text-xs shrink-0">
+            <div className="bg-neutral-800/80 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-neutral-700 text-center">
+              <span className="block text-[9px] sm:text-[10px] text-neutral-400 uppercase font-bold">Total Spent</span>
+              <span className="font-black text-xs sm:text-sm text-emerald-400">{taka(scannedCustomer.totalSpent)}</span>
             </div>
-            <div className="bg-neutral-800/80 px-3.5 py-2 rounded-xl border border-neutral-700 text-center">
-              <span className="block text-[10px] text-neutral-400 uppercase font-bold">Total Orders</span>
-              <span className="font-black text-sm text-white">{scannedCustomer.orderCount || 0}</span>
+            <div className="bg-neutral-800/80 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-neutral-700 text-center">
+              <span className="block text-[9px] sm:text-[10px] text-neutral-400 uppercase font-bold">Total Orders</span>
+              <span className="font-black text-xs sm:text-sm text-white">{scannedCustomer.orderCount || 0}</span>
             </div>
-            <div className="bg-neutral-800/80 px-3.5 py-2 rounded-xl border border-neutral-700 text-center">
-              <span className="block text-[10px] text-neutral-400 uppercase font-bold">Points</span>
-              <span className="font-black text-sm text-amber-400">{scannedCustomer.user?.points || 0} pts</span>
+            <div className="bg-neutral-800/80 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-neutral-700 text-center">
+              <span className="block text-[9px] sm:text-[10px] text-neutral-400 uppercase font-bold">Points</span>
+              <span className="font-black text-xs sm:text-sm text-amber-400">{scannedCustomer.user?.points || 0} pts</span>
             </div>
             <button
               onClick={() => openEditModal(scannedCustomer.user)}
-              className="px-3.5 py-2 bg-neutral-700 hover:bg-neutral-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-neutral-700 hover:bg-neutral-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
             >
-              <Edit2 className="w-4 h-4" /> Edit Profile
+              <Edit2 className="w-3.5 h-3.5" /> Edit Profile
             </button>
             <button
               onClick={() => setActiveCardUser(scannedCustomer.user)}
-              className="px-3.5 py-2 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl shadow-md cursor-pointer text-xs flex items-center gap-1.5 transition-all"
             >
-              <CreditCard className="w-4 h-4" /> View Card
+              <CreditCard className="w-3.5 h-3.5" /> View Card
             </button>
           </div>
         </div>
@@ -470,27 +486,42 @@ export const AdminCustomers = () => {
 
       {/* Top Customers Cards */}
       {topThree.length > 0 && !posSearchQuery && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 2xl:grid-cols-3 gap-4 lg:gap-6">
+        <div className={`grid grid-cols-1 sm:grid-cols-3 transition-all ${
+          isDrawerOpen ? 'gap-2 sm:gap-3 lg:gap-3.5' : 'gap-4 lg:gap-6'
+        }`}>
           {topThree.map((c, i) => {
             const s = spendOf(c);
             const tier = getCustomerTier(s.totalSpent);
             return (
               <div
                 key={c.id || c._id}
-                className="flex items-center gap-3.5 rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 p-4 sm:p-5 shadow-xs"
+                className={`flex items-center rounded-2xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-neutral-900 shadow-xs transition-all ${
+                  isDrawerOpen ? 'p-2 sm:p-2.5 xl:p-3 gap-2 sm:gap-2.5' : 'p-4 sm:p-5 gap-3.5'
+                }`}
               >
-                <span className="text-2xl sm:text-3xl leading-none shrink-0" aria-hidden>{MEDAL[i]}</span>
+                <span className={`leading-none shrink-0 transition-all ${
+                  isDrawerOpen ? 'text-lg sm:text-xl xl:text-2xl' : 'text-2xl sm:text-3xl'
+                }`} aria-hidden>{MEDAL[i]}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-primary-500 flex items-center gap-1">
-                      <Crown className="w-3.5 h-3.5" /> #{i + 1}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <p className={`font-bold uppercase tracking-wider text-primary-500 flex items-center gap-1 transition-all ${
+                      isDrawerOpen ? 'text-[8px] sm:text-[9px]' : 'text-[10px] sm:text-xs'
+                    }`}>
+                      <Crown className={isDrawerOpen ? 'w-2.5 h-2.5 sm:w-3 sm:h-3' : 'w-3.5 h-3.5'} /> #{i + 1}
                     </p>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${tier.color}`}>
-                      {tier.icon} {tier.badge}
+                    <span className={`inline-flex items-center gap-0.5 rounded-md font-bold border transition-all ${
+                      isDrawerOpen ? 'px-1.5 py-0.5 text-[8px] sm:text-[8.5px]' : 'px-2 py-0.5 text-[10px]'
+                    } ${tier.color}`}>
+                      <span className="shrink-0">{tier.icon}</span>
+                      <span className="truncate">{tier.badge}</span>
                     </span>
                   </div>
-                  <p className="font-bold text-sm sm:text-base text-neutral-800 dark:text-neutral-100 truncate mt-0.5">{c.name}</p>
-                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className={`font-bold text-neutral-800 dark:text-neutral-100 truncate mt-0.5 transition-all ${
+                    isDrawerOpen ? 'text-xs sm:text-[13px]' : 'text-sm sm:text-base'
+                  }`}>{c.name}</p>
+                  <p className={`transition-all ${
+                    isDrawerOpen ? 'text-[9.5px] sm:text-[11px] text-neutral-500' : 'text-xs sm:text-sm text-neutral-500 dark:text-neutral-400'
+                  }`}>
                     <span className="font-extrabold text-neutral-700 dark:text-neutral-200">{taka(s.totalSpent)}</span>
                     {' · '}{s.orderCount} order{s.orderCount === 1 ? '' : 's'}
                   </p>
@@ -502,36 +533,40 @@ export const AdminCustomers = () => {
       )}
 
       {/* Main Customers Table */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl p-3 sm:p-4 lg:p-4.5 shadow-xs w-full overflow-hidden">
+      <div className={`bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs w-full overflow-hidden transition-all ${
+        isDrawerOpen ? 'p-1.5 sm:p-2.5 lg:p-3' : 'p-3 sm:p-4 lg:p-4.5'
+      }`}>
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left table-fixed border-collapse">
+          <table className="w-full text-left table-fixed border-collapse min-w-[720px] lg:min-w-0">
             <colgroup>
-              <col className="w-[14%] sm:w-[13%]" />
-              <col className="w-[8%] sm:w-[8%]" />
-              <col className="w-[12%] sm:w-[11%]" />
-              <col className="w-[9%] sm:w-[9%]" />
-              <col className="w-[5%] sm:w-[5%]" />
-              <col className="w-[14%] sm:w-[15%]" />
-              <col className="w-[12%] sm:w-[11%]" />
-              <col className="w-[8%] sm:w-[8%]" />
-              <col className="w-[8%] sm:w-[8%]" />
-              <col className="w-[10%] sm:w-[12%]" />
+              <col className={isDrawerOpen ? 'w-[13%]' : 'w-[14%] sm:w-[13%]'} />
+              <col className={isDrawerOpen ? 'w-[8%]' : 'w-[8%] sm:w-[8%]'} />
+              <col className={isDrawerOpen ? 'w-[12%]' : 'w-[12%] sm:w-[11%]'} />
+              <col className={isDrawerOpen ? 'w-[9%]' : 'w-[9%] sm:w-[9%]'} />
+              <col className={isDrawerOpen ? 'w-[4.5%]' : 'w-[5%] sm:w-[5%]'} />
+              <col className={isDrawerOpen ? 'w-[15.5%]' : 'w-[14%] sm:w-[15%]'} />
+              <col className={isDrawerOpen ? 'w-[12%]' : 'w-[12%] sm:w-[11%]'} />
+              <col className={isDrawerOpen ? 'w-[8%]' : 'w-[8%] sm:w-[8%]'} />
+              <col className={isDrawerOpen ? 'w-[7.5%]' : 'w-[8%] sm:w-[8%]'} />
+              <col className={isDrawerOpen ? 'w-[10.5%]' : 'w-[10%] sm:w-[12%]'} />
             </colgroup>
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 text-[9.5px] sm:text-[10px] xl:text-[11px]">
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Membership ID</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Tier Badge</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Full Name</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap truncate">Total Spent</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center whitespace-nowrap truncate">Orders</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Email Address</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 whitespace-nowrap truncate">Phone Number</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Pick Area</th>
-                <th className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 whitespace-nowrap truncate">Signup Date</th>
-                <th className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right whitespace-nowrap truncate">Actions</th>
+              <tr className={`border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-955/40 ${
+                isDrawerOpen ? 'text-[7.5px] sm:text-[8px] xl:text-[8.5px]' : 'text-[9.5px] sm:text-[10px] xl:text-[11px]'
+              }`}>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} whitespace-nowrap truncate`}>Membership ID</th>
+                <th className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} whitespace-nowrap truncate`}>Tier Badge</th>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} whitespace-nowrap truncate`}>Full Name</th>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} text-right whitespace-nowrap truncate`}>Total Spent</th>
+                <th className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} text-center whitespace-nowrap truncate`}>Orders</th>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} whitespace-nowrap truncate`}>Email Address</th>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} whitespace-nowrap truncate`}>Phone Number</th>
+                <th className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} whitespace-nowrap truncate`}>Pick Area</th>
+                <th className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} whitespace-nowrap truncate`}>Signup Date</th>
+                <th className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} text-right whitespace-nowrap truncate`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] xl:text-xs">
+            <tbody className={isDrawerOpen ? 'text-[8.5px] xl:text-[9.5px]' : 'text-[11px] xl:text-xs'}>
               {filteredCustomers.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-neutral-400 text-sm">
@@ -547,71 +582,77 @@ export const AdminCustomers = () => {
 
                   return (
                     <tr key={c.id || c._id} className="border-b border-neutral-100 dark:border-neutral-850 hover:bg-neutral-50/50 dark:hover:bg-neutral-955/20 transition-colors">
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold font-mono text-[10px] xl:text-xs overflow-hidden">
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5 text-[8px] xl:text-[9px]' : 'px-1.5 sm:px-2 xl:px-3 py-2.5 text-[10px] xl:text-xs'} font-bold font-mono overflow-hidden`}>
                         <button
                           onClick={() => copyToClipboard(mId)}
-                          className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer max-w-full"
+                          className="inline-flex items-center gap-0.5 sm:gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 group cursor-pointer max-w-full"
                           title="Click to copy Membership ID"
                         >
                           <span className="truncate">{mId}</span>
                           {copiedId === mId ? (
-                            <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                            <Check className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
                           ) : (
-                            <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 text-neutral-400 transition-opacity shrink-0" />
+                            <Copy className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-neutral-400 transition-opacity shrink-0" />
                           )}
                         </button>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 overflow-hidden">
-                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] xl:text-[10px] font-bold border truncate max-w-full ${tier.color}`}>
+                      <td className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} overflow-hidden`}>
+                        <span className={`inline-flex items-center gap-0.5 rounded-md font-bold border truncate max-w-full ${
+                          isDrawerOpen ? 'px-1 py-0.5 text-[7.5px] xl:text-[8px]' : 'px-1.5 py-0.5 text-[9px] xl:text-[10px]'
+                        } ${tier.color}`}>
                           <span className="shrink-0">{tier.icon}</span>
                           <span className="truncate">{tier.badge}</span>
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-bold text-neutral-800 dark:text-neutral-100 overflow-hidden">
-                        <span className="inline-flex items-center gap-1 max-w-full" title={c.name}>
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} font-bold text-neutral-800 dark:text-neutral-100 overflow-hidden`}>
+                        <span className="inline-flex items-center gap-0.5 sm:gap-1 max-w-full" title={c.name}>
                           {isTop && <span aria-hidden title={`Top customer #${idx + 1}`} className="shrink-0">{MEDAL[idx]}</span>}
                           <span className="truncate">{c.name}</span>
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right font-extrabold text-neutral-800 dark:text-neutral-100 text-[11px] xl:text-xs overflow-hidden truncate">
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5 text-[8.5px] xl:text-[9.5px]' : 'px-1.5 sm:px-2 xl:px-3 py-2.5 text-[11px] xl:text-xs'} text-right font-extrabold text-neutral-800 dark:text-neutral-100 overflow-hidden truncate`}>
                         {s.totalSpent > 0 ? taka(s.totalSpent) : <span className="text-neutral-400 font-normal">৳0.00</span>}
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-center font-semibold text-neutral-600 dark:text-neutral-300 overflow-hidden truncate">
+                      <td className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5'} text-center font-semibold text-neutral-600 dark:text-neutral-300 overflow-hidden truncate`}>
                         {s.orderCount || 0}
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-neutral-600 dark:text-neutral-355 text-[10px] xl:text-xs overflow-hidden">
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5 text-[8px] xl:text-[9px]' : 'px-1.5 sm:px-2 xl:px-3 py-2.5 text-[10px] xl:text-xs'} text-neutral-600 dark:text-neutral-355 overflow-hidden`}>
                         <span className="truncate block" title={c.email}>
                           {c.email || '—'}
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-200 text-[10px] xl:text-xs overflow-hidden">
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5 text-[8px] xl:text-[9px]' : 'px-1.5 sm:px-2 xl:px-3 py-2.5 text-[10px] xl:text-xs'} font-medium text-neutral-800 dark:text-neutral-200 overflow-hidden`}>
                         <span className="truncate block" title={c.phone}>
                           {c.phone || <span className="text-neutral-450 font-light italic">Not Set</span>}
                         </span>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 font-semibold text-primary-500 text-[10px] xl:text-xs overflow-hidden">
+                      <td className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5 text-[8px] xl:text-[9px]' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-[10px] xl:text-xs'} font-semibold text-primary-500 overflow-hidden`}>
                         <span className="truncate block" title={c.pickArea}>
                           {c.pickArea || <span className="text-neutral-450 font-light italic">Not Set</span>}
                         </span>
                       </td>
-                      <td className="px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-neutral-450 dark:text-neutral-500 font-light text-[9.5px] xl:text-[11px] overflow-hidden truncate">
+                      <td className={`${isDrawerOpen ? 'px-0.5 sm:px-1 py-1.5 text-[7.5px] xl:text-[8.5px]' : 'px-1 sm:px-1.5 xl:px-2.5 py-2.5 text-[9.5px] xl:text-[11px]'} text-neutral-450 dark:text-neutral-500 font-light overflow-hidden truncate`}>
                         {new Date(c.createdAt || Date.now()).toLocaleDateString()}
                       </td>
-                      <td className="px-1.5 sm:px-2 xl:px-3 py-2.5 text-right overflow-hidden">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className={`${isDrawerOpen ? 'px-1 sm:px-1.5 py-1.5' : 'px-1.5 sm:px-2 xl:px-3 py-2.5'} text-right overflow-hidden`}>
+                        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
+                            className={`inline-flex items-center bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 active:scale-95 transition-all text-neutral-700 dark:text-neutral-200 font-bold uppercase rounded-md shadow-2xs cursor-pointer whitespace-nowrap shrink-0 ${
+                              isDrawerOpen ? 'px-1 py-0.5 text-[7px] xl:text-[8px] gap-0.5' : 'px-1.5 py-0.5 xl:px-2 xl:py-1 text-[9px] xl:text-[10px] gap-0.5'
+                            }`}
                             title="Edit Customer Details & Reset Password"
                           >
-                            <Edit2 className="w-3 h-3 text-primary-500 shrink-0" /> Edit
+                            <Edit2 className={`${isDrawerOpen ? 'w-2.5 h-2.5' : 'w-3 h-3'} text-primary-500 shrink-0`} /> Edit
                           </button>
                           <button
                             onClick={() => setActiveCardUser(c)}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 xl:px-2 xl:py-1 bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold text-[9px] xl:text-[10px] uppercase rounded-md shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                            className={`inline-flex items-center bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all text-white font-bold uppercase rounded-md shadow-sm cursor-pointer whitespace-nowrap shrink-0 ${
+                              isDrawerOpen ? 'px-1 py-0.5 text-[7px] xl:text-[8px] gap-0.5' : 'px-1.5 py-0.5 xl:px-2 xl:py-1 text-[9px] xl:text-[10px] gap-0.5'
+                            }`}
                             title="Generate & View Membership Card"
                           >
-                            <CreditCard className="w-3 h-3 shrink-0" /> Card
+                            <CreditCard className={`${isDrawerOpen ? 'w-2.5 h-2.5' : 'w-3 h-3'} shrink-0`} /> Card
                           </button>
                         </div>
                       </td>

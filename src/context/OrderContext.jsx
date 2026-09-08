@@ -137,7 +137,8 @@ export const OrderProvider = ({ children }) => {
         const orderId = order.displayId || order.id || order._id || 'New';
         const shortId = String(orderId).slice(-6).toUpperCase();
         const customerName = order.customerName || order.customer?.name || 'Customer';
-        const totalAmount = Number(order.totalAmount || order.total || 0).toFixed(0);
+        const rawAmount = Number(order.totalAmount ?? order.total);
+        const totalAmount = (Number.isFinite(rawAmount) ? rawAmount : 0).toFixed(0);
         const orderType = order.orderType === 'pickup' ? 'Self-Pickup' : 'Home Delivery';
 
         soundNotification.sendNotification({
