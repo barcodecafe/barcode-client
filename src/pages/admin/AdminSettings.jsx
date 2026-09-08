@@ -93,48 +93,92 @@ export const AdminSettings = () => {
     setMaintenanceNoticeText(settings.maintenanceNoticeText || "");
   }, [isSettingsLoaded, settings]);
 
-  const handleLogoLightUpload = (e) => {
+  const compressImageFile = (file, maxWidth = 1200, maxHeight = 800, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let dataUrl = canvas.toDataURL("image/webp", quality);
+          if (!dataUrl.startsWith("data:image/webp")) {
+            dataUrl = canvas.toDataURL(file.type || "image/png", quality);
+          }
+          resolve(dataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleLogoLightUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
         setError("Please select an image file for the Light Theme logo.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoLight(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file, 800, 400, 0.9);
+        setLogoLight(compressed);
+      } catch {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoLight(reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleLogoDarkUpload = (e) => {
+  const handleLogoDarkUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
         setError("Please select an image file for the Dark Theme logo.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoDark(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file, 800, 400, 0.9);
+        setLogoDark(compressed);
+      } catch {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoDark(reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handlePaymentBannerUpload = (e) => {
+  const handlePaymentBannerUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
         setError("Please select an image file for the Payment Methods banner.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPaymentBanner(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file, 1200, 400, 0.85);
+        setPaymentBanner(compressed);
+      } catch {
+        const reader = new FileReader();
+        reader.onloadend = () => setPaymentBanner(reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
