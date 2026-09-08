@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useOrders } from '../context/OrderContext';
@@ -70,6 +71,9 @@ const navItems = [
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, hasPermission, isSuperAdmin } = useAuth();
+
+  // 📱 Keep mobile screen awake while admin is logged in
+  useWakeLock(Boolean(user));
 
   const getRoleDisplayTitle = (role) => {
     if (['super_admin', 'superadmin'].includes(role)) return 'Super Admin';

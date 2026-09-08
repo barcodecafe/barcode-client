@@ -22,6 +22,7 @@ import {
   Power,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
+import { useWakeLock } from "../hooks/useWakeLock";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { socket } from "../services/socket";
@@ -41,6 +42,7 @@ export { isAssignedToMe };
 export const RiderLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, refreshUser } = useAuth();
+  useWakeLock(Boolean(user));
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
