@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   Search,
   Filter,
+  Calendar,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -369,6 +370,9 @@ export const AdminOrders = () => {
 
   // 🎯 Search, Filter & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -1414,8 +1418,53 @@ export const AdminOrders = () => {
     } else if (!isManager && orderTypeFilter === "pickup" && branchFilter !== "all") {
       list = list.filter((ord) => isOrderMatchingSelectedBranch(ord, branchFilter));
     }
+
+    // Date Filter (All Dates, Today, Yesterday, Last 7 Days, This Month, Custom Range)
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      list = list.filter((ord) => {
+        const rawDate = ord.createdAt || ord.date || ord.orderDate || ord.timestamp;
+        if (!rawDate) return false;
+        const ordDate = new Date(rawDate);
+        if (isNaN(ordDate.getTime())) return false;
+
+        if (dateFilter === "today") {
+          return ordDate >= startOfToday && ordDate <= endOfToday;
+        }
+        if (dateFilter === "yesterday") {
+          const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+          return ordDate >= startOfYesterday && ordDate <= endOfYesterday;
+        }
+        if (dateFilter === "last_7_days") {
+          const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+          return ordDate >= sevenDaysAgo && ordDate <= endOfToday;
+        }
+        if (dateFilter === "this_month") {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          return ordDate >= startOfMonth && ordDate <= endOfToday;
+        }
+        if (dateFilter === "custom") {
+          let matches = true;
+          if (customStartDate) {
+            const start = new Date(customStartDate + "T00:00:00");
+            matches = matches && ordDate >= start;
+          }
+          if (customEndDate) {
+            const end = new Date(customEndDate + "T23:59:59.999");
+            matches = matches && ordDate <= end;
+          }
+          return matches;
+        }
+        return true;
+      });
+    }
+
     return list;
-  }, [orders, isManager, managerAssignedBranches, checkOrderBelongsToManager, orderTypeFilter, branchFilter, isOrderMatchingSelectedBranch]);
+  }, [orders, isManager, managerAssignedBranches, checkOrderBelongsToManager, orderTypeFilter, branchFilter, isOrderMatchingSelectedBranch, dateFilter, customStartDate, customEndDate]);
 
   // 🎯 Status counts for quick filter tabs
   const orderCounts = useMemo(() => {
@@ -1696,6 +1745,63 @@ export const AdminOrders = () => {
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Date Filter */}
+          <select
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+          >
+            <option value="all">📅 All Dates</option>
+            <option value="today">📅 Today</option>
+            <option value="yesterday">📅 Yesterday</option>
+            <option value="last_7_days">📅 Last 7 Days</option>
+            <option value="this_month">📅 This Month</option>
+            <option value="custom">📅 Custom Range</option>
+          </select>
+
+          {/* Custom Date Pickers (Shown when 'Custom Range' is selected) */}
+          {dateFilter === "custom" && (
+            <div className="flex items-center gap-1.5 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl px-2.5 py-1 text-xs">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => {
+                  setCustomStartDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-semibold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+                title="From Date"
+              />
+              <span className="text-neutral-400 font-bold text-[10px]">to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => {
+                  setCustomEndDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-semibold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+                title="To Date"
+              />
+              {(customStartDate || customEndDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                    setCurrentPage(1);
+                  }}
+                  className="p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer ml-0.5"
+                  title="Clear Date Range"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
           {/* Order Type (Super Admin & Sub-Admin Only) */}
           {!isManager && (
             <select
