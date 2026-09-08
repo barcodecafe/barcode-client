@@ -1867,17 +1867,17 @@ export const AdminOrders = () => {
         {/* 🎯 Ultra-wide Table Container Optimization */}
         <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse table-auto">
+            <table className="w-full text-[10.5px] leading-tight text-left border-collapse table-auto">
               <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs">
-                  <th className="px-2 py-3 sm:px-3">Order ID</th>
-                  <th className="px-2 py-3 sm:px-3">Customer</th>
-                  <th className="px-2 py-3 sm:px-3">Address</th>
-                  <th className="px-2 py-3 sm:px-3">Total Amount</th>
-                  <th className="px-2 py-3 sm:px-3">Order Action</th>
-                  <th className="px-2 py-3 sm:px-3">Delivery Status</th>
-                  <th className="px-2 py-3 sm:px-3">Assigned Rider</th>
-                  <th className="px-2 py-3 sm:px-3 text-right">Actions</th>
+                <tr className="border-b border-neutral-200 dark:border-neutral-800 font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider bg-neutral-50 dark:bg-neutral-900 sticky top-0 z-20 shadow-xs text-[9.5px]">
+                  <th className="px-2 py-2.5 sm:px-2.5">Order ID</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Customer</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Address</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Total Amount</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Order Action</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Delivery Status</th>
+                  <th className="px-2 py-2.5 sm:px-2.5">Assigned Rider</th>
+                  <th className="px-2 py-2.5 sm:px-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1898,7 +1898,7 @@ export const AdminOrders = () => {
                     >
                       {loadError
                         ? "Orders could not be loaded — see the message above."
-                        : searchQuery || statusFilter !== "all" || orderTypeFilter !== "all" || paymentFilter !== "all"
+                        : searchQuery || statusFilter !== "all" || orderTypeFilter !== "all" || paymentFilter !== "all" || dateFilter !== "all"
                         ? "No orders match your filter criteria."
                         : "No orders found."}
                     </td>
@@ -1942,12 +1942,12 @@ export const AdminOrders = () => {
                       >
                         <td
                           onClick={() => setSelectedOrderDetails(ord)}
-                          className="px-2 py-2.5 sm:px-3 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap"
+                          className="px-2 py-2 sm:px-2.5 font-bold text-primary-500 hover:text-primary-600 hover:underline cursor-pointer uppercase transition-colors whitespace-nowrap text-[10.5px]"
                           title={ordId}
                         >
                           {formatShortOrderId(ordId)}
                           <span
-                            className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[7px] leading-tight uppercase tracking-wider font-bold ${
+                            className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[6.5px] leading-tight uppercase tracking-wider font-bold ${
                               isPickupOrder
                                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                                 : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
@@ -1957,99 +1957,99 @@ export const AdminOrders = () => {
                           </span>
                           {badge && (
                             <span
-                              className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[7px] leading-tight uppercase tracking-wider ${badge.tone}`}
+                              className={`block mt-0.5 w-fit px-1 py-[0.5px] rounded border text-[6.5px] leading-tight uppercase tracking-wider ${badge.tone}`}
                             >
                               {badge.label}
                             </span>
                           )}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3">
-                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[110px] 2xl:max-w-[160px]">
+                        <td className="px-2 py-2 sm:px-2.5">
+                          <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[100px] 2xl:max-w-[150px] text-[10.5px]">
                             {ord.user?.name || ord.customerName || "Guest"}
                           </span>
-                          <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          <span className="block text-[8.5px] text-neutral-400 mt-0.5">
                             {ord.user?.phone || ord.customerPhone || "-"}
                           </span>
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3">
+                        <td className="px-2 py-2 sm:px-2.5">
                           {isPickupOrder ? (
                             <div>
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                                <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                                <span className="truncate max-w-[130px] 2xl:max-w-[200px]" title={ord.pickupBranchName || ord.user?.pickArea}>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                                <Building2 className="w-3 h-3 shrink-0 text-emerald-500" />
+                                <span className="truncate max-w-[120px] 2xl:max-w-[180px]" title={ord.pickupBranchName || ord.user?.pickArea}>
                                   {ord.pickupBranchName || ord.user?.pickArea?.replace(/^Self Pickup at /i, '').trim() || "Pickup Outlet"}
                                 </span>
                               </span>
-                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[200px]" title={ord.user?.address || ord.deliveryAddress}>
+                              <span className="block text-[8.5px] text-neutral-400 mt-0.5 truncate max-w-[120px] 2xl:max-w-[180px]" title={ord.user?.address || ord.deliveryAddress}>
                                 {ord.user?.address && !ord.user.address.toLowerCase().includes("self pickup") ? ord.user.address : "Customer In-Store Collection"}
                               </span>
                             </div>
                           ) : (
                             <div>
                               <span
-                                className="block text-neutral-700 dark:text-neutral-200 font-medium text-xs truncate max-w-[130px] 2xl:max-w-[200px]"
+                                className="block text-neutral-700 dark:text-neutral-200 font-medium text-[9.5px] truncate max-w-[120px] 2xl:max-w-[180px]"
                                 title={ord.user?.address || ord.deliveryAddress}
                               >
                                 {ord.user?.address || ord.deliveryAddress || "-"}
                               </span>
-                              <span className="block text-[10px] text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[200px]">
+                              <span className="block text-[8.5px] text-neutral-400 mt-0.5 truncate max-w-[120px] 2xl:max-w-[180px]">
                                 📍 {ord.deliveryArea || ord.user?.pickArea || "Standard Delivery Area"}
                               </span>
                             </div>
                           )}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3 font-bold text-primary-500 whitespace-nowrap">
+                        <td className="px-2 py-2 sm:px-2.5 font-bold text-primary-500 whitespace-nowrap text-[10.5px]">
                           ৳{Number(ord.total || ord.grandTotal || 0).toFixed(2)}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
+                        <td className="px-2 py-2 sm:px-2.5 whitespace-nowrap">
                           {isPendingUnhandled ? (
                             <div className="flex gap-1">
                               <button
                                 onClick={() =>
                                   handleStatusChange(ordId, "Accepted")
                                 }
-                                className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                                 title="Accept Order"
                               >
-                                <Check className="w-3 h-3 stroke-[3]" /> Accept
+                                <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
                               </button>
                               <button
                                 onClick={() =>
                                   handleStatusChange(ordId, "Rejected")
                                 }
-                                className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white font-bold text-[8px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                                 title="Reject Order"
                               >
-                                <X className="w-3 h-3 stroke-[3]" /> Reject
+                                <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
                               </button>
                             </div>
                           ) : isRejected ? (
-                            <span className="px-2 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] uppercase tracking-wide">
+                            <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[8px] uppercase tracking-wide">
                               Rejected
                             </span>
                           ) : (
-                            <span className="px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] uppercase tracking-wide">
+                            <span className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[8px] uppercase tracking-wide">
                               Accepted
                             </span>
                           )}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
+                        <td className="px-2 py-2 sm:px-2.5 whitespace-nowrap">
                           {isPendingUnhandled ? (
-                            <span className="px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[8px] uppercase tracking-wide inline-block">
                               Pending
                             </span>
                           ) : isRejected ? (
-                            <span className="px-2 py-1 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] uppercase tracking-wide inline-block">
+                            <span className="px-1.5 py-0.5 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[8px] uppercase tracking-wide inline-block">
                               Cancelled
                             </span>
                           ) : ord.status === "Delivered" ? (
-                            <span className="px-2.5 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wide inline-flex items-center gap-1 shadow-2xs">
-                              <Check className="w-3.5 h-3.5 stroke-[3]" /> Delivered
+                            <span className="px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[8.5px] uppercase tracking-wide inline-flex items-center gap-0.5 shadow-2xs">
+                              <Check className="w-3 h-3 stroke-[3]" /> Delivered
                             </span>
                           ) : (
                             <div>
@@ -2062,7 +2062,7 @@ export const AdminOrders = () => {
                                 onChange={(e) =>
                                   handleStatusChange(ordId, e.target.value)
                                 }
-                                className={`px-1.5 py-1 rounded-lg border font-bold text-[10px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                                className={`px-1 py-0.5 rounded-md border font-bold text-[8.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                   !isPickupOrder &&
                                   (!assignedRiderId || ord.riderAcceptStatus !== "accepted")
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
@@ -2087,7 +2087,7 @@ export const AdminOrders = () => {
                               {!isPickupOrder &&
                                 (!assignedRiderId ||
                                   ord.riderAcceptStatus !== "accepted") && (
-                                  <span className="block text-[9px] text-orange-500 font-bold mt-0.5 tracking-tight">
+                                  <span className="block text-[8px] text-orange-500 font-bold mt-0.5 tracking-tight">
                                     {!assignedRiderId
                                       ? "Assign Rider First"
                                       : "Awaiting Rider Accept"}
@@ -2097,13 +2097,13 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3 whitespace-nowrap">
+                        <td className="px-2 py-2 sm:px-2.5 whitespace-nowrap">
                           {isPickupOrder ? (
-                            <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] uppercase tracking-wide inline-flex items-center gap-1">
+                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[8.5px] uppercase tracking-wide inline-flex items-center gap-0.5">
                               🛍️ Self-Pickup
                             </span>
                           ) : (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5">
                               <select
                                 value={assignedRiderId}
                                 disabled={
@@ -2114,7 +2114,7 @@ export const AdminOrders = () => {
                                 onChange={(e) =>
                                   handleAssignRider(ordId, e.target.value)
                                 }
-                                className={`px-1.5 py-1 rounded-lg border font-bold text-[9px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[130px] 2xl:max-w-[180px] ${
+                                className={`px-1 py-0.5 rounded-md border font-bold text-[8.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[120px] 2xl:max-w-[160px] ${
                                   isPendingUnhandled ||
                                   isRejected ||
                                   ord.status === "Delivered"
@@ -2144,7 +2144,7 @@ export const AdminOrders = () => {
                               ord.status !== "Delivered" && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {ord.riderAcceptStatus === "accepted" ? (
-                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-955/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                    <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-955/40 px-1 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                                       ✓ Accepted
                                     </span>
                                   ) : (
@@ -2157,7 +2157,7 @@ export const AdminOrders = () => {
                                             "accepted",
                                           )
                                         }
-                                        className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        className="px-1 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                         title="Force Accept Rider Status"
                                       >
                                         ✓ Accept
@@ -2170,7 +2170,7 @@ export const AdminOrders = () => {
                                             "rejected",
                                           )
                                         }
-                                        className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        className="px-1 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                         title="Reject and Unassign Rider"
                                       >
                                         ✕ Reject
@@ -2183,17 +2183,17 @@ export const AdminOrders = () => {
                           )}
                         </td>
 
-                        <td className="px-2 py-2.5 sm:px-3 text-right whitespace-nowrap">
+                        <td className="px-2 py-2 sm:px-2.5 text-right whitespace-nowrap">
                           <button
                             onClick={() => setActiveChatOrderId(ordId)}
-                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                            className={`p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
                               activeChatOrderId === ordId
                                 ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
                                 : ""
                             }`}
-                            title="Open Live Chat Console"
+                            title="Chat Console"
                           >
-                            <MessageSquare className="w-4 h-4" />
+                            <MessageSquare className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
