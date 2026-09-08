@@ -13,8 +13,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  ChevronLeft,
-  Home as HomeIcon,
   Info,
   ShoppingBag,
   Users,
@@ -236,14 +234,6 @@ export const AdminLayout = () => {
       </nav>
 
       <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <Link
-          to="/"
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500 transition-all duration-200"
-        >
-          <HomeIcon className="w-4 h-4 shrink-0" />
-          Back to Site
-        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
@@ -306,13 +296,6 @@ export const AdminLayout = () => {
             >
               <MenuIcon className="w-4 h-4" />
             </button>
-            <Link
-              to="/"
-              className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-primary-500 transition-colors"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              Back to Site
-            </Link>
           </div>
 
           <div className="flex items-center gap-3">
