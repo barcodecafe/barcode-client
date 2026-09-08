@@ -1,16 +1,14 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { X } from 'lucide-react';
-import { socket } from '../services/socket'; // ⚡ আপনার সেন্ট্রাল socket.js ফাইল থেকে ইমপোর্ট করা হলো
+import { X, VolumeX } from 'lucide-react';
+import { socket } from '../services/socket'; // ⚡ সেন্ট্রাল socket.js ফাইল থেকে ইমপোর্ট করা হলো
 import { getAllOrders } from '../services/ordersService';
 import { useAuth } from './AuthContext';
 import { soundNotification } from '../utils/soundNotification';
 
 const OrderContext = createContext();
 
-// Roles that are actually allowed to read the order list. GET /api/orders is
-// auth-gated, so anyone else fetching it just collects a 401 — see the gate in
-// the effect below for why that mattered.
+// Roles that are actually allowed to read the order list.
 const ORDER_ROLES = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager', 'rider'];
 
 export const OrderProvider = ({ children }) => {
@@ -22,17 +20,9 @@ export const OrderProvider = ({ children }) => {
   const [acknowledgedCount, setAcknowledgedCount] = useState(null);
   const prevCountRef = useRef(null);
 
-  // The badge hides once acknowledged and reappears the moment a NEW order
-  // pushes the pending count above what was last seen. Clearing the raw count
-  // instead would not work: the server keeps reporting the same pending total,
-  // so the badge would immediately come back.
   const unreadOrderCount =
     acknowledgedCount !== null && pendingCount <= acknowledgedCount ? 0 : pendingCount;
 
-  // ⚠️ AdminLayout destructures and calls this from the bell and the Orders nav
-  // item. It was never provided here, so every click threw
-  // "markOrdersAsRead is not a function" — and with no ErrorBoundary that
-  // unmounted the entire admin to a white page.
   const markOrdersAsRead = useCallback(() => {
     setAcknowledgedCount(pendingCount);
   }, [pendingCount]);
@@ -41,10 +31,36 @@ export const OrderProvider = ({ children }) => {
   const canReadOrders = Boolean(user) && ORDER_ROLES.includes(role);
   const isAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(role);
 
-  const playNotificationSound = () => {
+  /**
+   * 🛑 Helper: Stop sound and vibration alert
+   */
+  const stopContinuousAlert = useCallback(() => {
+    soundNotification.stopContinuousOrderAlert();
+  }, []);
+
+  /**
+   * 🚨 Helper: Start sound and vibration alert (for admin)
+   */
+  const startContinuousAlert = useCallback(() => {
+    if (isAdmin) {
+      soundNotification.startContinuousOrderAlert();
+    }
+  }, [isAdmin]);
+
+  /**
+   * 🔍 Helper: Check if any unhandled pending orders remain. If none, stop sound and vibration!
+   */
+  const checkAndManageAlert = useCallback((ordersList) => {
     if (!isAdmin) return;
-    soundNotification.playKitchenBellChime();
-  };
+    const hasUnhandledPending = Array.isArray(ordersList) && ordersList.some((o) => {
+      const s = String(o?.status || '').toUpperCase();
+      return s === 'PLACED' || s === 'PENDING' || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT' || !o?.status;
+    });
+
+    if (!hasUnhandledPending) {
+      soundNotification.stopContinuousOrderAlert();
+    }
+  }, [isAdmin]);
 
   const fetchAndUpdateOrders = useCallback(async () => {
     if (!canReadOrders) return;
@@ -55,25 +71,19 @@ export const OrderProvider = ({ children }) => {
                        : Array.isArray(response?.data?.data) ? response.data.data : [];
 
       setOrders(ordersList);
+      checkAndManageAlert(ordersList);
     } catch (err) {
-      // Keep whatever we already had on screen. Overwriting it with [] on a
-      // transient failure is what made the list flash empty and then refill.
       console.error("Background order sync failed:", err?.message || err);
     }
-  }, [canReadOrders]);
+  }, [canReadOrders, checkAndManageAlert]);
 
   useEffect(() => {
-    // ⚠️ This provider wraps EVERY route, including the public home page, menu
-    // and login. It used to fetch GET /api/orders unconditionally, so every
-    // anonymous visitor fired an admin-only request that 401'd — wasted work
-    // that still consumed the server's rate-limit budget, and which could wipe
-    // a valid token on the way out. Wait for auth to settle, then only fetch
-    // for roles that may actually read orders.
     if (!isAuthLoaded || !canReadOrders) {
       setOrders([]);
       setPendingCount(0);
       setAcknowledgedCount(null);
       prevCountRef.current = null;
+      soundNotification.stopContinuousOrderAlert();
       return undefined;
     }
 
@@ -94,14 +104,20 @@ export const OrderProvider = ({ children }) => {
       const newCount = payload?.count || payload?.pendingCount || 0;
 
       if (prevCountRef.current !== null && newCount > prevCountRef.current) {
-        playNotificationSound(); // নতুন অর্ডার আসলে সাউন্ড বাজবে
+        if (isAdmin) {
+          soundNotification.startContinuousOrderAlert();
+        }
       }
 
       prevCountRef.current = newCount;
       setPendingCount(newCount);
+
+      if (newCount === 0) {
+        soundNotification.stopContinuousOrderAlert();
+      }
     };
 
-    // 🛒 ৪+৫. নতুন অর্ডার / স্ট্যাটাস পরিবর্তনে লিস্ট রিলোড।
+    // 🛒 ৪+৫. নতুন অর্ডার / স্ট্যাটাস পরিবর্তনে লিস্ট রিলোড
     let burstTimer = null;
     const handleOrdersChanged = () => {
       clearTimeout(burstTimer);
@@ -110,7 +126,9 @@ export const OrderProvider = ({ children }) => {
 
     const handleNewOrder = (order) => {
       if (isAdmin && order) {
-        soundNotification.playKitchenBellChime();
+        // 🚨 Start Continuous Loop Sound & Mobile Vibration until Accept/Reject
+        soundNotification.startContinuousOrderAlert();
+
         const orderId = order.displayId || order.id || order._id || 'New';
         const shortId = String(orderId).slice(-6).toUpperCase();
         const customerName = order.customerName || order.customer?.name || 'Customer';
@@ -137,7 +155,7 @@ export const OrderProvider = ({ children }) => {
               } max-w-lg w-full bg-white/95 dark:bg-neutral-900/95 shadow-xl shadow-neutral-900/10 rounded-xl pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 border border-primary-500/25 border-l-4 border-l-primary-500 backdrop-blur-md cursor-pointer transition-all hover:scale-[1.01]`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-base shrink-0">🔔</span>
+                <span className="text-base shrink-0 animate-bounce">🔔</span>
                 <div className="min-w-0 flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                   <span className="text-xs font-black text-primary-600 dark:text-primary-500 whitespace-nowrap">
                     New Order:
@@ -164,18 +182,20 @@ export const OrderProvider = ({ children }) => {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    soundNotification.stopContinuousOrderAlert();
                     toast.dismiss(t.id);
                   }}
                   className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-                  aria-label="Close"
+                  title="Silence & Dismiss"
+                  aria-label="Silence"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <VolumeX className="w-3.5 h-3.5 text-rose-500" />
                 </button>
               </div>
             </div>
           ),
           {
-            duration: 8000,
+            duration: 12000,
             id: `admin-order-${shortId}`,
           }
         );
@@ -193,11 +213,9 @@ export const OrderProvider = ({ children }) => {
     socket.on('rider_cash_settled', handleOrdersChanged);
     socket.on('rider_order_updated', handleOrdersChanged);
 
-    // ⚠️ Cleanup passes the handler reference. socket.off('order_status_updated')
-    // with no handler used to remove RiderLayout's and RiderOrders' listeners
-    // as well, quietly dropping the rider portal to poll-only.
     return () => {
       clearTimeout(burstTimer);
+      soundNotification.stopContinuousOrderAlert();
       socket.off('connect', handleConnect);
       socket.off('pending_count_updated', handlePendingCount);
       socket.off('admin_new_order', handleNewOrder);
@@ -210,13 +228,15 @@ export const OrderProvider = ({ children }) => {
     };
   }, [isAuthLoaded, canReadOrders, isAdmin, fetchAndUpdateOrders]);
 
-  // (ঐচ্ছিক) যদি ব্যাকএন্ডের মিলি-সেকেন্ড রেসপন্সের আগেও 0ms-এ ইউআই আপডেট করতে চান
+  // ローカルステータス更新
   const updateLocalOrderStatus = (orderId, newStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((ord) =>
+    setOrders((prevOrders) => {
+      const updated = prevOrders.map((ord) =>
         (ord.id === orderId || ord._id === orderId) ? { ...ord, status: newStatus } : ord
-      )
-    );
+      );
+      checkAndManageAlert(updated);
+      return updated;
+    });
   };
 
   return (
@@ -226,7 +246,9 @@ export const OrderProvider = ({ children }) => {
       markOrdersAsRead,
       fetchAndUpdateOrders,
       updateLocalOrderStatus,
-      socket // চাইলে অন্য কম্পোনেন্টে সকেট ব্যবহারের জন্য এক্সপোর্ট করে দিতে পারেন
+      startContinuousAlert,
+      stopContinuousAlert,
+      socket
     }}>
       {children}
     </OrderContext.Provider>
@@ -234,4 +256,3 @@ export const OrderProvider = ({ children }) => {
 };
 
 export const useOrders = () => useContext(OrderContext);
-// before counting logic fix 154

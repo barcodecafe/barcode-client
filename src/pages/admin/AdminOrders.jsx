@@ -37,6 +37,7 @@ import { getAllRegions } from "../../services/regionsService";
 import invoiceHeaderImg from "../../assets/invoiceheader.png";
 import invoiceFooterImg from "../../assets/invoicefooter.png";
 import { socket } from "../../services/socket";
+import { soundNotification } from "../../utils/soundNotification";
 
 const extractArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -1154,6 +1155,17 @@ export const AdminOrders = () => {
           detail: { orderId, id: orderId, status: newStatus },
         }),
       );
+
+      // 🛑 Stop looping sound & vibration if no other unhandled pending orders remain
+      const hasOtherPending = orders.some((ord) => {
+        const ordId = ord.id || ord._id;
+        if (ordId === orderId) return false;
+        const s = String(ord.status || "").toUpperCase();
+        return s === "PLACED" || s === "PENDING" || s === "AWAITING PAYMENT" || s === "AWAITING_PAYMENT" || !ord.status;
+      });
+      if (!hasOtherPending) {
+        soundNotification.stopContinuousOrderAlert();
+      }
 
       fetchOrdersAndFleet();
 

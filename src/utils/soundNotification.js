@@ -1,14 +1,33 @@
-﻿/**
+/**
  * 🔔 soundNotification.js
  * 
  * Central Utility for:
  * 1. Web Audio API Synthesized Restaurant Kitchen Bell & Rider Alert Chimes
- * 2. Native OS Desktop Notifications (Windows Action Center / Mac / Mobile)
+ * 2. Continuous Looping Order Alert (Sound + Mobile Vibration) until Accepted/Rejected
+ * 3. Native OS Desktop & Mobile Push Notifications (Windows, Mac, Android)
  */
 
 class SoundNotificationManager {
   constructor() {
     this.audioCtx = null;
+    this.alertInterval = null;
+    this.isAlerting = false;
+    this.hasUnlocked = false;
+
+    // 🚀 Mobile / Browser Interaction Auto-Unlocker
+    if (typeof window !== 'undefined') {
+      const unlock = () => {
+        this.getAudioContext();
+        this.hasUnlocked = true;
+        ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach((evt) => {
+          window.removeEventListener(evt, unlock);
+        });
+      };
+
+      ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach((evt) => {
+        window.addEventListener(evt, unlock, { passive: true, once: true });
+      });
+    }
   }
 
   getAudioContext() {
@@ -26,8 +45,32 @@ class SoundNotificationManager {
   }
 
   /**
+   * 📳 Mobile Vibration Engine (navigator.vibrate)
+   */
+  vibrate(pattern = [600, 250, 600, 250, 800]) {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    try {
+      if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(pattern);
+      }
+    } catch (e) {
+      console.warn('Vibration API not allowed or supported:', e);
+    }
+  }
+
+  stopVibration() {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    try {
+      if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(0);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /**
    * 🔔 Play Resonant Dual-Tone Restaurant Kitchen Order Bell
-   * Harmonious E6 -> A5 bell chime that sounds crisp and pleasant.
    */
   playKitchenBellChime() {
     // 1. Try playing custom MP3 first
@@ -60,7 +103,7 @@ class SoundNotificationManager {
       const gain1 = ctx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(880, now);
-      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.setValueAtTime(0.4, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
@@ -72,7 +115,7 @@ class SoundNotificationManager {
       const gain2 = ctx.createGain();
       osc2.type = 'triangle';
       osc2.frequency.setValueAtTime(1320, now + 0.12);
-      gain2.gain.setValueAtTime(0.35, now + 0.12);
+      gain2.gain.setValueAtTime(0.45, now + 0.12);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
@@ -84,7 +127,7 @@ class SoundNotificationManager {
       const gain3 = ctx.createGain();
       osc3.type = 'sine';
       osc3.frequency.setValueAtTime(1760, now + 0.25);
-      gain3.gain.setValueAtTime(0.2, now + 0.25);
+      gain3.gain.setValueAtTime(0.3, now + 0.25);
       gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
       osc3.connect(gain3);
       gain3.connect(ctx.destination);
@@ -93,6 +136,50 @@ class SoundNotificationManager {
     } catch (e) {
       console.warn('Web Audio chime could not play:', e);
     }
+  }
+
+  /**
+   * 🚨 START Continuous Loop Order Alert (Sound + Vibration on Mobile)
+   * Rings & Vibrates continuously until admin accepts/rejects the order.
+   */
+  startContinuousOrderAlert() {
+    if (this.isAlerting) return;
+    this.isAlerting = true;
+
+    // Trigger immediately
+    this.playKitchenBellChime();
+    this.vibrate([600, 250, 600, 250, 800]);
+
+    // Clear any dangling interval
+    if (this.alertInterval) {
+      clearInterval(this.alertInterval);
+    }
+
+    // Loop every 3.5 seconds
+    this.alertInterval = setInterval(() => {
+      if (!this.isAlerting) {
+        this.stopContinuousOrderAlert();
+        return;
+      }
+      this.playKitchenBellChime();
+      this.vibrate([600, 250, 600, 250, 800]);
+    }, 3500);
+  }
+
+  /**
+   * 🛑 STOP Continuous Loop Order Alert
+   */
+  stopContinuousOrderAlert() {
+    this.isAlerting = false;
+    if (this.alertInterval) {
+      clearInterval(this.alertInterval);
+      this.alertInterval = null;
+    }
+    this.stopVibration();
+  }
+
+  isAlertActive() {
+    return this.isAlerting;
   }
 
   /**
@@ -117,6 +204,7 @@ class SoundNotificationManager {
         osc.start(now + i * 0.14);
         osc.stop(now + i * 0.14 + 0.35);
       });
+      this.vibrate([300, 150, 300]);
     } catch (e) {
       console.warn('Rider chime could not play:', e);
     }
