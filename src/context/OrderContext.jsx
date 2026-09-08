@@ -5,6 +5,7 @@ import { socket } from '../services/socket'; // ⚡ সেন্ট্রাল 
 import { getAllOrders } from '../services/ordersService';
 import { useAuth } from './AuthContext';
 import { soundNotification } from '../utils/soundNotification';
+import { registerServiceWorker, subscribeUserToPush } from '../services/webPushService';
 
 const OrderContext = createContext();
 
@@ -87,9 +88,13 @@ export const OrderProvider = ({ children }) => {
       return undefined;
     }
 
-    // 🔔 Prompt for native OS notification permission for Admin
+    // 🔔 Prompt for native OS notification permission and subscribe to Web Push for Admin
     if (isAdmin) {
-      soundNotification.requestPermission();
+      soundNotification.requestPermission().then(() => {
+        registerServiceWorker().then(() => {
+          subscribeUserToPush({ user });
+        });
+      });
     }
 
     // ১. প্রথমবার কম্পোনেন্ট লোড হলে ডাটা ফেচ করবে
