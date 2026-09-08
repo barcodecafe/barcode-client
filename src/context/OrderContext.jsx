@@ -32,11 +32,14 @@ export const OrderProvider = ({ children }) => {
   const canReadOrders = Boolean(user) && ORDER_ROLES.includes(role);
   const isAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(role);
 
+  const [isAlertActive, setIsAlertActive] = useState(false);
+
   /**
    * 🛑 Helper: Stop sound and vibration alert
    */
   const stopContinuousAlert = useCallback(() => {
     soundNotification.stopContinuousOrderAlert();
+    setIsAlertActive(false);
   }, []);
 
   /**
@@ -45,6 +48,7 @@ export const OrderProvider = ({ children }) => {
   const startContinuousAlert = useCallback(() => {
     if (isAdmin) {
       soundNotification.startContinuousOrderAlert();
+      setIsAlertActive(true);
     }
   }, [isAdmin]);
 
@@ -54,12 +58,15 @@ export const OrderProvider = ({ children }) => {
   const checkAndManageAlert = useCallback((ordersList) => {
     if (!isAdmin) return;
     const hasUnhandledPending = Array.isArray(ordersList) && ordersList.some((o) => {
-      const s = String(o?.status || '').toUpperCase();
+      const s = String(o?.status || o?.deliveryStatus || '').toUpperCase();
       return s === 'PLACED' || s === 'PENDING' || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT' || !o?.status;
     });
 
     if (!hasUnhandledPending) {
       soundNotification.stopContinuousOrderAlert();
+      setIsAlertActive(false);
+    } else {
+      setIsAlertActive(soundNotification.isAlertActive());
     }
   }, [isAdmin]);
 
@@ -249,6 +256,7 @@ export const OrderProvider = ({ children }) => {
     <OrderContext.Provider value={{
       orders,
       unreadOrderCount,
+      isAlertActive,
       markOrdersAsRead,
       fetchAndUpdateOrders,
       updateLocalOrderStatus,

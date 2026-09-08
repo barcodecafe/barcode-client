@@ -21,6 +21,7 @@ import {
   Bike,
   Settings,
   Bell,
+  BellRing,
   ShieldCheck,
   MessageSquarePlus,
   UserPlus,
@@ -80,7 +81,7 @@ export const AdminLayout = () => {
     return 'Staff Administrator';
   };
   const { settings } = useSettings();
-  const { unreadOrderCount, markOrdersAsRead, orders } = useOrders();
+  const { unreadOrderCount, markOrdersAsRead, orders, isAlertActive, stopContinuousAlert } = useOrders();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -334,6 +335,31 @@ export const AdminLayout = () => {
             </div>
           </div>
         </header>
+
+        {/* 🚨 Continuous Looping Alarm Banner with Mute Control */}
+        {isAlertActive && (
+          <div className="bg-red-600 text-white px-3.5 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xl animate-pulse sticky top-14 z-20 border-b border-red-700 backdrop-blur-md">
+            <div className="flex items-center gap-2 font-bold text-xs sm:text-sm min-w-0">
+              <BellRing className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce shrink-0 text-amber-300" />
+              <span className="truncate">🚨 New Unaccepted Order! Ringing Alarm & Vibrating...</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/admin/orders"
+                className="px-2.5 py-1 bg-white text-red-600 rounded-lg text-xs font-black hover:bg-neutral-100 transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                View Orders
+              </Link>
+              <button
+                type="button"
+                onClick={stopContinuousAlert}
+                className="px-2.5 py-1 bg-red-850 hover:bg-red-900 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-red-400/50 shadow-xs whitespace-nowrap flex items-center gap-1"
+              >
+                🔕 Mute
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 🎯 dynamic responsive container */}
         <main className={`flex-grow py-2 sm:py-2.5 lg:py-3 w-full transition-all duration-250 ${isDrawerOpen ? 'admin-sidebar-open' : 'admin-sidebar-closed'}`}>
