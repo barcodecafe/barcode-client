@@ -170,7 +170,7 @@ class SoundNotificationManager {
       clearInterval(this.alertInterval);
     }
 
-    // Loop every 3.5 seconds
+    // Loop every 3 seconds (as requested: 3 seconds por por bajbe)
     this.alertInterval = setInterval(() => {
       if (!this.isAlerting) {
         this.stopContinuousOrderAlert();
@@ -178,7 +178,7 @@ class SoundNotificationManager {
       }
       this.playKitchenBellChime();
       this.vibrate([600, 250, 600, 250, 800]);
-    }, 3500);
+    }, 3000);
   }
 
   /**
