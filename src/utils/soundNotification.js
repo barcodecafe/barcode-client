@@ -170,15 +170,15 @@ class SoundNotificationManager {
       clearInterval(this.alertInterval);
     }
 
-    // Loop every 3 seconds (as requested: 3 seconds por por bajbe)
+    // Standard rapid loop: Every 1.8s (sound is ~1.2s, so chime & vibration ring back-to-back without overlap)
     this.alertInterval = setInterval(() => {
       if (!this.isAlerting) {
         this.stopContinuousOrderAlert();
         return;
       }
       this.playKitchenBellChime();
-      this.vibrate([600, 250, 600, 250, 800]);
-    }, 3000);
+      this.vibrate([500, 200, 500, 200, 600]);
+    }, 1800);
   }
 
   /**
