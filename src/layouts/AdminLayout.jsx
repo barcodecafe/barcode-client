@@ -99,16 +99,23 @@ export const AdminLayout = () => {
   const [pushState, setPushState] = useState(() => getPushPermissionState());
 
   const handleTestAndEnableAlerts = async () => {
-    // 1. Local sound & vibration
-    soundNotification.playKitchenBellChime();
-    soundNotification.vibrate([600, 250, 600, 250, 800]);
+    // 🚨 1. Start continuous alert loop immediately (sound + mobile vibration)
+    soundNotification.startContinuousOrderAlert();
+
+    // 🔔 2. Dispatch simulated New Order Notification to device
+    soundNotification.sendNotification({
+      title: '🔔 [TEST] New Order #TEST01 Received!',
+      body: '৳650 • Test Customer (Home Delivery)\nClick to view and manage order details.',
+      url: '/admin/orders',
+      tag: 'admin-test-alert',
+    });
 
     if (!isPushSupported()) {
-      toast.success('🔊 Audio & Vibration alert played!', { id: 'test-sound-toast' });
+      toast.success('🔊 Continuous Alert & Vibration started! (Click top banner or Mute to stop)', { id: 'test-sound-toast', duration: 5000 });
       return;
     }
 
-    toast.loading('🔄 Connecting mobile push notifications...', { id: 'test-sound-toast' });
+    toast.loading('🔄 Connecting mobile lock-screen push...', { id: 'test-sound-toast' });
     try {
       const res = await subscribeUserToPush({ user });
       const currentState = getPushPermissionState();
