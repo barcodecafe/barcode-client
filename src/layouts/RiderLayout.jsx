@@ -68,22 +68,31 @@ export const RiderLayout = () => {
   const [pushState, setPushState] = useState(() => getPushPermissionState());
 
   const handleTestAndEnableAlerts = async () => {
-    soundNotification.playKitchenBellChime();
-    soundNotification.vibrate([600, 250, 600, 250, 800]);
+    // 🚨 1. Start continuous alert loop immediately (sound + mobile vibration)
+    soundNotification.startContinuousOrderAlert();
+    setIsAlertActive(true);
+
+    // 🔔 2. Dispatch simulated Delivery Notification to device
+    soundNotification.sendNotification({
+      title: '🚴 [TEST] New Delivery Assigned #TEST99!',
+      body: '৳450 • Test Customer\nTap to view and accept delivery.',
+      url: '/rider/orders',
+      tag: 'rider-test-alert',
+    });
 
     if (!isPushSupported()) {
-      toast.success("🔊 Audio & Vibration alert played!", { id: "test-sound-toast" });
+      toast.success("🔊 Continuous Alert & Vibration started! (Click top banner or Mute to stop)", { id: "test-sound-toast", duration: 5000 });
       return;
     }
 
-    toast.loading("🔄 Connecting mobile push notifications...", { id: "test-sound-toast" });
+    toast.loading("🔄 Connecting mobile lock-screen push...", { id: "test-sound-toast" });
     try {
       const res = await subscribeUserToPush({ user });
       const currentState = getPushPermissionState();
       setPushState(currentState);
 
       if (res?.success === false && res?.reason === "permission_not_granted") {
-        toast.error("⚠️ Please click 'Allow' on the notification popup to get lock-screen alerts!", {
+        toast.error("⚠️ Please click 'Allow' on notification popup for lock-screen alerts!", {
           id: "test-sound-toast",
           duration: 6000,
         });
@@ -91,7 +100,7 @@ export const RiderLayout = () => {
       }
 
       toast.success(
-        "🔊 Alert played! 📱 Sending lock-screen test push in 3s... Lock your screen now!",
+        "🔊 Looping Alarm started! 📱 Sending lock-screen push in 3s... Lock your screen now!",
         { id: "test-sound-toast", duration: 7000 }
       );
 
