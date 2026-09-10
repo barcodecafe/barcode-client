@@ -6,6 +6,7 @@ import { getAllOrders } from '../services/ordersService';
 import { useAuth } from './AuthContext';
 import { soundNotification } from '../utils/soundNotification';
 import { registerServiceWorker, subscribeUserToPush } from '../services/webPushService';
+import { isAssignedToMe } from '../utils/rider';
 
 const OrderContext = createContext();
 
@@ -31,6 +32,7 @@ export const OrderProvider = ({ children }) => {
   const role = String(user?.role || '').toLowerCase();
   const canReadOrders = Boolean(user) && ORDER_ROLES.includes(role);
   const isAdmin = ['admin', 'super_admin', 'superadmin', 'manager', 'restaurant_manager'].includes(role);
+  const isRider = role === 'rider';
 
   const [isAlertActive, setIsAlertActive] = useState(false);
 
@@ -43,32 +45,51 @@ export const OrderProvider = ({ children }) => {
   }, []);
 
   /**
-   * 🚨 Helper: Start sound and vibration alert (for admin)
+   * 🚨 Helper: Start sound and vibration alert (for admin & rider)
    */
   const startContinuousAlert = useCallback(() => {
-    if (isAdmin) {
+    if (isAdmin || isRider) {
       soundNotification.startContinuousOrderAlert();
       setIsAlertActive(true);
     }
-  }, [isAdmin]);
+  }, [isAdmin, isRider]);
 
   /**
    * 🔍 Helper: Check if any unhandled pending orders remain. If none, stop sound and vibration!
    */
   const checkAndManageAlert = useCallback((ordersList) => {
-    if (!isAdmin) return;
-    const hasUnhandledPending = Array.isArray(ordersList) && ordersList.some((o) => {
-      const s = String(o?.status || o?.deliveryStatus || '').toUpperCase();
-      return s === 'PLACED' || s === 'PENDING' || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT' || !o?.status;
-    });
+    if (isAdmin) {
+      const hasUnhandledPending = Array.isArray(ordersList) && ordersList.some((o) => {
+        const s = String(o?.status || o?.deliveryStatus || '').toUpperCase();
+        return s === 'PLACED' || s === 'PENDING' || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT' || !o?.status;
+      });
 
-    if (!hasUnhandledPending) {
-      soundNotification.stopContinuousOrderAlert();
-      setIsAlertActive(false);
-    } else {
-      setIsAlertActive(soundNotification.isAlertActive());
+      if (!hasUnhandledPending) {
+        soundNotification.stopContinuousOrderAlert();
+        setIsAlertActive(false);
+      } else {
+        setIsAlertActive(soundNotification.isAlertActive());
+      }
+      return;
     }
-  }, [isAdmin]);
+
+    if (isRider) {
+      const hasUnhandledPendingRider = Array.isArray(ordersList) && ordersList.some((o) => {
+        const isMy = isAssignedToMe(o, user);
+        const isPending = !o?.riderAcceptStatus || o?.riderAcceptStatus === 'pending';
+        const isActive = o?.status !== 'Delivered' && o?.status !== 'Rejected';
+        return isMy && isPending && isActive;
+      });
+
+      if (!hasUnhandledPendingRider) {
+        soundNotification.stopContinuousOrderAlert();
+        setIsAlertActive(false);
+      } else {
+        setIsAlertActive(soundNotification.isAlertActive());
+      }
+      return;
+    }
+  }, [isAdmin, isRider, user]);
 
   const fetchAndUpdateOrders = useCallback(async () => {
     if (!canReadOrders) return;
@@ -95,8 +116,8 @@ export const OrderProvider = ({ children }) => {
       return undefined;
     }
 
-    // 🔔 Prompt for native OS notification permission and subscribe to Web Push for Admin
-    if (isAdmin) {
+    // 🔔 Prompt for native OS notification permission and subscribe to Web Push for Admin & Rider
+    if (isAdmin || isRider) {
       soundNotification.requestPermission().then(() => {
         registerServiceWorker().then(() => {
           subscribeUserToPush({ user });
@@ -124,7 +145,7 @@ export const OrderProvider = ({ children }) => {
       prevCountRef.current = newCount;
       setPendingCount(newCount);
 
-      if (newCount === 0) {
+      if (newCount === 0 && isAdmin) {
         soundNotification.stopContinuousOrderAlert();
       }
     };
@@ -216,12 +237,107 @@ export const OrderProvider = ({ children }) => {
       handleOrdersChanged();
     };
 
+    // 🚴 রাইডারের নতুন ডেলিভারি অ্যাসাইনমেন্ট হ্যান্ডলার
+    const handleRiderOrderAssigned = (data) => {
+      if (!isRider) return;
+      const incomingOrder = data?.order || data;
+      if (!incomingOrder) return;
+      if (!isAssignedToMe(incomingOrder, user)) return;
+
+      const acceptStatus = incomingOrder.riderAcceptStatus;
+      const orderStatus = incomingOrder.status;
+      if (acceptStatus === 'accepted' || orderStatus === 'Delivered' || orderStatus === 'Rejected') {
+        return;
+      }
+
+      // 🚨 Start Continuous Loop Sound & Mobile Vibration until Accept/Reject
+      soundNotification.startContinuousOrderAlert();
+      setIsAlertActive(true);
+
+      const orderId = incomingOrder.displayId || incomingOrder.id || incomingOrder._id || 'New';
+      const shortId = String(orderId).slice(-6).toUpperCase();
+      const customerName = incomingOrder.customerName || incomingOrder.customer?.name || incomingOrder.user?.name || 'Customer';
+      const rawAmount = Number(incomingOrder.totalAmount ?? incomingOrder.total);
+      const totalAmount = (Number.isFinite(rawAmount) ? rawAmount : 0).toFixed(0);
+
+      soundNotification.sendNotification({
+        title: `🚴 New Delivery Assigned #${shortId}!`,
+        body: `৳${totalAmount} • ${customerName}\nTap to view and accept delivery.`,
+        url: '/rider/orders',
+        tag: `rider-order-${shortId}`,
+      });
+
+      // 🎯 Slim Production-Grade Red Themed Toast on Rider Screen
+      toast.custom(
+        (t) => (
+          <div
+            onClick={() => {
+              window.location.href = '/rider/orders';
+              toast.dismiss(t.id);
+            }}
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-lg w-full bg-white/95 dark:bg-neutral-900/95 shadow-xl shadow-neutral-900/10 rounded-xl pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 border border-rose-500/25 border-l-4 border-l-rose-500 backdrop-blur-md cursor-pointer transition-all hover:scale-[1.01]`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-base shrink-0 animate-bounce">🚴</span>
+              <div className="min-w-0 flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                <span className="text-xs font-black text-rose-600 dark:text-rose-500 whitespace-nowrap">
+                  New Delivery:
+                </span>
+                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">
+                  #{shortId} • {customerName} (৳{totalAmount})
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.location.href = '/rider/orders';
+                  toast.dismiss(t.id);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundNotification.stopContinuousOrderAlert();
+                  setIsAlertActive(false);
+                  toast.dismiss(t.id);
+                }}
+                className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                title="Silence & Dismiss"
+                aria-label="Silence"
+              >
+                <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          duration: 15000,
+          id: `rider-assigned-${shortId}`,
+        }
+      );
+
+      handleOrdersChanged();
+    };
+
     socket.on('connect', handleConnect);
     socket.on('pending_count_updated', handlePendingCount);
     socket.on('admin_new_order', handleNewOrder);
     socket.on('order_created', handleNewOrder);
     socket.on('order_updated', handleOrdersChanged);
     socket.on('order_status_updated', handleOrdersChanged);
+    socket.on('rider_order_assigned', handleRiderOrderAssigned);
+    socket.on('order_assigned', handleRiderOrderAssigned);
+    socket.on('rider_new_delivery', handleRiderOrderAssigned);
     socket.on('rider_cash_submitted', handleOrdersChanged);
     socket.on('rider_cash_settled', handleOrdersChanged);
     socket.on('rider_order_updated', handleOrdersChanged);
@@ -235,11 +351,14 @@ export const OrderProvider = ({ children }) => {
       socket.off('order_created', handleNewOrder);
       socket.off('order_updated', handleOrdersChanged);
       socket.off('order_status_updated', handleOrdersChanged);
+      socket.off('rider_order_assigned', handleRiderOrderAssigned);
+      socket.off('order_assigned', handleRiderOrderAssigned);
+      socket.off('rider_new_delivery', handleRiderOrderAssigned);
       socket.off('rider_cash_submitted', handleOrdersChanged);
       socket.off('rider_cash_settled', handleOrdersChanged);
       socket.off('rider_order_updated', handleOrdersChanged);
     };
-  }, [isAuthLoaded, canReadOrders, isAdmin, fetchAndUpdateOrders]);
+  }, [isAuthLoaded, canReadOrders, isAdmin, isRider, user, fetchAndUpdateOrders]);
 
   // ローカルステータス更新
   const updateLocalOrderStatus = (orderId, newStatus) => {

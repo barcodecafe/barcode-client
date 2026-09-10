@@ -244,23 +244,44 @@ class SoundNotificationManager {
   }
 
   /**
-   * 🖥️ Send Native OS Notification (Windows, Mac, Android)
+   * 🖥️ Send Native OS / Mobile Notification (Windows, Mac, Android)
    */
-  sendNotification({ title, body, icon = '/icons.png', tag = 'barcode-order', onClick, url }) {
+  async sendNotification({ title, body, icon = '/icons.png', tag = 'barcode-order', onClick, url }) {
+    // 📳 Always trigger mobile vibration directly as well
+    this.vibrate([600, 250, 600, 250, 800]);
+
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return null;
     }
 
     if (Notification.permission === 'granted') {
+      const options = {
+        body,
+        icon,
+        badge: '/icons.png',
+        tag,
+        requireInteraction: true,
+        silent: false,
+        vibrate: [600, 250, 600, 250, 800],
+        data: { url },
+      };
+
+      // 1. Prefer Service Worker showNotification on mobile (Android Chrome PWA standard)
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg && typeof reg.showNotification === 'function') {
+            await reg.showNotification(title, options);
+            return true;
+          }
+        } catch (swErr) {
+          // Fallback to new Notification below
+        }
+      }
+
+      // 2. Desktop & standard Notification constructor
       try {
-        const notif = new Notification(title, {
-          body,
-          icon,
-          badge: '/icons.png',
-          tag,
-          requireInteraction: true,
-          silent: false,
-        });
+        const notif = new Notification(title, options);
 
         notif.onclick = (event) => {
           event.preventDefault();

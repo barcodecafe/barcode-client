@@ -25,6 +25,7 @@ import {
   rejectRiderOrder,
 } from "../../services/ordersService";
 import { isAssignedToMe } from "../../utils/rider";
+import { soundNotification } from "../../utils/soundNotification";
 
 import { socket } from "../../services/socket"; 
 
@@ -111,6 +112,13 @@ export const RiderOrders = () => {
       .then((data) => {
         const orderList = Array.isArray(data) ? data : data?.data || [];
         const assigned = orderList.filter((o) => isAssignedToMe(o, user) && o.status !== "Delivered" && o.status !== "Rejected");
+
+        const unhandled = assigned.filter(
+          (o) => o.riderAcceptStatus === "pending" || !o.riderAcceptStatus
+        );
+        if (unhandled.length === 0) {
+          soundNotification.stopContinuousOrderAlert();
+        }
 
         setOrders((prevOrders) => {
           const prevMap = new Map(prevOrders.map((o) => [String(o._id || o.id), o]));
@@ -216,6 +224,7 @@ export const RiderOrders = () => {
   }, [activeChatOrderId, chatMessagesCount]);
 
   const handleAccept = async (orderId) => {
+    soundNotification.stopContinuousOrderAlert();
     try {
       setOrders((prev) =>
         prev.map((o) =>
@@ -244,6 +253,7 @@ export const RiderOrders = () => {
   };
 
   const handleReject = async (orderId) => {
+    soundNotification.stopContinuousOrderAlert();
     try {
       setOrders((prev) => prev.filter((o) => String(o._id || o.id) !== String(orderId)));
 

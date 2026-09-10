@@ -16,7 +16,9 @@ import {
   LogOut,
   Bell,
   BellOff,
+  BellRing,
   Volume2,
+  VolumeX,
   ClipboardList,
   ShoppingBag as ToastIcon,
   Power,
@@ -25,6 +27,8 @@ import { useTheme } from "../hooks/useTheme";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
+import { useOrders } from "../context/OrderContext";
+import { soundNotification } from "../utils/soundNotification";
 import { socket } from "../services/socket";
 
 import resB from "../assets/Barcode_restaurant_group-B.png";
@@ -48,6 +52,7 @@ export const RiderLayout = () => {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  const { isAlertActive, stopContinuousAlert, startContinuousAlert } = useOrders();
   const [pendingCount, setPendingCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastNotification, setToastNotification] = useState(null);
@@ -57,6 +62,9 @@ export const RiderLayout = () => {
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
+    if (!soundEnabled) {
+      soundNotification.stopContinuousOrderAlert();
+    }
   }, [soundEnabled]);
 
   const audioCtxRef = useRef(null);
@@ -153,6 +161,9 @@ export const RiderLayout = () => {
       });
 
       setPendingCount(pendingAcceptance.length);
+      if (pendingAcceptance.length === 0) {
+        soundNotification.stopContinuousOrderAlert();
+      }
     } catch (err) {
       console.error("Failed to fetch rider pending orders:", err);
     }
@@ -200,7 +211,10 @@ export const RiderLayout = () => {
         notifiedOrdersRef.current.add(orderId);
       }
 
-      playLoudNotificationChime();
+      // 🚨 Start Continuous Loop Sound & Mobile Vibration until Accept/Reject
+      if (soundEnabledRef.current) {
+        soundNotification.startContinuousOrderAlert();
+      }
 
       const totalAmount = incomingOrder.total || incomingOrder.totalAmount || 0;
       const customerName = incomingOrder.user?.name || incomingOrder.customerName || "Customer";
@@ -215,23 +229,18 @@ export const RiderLayout = () => {
         setToastNotification((prev) => (prev?.id === orderId ? null : prev));
       }, 7000);
 
-      if ("Notification" in window && Notification.permission === "granted") {
-        const displayId = orderId !== "NEW" ? `#${orderId.slice(-6).toUpperCase()}` : "";
-        const desktopNotif = new Notification(
-          "🚴 New Delivery Assigned!",
-          {
-            body: `Order ${displayId}\nCustomer: ${customerName}\nTotal: ৳${totalAmount}`,
-            icon: settings?.logoLight || resB,
-            requireInteraction: true,
-          }
-        );
-
-        desktopNotif.onclick = () => {
+      const displayId = orderId !== "NEW" ? `#${orderId.slice(-6).toUpperCase()}` : "";
+      soundNotification.sendNotification({
+        title: `🚴 New Delivery Assigned ${displayId}!`,
+        body: `Customer: ${customerName} • ৳${totalAmount}\nTap to view and accept delivery.`,
+        icon: settings?.logoLight || resB,
+        url: "/rider/orders",
+        tag: `rider-order-${orderId}`,
+        onClick: () => {
           window.focus();
           navigate("/rider/orders");
-          desktopNotif.close();
-        };
-      }
+        },
+      });
     };
 
     // 🔄 ২. স্ট্যাটাস পরিবর্তন হলে নিঃশব্দে ডাটা রিফ্রেশ হবে (কোনো নতুন অর্ডার এলার্ম বাজবে না)
@@ -272,6 +281,7 @@ export const RiderLayout = () => {
 
     return () => {
       clearTimeout(refetchTimer);
+      soundNotification.stopContinuousOrderAlert();
       socket.off("rider_order_assigned", handleNewOrderAssigned);
       socket.off("order_assigned", handleNewOrderAssigned);
       socket.off("order_updated", handleSilentSync);
@@ -512,12 +522,16 @@ export const RiderLayout = () => {
             </button>
 
             <button
-              onClick={playLoudNotificationChime}
+              onClick={() => {
+                soundNotification.playKitchenBellChime();
+                soundNotification.vibrate([600, 250, 600, 250, 800]);
+                toast.success('🔊 Sound & Vibration alert played!', { id: 'test-sound-toast' });
+              }}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
-              title="Test Sound Engine"
+              title="Test Sound & Mobile Vibration Alert"
             >
               <Volume2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Test Sound</span>
+              <span className="hidden md:inline">Test Alert</span>
             </button>
 
             <button
@@ -581,6 +595,33 @@ export const RiderLayout = () => {
             </div>
           </div>
         </header>
+
+        {/* 🚨 Continuous Looping Alarm Banner with Mute Control */}
+        {isAlertActive && (
+          <div className="bg-red-600 text-white px-3.5 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xl animate-pulse sticky top-14 z-20 border-b border-red-700 backdrop-blur-md">
+            <div className="flex items-center gap-2 font-bold text-xs sm:text-sm min-w-0">
+              <BellRing className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce shrink-0 text-amber-300" />
+              <span className="truncate">🚨 New Assigned Delivery! Ringing Alarm & Vibrating...</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/rider/orders"
+                className="px-2.5 py-1 bg-white text-red-600 rounded-lg text-xs font-black hover:bg-neutral-100 transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                View Orders
+              </Link>
+              <button
+                type="button"
+                onClick={stopContinuousAlert}
+                className="px-2 py-1 bg-red-700 hover:bg-red-800 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                title="Mute Alert"
+              >
+                <VolumeX className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mute Alarm</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
           {/* Keyed on the path so leaving a page that crashed clears the
