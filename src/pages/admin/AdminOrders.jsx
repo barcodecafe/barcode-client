@@ -254,6 +254,17 @@ const getItemPayableTotal = (item) => {
   return computeInvoiceItemDetails(item).lineTotal;
 };
 
+export const checkIsPickupOrder = (ord) => {
+  if (!ord) return false;
+  if (ord.orderType === "pickup") return true;
+  if (ord.orderType === "delivery") return false;
+  return Boolean(
+    ord.pickupBranchId ||
+    ord.pickupBranchName ||
+    ord.deliveryArea === "Self Pickup"
+  );
+};
+
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
@@ -414,12 +425,7 @@ export const AdminOrders = () => {
         .filter((n) => Number.isFinite(n));
       if (ids.length === 0) return true;
 
-      const isPickupOrder =
-        ord.orderType === "pickup" ||
-        ord.deliveryArea === "Self Pickup" ||
-        String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
-        String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
-        String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+      const isPickupOrder = checkIsPickupOrder(ord);
 
       const targetBranches = (branches || []).filter((b) => ids.includes(Number(b.id)));
 
@@ -1517,12 +1523,7 @@ export const AdminOrders = () => {
     let pickup = 0;
     baseOrders.forEach((ord) => {
       if (!ord) return;
-      const isPickup =
-        ord.orderType === "pickup" ||
-        ord.deliveryArea === "Self Pickup" ||
-        String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
-        String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
-        String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+      const isPickup = checkIsPickupOrder(ord);
       if (isPickup) pickup += 1;
       else delivery += 1;
     });
@@ -1563,12 +1564,7 @@ export const AdminOrders = () => {
     // 2. Order Type Filter (Delivery / Pickup)
     if (orderTypeFilter !== "all") {
       list = list.filter((ord) => {
-        const isPickup =
-          ord.orderType === "pickup" ||
-          ord.deliveryArea === "Self Pickup" ||
-          String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
-          String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
-          String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+        const isPickup = checkIsPickupOrder(ord);
         return orderTypeFilter === "pickup" ? isPickup : !isPickup;
       });
     }
@@ -1940,12 +1936,7 @@ export const AdminOrders = () => {
                       ""
                     );
 
-                    const isPickupOrder =
-                      ord.orderType === "pickup" ||
-                      ord.deliveryArea === "Self Pickup" ||
-                      String(ord.user?.pickArea || "").toLowerCase().includes("self pickup") ||
-                      String(ord.user?.address || "").toLowerCase().includes("self pickup") ||
-                      String(ord.deliveryAddress || "").toLowerCase().includes("self pickup");
+                    const isPickupOrder = checkIsPickupOrder(ord);
 
                     return (
                       <tr
@@ -2577,18 +2568,25 @@ export const AdminOrders = () => {
                       </div>
                       <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
                         <span className="bill-label text-neutral-500 font-medium">
-                          Address
+                          Order Type
+                        </span>
+                        <span className="bill-value font-bold text-neutral-800">
+                          : {checkIsPickupOrder(selectedOrderDetails)
+                              ? `Self-Pickup (${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Selected Branch"})`
+                              : "Home Delivery"}
+                        </span>
+                      </div>
+                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
+                          {checkIsPickupOrder(selectedOrderDetails) ? "Pickup Outlet" : "Address"}
                         </span>
                         <span className="bill-value text-neutral-800">
-                          :{" "}
-                          {selectedOrderDetails.user?.address ||
-                            selectedOrderDetails.deliveryAddress ||
-                            "N/A"}{" "}
-                          {selectedOrderDetails.user?.pickArea
-                            ? `(${selectedOrderDetails.user?.pickArea})`
-                            : selectedOrderDetails.deliveryArea
-                            ? `(${selectedOrderDetails.deliveryArea})`
-                            : ""}
+                          : {checkIsPickupOrder(selectedOrderDetails)
+                              ? `Counter Collection at ${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Barcode Outlet"}`
+                              : (selectedOrderDetails.deliveryAddress || selectedOrderDetails.user?.address || "N/A") +
+                                (selectedOrderDetails.deliveryArea && !selectedOrderDetails.deliveryAddress?.includes(selectedOrderDetails.deliveryArea)
+                                  ? ` (${selectedOrderDetails.deliveryArea})`
+                                  : "")}
                         </span>
                       </div>
                     </div>
@@ -2620,6 +2618,14 @@ export const AdminOrders = () => {
                           {String(
                             selectedOrderDetails?.id || selectedOrderDetails?._id || ""
                           ).slice(-10).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium">
+                          Fulfillment
+                        </span>
+                        <span className={`bill-value font-bold uppercase ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
+                          : {checkIsPickupOrder(selectedOrderDetails) ? "🛍️ SELF-PICKUP" : "🚚 HOME DELIVERY"}
                         </span>
                       </div>
                       <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
@@ -2792,7 +2798,9 @@ export const AdminOrders = () => {
                       <div className="summary-row flex justify-between py-1 border-b border-neutral-200">
                         <span className="text-neutral-500">Shipping Charge:</span>
                         <span className="font-medium">
-                          ৳{deliveryCharge.toFixed(2)}
+                          {checkIsPickupOrder(selectedOrderDetails)
+                            ? "৳0.00 (Self-Pickup Free)"
+                            : `৳${deliveryCharge.toFixed(2)}`}
                         </span>
                       </div>
 

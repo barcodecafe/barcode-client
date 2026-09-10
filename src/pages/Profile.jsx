@@ -492,7 +492,7 @@ const OrderCard = ({ order, expanded, onToggle, onRateExperience }) => {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 text-xs text-neutral-500">
               <div>
-                {order.orderType === "pickup" || order.pickupBranchName ? (
+                {(order.orderType ? order.orderType === "pickup" : Boolean(order.pickupBranchName || order.pickupBranchId)) ? (
                   <span>
                     🛍️ <strong>Pickup Outlet:</strong> {order.pickupBranchName || "Selected Outlet"}
                   </span>
@@ -724,7 +724,7 @@ export const Profile = () => {
     let matchedBranch = null;
 
     // 1. If Self-Pickup order, strictly match by pickup branch ID or Name
-    const isPickup = ord.orderType === "pickup" || Boolean(ord.pickupBranchId || ord.pickupBranchName);
+    const isPickup = ord.orderType ? ord.orderType === "pickup" : Boolean(ord.pickupBranchId || ord.pickupBranchName);
     if (isPickup) {
       if (ord.pickupBranchId || ord.pickupBranchName) {
         matchedBranch = branches.find(

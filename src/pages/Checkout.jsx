@@ -139,7 +139,13 @@ export const Checkout = () => {
   const [billingAddress, setBillingAddress] = useState("");
 
   // Fulfillment Mode (Home Delivery vs Self Pickup)
-  const { fulfillmentMode, selectedBranch, openFulfillmentModal } = useFulfillment();
+  const {
+    fulfillmentMode,
+    selectedBranch,
+    selectHomeDelivery,
+    selectPickupBranch,
+    openFulfillmentModal,
+  } = useFulfillment();
   const [orderType, setOrderType] = useState(fulfillmentMode || "delivery");
   const [branches, setBranches] = useState([]);
   const [pickupBranchId, setPickupBranchId] = useState(null);
@@ -186,8 +192,12 @@ export const Checkout = () => {
   useEffect(() => {
     if (user) {
       setPhone(user.phone || "");
-      setAddress(user.address || "");
-      setBillingAddress(user.address || "");
+      const cleanAddress =
+        user.address && !user.address.toLowerCase().includes("self pickup")
+          ? user.address
+          : "";
+      setAddress(cleanAddress);
+      setBillingAddress(cleanAddress);
     }
   }, [user]);
 
@@ -1392,25 +1402,45 @@ export const Checkout = () => {
                 <StepBadge n={2} /> {orderType === "pickup" ? "Pickup & Contact Details" : "Delivery Details"}
               </h2>
 
-              {/* Sleek Fulfillment Summary Header (Strict Read-only from Navbar/Header Selection) */}
-              <div className="mb-4 p-3.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-950 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8.5 h-8.5 rounded-xl flex items-center justify-center font-bold text-white shadow-xs shrink-0 bg-primary-500">
-                    {orderType === "pickup" ? <ShoppingBag className="w-4.5 h-4.5" /> : <Truck className="w-4.5 h-4.5" />}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-extrabold text-neutral-900 dark:text-white block truncate">
-                      {orderType === "pickup"
-                        ? `🛍️ Self-Pickup (${selectedBranch?.name || pickupBranchName || "Selected Branch"})`
-                        : "🚚 Home Delivery"}
-                    </span>
-                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block truncate mt-0.5">
-                      {orderType === "pickup"
-                        ? "Fulfillment Fee: ৳0.00 (FREE) • Collect at counter"
-                        : "Standard delivery rates & regions apply"}
-                    </span>
-                  </div>
-                </div>
+              {/* Interactive Fulfillment Mode Switcher Tabs */}
+              <div className="mb-4 p-1.5 rounded-2xl bg-neutral-100/90 dark:bg-neutral-950 border border-neutral-200/80 dark:border-neutral-800 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderType("delivery");
+                    if (typeof selectHomeDelivery === "function") selectHomeDelivery();
+                  }}
+                  className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderType === "delivery"
+                      ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>🚚 Home Delivery</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrderType("pickup");
+                    if (selectedBranch && typeof selectPickupBranch === "function") {
+                      selectPickupBranch(selectedBranch);
+                    } else if (branches.length > 0 && typeof selectPickupBranch === "function") {
+                      const firstB = branches.find((b) => String(b.id || b._id) === String(pickupBranchId)) || branches[0];
+                      setPickupBranchId(firstB.id || firstB._id);
+                      selectPickupBranch(firstB);
+                    }
+                  }}
+                  className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    orderType === "pickup"
+                      ? "bg-primary-500 text-white shadow-md shadow-primary-500/20"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                  }`}
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>🛍️ Self-Pickup (FREE)</span>
+                </button>
               </div>
 
               <div className="space-y-3.5">
@@ -1438,7 +1468,14 @@ export const Checkout = () => {
                       </label>
                       <select
                         value={pickupBranchId || ""}
-                        onChange={(e) => setPickupBranchId(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPickupBranchId(val);
+                          const chosen = branches.find((b) => String(b.id || b._id) === String(val));
+                          if (chosen && typeof selectPickupBranch === "function") {
+                            selectPickupBranch(chosen);
+                          }
+                        }}
                         className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer font-semibold"
                       >
                         {branches.map((b) => (

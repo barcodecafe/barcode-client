@@ -146,7 +146,9 @@ export const OrderTracking = () => {
   const [countdownPaused, setCountdownPaused] = useState(false);
 
   const handleGoToReview = () => {
-    const isPickup = order?.orderType === "pickup" || Boolean(order?.pickupBranchId || order?.pickupBranchName);
+    const isPickup = order?.orderType
+      ? order.orderType === "pickup"
+      : Boolean(order?.pickupBranchId || order?.pickupBranchName);
     const branchId = isPickup
       ? (order?.pickupBranchId || order?.branchId || order?.branch?.id || order?.branch?._id || "")
       : "home_delivery";
@@ -248,12 +250,9 @@ export const OrderTracking = () => {
     );
   }
 
-  const isPickup =
-    order?.orderType === "pickup" ||
-    order?.deliveryArea === "Self Pickup" ||
-    String(order?.user?.pickArea || "").toLowerCase().includes("self pickup") ||
-    String(order?.user?.address || "").toLowerCase().includes("self pickup") ||
-    String(order?.deliveryAddress || "").toLowerCase().includes("self pickup");
+  const isPickup = order?.orderType
+    ? order.orderType === "pickup"
+    : Boolean(order?.pickupBranchId || order?.pickupBranchName || order?.deliveryArea === "Self Pickup");
 
   const steps = isPickup
     ? [
