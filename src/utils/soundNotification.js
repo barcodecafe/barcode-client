@@ -17,7 +17,22 @@ class SoundNotificationManager {
     // 🚀 Mobile / Browser Interaction Auto-Unlocker
     if (typeof window !== 'undefined') {
       const unlock = () => {
-        this.getAudioContext();
+        try {
+          const ctx = this.getAudioContext();
+          if (ctx) {
+            if (ctx.state === 'suspended') {
+              ctx.resume().catch(() => {});
+            }
+            // Play a 1-sample silent buffer to firmly unlock mobile audio pipeline
+            const buffer = ctx.createBuffer(1, 1, 22050);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+            source.start(0);
+          }
+        } catch (e) {
+          // ignore
+        }
         this.hasUnlocked = true;
         ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach((evt) => {
           window.removeEventListener(evt, unlock);

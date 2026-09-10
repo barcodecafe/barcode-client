@@ -22,6 +22,7 @@ import {
   Settings,
   Bell,
   BellRing,
+  Volume2,
   ShieldCheck,
   MessageSquarePlus,
   UserPlus,
@@ -300,6 +301,20 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                soundNotification.playKitchenBellChime();
+                soundNotification.vibrate([600, 250, 600, 250, 800]);
+                toast.success('🔊 Sound & Vibration alert played!', { id: 'test-sound-toast' });
+              }}
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-1"
+              title="Test Sound Alert"
+              aria-label="Test Sound Alert"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+
             <Link
               to="/admin/orders"
               onClick={markOrdersAsRead}

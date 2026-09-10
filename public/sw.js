@@ -31,6 +31,7 @@ self.addEventListener('push', (event) => {
     tag: data.tag || `order-${Date.now()}`,
     renotify: true,
     requireInteraction: true, // Keeps notification visible on screen
+    silent: false, // Ensure system sound plays
     vibrate: [600, 250, 600, 250, 800], // Mobile strong vibration pattern
     data: {
       url: data.url || '/admin/orders',
