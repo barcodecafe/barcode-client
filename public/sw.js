@@ -12,7 +12,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// 📥 Receive Web Push from Server
+// 📥 Receive High-Priority Web Push from Server
 self.addEventListener('push', (event) => {
   let data = {};
   if (event.data) {
@@ -30,9 +30,8 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/icons.png',
     tag: data.tag || `order-${Date.now()}`,
     renotify: true,
-    requireInteraction: true, // Keeps notification visible on screen
-    silent: false, // Ensure system sound plays
-    vibrate: [600, 250, 600, 250, 800], // Mobile strong vibration pattern
+    requireInteraction: true, // Keeps notification visible on mobile screen / lock screen
+    vibrate: data.vibrate || [600, 250, 600, 250, 800], // Mobile strong vibration pattern
     data: {
       url: data.url || '/admin/orders',
       orderId: data.orderId || null,
@@ -44,8 +43,21 @@ self.addEventListener('push', (event) => {
     ],
   };
 
+  // ⚡ If any client tab is open (even in background), inform it to trigger looping alarm
+  const notifyClients = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clientList.forEach((client) => {
+      client.postMessage({
+        type: 'BACKGROUND_ORDER_PUSH',
+        data,
+      });
+    });
+  }).catch(() => {});
+
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    Promise.all([
+      self.registration.showNotification(title, options),
+      notifyClients,
+    ])
   );
 });
 

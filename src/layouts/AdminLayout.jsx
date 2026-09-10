@@ -36,6 +36,12 @@ import { useSettings } from '../context/SettingsContext';
 import { useOrders } from '../context/OrderContext';
 import { socket } from '../services/socket';
 import { soundNotification } from '../utils/soundNotification';
+import {
+  subscribeUserToPush,
+  sendTestPushNotification,
+  getPushPermissionState,
+  isPushSupported,
+} from '../services/webPushService';
 
 import resB from '../assets/Barcode_restaurant_group-B.png';
 import resW from '../assets/Barcode_restaurant_groupW.png';
@@ -89,6 +95,49 @@ export const AdminLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768,
   );
+
+  const [pushState, setPushState] = useState(() => getPushPermissionState());
+
+  const handleTestAndEnableAlerts = async () => {
+    // 1. Local sound & vibration
+    soundNotification.playKitchenBellChime();
+    soundNotification.vibrate([600, 250, 600, 250, 800]);
+
+    if (!isPushSupported()) {
+      toast.success('🔊 Audio & Vibration alert played!', { id: 'test-sound-toast' });
+      return;
+    }
+
+    toast.loading('🔄 Connecting mobile push notifications...', { id: 'test-sound-toast' });
+    try {
+      const res = await subscribeUserToPush({ user });
+      const currentState = getPushPermissionState();
+      setPushState(currentState);
+
+      if (res?.success === false && res?.reason === 'permission_not_granted') {
+        toast.error('⚠️ Please click "Allow" on the notification popup to get lock-screen alerts!', {
+          id: 'test-sound-toast',
+          duration: 6000,
+        });
+        return;
+      }
+
+      toast.success(
+        '🔊 Alert played! 📱 Sending lock-screen test push in 3s... Lock your screen now!',
+        { id: 'test-sound-toast', duration: 7000 }
+      );
+
+      setTimeout(async () => {
+        try {
+          await sendTestPushNotification({ user });
+        } catch (pushErr) {
+          console.warn('Test push error:', pushErr);
+        }
+      }, 3000);
+    } catch (err) {
+      toast.error('Could not activate push: ' + (err?.message || err), { id: 'test-sound-toast' });
+    }
+  };
 
   const pendingSettlementCount = useMemo(() => {
     if (!orders || !Array.isArray(orders)) return 0;
@@ -303,16 +352,15 @@ export const AdminLayout = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                soundNotification.playKitchenBellChime();
-                soundNotification.vibrate([600, 250, 600, 250, 800]);
-                toast.success('🔊 Sound & Vibration alert played!', { id: 'test-sound-toast' });
-              }}
-              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-1"
-              title="Test Sound Alert"
-              aria-label="Test Sound Alert"
+              onClick={handleTestAndEnableAlerts}
+              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+              title="Test Sound & Send Lock-Screen Notification"
+              aria-label="Test Sound and Mobile Notification"
             >
               <Volume2 className="w-4 h-4" />
+              {pushState === 'granted' && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Mobile Push Connected" />
+              )}
             </button>
 
             <Link
@@ -350,6 +398,25 @@ export const AdminLayout = () => {
             </div>
           </div>
         </header>
+
+        {/* 📱 Mobile Push Setup Prompt */}
+        {pushState !== 'granted' && isPushSupported() && (
+          <div className="bg-amber-500/95 text-neutral-950 px-3.5 py-2 flex items-center justify-between gap-3 text-xs font-bold border-b border-amber-600/40 shadow-xs backdrop-blur-md sticky top-14 z-20">
+            <div className="flex items-center gap-2 min-w-0">
+              <BellRing className="w-4 h-4 text-neutral-950 animate-bounce shrink-0" />
+              <span className="truncate">
+                📱 স্ক্রিন লক বা ফেসবুক/ইউটিউব চলাকালীন রিং ও ভাইব্রেশন পেতে নোটিফিকেশন Allow করুন
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleTestAndEnableAlerts}
+              className="px-3 py-1 bg-neutral-950 hover:bg-neutral-800 text-white rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            >
+              Allow Alerts
+            </button>
+          </div>
+        )}
 
         {/* 🚨 Continuous Looping Alarm Banner with Mute Control */}
         {isAlertActive && (

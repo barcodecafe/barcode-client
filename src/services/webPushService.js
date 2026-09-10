@@ -1,5 +1,8 @@
 import { apiClient } from './apiClient';
 
+const DEFAULT_VAPID_PUBLIC_KEY =
+  'BB11w-AgVYcvEyN-ZE8G_GdNncrZZ4g5zWbErqhBm2h_BOUAgFj4sjiHfgco3QoLkK5ZO7RR2aWduWT96dJP468';
+
 /**
  * Helper to convert Base64 VAPID key to Uint8Array for browser PushManager
  */
@@ -14,11 +17,27 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+export function isPushSupported() {
+  return (
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
+}
+
+export function getPushPermissionState() {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'unsupported';
+  }
+  return Notification.permission;
+}
+
 /**
  * 📲 Register Service Worker for Background Web Push
  */
 export async function registerServiceWorker() {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (!isPushSupported()) {
     return null;
   }
   try {
@@ -36,8 +55,8 @@ export async function registerServiceWorker() {
  * 🔔 Subscribe user to Web Push Notifications
  */
 export async function subscribeUserToPush({ user, vapidPublicKey } = {}) {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-    return null;
+  if (!isPushSupported()) {
+    return { success: false, reason: 'unsupported' };
   }
 
   try {
@@ -46,28 +65,28 @@ export async function subscribeUserToPush({ user, vapidPublicKey } = {}) {
     if (!registration) {
       registration = await registerServiceWorker();
     }
-    if (!registration) return null;
-
-    // 2. Request notification permission
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      return null;
+    if (!registration) {
+      return { success: false, reason: 'no_registration' };
     }
 
-    // 3. Get VAPID public key from backend if not provided
-    let pubKey = vapidPublicKey || import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    // 2. Request notification permission (user gesture context is best)
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      return { success: false, reason: 'permission_not_granted', permission };
+    }
+
+    // 3. Get VAPID public key
+    let pubKey = vapidPublicKey || import.meta.env?.VITE_VAPID_PUBLIC_KEY;
     if (!pubKey) {
       try {
         const res = await apiClient.get('/notifications/vapid-public-key');
         pubKey = res?.publicKey || res?.data?.publicKey || res;
       } catch {
-        // Fallback: If backend does not yet serve vapid key endpoint, return registration
-        return registration;
+        pubKey = DEFAULT_VAPID_PUBLIC_KEY;
       }
     }
-
     if (!pubKey || typeof pubKey !== 'string') {
-      return registration;
+      pubKey = DEFAULT_VAPID_PUBLIC_KEY;
     }
 
     // 4. Check existing subscription or create new one
@@ -81,22 +100,28 @@ export async function subscribeUserToPush({ user, vapidPublicKey } = {}) {
 
     // 5. Send subscription payload to backend
     if (subscription) {
-      try {
-        await apiClient.post('/notifications/subscribe', {
-          subscription: subscription.toJSON ? subscription.toJSON() : subscription,
-          role: user?.role || 'admin',
-          userId: user?.id || user?._id,
-        });
-      } catch (err) {
-        console.warn('Failed to send push subscription to server:', err?.message || err);
-      }
+      await apiClient.post('/notifications/subscribe', {
+        subscription: subscription.toJSON ? subscription.toJSON() : subscription,
+        role: user?.role || 'admin',
+        userId: user?.id || user?._id,
+      });
     }
 
-    return subscription;
+    return { success: true, subscription };
   } catch (err) {
-    console.warn('Web Push subscription failed:', err);
-    return null;
+    console.error('Web Push subscription failed:', err);
+    return { success: false, error: err?.message || err };
   }
+}
+
+/**
+ * 🚀 Dispatch instant test push to device
+ */
+export async function sendTestPushNotification({ user } = {}) {
+  return await apiClient.post('/notifications/send-test-push', {
+    role: user?.role || 'admin',
+    userId: user?.id || user?._id,
+  });
 }
 
 /**
