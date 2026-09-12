@@ -136,8 +136,6 @@ export const Checkout = () => {
   const [area, setArea] = useState("");
   const areaSelectRef = useRef(null);
   const [address, setAddress] = useState("");
-  const [billingSame, setBillingSame] = useState(true);
-  const [billingAddress, setBillingAddress] = useState("");
 
   // Fulfillment Mode (Home Delivery vs Self Pickup)
   const {
@@ -198,7 +196,6 @@ export const Checkout = () => {
           ? user.address
           : "";
       setAddress(cleanAddress);
-      setBillingAddress(cleanAddress);
     }
   }, [user]);
 
@@ -513,17 +510,6 @@ export const Checkout = () => {
       Swal.fire({
         icon: "warning",
         title: "Address Required",
-        text: msg,
-        confirmButtonColor: "#f97316",
-      });
-      return;
-    }
-    if (!billingSame && !billingAddress.trim()) {
-      const msg = "Billing address is required.";
-      setOrderError(msg);
-      Swal.fire({
-        icon: "warning",
-        title: "Billing Address Required",
         text: msg,
         confirmButtonColor: "#f97316",
       });
@@ -1582,27 +1568,6 @@ export const Checkout = () => {
                         </p>
                       )}
                     </div>
-                  </div>
-                )}
-                <label className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={billingSame}
-                    onChange={(e) => setBillingSame(e.target.checked)}
-                    className="w-4 h-4 rounded text-primary-500 focus:ring-primary-500/50 cursor-pointer"
-                  />{" "}
-                  Billing address same as delivery
-                </label>
-                {!billingSame && (
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-neutral-400" />
-                    <textarea
-                      value={billingAddress}
-                      onChange={(e) => setBillingAddress(e.target.value)}
-                      rows="2"
-                      placeholder="Billing address"
-                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white placeholder-neutral-400 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none"
-                    />
                   </div>
                 )}
               </div>
