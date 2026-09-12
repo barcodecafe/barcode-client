@@ -496,16 +496,19 @@ export const OrderTracking = () => {
         </div>
       )}
 
-      {order.status === "Rejected" ? (
+      {order.status === "Rejected" || order.status === "Cancelled" ? (
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/60 rounded-2xl p-5 mb-8 flex items-center gap-4 text-red-850 dark:text-red-400">
           <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-650 shrink-0">
             <X className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="font-bold text-sm">Order Rejected</h3>
+            <h3 className="font-bold text-sm">
+              {order.status === "Cancelled" ? "Order Cancelled" : "Order Rejected"}
+            </h3>
             <p className="text-xs mt-1 font-light opacity-95">
-              We regret to inform you that your order has been rejected. Any
-              online transactions will be refunded automatically.
+              {order.status === "Cancelled"
+                ? "This order was cancelled because online payment was not completed. You can retry payment above or place a new order."
+                : "We regret to inform you that your order has been rejected. Any online transactions will be refunded automatically."}
             </p>
           </div>
         </div>
