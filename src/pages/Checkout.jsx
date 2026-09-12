@@ -97,6 +97,44 @@ export const Checkout = () => {
       .catch(() => setRegions([]));
   }, []);
 
+  // Payment return warning state
+  const [paymentWarning, setPaymentWarning] = useState("");
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    if (
+      paymentStatus === "cancel" ||
+      paymentStatus === "cancelled" ||
+      paymentStatus === "fail" ||
+      paymentStatus === "failed"
+    ) {
+      if (refreshUser) {
+        refreshUser().catch(() => {});
+      }
+
+      const isCancel = paymentStatus === "cancel" || paymentStatus === "cancelled";
+      const title = isCancel ? "Payment Cancelled" : "Payment Failed";
+      const msg = isCancel
+        ? "Your online payment was cancelled. Your cart is preserved — please try again or select Cash on Delivery."
+        : "Your online payment could not be completed. Your cart is preserved — please try again or select Cash on Delivery.";
+
+      setPaymentWarning(msg);
+
+      Swal.fire({
+        icon: "warning",
+        title,
+        text: msg,
+        confirmButtonText: "Try Again",
+        confirmButtonColor: "#e11d48",
+      });
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("payment");
+      nextParams.delete("orderId");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, refreshUser]);
+
   // Auth
   const [authTab, setAuthTab] = useState("login");
   const [authError, setAuthError] = useState("");
@@ -605,7 +643,7 @@ export const Checkout = () => {
         try {
           const { gatewayUrl } = await initPayment(orderId);
           if (gatewayUrl) {
-            clearCart();
+            // 🔒 পেমেন্ট সফল হওয়ার আগে কার্ট ক্লিয়ার করা যাবে না, যাতে ক্যানসেল হলে কাস্টমার রিট্রাই করতে পারে
             window.location.href = gatewayUrl;
             return;
           }
@@ -619,9 +657,6 @@ export const Checkout = () => {
             title: "Payment Initialization Failed",
             text: payErr.message || "Could not redirect to payment gateway.",
             confirmButtonColor: "#ef4444",
-          });
-          navigate(`/order-tracking/${orderId}?payment=unstarted`, {
-            replace: true,
           });
           return;
         }
@@ -695,6 +730,26 @@ export const Checkout = () => {
           Review your order and confirm delivery details.
         </p>
       </div>
+
+      {paymentWarning && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start justify-between gap-3 text-rose-800 dark:text-rose-200 animate-enter shadow-xs">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div className="text-sm font-medium">
+              <p className="font-bold text-rose-900 dark:text-rose-100">Payment Not Completed</p>
+              <p className="mt-0.5 text-rose-700 dark:text-rose-300">{paymentWarning}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPaymentWarning("")}
+            className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 text-xs font-bold p-1 transition-colors cursor-pointer"
+            aria-label="Dismiss warning"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[380px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
         {/* ── ORDER SUMMARY (left) ───────────────────────────────────────── */}
