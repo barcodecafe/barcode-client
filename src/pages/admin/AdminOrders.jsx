@@ -1134,6 +1134,29 @@ export const AdminOrders = () => {
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
+    const targetOrder = orders.find((o) => (o.id || o._id) === orderId);
+    const isOnlineUnpaid =
+      targetOrder &&
+      (targetOrder.paymentMethod || "cod") !== "cod" &&
+      targetOrder.paymentStatus !== "Paid";
+
+    if (
+      isOnlineUnpaid &&
+      (newStatus === "Accepted" ||
+        newStatus === "Preparing" ||
+        newStatus === "Ready to Pick" ||
+        newStatus === "Out for Delivery" ||
+        newStatus === "Delivered")
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Cannot Accept Unpaid Order",
+        text: `Online payment is "${targetOrder.paymentStatus || "Pending"}". You cannot accept or dispatch an unpaid order!`,
+        confirmButtonColor: "#ef4444",
+      });
+      return;
+    }
+
     try {
       setOrders((prevOrders) =>
         prevOrders.map((ord) => {
@@ -1167,7 +1190,10 @@ export const AdminOrders = () => {
         const ordId = ord.id || ord._id;
         if (ordId === orderId) return false;
         const s = String(ord.status || "").toUpperCase();
-        return s === "PLACED" || s === "PENDING" || s === "AWAITING PAYMENT" || s === "AWAITING_PAYMENT" || !ord.status;
+        const isAwaitingOnline =
+          (ord.paymentMethod || "cod") !== "cod" && ord.paymentStatus !== "Paid";
+        if (isAwaitingOnline) return false;
+        return s === "PLACED" || s === "PENDING" || !ord.status;
       });
       if (!hasOtherPending) {
         soundNotification.stopContinuousOrderAlert();
@@ -1918,14 +1944,21 @@ export const AdminOrders = () => {
                       ord.status || "",
                     ).toUpperCase();
 
-                    const isPendingUnhandled =
-                      currentStatus === "PLACED" ||
-                      currentStatus === "PENDING" ||
-                      currentStatus === "AWAITING PAYMENT" ||
-                      currentStatus === "AWAITING_PAYMENT" ||
-                      !ord.status;
+                    const isOnlineUnpaid =
+                      (ord.paymentMethod || "cod") !== "cod" &&
+                      ord.paymentStatus !== "Paid";
+                    const isPaymentFailed =
+                      ord.paymentStatus === "Failed" ||
+                      ord.paymentStatus === "Cancelled";
 
-                    const isRejected = currentStatus === "REJECTED";
+                    const isPendingUnhandled =
+                      !isOnlineUnpaid &&
+                      (currentStatus === "PLACED" ||
+                        currentStatus === "PENDING" ||
+                        !ord.status);
+
+                    const isRejected =
+                      currentStatus === "REJECTED" || currentStatus === "CANCELLED";
                     const badge = getPaymentBadge(ord);
 
                     const assignedRiderId = String(
@@ -2030,9 +2063,29 @@ export const AdminOrders = () => {
                                 <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
                               </button>
                             </div>
+                          ) : isPaymentFailed ? (
+                            <div className="flex items-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-extrabold text-[8px] uppercase tracking-wide">
+                                🚫 Payment Failed
+                              </span>
+                              {!isRejected && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(ordId, "Rejected")}
+                                  className="px-1 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 hover:bg-rose-500 hover:text-white text-neutral-600 dark:text-neutral-300 text-[8px] font-bold transition-all cursor-pointer"
+                                  title="Dismiss and Reject Unpaid Order"
+                                >
+                                  Dismiss
+                                </button>
+                              )}
+                            </div>
+                          ) : isOnlineUnpaid ? (
+                            <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[8px] uppercase tracking-wide inline-flex items-center gap-0.5">
+                              ⏳ Awaiting Payment
+                            </span>
                           ) : isRejected ? (
                             <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[8px] uppercase tracking-wide">
-                              Rejected
+                              {currentStatus === "CANCELLED" ? "Cancelled" : "Rejected"}
                             </span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[8px] uppercase tracking-wide">
@@ -2042,7 +2095,11 @@ export const AdminOrders = () => {
                         </td>
 
                         <td className="px-2 py-2 sm:px-2.5 whitespace-nowrap">
-                          {isPendingUnhandled ? (
+                          {isOnlineUnpaid ? (
+                            <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[8px] uppercase tracking-wide inline-block">
+                              {isPaymentFailed ? "Payment Failed" : "Awaiting Payment"}
+                            </span>
+                          ) : isPendingUnhandled ? (
                             <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[8px] uppercase tracking-wide inline-block">
                               Pending
                             </span>
@@ -2059,15 +2116,15 @@ export const AdminOrders = () => {
                               <select
                                 value={ord.status}
                                 disabled={
-                                  !isPickupOrder &&
-                                  (!assignedRiderId || ord.riderAcceptStatus !== "accepted")
+                                  isOnlineUnpaid ||
+                                  (!isPickupOrder &&
+                                  (!assignedRiderId || ord.riderAcceptStatus !== "accepted"))
                                 }
                                 onChange={(e) =>
                                   handleStatusChange(ordId, e.target.value)
                                 }
                                 className={`px-1 py-0.5 rounded-md border font-bold text-[8.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-                                  !isPickupOrder &&
-                                  (!assignedRiderId || ord.riderAcceptStatus !== "accepted")
+                                  isOnlineUnpaid || (!isPickupOrder && (!assignedRiderId || ord.riderAcceptStatus !== "accepted"))
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                     : `${getStatusColor(ord.status)} cursor-pointer`
                                 }`}
@@ -2112,6 +2169,7 @@ export const AdminOrders = () => {
                                 disabled={
                                   isPendingUnhandled ||
                                   isRejected ||
+                                  isOnlineUnpaid ||
                                   ord.status === "Delivered"
                                 }
                                 onChange={(e) =>
@@ -2120,6 +2178,7 @@ export const AdminOrders = () => {
                                 className={`px-1 py-0.5 rounded-md border font-bold text-[8.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[120px] 2xl:max-w-[160px] ${
                                   isPendingUnhandled ||
                                   isRejected ||
+                                  isOnlineUnpaid ||
                                   ord.status === "Delivered"
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed"
                                     : "bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 cursor-pointer border-neutral-200 dark:border-neutral-800"

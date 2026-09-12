@@ -583,10 +583,14 @@ export const Checkout = () => {
         throw new Error("Order placed, but failed to retrieve valid Order ID.");
       }
 
-      try {
-        socket.emit("create_order", orderObj);
-      } catch (sErr) {
-        console.error("Socket notification failed:", sErr);
+      // Only emit immediate new order alert for COD orders.
+      // Online orders (SSLCommerz) are confirmed after successful payment.
+      if (paymentMethod !== "sslcommerz") {
+        try {
+          socket.emit("create_order", orderObj);
+        } catch (sErr) {
+          console.error("Socket notification failed:", sErr);
+        }
       }
 
       if (pointsDiscount > 0 && refreshUser) {
