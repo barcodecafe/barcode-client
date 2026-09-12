@@ -60,8 +60,10 @@ export const OrderProvider = ({ children }) => {
   const checkAndManageAlert = useCallback((ordersList) => {
     if (isAdmin) {
       const hasUnhandledPending = Array.isArray(ordersList) && ordersList.some((o) => {
+        const isOnlineUnpaid = (o?.paymentMethod || 'cod') !== 'cod' && o?.paymentStatus !== 'Paid';
         const s = String(o?.status || o?.deliveryStatus || '').toUpperCase();
-        return s === 'PLACED' || s === 'PENDING' || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT' || !o?.status;
+        if (isOnlineUnpaid || s === 'AWAITING PAYMENT' || s === 'AWAITING_PAYMENT') return false;
+        return s === 'PLACED' || s === 'PENDING' || !o?.status;
       });
 
       if (!hasUnhandledPending) {
@@ -158,9 +160,15 @@ export const OrderProvider = ({ children }) => {
     };
 
     const handleNewOrder = (order) => {
-      if (isAdmin && order) {
-        // 🚨 Start Continuous Loop Sound & Mobile Vibration until Accept/Reject
-        soundNotification.startContinuousOrderAlert();
+      if (!isAdmin || !order) return;
+
+      // 🔒 অনলাইন অর্ডারে পেমেন্ট সম্পন্ন হওয়ার আগে কোনো অ্যালার্ম বা টোস্ট বাজবে না
+      const isOnlineUnpaid = (order.paymentMethod || 'cod') !== 'cod' && order.paymentStatus !== 'Paid';
+      const isAwaiting = String(order.status || '').toUpperCase().includes('AWAITING');
+      if (isOnlineUnpaid || isAwaiting) return;
+
+      // 🚨 Start Continuous Loop Sound & Mobile Vibration until Accept/Reject
+      soundNotification.startContinuousOrderAlert();
 
         const orderId = order.displayId || order.id || order._id || 'New';
         const shortId = String(orderId).slice(-6).toUpperCase();
@@ -233,9 +241,8 @@ export const OrderProvider = ({ children }) => {
             id: `admin-order-${shortId}`,
           }
         );
-      }
-      handleOrdersChanged();
-    };
+        handleOrdersChanged();
+      };
 
     // 🚴 রাইডারের নতুন ডেলিভারি অ্যাসাইনমেন্ট হ্যান্ডলার
     const handleRiderOrderAssigned = (data) => {

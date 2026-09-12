@@ -1525,7 +1525,20 @@ export const AdminOrders = () => {
     baseOrders.forEach((ord) => {
       if (!ord) return;
       const st = String(ord.status || "").trim().toLowerCase();
-      if (st === "placed" || st === "pending" || st === "awaiting payment" || st === "awaiting_payment" || !st) {
+      const isOnlineUnpaid =
+        (ord.paymentMethod || "cod") !== "cod" &&
+        ord.paymentStatus !== "Paid";
+      const isFailedOrCancelled =
+        ord.paymentStatus === "Failed" ||
+        ord.paymentStatus === "Cancelled" ||
+        st === "rejected" ||
+        st === "cancelled";
+
+      if (isFailedOrCancelled) {
+        counts.rejected += 1;
+      } else if (isOnlineUnpaid || st === "awaiting payment" || st === "awaiting_payment") {
+        // 🔒 অনলাইন আনপেইড অর্ডার কিচেন পেন্ডিং কিউতে কাউন্ট হবে না
+      } else if (st === "placed" || st === "pending" || !st) {
         counts.pending += 1;
       } else if (st === "preparing") {
         counts.preparing += 1;
@@ -1535,8 +1548,6 @@ export const AdminOrders = () => {
         counts.out_for_delivery += 1;
       } else if (st === "delivered") {
         counts.delivered += 1;
-      } else if (st === "rejected" || st === "cancelled") {
-        counts.rejected += 1;
       }
     });
 
@@ -1564,13 +1575,18 @@ export const AdminOrders = () => {
     if (statusFilter !== "all") {
       if (statusFilter === "pending") {
         list = list.filter((ord) => {
+          const isOnlineUnpaid =
+            (ord.paymentMethod || "cod") !== "cod" &&
+            ord.paymentStatus !== "Paid";
           const st = String(ord.status || "").toUpperCase();
-          return st === "PLACED" || st === "PENDING" || st === "AWAITING PAYMENT" || st === "AWAITING_PAYMENT" || !ord.status;
+          if (isOnlineUnpaid || st === "AWAITING PAYMENT" || st === "AWAITING_PAYMENT") return false;
+          return st === "PLACED" || st === "PENDING" || !ord.status;
         });
       } else if (statusFilter === "rejected") {
         list = list.filter((ord) => {
           const st = String(ord.status || "").toUpperCase();
-          return st === "REJECTED" || st === "CANCELLED";
+          const ps = String(ord.paymentStatus || "").toUpperCase();
+          return st === "REJECTED" || st === "CANCELLED" || ps === "FAILED" || ps === "CANCELLED";
         });
       } else if (statusFilter === "ready") {
         list = list.filter((ord) => {
