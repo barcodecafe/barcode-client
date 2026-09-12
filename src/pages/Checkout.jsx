@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -134,6 +134,7 @@ export const Checkout = () => {
   // Delivery details
   const [phone, setPhone] = useState("");
   const [area, setArea] = useState("");
+  const areaSelectRef = useRef(null);
   const [address, setAddress] = useState("");
   const [billingSame, setBillingSame] = useState(true);
   const [billingAddress, setBillingAddress] = useState("");
@@ -202,16 +203,9 @@ export const Checkout = () => {
   }, [user]);
 
   useEffect(() => {
-    if (
-      region &&
-      Array.isArray(region.deliveryZones) &&
-      region.deliveryZones.length > 0
-    ) {
-      setArea(region.deliveryZones[0].name);
-    } else {
-      setArea("");
-    }
-  }, [regionId, region]);
+    // Keep area unselected by default so user explicitly picks their delivery area
+    setArea("");
+  }, [regionId]);
 
   // 🎯 BOGO Offer Text Helper Function
   const getOfferText = (offerType) => {
@@ -260,14 +254,14 @@ export const Checkout = () => {
   const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
   const { settings } = useSettings();
   const isPickup = orderType === "pickup";
-  const standardDeliveryCharge = isPickup ? 0 : getRegionDeliveryCharge(region, area);
-  const isFreeDelivery = isPickup || checkFreeDeliveryEligibility(settings, {
+  const standardDeliveryCharge = isPickup ? 0 : (area ? getRegionDeliveryCharge(region, area) : 0);
+  const isFreeDelivery = isPickup || (!!area && checkFreeDeliveryEligibility(settings, {
     subtotal: cartTotal,
     cartItems: cart,
     area,
     region,
-  });
-  const deliveryCharge = (isFreeDelivery || isPickup) ? 0 : standardDeliveryCharge;
+  }));
+  const deliveryCharge = (isFreeDelivery || isPickup || !area) ? 0 : standardDeliveryCharge;
   const orderTotal = Math.max(0, afterCoupon - pointsDiscount + deliveryCharge);
   const canPayOnline = orderTotal >= MIN_ONLINE_AMOUNT;
 
@@ -496,6 +490,18 @@ export const Checkout = () => {
       Swal.fire({
         icon: "warning",
         title: "Phone Required",
+        text: msg,
+        confirmButtonColor: "#f97316",
+      });
+      return;
+    }
+    if (orderType === "delivery" && !area) {
+      const msg = "Please select your delivery area.";
+      setOrderError(msg);
+      areaSelectRef.current?.focus();
+      Swal.fire({
+        icon: "warning",
+        title: "Delivery Area Required",
         text: msg,
         confirmButtonColor: "#f97316",
       });
@@ -1007,14 +1013,18 @@ export const Checkout = () => {
               )}
               <div className="flex justify-between text-neutral-500 dark:text-neutral-400 text-xs">
                 <span className="flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5" /> Delivery ({area || "Other"})
+                  <Truck className="w-3.5 h-3.5" /> Delivery {area ? `(${area})` : ""}
                   {isFreeDelivery && (
                     <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-[9px] tracking-wider uppercase ml-1">
                       Campaign FREE
                     </span>
                   )}
                 </span>
-                {isFreeDelivery ? (
+                {isPickup ? (
+                  <span className="text-emerald-500 font-extrabold uppercase">FREE</span>
+                ) : !area ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">Select Area</span>
+                ) : isFreeDelivery ? (
                   <div className="flex items-center gap-1.5 font-bold">
                     <span className="line-through text-neutral-400 font-normal">
                       ৳{standardDeliveryCharge.toFixed(2)}
@@ -1507,37 +1517,70 @@ export const Checkout = () => {
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                        Delivery Area
+                        Delivery Area <span className="text-red-500">*</span>
                       </label>
                       <select
+                        ref={areaSelectRef}
                         value={area}
-                        onChange={(e) => setArea(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                        onChange={(e) => {
+                          setArea(e.target.value);
+                          if (orderError) setOrderError("");
+                        }}
+                        className={`w-full px-3 py-2.5 rounded-xl border ${
+                          !area
+                            ? "border-amber-400 dark:border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/20 ring-1 ring-amber-300 dark:ring-amber-500/30"
+                            : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
+                        } text-neutral-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all font-medium`}
                       >
+                        <option value="" disabled>
+                          -- Select Delivery Area --
+                        </option>
                         {(region?.deliveryZones || []).map((z) => (
                           <option key={z.name} value={z.name}>
                             {z.name} (৳{z.charge})
                           </option>
                         ))}
-                        <option value="">
+                        <option value="Other area">
                           Other area (৳{region?.defaultDeliveryCharge ?? 100})
                         </option>
                       </select>
+                      {!area && (
+                        <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                          <span>⚠️ Please select your delivery area first</span>
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-                        Detailed Address
+                        Detailed Address <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                      <div
+                        className="relative"
+                        onClick={() => {
+                          if (!area) {
+                            areaSelectRef.current?.focus();
+                          }
+                        }}
+                      >
+                        <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${!area ? "text-neutral-300 dark:text-neutral-600" : "text-neutral-400"}`} />
                         <input
                           type="text"
                           value={address}
+                          disabled={!area}
                           onChange={(e) => setAddress(e.target.value)}
-                          placeholder="House #, Road #, Area"
-                          className={fieldCls}
+                          placeholder={!area ? "👉 Select delivery area first..." : "House #, Road #, Area"}
+                          className={`${fieldCls} ${
+                            !area
+                              ? "bg-neutral-100 dark:bg-neutral-900/60 text-neutral-400 cursor-not-allowed border-dashed opacity-75"
+                              : ""
+                          }`}
                         />
                       </div>
+                      {!area && (
+                        <p className="mt-1 text-[11px] text-neutral-400">
+                          Detailed address unlocks after choosing delivery area
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
