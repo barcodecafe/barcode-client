@@ -390,18 +390,40 @@ export const RiderOrders = () => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs border-t border-b border-neutral-100 dark:border-neutral-800 py-3">
-                        <div className="space-y-1.5">
-                          <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
-                            Customer
-                          </span>
-                          <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
-                            <span>{ord.deliveryPhone ? ord.deliveryPhone : (ord.user?.name || "Customer")}</span>
+                          <div className="space-y-1.5">
+                            <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
+                              Customer
+                            </span>
+                            <div className="flex items-center gap-1.5 font-bold text-neutral-700 dark:text-neutral-200 text-[11px]">
+                              <span>{ord.user?.name || ord.customerName || (ord.deliveryPhone ? ord.deliveryPhone : "Customer")}</span>
+                            </div>
+                            {(() => {
+                              const riderCustPhone = String(ord.deliveryPhone || ord.user?.phone || ord.customerPhone || "").trim();
+                              if (!riderCustPhone || riderCustPhone === "-") {
+                                return (
+                                  <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                                    <Phone className="w-3 h-3 text-neutral-400" />
+                                    <span>N/A</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <a
+                                    href={`tel:${riderCustPhone}`}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/30 active:scale-95 transition-all shadow-xs cursor-pointer"
+                                    title={`Call Customer: ${riderCustPhone}`}
+                                  >
+                                    <Phone className="w-3 h-3 text-emerald-500 animate-pulse shrink-0" />
+                                    <span>{riderCustPhone}</span>
+                                    <span className="text-[7.5px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black tracking-wider uppercase ml-0.5">
+                                      Call
+                                    </span>
+                                  </a>
+                                </div>
+                              );
+                            })()}
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                            <Phone className="w-3 h-3 text-rose-500" />
-                            <span>{ord.deliveryPhone || ord.user?.phone || "N/A"}</span>
-                          </div>
-                        </div>
 
                         <div className="space-y-1.5">
                           <span className="block text-[8px] font-bold text-neutral-400 uppercase tracking-wider">
@@ -529,9 +551,23 @@ export const RiderOrders = () => {
                   <h3 className="font-bold text-sm text-neutral-800 dark:text-white">
                     Chat for #{String(chatOrder._id || chatOrder.id || chatOrder.orderId || "").slice(-6).toUpperCase()}
                   </h3>
-                  <span className="block text-[9px] text-neutral-400">
-                    Customer: {chatOrder.deliveryPhone || chatOrder.user?.phone}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[9px] text-neutral-400">Customer:</span>
+                    {(() => {
+                      const chatCustPhone = String(chatOrder.deliveryPhone || chatOrder.user?.phone || chatOrder.customerPhone || "").trim();
+                      if (!chatCustPhone || chatCustPhone === "-") return <span className="text-[9px] text-neutral-400">N/A</span>;
+                      return (
+                        <a
+                          href={`tel:${chatCustPhone}`}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                          title={`Call ${chatCustPhone}`}
+                        >
+                          <Phone className="w-2.5 h-2.5 text-emerald-500" />
+                          {chatCustPhone}
+                        </a>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <button
                   onClick={() => setActiveChatOrderId(null)}

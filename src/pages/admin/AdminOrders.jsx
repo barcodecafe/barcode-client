@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Phone,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { ErrorBanner } from "../../components/ErrorBanner";
@@ -2020,9 +2021,24 @@ export const AdminOrders = () => {
                           <span className="block font-semibold text-neutral-850 dark:text-white truncate max-w-[100px] 2xl:max-w-[150px] text-[10.5px]">
                             {ord.user?.name || ord.customerName || "Guest"}
                           </span>
-                          <span className="block text-[8.5px] text-neutral-400 mt-0.5">
-                            {ord.user?.phone || ord.customerPhone || "-"}
-                          </span>
+                          {(() => {
+                            const rawPhone = ord.deliveryPhone || ord.user?.phone || ord.customerPhone || "";
+                            const phone = String(rawPhone).trim();
+                            if (!phone || phone === "-") {
+                              return <span className="block text-[8.5px] text-neutral-400 mt-0.5">-</span>;
+                            }
+                            return (
+                              <a
+                                href={`tel:${phone}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[9px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 hover:underline mt-0.5 transition-colors cursor-pointer group"
+                                title={`Call ${phone}`}
+                              >
+                                <Phone className="w-2.5 h-2.5 shrink-0 text-primary-500 group-hover:scale-110 transition-transform" />
+                                <span className="underline decoration-dotted">{phone}</span>
+                              </a>
+                            );
+                          })()}
                         </td>
 
                         <td className="px-2 py-2 sm:px-2.5">
@@ -2411,14 +2427,26 @@ export const AdminOrders = () => {
                   </h3>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
                     Customer:{" "}
-                    {currentChat.user?.name ||
-                      currentChat.customerName ||
-                      "Guest"}{" "}
-                    (
-                    {currentChat.user?.phone ||
-                      currentChat.customerPhone ||
-                      "N/A"}
-                    )
+                    <span className="font-semibold text-neutral-700 dark:text-neutral-200">
+                      {currentChat.user?.name || currentChat.customerName || "Guest"}
+                    </span>
+                    {(() => {
+                      const chatPhone = String(currentChat.deliveryPhone || currentChat.user?.phone || currentChat.customerPhone || "").trim();
+                      if (!chatPhone || chatPhone === "-") return null;
+                      return (
+                        <>
+                          {" • "}
+                          <a
+                            href={`tel:${chatPhone}`}
+                            className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline"
+                            title={`Call ${chatPhone}`}
+                          >
+                            <Phone className="w-3 h-3 text-primary-500" />
+                            {chatPhone}
+                          </a>
+                        </>
+                      );
+                    })()}
                   </p>
                 </div>
                 <button
@@ -2636,9 +2664,25 @@ export const AdminOrders = () => {
                         </span>
                         <span className="bill-value font-semibold text-neutral-800">
                           :{" "}
-                          {selectedOrderDetails.user?.phone ||
-                            selectedOrderDetails.customerPhone ||
-                            "N/A"}
+                          {(() => {
+                            const detPhone = String(
+                              selectedOrderDetails.deliveryPhone ||
+                              selectedOrderDetails.user?.phone ||
+                              selectedOrderDetails.customerPhone ||
+                              ""
+                            ).trim();
+                            if (!detPhone || detPhone === "-") return "N/A";
+                            return (
+                              <a
+                                href={`tel:${detPhone}`}
+                                className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-bold hover:underline"
+                                title={`Call ${detPhone}`}
+                              >
+                                <Phone className="w-3 h-3 text-primary-500 inline" />
+                                {detPhone}
+                              </a>
+                            );
+                          })()}
                         </span>
                       </div>
                       <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
