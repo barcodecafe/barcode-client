@@ -315,6 +315,9 @@ div[data-toaster-container] div[role="alert"],
   .admin-sidebar-open .admin-orders-table-wrapper .col-order-id {
     font-size: 0.72rem !important;
   }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-order-time {
+    font-size: 0.52rem !important;
+  }
   .admin-sidebar-open .admin-orders-table-wrapper .col-order-sub {
     font-size: 0.52rem !important;
   }
@@ -390,6 +393,9 @@ div[data-toaster-container] div[role="alert"],
   }
   .admin-sidebar-closed .admin-orders-table-wrapper .col-order-id {
     font-size: 0.875rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-order-time {
+    font-size: 0.65rem !important;
   }
   .admin-sidebar-closed .admin-orders-table-wrapper .col-order-sub {
     font-size: 0.65rem !important;

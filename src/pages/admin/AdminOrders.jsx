@@ -72,6 +72,80 @@ const formatShortOrderId = (id) => {
   return `${strId.slice(0, 4)}...${strId.slice(-5)}`;
 };
 
+export const getOrderDateObj = (ord) => {
+  if (!ord) return null;
+  const rawDate = ord.createdAt || ord.date || ord.orderDate || ord.timestamp;
+  if (rawDate) {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const idStr = String(ord.id || ord._id || "");
+  if (idStr.length >= 8 && /^[0-9a-fA-F]{8}/.test(idStr)) {
+    try {
+      const timestamp = parseInt(idStr.substring(0, 8), 16) * 1000;
+      const d = new Date(timestamp);
+      if (!isNaN(d.getTime())) return d;
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+};
+
+export const formatOrderPlacedTime = (ord) => {
+  const d = getOrderDateObj(ord);
+  if (!d) return "Just now";
+
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+
+  // Time part (e.g. 01:25 PM)
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  // Today
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    if (diffMin < 1) return `${timeStr} (Just now)`;
+    if (diffMin < 60) return `${timeStr} (${diffMin}m ago)`;
+    return `Today, ${timeStr}`;
+  }
+
+  // Yesterday
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const isYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+
+  if (isYesterday) {
+    return `Yesterday, ${timeStr}`;
+  }
+
+  // Other dates: e.g. 14 Sep, 01:25 PM
+  const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return `${dateStr}, ${timeStr}`;
+};
+
+export const formatFullOrderDateTime = (ord) => {
+  const d = getOrderDateObj(ord);
+  if (!d) return "Order Placed";
+  return d.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+};
+
 export const numberToWords = (num) => {
   if (!num || isNaN(num) || num <= 0) return "Zero Taka Only";
 
@@ -2099,12 +2173,18 @@ export const AdminOrders = () => {
                         <td
                           onClick={() => setSelectedOrderDetails(ord)}
                           className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 cursor-pointer group whitespace-nowrap"
-                          title={ordId}
+                          title={`Order #${ordId} • Placed: ${formatFullOrderDateTime(ord)}`}
                         >
                           <span className="col-order-id font-extrabold text-[11px] sm:text-xs text-primary-600 dark:text-primary-400 group-hover:text-primary-700 group-hover:underline uppercase transition-colors block">
                             {formatShortOrderId(ordId)}
                           </span>
                           <div className="flex flex-col gap-0.5 mt-0.5">
+                            <span
+                              className="col-order-time text-[7.5px] sm:text-[8px] text-neutral-400 dark:text-neutral-500 font-medium leading-tight"
+                              title={formatFullOrderDateTime(ord)}
+                            >
+                              🕒 {formatOrderPlacedTime(ord)}
+                            </span>
                             <span
                               className={`col-order-sub text-[8px] sm:text-[8.5px] font-semibold leading-tight ${
                                 isPickupOrder
