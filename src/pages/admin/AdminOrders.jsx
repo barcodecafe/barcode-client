@@ -2693,17 +2693,7 @@ export const AdminOrders = () => {
                               selectedOrderDetails.customerPhone ||
                               ""
                             ).trim();
-                            if (!detPhone || detPhone === "-") return "N/A";
-                            return (
-                              <a
-                                href={`tel:${detPhone}`}
-                                className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-bold hover:underline"
-                                title={`Call ${detPhone}`}
-                              >
-                                <Phone className="w-3 h-3 text-primary-500 inline" />
-                                {detPhone}
-                              </a>
-                            );
+                            return detPhone && detPhone !== "-" ? detPhone : "N/A";
                           })()}
                         </span>
                       </div>
@@ -2766,7 +2756,7 @@ export const AdminOrders = () => {
                           Fulfillment
                         </span>
                         <span className={`bill-value font-bold uppercase ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
-                          : {checkIsPickupOrder(selectedOrderDetails) ? "🛍️ SELF-PICKUP" : "🚚 HOME DELIVERY"}
+                          : {checkIsPickupOrder(selectedOrderDetails) ? "SELF-PICKUP" : "HOME DELIVERY"}
                         </span>
                       </div>
                       <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
