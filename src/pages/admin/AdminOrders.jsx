@@ -2593,14 +2593,14 @@ export const AdminOrders = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl 2xl:max-w-5xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6"
+              className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl 2xl:max-w-5xl w-full p-3 sm:p-6 shadow-2xl max-h-[94vh] overflow-y-auto space-y-4 sm:space-y-6"
             >
-              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
                 <div>
-                  <h2 className="text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
+                  <h2 className="text-base sm:text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
                     Official Invoice Preview
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-0.5">
+                  <p className="text-xs text-neutral-400 mt-0.5 break-all">
                     Order ID: #
                     {(
                       selectedOrderDetails.id || selectedOrderDetails._id
@@ -2608,11 +2608,11 @@ export const AdminOrders = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap"
                     title="Print / Save as PDF"
                   >
                     <Printer className="w-4 h-4" /> Print / Save PDF
@@ -2621,7 +2621,7 @@ export const AdminOrders = () => {
                   <button
                     type="button"
                     onClick={() => setSelectedOrderDetails(null)}
-                    className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors ml-1 cursor-pointer"
+                    className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -2630,7 +2630,7 @@ export const AdminOrders = () => {
 
               <div
                 ref={invoiceRef}
-                className="invoice-container relative bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans overflow-hidden"
+                className="invoice-container relative bg-white text-neutral-800 p-3 sm:p-6 md:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans overflow-x-hidden"
               >
                 {/* ❌ VOID / CANCELLED Watermark Stamp for Rejected Orders */}
                 {isRejectedOrder && (
@@ -2664,27 +2664,27 @@ export const AdminOrders = () => {
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
                 <div className="invoice-content flex-grow space-y-4 py-2">
-                  <div className="bill-to-box flex flex-row justify-between items-start gap-4 sm:gap-6 bg-neutral-50 p-3.5 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
-                    <div className="bill-to-left space-y-1.5 flex-1 min-w-0">
+                  <div className="bill-to-box flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-6 bg-neutral-50 p-3 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
+                    <div className="bill-to-left space-y-1.5 w-full sm:flex-1 min-w-0">
                       <p className="font-bold text-neutral-900 uppercase text-[11px] mb-1.5">
                         Bill To:
                       </p>
-                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Customer Name
                         </span>
-                        <span className="bill-value font-bold text-neutral-800">
+                        <span className="bill-value font-bold text-neutral-800 break-words">
                           :{" "}
                           {selectedOrderDetails.user?.name ||
                             selectedOrderDetails.customerName ||
                             "N/A"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Mobile
                         </span>
-                        <span className="bill-value font-semibold text-neutral-800">
+                        <span className="bill-value font-semibold text-neutral-800 break-all">
                           :{" "}
                           {(() => {
                             const detPhone = String(
@@ -2707,8 +2707,8 @@ export const AdminOrders = () => {
                           })()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Order Type
                         </span>
                         <span className="bill-value font-bold text-neutral-800">
@@ -2717,11 +2717,11 @@ export const AdminOrders = () => {
                               : "Home Delivery"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           {checkIsPickupOrder(selectedOrderDetails) ? "Pickup Outlet" : "Address"}
                         </span>
-                        <span className="bill-value text-neutral-800">
+                        <span className="bill-value text-neutral-800 break-words">
                           : {checkIsPickupOrder(selectedOrderDetails)
                               ? `Counter Collection at ${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Barcode Outlet"}`
                               : (selectedOrderDetails.deliveryAddress || selectedOrderDetails.user?.address || "N/A") +
@@ -2732,9 +2732,9 @@ export const AdminOrders = () => {
                       </div>
                     </div>
 
-                    <div className="bill-to-right space-y-1.5 w-56 sm:w-60 shrink-0 pt-0">
-                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                    <div className="bill-to-right space-y-1.5 w-full sm:w-56 md:w-60 sm:shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-200/80">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Invoice Date
                         </span>
                         <span className="bill-value font-semibold text-neutral-800">
@@ -2750,8 +2750,8 @@ export const AdminOrders = () => {
                           })()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Invoice #
                         </span>
                         <span className="bill-value font-bold text-neutral-800 uppercase">
@@ -2761,16 +2761,16 @@ export const AdminOrders = () => {
                           ).slice(-10).toUpperCase()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Fulfillment
                         </span>
                         <span className={`bill-value font-bold uppercase ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
                           : {checkIsPickupOrder(selectedOrderDetails) ? "🛍️ SELF-PICKUP" : "🚚 HOME DELIVERY"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium">
+                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                           Payment
                         </span>
                         <span className="bill-value font-bold text-neutral-800 uppercase">
@@ -2785,8 +2785,8 @@ export const AdminOrders = () => {
                         </span>
                       </div>
                       {selectedOrderDetails.bankTranId && (
-                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium">
+                        <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                             Gateway TxID
                           </span>
                           <span className="bill-value font-mono text-[10px] text-neutral-700">
@@ -2795,8 +2795,8 @@ export const AdminOrders = () => {
                         </div>
                       )}
                       {isRejectedOrder && (
-                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium">
+                        <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
                             Status
                           </span>
                           <span className="bill-value font-black text-rose-600 uppercase">
@@ -2807,8 +2807,8 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="invoice-table-wrap w-full overflow-hidden">
-                    <table className="invoice-table w-full text-xs text-left border-collapse border border-neutral-300 table-fixed">
+                  <div className="invoice-table-wrap w-full overflow-x-auto border border-neutral-300 rounded-lg sm:rounded-none">
+                    <table className="invoice-table w-full min-w-[480px] sm:min-w-0 text-xs text-left border-collapse table-fixed">
                       <colgroup>
                         <col className="w-[32%]" style={{ width: "32%" }} />
                         <col className="w-[15%]" style={{ width: "15%" }} />
