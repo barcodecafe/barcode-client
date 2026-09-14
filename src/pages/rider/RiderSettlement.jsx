@@ -254,14 +254,14 @@ export const RiderSettlement = () => {
               return (
                 <div
                   key={index}
-                  className="border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/40 overflow-hidden transition-all shadow-2xs"
+                  className="border border-neutral-200/80 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 overflow-hidden transition-all"
                 >
                   {/* ========================================================= */}
                   {/* MAIN DAILY SUMMARY ROW (Click to expand orders)           */}
                   {/* ========================================================= */}
                   <div
                     onClick={() => toggleAccordion(log.dateKey)}
-                    className="py-2 px-3 sm:py-2.5 sm:px-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-neutral-100/70 dark:hover:bg-neutral-800/40 transition-colors"
+                    className="py-2 px-3 sm:py-2.5 sm:px-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <div
@@ -370,18 +370,18 @@ export const RiderSettlement = () => {
                             N/A
                           </span>
                         ) : log.outstandingNetPayable === 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg shadow-2xs">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
                             <CheckCircle2 className="w-3 h-3" /> Fully Settled
                           </span>
                         ) : log.isSubmitted ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg shadow-2xs">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
                             <Clock3 className="w-3 h-3" /> Awaiting Admin Approval
                           </span>
                         ) : (
                           <button
                             onClick={(e) => handleSubmitCash(log.dateKey, e)}
                             disabled={submittingCashDate === log.dateKey}
-                            className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-amber-500 hover:bg-amber-600 px-2 py-0.5 rounded-lg transition-all active:scale-95 cursor-pointer shadow-2xs disabled:opacity-50"
+                            className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-amber-500 hover:bg-amber-600 px-2 py-0.5 rounded-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                           >
                             <Clock3 className="w-3 h-3 animate-pulse" />
                             {submittingCashDate === log.dateKey
@@ -419,7 +419,7 @@ export const RiderSettlement = () => {
                             onClick={() => setOrderPaymentFilter("all")}
                             className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
                               orderPaymentFilter === "all"
-                                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-2xs"
+                                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
                                 : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                             }`}
                           >
@@ -431,7 +431,7 @@ export const RiderSettlement = () => {
                             onClick={() => setOrderPaymentFilter("pending")}
                             className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
                               orderPaymentFilter === "pending"
-                                ? "bg-amber-500 text-white shadow-2xs"
+                                ? "bg-amber-500 text-white"
                                 : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-100"
                             }`}
                           >
@@ -443,7 +443,7 @@ export const RiderSettlement = () => {
                             onClick={() => setOrderPaymentFilter("settled")}
                             className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
                               orderPaymentFilter === "settled"
-                                ? "bg-emerald-600 text-white shadow-2xs"
+                                ? "bg-emerald-600 text-white"
                                 : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/40 hover:bg-emerald-100"
                             }`}
                           >
@@ -455,7 +455,7 @@ export const RiderSettlement = () => {
                             onClick={() => setOrderPaymentFilter("online")}
                             className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
                               orderPaymentFilter === "online"
-                                ? "bg-purple-600 text-white shadow-2xs"
+                                ? "bg-purple-600 text-white"
                                 : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-900/40 hover:bg-purple-100"
                             }`}
                           >
@@ -532,7 +532,7 @@ export const RiderSettlement = () => {
                                     : !isOnlinePrepaid && isDelivered
                                       ? "bg-amber-50/20 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-800"
                                       : "bg-neutral-50/50 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
-                                } shadow-2xs`}
+                                }`}
                               >
                                 {/* Left Col: Order ID + Status + Time + Customer & Address */}
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
