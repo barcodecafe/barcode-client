@@ -233,74 +233,78 @@ export const AdminLayout = () => {
   };
 
   const SidebarContent = ({ onNavigate }) => (
-    <>
-      <Link to="/admin" onClick={onNavigate} className="flex items-center gap-2 px-2 mb-8">
-        <div className="h-10 flex items-center rounded-xl px-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+    <div className="w-64 flex flex-col h-full shrink-0">
+      {/* 🎯 Aligned Header (h-14) with full-width logo and matching border */}
+      <div className="h-14 flex items-center px-4 border-b border-neutral-200/60 dark:border-neutral-800/60 shrink-0">
+        <Link to="/admin" onClick={onNavigate} className="flex items-center w-full">
           <img
             src={theme === 'dark' ? (settings.logoDark || resW) : (settings.logoLight || resB)}
-            alt="Barcode Cafe"
-            className="h-6 w-auto object-contain"
+            alt="Barcode Restaurant Group"
+            className="h-8 max-h-9 w-auto max-w-full object-contain"
           />
-        </div>
-      </Link>
-
-      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
-        {navItems
-          .filter((item) => hasPermission(item.permission))
-          .map((item) => {
-          const isOrdersRoute = item.path === '/admin/orders';
-          const isFleetRoute = item.path === '/admin/fleet-overview';
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              onClick={() => {
-                if (isOrdersRoute) markOrdersAsRead();
-                onNavigate();
-              }}
-              className={({ isActive }) =>
-                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary-500/10 text-primary-500 font-semibold'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500'
-                }`
-              }
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className="w-4 h-4 shrink-0" />
-                {item.name}
-              </div>
-
-              {isOrdersRoute && unreadOrderCount > 0 && (
-                <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
-                  {unreadOrderCount}
-                </span>
-              )}
-
-              {isFleetRoute && pendingSettlementCount > 0 && (
-                <span 
-                  className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-extrabold rounded-full animate-pulse shadow-xs" 
-                  title={`${pendingSettlementCount} cash handover pending`}
-                >
-                  {pendingSettlementCount}
-                </span>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          Log Out
-        </button>
+        </Link>
       </div>
-    </>
+
+      {/* Navigation List */}
+      <div className="flex-1 flex flex-col px-3 py-3 overflow-y-auto">
+        <nav className="flex flex-col gap-1 flex-1">
+          {navItems
+            .filter((item) => hasPermission(item.permission))
+            .map((item) => {
+            const isOrdersRoute = item.path === '/admin/orders';
+            const isFleetRoute = item.path === '/admin/fleet-overview';
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.end}
+                onClick={() => {
+                  if (isOrdersRoute) markOrdersAsRead();
+                  onNavigate();
+                }}
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-primary-500/10 text-primary-500 font-semibold'
+                      : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-primary-500'
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.name}
+                </div>
+
+                {isOrdersRoute && unreadOrderCount > 0 && (
+                  <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-extrabold rounded-full animate-bounce">
+                    {unreadOrderCount}
+                  </span>
+                )}
+
+                {isFleetRoute && pendingSettlementCount > 0 && (
+                  <span 
+                    className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-extrabold rounded-full animate-pulse shadow-xs" 
+                    title={`${pendingSettlementCount} cash handover pending`}
+                  >
+                    {pendingSettlementCount}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="flex flex-col gap-1 pt-3 mt-3 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            Log Out
+          </button>
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -326,26 +330,17 @@ export const AdminLayout = () => {
         transition={{ type: 'tween', duration: 0.25 }}
         className={`shrink-0 overflow-hidden flex flex-col bg-white dark:bg-neutral-900 border-r border-neutral-200/60 dark:border-neutral-800/60 shadow-sm z-50 md:z-20 md:sticky md:top-0 md:h-screen fixed left-0 top-0 bottom-0`}
       >
-        <div className="w-64 flex flex-col px-4 py-6 h-full relative shrink-0">
-          <button
-            onClick={() => setIsDrawerOpen(false)}
-            className="absolute top-5 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <SidebarContent onNavigate={() => {
-            if (typeof window !== 'undefined' && window.innerWidth < 768) {
-              setIsDrawerOpen(false);
-            }
-          }} />
-        </div>
+        <SidebarContent onNavigate={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setIsDrawerOpen(false);
+          }
+        }} />
       </motion.aside>
 
       {/* Main content body */}
       <div className="flex-grow flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/50 dark:border-neutral-800/50 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
+        <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
