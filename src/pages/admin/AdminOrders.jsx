@@ -2628,267 +2628,270 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              <div
-                ref={invoiceRef}
-                className="invoice-container relative bg-white text-neutral-800 p-3 sm:p-6 md:p-8 flex flex-col justify-between max-w-4xl mx-auto min-h-0 text-xs font-sans overflow-x-hidden"
-              >
-                {/* ❌ VOID / CANCELLED Watermark Stamp for Rejected Orders */}
-                {isRejectedOrder && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden select-none">
-                    <div className="border-4 border-rose-500/30 text-rose-500/25 dark:border-rose-500/40 dark:text-rose-500/30 text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.2em] px-8 py-4 rotate-[-22deg] rounded-3xl text-center shadow-xs">
-                      VOID / CANCELLED
-                      <span className="block text-[11px] sm:text-xs tracking-normal font-bold mt-1 text-rose-500/40">
-                        (ORDER REJECTED BY RESTAURANT)
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* 🎯 Invoice Header (Pinned at Top) */}
-                <div className="invoice-header w-full shrink-0 pb-2 text-center">
-                  <img
-                    src={invoiceHeaderImg}
-                    alt="Barcode Restaurant Group Header"
-                    className="w-full h-auto max-h-[75px] object-fill block mx-auto"
-                  />
-                  <div className="invoice-title text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
-                    {isRejectedOrder ? (
-                      <span className="text-rose-600 font-extrabold flex items-center justify-center gap-1.5">
-                        <X className="w-4 h-4 stroke-[3]" /> Invoice (Void / Cancelled)
-                      </span>
-                    ) : (
-                      "Invoice"
-                    )}
-                  </div>
-                </div>
-
-                {/* 🎯 Invoice Body Content (Middle Space) */}
-                <div className="invoice-content flex-grow space-y-4 py-2">
-                  <div className="bill-to-box flex flex-row justify-between items-start gap-2 sm:gap-6 bg-neutral-50 p-2.5 sm:p-4 rounded-xl border border-neutral-200 text-[10px] sm:text-xs leading-normal">
-                    <div className="bill-to-left space-y-1 flex-1 min-w-0">
-                      <p className="font-bold text-neutral-900 uppercase text-[10px] sm:text-[11px] mb-1">
-                        Bill To:
-                      </p>
-                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Customer Name
-                        </span>
-                        <span className="bill-value font-bold text-neutral-800 break-words text-[9.5px] sm:text-xs">
-                          :{" "}
-                          {selectedOrderDetails.user?.name ||
-                            selectedOrderDetails.customerName ||
-                            "N/A"}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Mobile
-                        </span>
-                        <span className="bill-value font-semibold text-neutral-800 break-all text-[9.5px] sm:text-xs">
-                          :{" "}
-                          {(() => {
-                            const detPhone = String(
-                              selectedOrderDetails.deliveryPhone ||
-                              selectedOrderDetails.user?.phone ||
-                              selectedOrderDetails.customerPhone ||
-                              ""
-                            ).trim();
-                            return detPhone && detPhone !== "-" ? detPhone : "N/A";
-                          })()}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Order Type
-                        </span>
-                        <span className="bill-value font-bold text-neutral-800 text-[9.5px] sm:text-xs">
-                          : {checkIsPickupOrder(selectedOrderDetails)
-                              ? `Self-Pickup (${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Selected Branch"})`
-                              : "Home Delivery"}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          {checkIsPickupOrder(selectedOrderDetails) ? "Pickup Outlet" : "Address"}
-                        </span>
-                        <span className="bill-value text-neutral-800 break-words text-[9.5px] sm:text-xs">
-                          : {checkIsPickupOrder(selectedOrderDetails)
-                              ? `Counter Collection at ${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Barcode Outlet"}`
-                              : (selectedOrderDetails.deliveryAddress || selectedOrderDetails.user?.address || "N/A") +
-                                (selectedOrderDetails.deliveryArea && !selectedOrderDetails.deliveryAddress?.includes(selectedOrderDetails.deliveryArea)
-                                  ? ` (${selectedOrderDetails.deliveryArea})`
-                                  : "")}
+              {/* 📄 Official A4 Paper Sheet Wrapper */}
+              <div className="w-full overflow-x-auto bg-neutral-100/80 dark:bg-neutral-950/80 p-2 sm:p-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 flex justify-center">
+                <div
+                  ref={invoiceRef}
+                  className="invoice-container relative bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between w-[760px] min-w-[760px] max-w-[760px] min-h-0 text-xs font-sans shadow-md border border-neutral-200/80 rounded-xl shrink-0"
+                  style={{ width: "760px", minWidth: "760px" }}
+                >
+                  {/* ❌ VOID / CANCELLED Watermark Stamp for Rejected Orders */}
+                  {isRejectedOrder && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden select-none">
+                      <div className="border-4 border-rose-500/30 text-rose-500/25 dark:border-rose-500/40 dark:text-rose-500/30 text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.2em] px-8 py-4 rotate-[-22deg] rounded-3xl text-center shadow-xs">
+                        VOID / CANCELLED
+                        <span className="block text-[11px] sm:text-xs tracking-normal font-bold mt-1 text-rose-500/40">
+                          (ORDER REJECTED BY RESTAURANT)
                         </span>
                       </div>
                     </div>
+                  )}
 
-                    <div className="bill-to-right space-y-1 w-[155px] sm:w-56 md:w-60 shrink-0 pt-0">
-                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Invoice Date
+                  {/* 🎯 Invoice Header (Pinned at Top) */}
+                  <div className="invoice-header w-full shrink-0 pb-2 text-center">
+                    <img
+                      src={invoiceHeaderImg}
+                      alt="Barcode Restaurant Group Header"
+                      className="w-full h-auto max-h-[75px] object-fill block mx-auto"
+                    />
+                    <div className="invoice-title text-center font-bold text-sm sm:text-base tracking-widest uppercase text-neutral-800 py-1.5 border-b border-neutral-200 mt-2">
+                      {isRejectedOrder ? (
+                        <span className="text-rose-600 font-extrabold flex items-center justify-center gap-1.5">
+                          <X className="w-4 h-4 stroke-[3]" /> Invoice (Void / Cancelled)
                         </span>
-                        <span className="bill-value font-semibold text-neutral-800 text-[9.5px] sm:text-xs">
-                          :{" "}
-                          {(() => {
-                            try {
-                              return selectedOrderDetails?.createdAt
-                                ? new Date(selectedOrderDetails.createdAt).toISOString().split("T")[0]
-                                : new Date().toISOString().split("T")[0];
-                            } catch {
-                              return new Date().toISOString().split("T")[0];
-                            }
-                          })()}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Invoice #
-                        </span>
-                        <span className="bill-value font-bold text-neutral-800 uppercase text-[9.5px] sm:text-xs">
-                          : IN-
-                          {String(
-                            selectedOrderDetails?.id || selectedOrderDetails?._id || ""
-                          ).slice(-10).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Fulfillment
-                        </span>
-                        <span className={`bill-value font-bold uppercase text-[9.5px] sm:text-xs ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
-                          : {checkIsPickupOrder(selectedOrderDetails) ? "SELF-PICKUP" : "HOME DELIVERY"}
-                        </span>
-                      </div>
-                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                          Payment
-                        </span>
-                        <span className="bill-value font-bold text-neutral-800 uppercase text-[9.5px] sm:text-xs">
-                          : {formatPaymentMethodWithChannel(selectedOrderDetails)}{" "}
-                          {isRejectedOrder ? (
-                            <span className="text-rose-600 font-black">(CANCELLED)</span>
-                          ) : isPaidOrder ? (
-                            "(PAID)"
-                          ) : (
-                            "(DUE)"
-                          )}
-                        </span>
-                      </div>
-                      {selectedOrderDetails.bankTranId && (
-                        <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                            Gateway TxID
-                          </span>
-                          <span className="bill-value font-mono text-[9px] sm:text-[10px] text-neutral-700 break-all">
-                            : {selectedOrderDetails.bankTranId}
-                          </span>
-                        </div>
-                      )}
-                      {isRejectedOrder && (
-                        <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
-                            Status
-                          </span>
-                          <span className="bill-value font-black text-rose-600 uppercase text-[9.5px] sm:text-xs">
-                            : REJECTED
-                          </span>
-                        </div>
+                      ) : (
+                        "Invoice"
                       )}
                     </div>
                   </div>
 
-                  <div className="invoice-table-wrap w-full overflow-hidden border border-neutral-300 rounded-lg sm:rounded-none">
-                    <table className="invoice-table w-full text-[9px] sm:text-xs text-left border-collapse table-fixed">
-                      <colgroup>
-                        <col className="w-[30%]" style={{ width: "30%" }} />
-                        <col className="w-[15%]" style={{ width: "15%" }} />
-                        <col className="w-[10%]" style={{ width: "10%" }} />
-                        <col className="w-[13%]" style={{ width: "13%" }} />
-                        <col className="w-[10%]" style={{ width: "10%" }} />
-                        <col className="w-[22%]" style={{ width: "22%" }} />
-                      </colgroup>
-                      <thead>
-                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[8.5px] sm:text-[10px] border-b border-neutral-300">
-                          <th className="col-items p-1 sm:p-2.5 border-r border-neutral-300">
-                            Items
-                          </th>
-                          <th className="col-price p-1 sm:p-2.5 border-r border-neutral-300 text-right">
-                            Unit Price
-                          </th>
-                          <th className="col-qty p-1 sm:p-2.5 border-r border-neutral-300 text-center">
-                            Quantity
-                          </th>
-                          <th className="col-disc p-1 sm:p-2.5 border-r border-neutral-300 text-right">
-                            Discount
-                          </th>
-                          <th className="col-vat p-1 sm:p-2.5 border-r border-neutral-300 text-right">
-                            Vat
-                          </th>
-                          <th className="col-total p-1 sm:p-2.5 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {orderItems.map((item, idx) => {
-                          const details = computeInvoiceItemDetails(item);
-                          const {
-                            origUnitPrice,
-                            qty,
-                            lineTotal,
-                            totalItemDiscount,
-                            promoBadge,
-                            promoBadgeColor,
-                          } = details;
+                  {/* 🎯 Invoice Body Content (Middle Space) */}
+                  <div className="invoice-content flex-grow space-y-4 py-2">
+                    <div className="bill-to-box flex flex-row justify-between items-start gap-4 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200 text-xs leading-normal">
+                      <div className="bill-to-left space-y-1.5 flex-1 min-w-0">
+                        <p className="font-bold text-neutral-900 uppercase text-[11px] mb-1.5">
+                          Bill To:
+                        </p>
+                        <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Customer Name
+                          </span>
+                          <span className="bill-value font-bold text-neutral-800 break-words">
+                            :{" "}
+                            {selectedOrderDetails.user?.name ||
+                              selectedOrderDetails.customerName ||
+                              "N/A"}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Mobile
+                          </span>
+                          <span className="bill-value font-semibold text-neutral-800 break-all">
+                            :{" "}
+                            {(() => {
+                              const detPhone = String(
+                                selectedOrderDetails.deliveryPhone ||
+                                selectedOrderDetails.user?.phone ||
+                                selectedOrderDetails.customerPhone ||
+                                ""
+                              ).trim();
+                              return detPhone && detPhone !== "-" ? detPhone : "N/A";
+                            })()}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Order Type
+                          </span>
+                          <span className="bill-value font-bold text-neutral-800">
+                            : {checkIsPickupOrder(selectedOrderDetails)
+                                ? `Self-Pickup (${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Selected Branch"})`
+                                : "Home Delivery"}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[95px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            {checkIsPickupOrder(selectedOrderDetails) ? "Pickup Outlet" : "Address"}
+                          </span>
+                          <span className="bill-value text-neutral-800 break-words">
+                            : {checkIsPickupOrder(selectedOrderDetails)
+                                ? `Counter Collection at ${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Barcode Outlet"}`
+                                : (selectedOrderDetails.deliveryAddress || selectedOrderDetails.user?.address || "N/A") +
+                                  (selectedOrderDetails.deliveryArea && !selectedOrderDetails.deliveryAddress?.includes(selectedOrderDetails.deliveryArea)
+                                    ? ` (${selectedOrderDetails.deliveryArea})`
+                                    : "")}
+                          </span>
+                        </div>
+                      </div>
 
-                          return (
-                            <tr key={idx} className="border-b border-neutral-200">
-                              <td className="col-items p-1 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
-                                <div className="text-neutral-850">
-                                  {item.name}{" "}
-                                  {item.selectedSize
-                                    ? `(${item.selectedSize})`
-                                    : ""}
-                                </div>
-                                {promoBadge && (
-                                  <span
-                                    className={`promo-badge inline-block mt-0.5 px-1 py-0.2 rounded border text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
-                                  >
-                                    {promoBadge}
-                                  </span>
-                                )}
-                                {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                                  <div className="addons-list text-[8.5px] sm:text-[10px] text-emerald-700 font-normal mt-0.5">
-                                    {item.selectedAddons
-                                      .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
-                                      .join(", ")}
+                      <div className="bill-to-right space-y-1.5 w-[240px] shrink-0 pt-0">
+                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Invoice Date
+                          </span>
+                          <span className="bill-value font-semibold text-neutral-800">
+                            :{" "}
+                            {(() => {
+                              try {
+                                return selectedOrderDetails?.createdAt
+                                  ? new Date(selectedOrderDetails.createdAt).toISOString().split("T")[0]
+                                  : new Date().toISOString().split("T")[0];
+                              } catch {
+                                return new Date().toISOString().split("T")[0];
+                              }
+                            })()}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Invoice #
+                          </span>
+                          <span className="bill-value font-bold text-neutral-800 uppercase">
+                            : IN-
+                            {String(
+                              selectedOrderDetails?.id || selectedOrderDetails?._id || ""
+                            ).slice(-10).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Fulfillment
+                          </span>
+                          <span className={`bill-value font-bold uppercase ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
+                            : {checkIsPickupOrder(selectedOrderDetails) ? "SELF-PICKUP" : "HOME DELIVERY"}
+                          </span>
+                        </div>
+                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                            Payment
+                          </span>
+                          <span className="bill-value font-bold text-neutral-800 uppercase">
+                            : {formatPaymentMethodWithChannel(selectedOrderDetails)}{" "}
+                            {isRejectedOrder ? (
+                              <span className="text-rose-600 font-black">(CANCELLED)</span>
+                            ) : isPaidOrder ? (
+                              "(PAID)"
+                            ) : (
+                              "(DUE)"
+                            )}
+                          </span>
+                        </div>
+                        {selectedOrderDetails.bankTranId && (
+                          <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                            <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                              Gateway TxID
+                            </span>
+                            <span className="bill-value font-mono text-[10px] text-neutral-700 break-all">
+                              : {selectedOrderDetails.bankTranId}
+                            </span>
+                          </div>
+                        )}
+                        {isRejectedOrder && (
+                          <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                            <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                              Status
+                            </span>
+                            <span className="bill-value font-black text-rose-600 uppercase">
+                              : REJECTED
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="invoice-table-wrap w-full overflow-hidden border border-neutral-300">
+                      <table className="invoice-table w-full text-xs text-left border-collapse table-fixed">
+                        <colgroup>
+                          <col className="w-[32%]" style={{ width: "32%" }} />
+                          <col className="w-[15%]" style={{ width: "15%" }} />
+                          <col className="w-[10%]" style={{ width: "10%" }} />
+                          <col className="w-[15%]" style={{ width: "15%" }} />
+                          <col className="w-[10%]" style={{ width: "10%" }} />
+                          <col className="w-[18%]" style={{ width: "18%" }} />
+                        </colgroup>
+                        <thead>
+                          <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
+                            <th className="col-items p-2.5 border-r border-neutral-300">
+                              Items
+                            </th>
+                            <th className="col-price p-2.5 border-r border-neutral-300 text-right">
+                              Unit Price
+                            </th>
+                            <th className="col-qty p-2.5 border-r border-neutral-300 text-center">
+                              Quantity
+                            </th>
+                            <th className="col-disc p-2.5 border-r border-neutral-300 text-right">
+                              Discount
+                            </th>
+                            <th className="col-vat p-2.5 border-r border-neutral-300 text-right">
+                              Vat
+                            </th>
+                            <th className="col-total p-2.5 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orderItems.map((item, idx) => {
+                            const details = computeInvoiceItemDetails(item);
+                            const {
+                              origUnitPrice,
+                              qty,
+                              lineTotal,
+                              totalItemDiscount,
+                              promoBadge,
+                              promoBadgeColor,
+                            } = details;
+
+                            return (
+                              <tr key={idx} className="border-b border-neutral-200">
+                                <td className="col-items p-2.5 border-r border-neutral-300 font-semibold break-words">
+                                  <div className="text-neutral-850">
+                                    {item.name}{" "}
+                                    {item.selectedSize
+                                      ? `(${item.selectedSize})`
+                                      : ""}
                                   </div>
-                                )}
-                              </td>
-                              <td className="col-price p-1 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
-                                ৳{origUnitPrice.toFixed(2)}
-                              </td>
-                              <td className="col-qty p-1 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
-                                {qty}
-                              </td>
-                              <td className="col-disc p-1 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
-                                {totalItemDiscount > 0
-                                  ? `-৳${totalItemDiscount.toFixed(2)}`
-                                  : "0.00"}
-                              </td>
-                              <td className="col-vat p-1 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
-                                0.00
-                              </td>
-                              <td className="col-total p-1 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
-                                ৳{lineTotal.toFixed(2)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                  {promoBadge && (
+                                    <span
+                                      className={`promo-badge inline-block mt-1 px-1.5 py-0.2 rounded border text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
+                                    >
+                                      {promoBadge}
+                                    </span>
+                                  )}
+                                  {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
+                                    <div className="addons-list text-[10px] text-emerald-700 font-normal mt-0.5">
+                                      {item.selectedAddons
+                                        .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
+                                        .join(", ")}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="col-price p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
+                                  ৳{origUnitPrice.toFixed(2)}
+                                </td>
+                                <td className="col-qty p-2.5 border-r border-neutral-300 text-center font-bold">
+                                  {qty}
+                                </td>
+                                <td className="col-disc p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
+                                  {totalItemDiscount > 0
+                                    ? `-৳${totalItemDiscount.toFixed(2)}`
+                                    : "0.00"}
+                                </td>
+                                <td className="col-vat p-2.5 border-r border-neutral-300 text-right font-medium">
+                                  0.00
+                                </td>
+                                <td className="col-total p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
+                                  ৳{lineTotal.toFixed(2)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <div className="summary-section flex justify-end pt-2">
-                    <div className="summary-box w-52 sm:w-80 space-y-1 text-[10px] sm:text-xs">
+                    <div className="summary-section flex justify-end pt-2">
+                      <div className="summary-box w-80 space-y-1.5 text-xs">
                       {/* 🎯 Subtotal Breakdown */}
                       {orderAddonsTotal > 0 ? (
                         <>
@@ -3032,6 +3035,7 @@ export const AdminOrders = () => {
                   />
                 </div>
               </div>
+            </div>
 
               {String(
                 selectedOrderDetails.paymentMethod || "cod",
