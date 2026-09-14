@@ -812,6 +812,11 @@ export const AdminOrders = () => {
       .slice(-10)
       .toUpperCase();
 
+    // 📄 Clone node and strip all responsive scaling / modal preview constraints for full paper print
+    const clone = printContent.cloneNode(true);
+    clone.removeAttribute("style");
+    clone.style.cssText = "width: 100% !important; min-width: 0 !important; max-width: 100% !important; transform: none !important; transform-origin: initial !important; margin: 0 !important;";
+
     // Create a hidden iframe for seamless printing without popup blocker issues
     let printFrame = document.getElementById("invoice-print-frame");
     if (printFrame) {
@@ -1075,8 +1080,8 @@ export const AdminOrders = () => {
       display: block !important;
       visibility: visible !important;
     }
-    /* 🎯 Dynamic A5 Scale: Triggered automatically when A5 paper (width <= 175mm / 620px) is chosen */
-    @media print and (max-width: 175mm), (max-width: 620px) {
+    /* 🎯 Dynamic A5 Scale: Triggered only when actual small paper (width <= 155mm) is chosen */
+    @media print and (max-width: 155mm) {
       html, body {
         font-size: 8.5px !important;
         line-height: 1.2 !important;
@@ -1189,7 +1194,7 @@ export const AdminOrders = () => {
   </style>
 </head>
 <body>
-  ${printContent.outerHTML}
+  ${clone.outerHTML}
 </body>
 </html>`);
     frameDoc.document.close();
