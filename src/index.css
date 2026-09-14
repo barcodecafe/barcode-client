@@ -271,3 +271,182 @@ div[data-toaster-container] div[role="alert"],
     border-radius: 10px !important;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Admin Orders: Sidebar Open vs Closed Responsive Scaling
+   (When sidebar is OPEN, font size and spacing are ~30% more compact on lg/xl/2xl/3xl/4xl)
+------------------------------------------------------------------------ */
+@media (min-width: 1024px) {
+  /* 🎯 SIDEBAR OPEN: ~30% more compact spacing & typography */
+  .admin-sidebar-open .admin-orders-view .admin-orders-heading {
+    font-size: 1.25rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-subheading {
+    font-size: 0.75rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-top-btn {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.7rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-tab-btn {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.7rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-tab-count {
+    font-size: 0.6rem !important;
+    padding: 0.1rem 0.35rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-filter-bar {
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+  .admin-sidebar-open .admin-orders-view .admin-orders-filter-input,
+  .admin-sidebar-open .admin-orders-view .admin-orders-filter-select {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.7rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper table th {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.68rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper table td {
+    padding: 0.4rem 0.65rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-order-id {
+    font-size: 0.72rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-order-sub {
+    font-size: 0.52rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-customer-name {
+    font-size: 0.72rem !important;
+    max-width: 105px !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-customer-phone {
+    font-size: 0.65rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-address-main {
+    font-size: 0.7rem !important;
+    max-width: 110px !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-address-sub {
+    font-size: 0.6rem !important;
+    max-width: 110px !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-total-amount {
+    font-size: 0.75rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-action-btn {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.62rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-select-input {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.62rem !important;
+    max-width: 120px !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-chat-btn {
+    padding: 0.35rem !important;
+  }
+  .admin-sidebar-open .admin-orders-table-wrapper .col-chat-btn svg {
+    width: 0.85rem !important;
+    height: 0.85rem !important;
+  }
+
+  /* 🎯 SIDEBAR CLOSED: Full spacious layout & normal/larger typography */
+  .admin-sidebar-closed .admin-orders-view .admin-orders-heading {
+    font-size: 1.75rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-subheading {
+    font-size: 0.875rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-top-btn {
+    padding: 0.55rem 1rem !important;
+    font-size: 0.825rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-tab-btn {
+    padding: 0.5rem 0.95rem !important;
+    font-size: 0.825rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-tab-count {
+    font-size: 0.72rem !important;
+    padding: 0.15rem 0.45rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-filter-bar {
+    padding: 0.75rem 1.1rem !important;
+    gap: 0.75rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-view .admin-orders-filter-input,
+  .admin-sidebar-closed .admin-orders-view .admin-orders-filter-select {
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.825rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper table th {
+    padding: 0.75rem 1rem !important;
+    font-size: 0.825rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper table td {
+    padding: 0.65rem 1rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-order-id {
+    font-size: 0.875rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-order-sub {
+    font-size: 0.65rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-customer-name {
+    font-size: 0.875rem !important;
+    max-width: 160px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-customer-phone {
+    font-size: 0.8rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-address-main {
+    font-size: 0.85rem !important;
+    max-width: 170px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-address-sub {
+    font-size: 0.75rem !important;
+    max-width: 170px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-total-amount {
+    font-size: 0.9rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-action-btn {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.75rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-select-input {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.75rem !important;
+    max-width: 160px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-chat-btn {
+    padding: 0.5rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-chat-btn svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+}
+
+@media (min-width: 1536px) {
+  /* 2XL / 3XL / 4XL: even more generous when sidebar is closed */
+  .admin-sidebar-closed .admin-orders-table-wrapper table th {
+    padding: 0.85rem 1.25rem !important;
+    font-size: 0.9rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper table td {
+    padding: 0.75rem 1.25rem !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-customer-name {
+    max-width: 220px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-address-main,
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-address-sub {
+    max-width: 230px !important;
+  }
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-select-input {
+    max-width: 180px !important;
+  }
+}

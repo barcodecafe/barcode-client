@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useOutletContext } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -1780,12 +1781,12 @@ export const AdminOrders = () => {
   ];
 
   return (
-    <div className="w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-4 sm:space-y-6">
+    <div className="admin-orders-view w-full max-w-full 2xl:max-w-7xl 3xl:max-w-screen-2xl mx-auto space-y-4 sm:space-y-6">
 
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-2.5 sm:gap-4">
         <div>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <h1 className="font-display text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
+            <h1 className="admin-orders-heading font-display text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100">
               Orders & Live Chat
             </h1>
             {isManager && (
@@ -1795,7 +1796,7 @@ export const AdminOrders = () => {
               </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1">
+          <p className="admin-orders-subheading text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1">
             Monitor incoming food deliveries, update delivery stages, and chat
             with customers/riders.
           </p>
@@ -1805,7 +1806,7 @@ export const AdminOrders = () => {
           <button
             type="button"
             onClick={fetchOrdersAndFleet}
-            className="px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            className="admin-orders-top-btn px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             title="Refresh Orders"
           >
             <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -1815,7 +1816,7 @@ export const AdminOrders = () => {
           <button
             type="button"
             onClick={() => setIsExportSalesModalOpen(true)}
-            className="px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] sm:text-xs font-extrabold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0"
+            className="admin-orders-top-btn px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] sm:text-xs font-extrabold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Export Sales to Excel</span>
@@ -1835,7 +1836,7 @@ export const AdminOrders = () => {
                 setStatusFilter(tab.id);
                 setCurrentPage(1);
               }}
-              className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
+              className={`admin-orders-tab-btn px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
                 isActive
                   ? "bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800 hover:border-primary-500/40"
@@ -1843,7 +1844,7 @@ export const AdminOrders = () => {
             >
               <span>{tab.label}</span>
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black ${
+                className={`admin-orders-tab-count px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black ${
                   isActive
                     ? "bg-white/20 text-white"
                     : tab.tone === "amber"
@@ -1869,7 +1870,7 @@ export const AdminOrders = () => {
       </div>
 
       {/* 🎯 Live Search & Advanced Filter Controls Bar */}
-      <div className="p-2.5 sm:p-3 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
+      <div className="admin-orders-filter-bar p-2.5 sm:p-3 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
         {/* Search Bar */}
         <div className="relative w-full sm:w-80 md:w-96 max-w-full">
           <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
@@ -1881,7 +1882,7 @@ export const AdminOrders = () => {
               setCurrentPage(1);
             }}
             placeholder="Search Order ID, Name, Phone, Area..."
-            className="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs text-neutral-800 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all"
+            className="admin-orders-filter-input w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs text-neutral-800 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all"
           />
           {searchQuery && (
             <button
@@ -1905,7 +1906,7 @@ export const AdminOrders = () => {
               setDateFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+            className="admin-orders-filter-select px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
           >
             <option value="all">📅 All Dates</option>
             <option value="today">📅 Today</option>
@@ -1967,7 +1968,7 @@ export const AdminOrders = () => {
                 }
                 setCurrentPage(1);
               }}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+              className="admin-orders-filter-select px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
             >
               <option value="all">📦 All Types ({orderTypeCounts.all})</option>
               <option value="delivery">🚚 Delivery ({orderTypeCounts.delivery})</option>
@@ -1983,7 +1984,7 @@ export const AdminOrders = () => {
                 setBranchFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-[11px] sm:text-xs font-bold focus:outline-none cursor-pointer transition-all"
+              className="admin-orders-filter-select px-2.5 py-1.5 sm:px-3 sm:py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-[11px] sm:text-xs font-bold focus:outline-none cursor-pointer transition-all"
             >
               <option value="all">🏢 All Outlets ({branches.length})</option>
               {branches.map((b) => (
@@ -2001,7 +2002,7 @@ export const AdminOrders = () => {
               setPaymentFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
+            className="admin-orders-filter-select px-2.5 py-1.5 sm:px-3 sm:py-2 bg-neutral-50 dark:bg-neutral-955 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[11px] sm:text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
           >
             <option value="all">💳 All Payments</option>
             <option value="paid">✅ Paid Only</option>
@@ -2018,7 +2019,7 @@ export const AdminOrders = () => {
 
       <div className="w-full flex flex-col gap-6">
         {/* 🎯 Ultra-wide Table Container Optimization */}
-        <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
+        <div className="admin-orders-table-wrapper w-full bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl shadow-xs overflow-hidden">
           <div className="w-full overflow-x-auto">
             <table className="w-full min-w-[800px] sm:min-w-[880px] text-xs text-left border-collapse">
               <thead>
@@ -2100,12 +2101,12 @@ export const AdminOrders = () => {
                           className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 cursor-pointer group whitespace-nowrap"
                           title={ordId}
                         >
-                          <span className="font-extrabold text-[11px] sm:text-xs text-primary-600 dark:text-primary-400 group-hover:text-primary-700 group-hover:underline uppercase transition-colors block">
+                          <span className="col-order-id font-extrabold text-[11px] sm:text-xs text-primary-600 dark:text-primary-400 group-hover:text-primary-700 group-hover:underline uppercase transition-colors block">
                             {formatShortOrderId(ordId)}
                           </span>
                           <div className="flex flex-col gap-0.5 mt-0.5">
                             <span
-                              className={`text-[8px] sm:text-[8.5px] font-semibold leading-tight ${
+                              className={`col-order-sub text-[8px] sm:text-[8.5px] font-semibold leading-tight ${
                                 isPickupOrder
                                   ? "text-emerald-600 dark:text-emerald-400"
                                   : "text-blue-600 dark:text-blue-400"
@@ -2115,7 +2116,7 @@ export const AdminOrders = () => {
                             </span>
                             {badge && (
                               <span
-                                className={`text-[8px] sm:text-[8.5px] leading-tight ${badge.textColor || "text-neutral-500"}`}
+                                className={`col-order-sub text-[8px] sm:text-[8.5px] leading-tight ${badge.textColor || "text-neutral-500"}`}
                               >
                                 {badge.label}
                               </span>
@@ -2124,20 +2125,20 @@ export const AdminOrders = () => {
                         </td>
 
                         <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5">
-                          <span className="block font-bold text-neutral-850 dark:text-white truncate max-w-[120px] 2xl:max-w-[160px] text-[11px] sm:text-xs">
+                          <span className="col-customer-name block font-bold text-neutral-850 dark:text-white truncate max-w-[120px] 2xl:max-w-[160px] text-[11px] sm:text-xs">
                             {ord.user?.name || ord.customerName || "Guest"}
                           </span>
                           {(() => {
                             const rawPhone = ord.deliveryPhone || ord.user?.phone || ord.customerPhone || "";
                             const phone = String(rawPhone).trim();
                             if (!phone || phone === "-") {
-                              return <span className="block text-[9.5px] text-neutral-400 mt-0.5">-</span>;
+                              return <span className="col-customer-phone block text-[9.5px] text-neutral-400 mt-0.5">-</span>;
                             }
                             return (
                               <a
                                 href={`tel:${phone}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 hover:underline mt-0.5 transition-colors cursor-pointer"
+                                className="col-customer-phone inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 hover:underline mt-0.5 transition-colors cursor-pointer"
                                 title={`Call ${phone}`}
                               >
                                 <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-primary-500" />
@@ -2150,32 +2151,32 @@ export const AdminOrders = () => {
                         <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5">
                           {isPickupOrder ? (
                             <div>
-                              <span className="inline-flex items-center gap-1 text-[10.5px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                              <span className="col-address-main inline-flex items-center gap-1 text-[10.5px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                 <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-500" />
                                 <span className="truncate max-w-[130px] 2xl:max-w-[180px]" title={ord.pickupBranchName || ord.user?.pickArea}>
                                   {ord.pickupBranchName || ord.user?.pickArea?.replace(/^Self Pickup at /i, '').trim() || "Pickup Outlet"}
                                 </span>
                               </span>
-                              <span className="block text-[9.5px] sm:text-[10.5px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[180px]" title={ord.user?.address || ord.deliveryAddress}>
+                              <span className="col-address-sub block text-[9.5px] sm:text-[10.5px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[180px]" title={ord.user?.address || ord.deliveryAddress}>
                                 {ord.user?.address && !ord.user.address.toLowerCase().includes("self pickup") ? ord.user.address : "Customer In-Store Collection"}
                               </span>
                             </div>
                           ) : (
                             <div>
                               <span
-                                className="block text-neutral-800 dark:text-neutral-200 font-medium text-[10.5px] sm:text-xs truncate max-w-[130px] 2xl:max-w-[180px]"
+                                className="col-address-main block text-neutral-800 dark:text-neutral-200 font-medium text-[10.5px] sm:text-xs truncate max-w-[130px] 2xl:max-w-[180px]"
                                 title={ord.user?.address || ord.deliveryAddress}
                               >
                                 {ord.user?.address || ord.deliveryAddress || "-"}
                               </span>
-                              <span className="block text-[9.5px] sm:text-[10.5px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[180px]">
+                              <span className="col-address-sub block text-[9.5px] sm:text-[10.5px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[130px] 2xl:max-w-[180px]">
                                 📍 {ord.deliveryArea || ord.user?.pickArea || "Standard Delivery Area"}
                               </span>
                             </div>
                           )}
                         </td>
 
-                        <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 font-extrabold text-primary-600 dark:text-primary-400 whitespace-nowrap text-[11px] sm:text-xs">
+                        <td className="col-total-amount px-2.5 py-2 sm:px-3.5 sm:py-2.5 font-extrabold text-primary-600 dark:text-primary-400 whitespace-nowrap text-[11px] sm:text-xs">
                           ৳{Number(ord.total || ord.grandTotal || 0).toFixed(2)}
                         </td>
 
@@ -2186,7 +2187,7 @@ export const AdminOrders = () => {
                                 onClick={() =>
                                   handleStatusChange(ordId, "Accepted")
                                 }
-                                className="px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] sm:text-[10px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                className="col-action-btn px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] sm:text-[10px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                                 title="Accept Order"
                               >
                                 <Check className="w-2.5 h-2.5 stroke-[3]" /> Accept
@@ -2195,7 +2196,7 @@ export const AdminOrders = () => {
                                 onClick={() =>
                                   handleStatusChange(ordId, "Rejected")
                                 }
-                                className="px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] sm:text-[10px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
+                                className="col-action-btn px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold text-[9px] sm:text-[10px] uppercase active:scale-95 transition-all shadow-xs flex items-center gap-0.5 cursor-pointer"
                                 title="Reject Order"
                               >
                                 <X className="w-2.5 h-2.5 stroke-[3]" /> Reject
@@ -2203,14 +2204,14 @@ export const AdminOrders = () => {
                             </div>
                           ) : isPaymentFailed ? (
                             <div className="flex items-center gap-1">
-                              <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wide">
+                              <span className="col-action-btn px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wide">
                                 🚫 Payment Failed
                               </span>
                               {!isRejected && (
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(ordId, "Rejected")}
-                                  className="px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 hover:bg-rose-500 hover:text-white text-neutral-600 dark:text-neutral-300 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer"
+                                  className="col-action-btn px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 hover:bg-rose-500 hover:text-white text-neutral-600 dark:text-neutral-300 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer"
                                   title="Dismiss and Reject Unpaid Order"
                                 >
                                   Dismiss
@@ -2218,15 +2219,15 @@ export const AdminOrders = () => {
                               )}
                             </div>
                           ) : isOnlineUnpaid ? (
-                            <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-flex items-center gap-0.5">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-flex items-center gap-0.5">
                               ⏳ Awaiting Payment
                             </span>
                           ) : isRejected ? (
-                            <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide">
                               {currentStatus === "CANCELLED" ? "Cancelled" : "Rejected"}
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide">
                               Accepted
                             </span>
                           )}
@@ -2234,19 +2235,19 @@ export const AdminOrders = () => {
 
                         <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 whitespace-nowrap">
                           {isOnlineUnpaid ? (
-                            <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
                               {isPaymentFailed ? "Payment Failed" : "Awaiting Payment"}
                             </span>
                           ) : isPendingUnhandled ? (
-                            <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
                               Pending
                             </span>
                           ) : isRejected ? (
-                            <span className="px-1.5 py-0.5 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded border border-neutral-500/20 bg-neutral-500/10 text-neutral-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-wide inline-block">
                               Cancelled
                             </span>
                           ) : ord.status === "Delivered" ? (
-                            <span className="px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] sm:text-[10.5px] uppercase tracking-wide inline-flex items-center gap-0.5 shadow-2xs">
+                            <span className="col-action-btn px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] sm:text-[10.5px] uppercase tracking-wide inline-flex items-center gap-0.5 shadow-2xs">
                               <Check className="w-3 h-3 stroke-[3]" /> Delivered
                             </span>
                           ) : (
@@ -2261,7 +2262,7 @@ export const AdminOrders = () => {
                                 onChange={(e) =>
                                   handleStatusChange(ordId, e.target.value)
                                 }
-                                className={`px-1.5 py-1 rounded-md border font-bold text-[9px] sm:text-[10.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                                className={`col-select-input px-1.5 py-1 rounded-md border font-bold text-[9px] sm:text-[10.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 ${
                                   isOnlineUnpaid || (!isPickupOrder && (!assignedRiderId || ord.riderAcceptStatus !== "accepted"))
                                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 border-neutral-200 dark:border-neutral-700 cursor-not-allowed opacity-75"
                                     : `${getStatusColor(ord.status)} cursor-pointer`
@@ -2297,7 +2298,7 @@ export const AdminOrders = () => {
 
                         <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 whitespace-nowrap">
                           {isPickupOrder ? (
-                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wide inline-flex items-center gap-0.5">
+                            <span className="col-action-btn px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wide inline-flex items-center gap-0.5">
                               🛍️ Self-Pickup
                             </span>
                           ) : (
@@ -2313,7 +2314,7 @@ export const AdminOrders = () => {
                                 onChange={(e) =>
                                   handleAssignRider(ordId, e.target.value)
                                 }
-                                className={`px-1.5 py-1 rounded-md border font-bold text-[9px] sm:text-[10.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] 2xl:max-w-[160px] ${
+                                className={`col-select-input px-1.5 py-1 rounded-md border font-bold text-[9px] sm:text-[10.5px] uppercase focus:outline-none focus:ring-1 focus:ring-primary-500 max-w-[125px] 2xl:max-w-[160px] ${
                                   isPendingUnhandled ||
                                   isRejected ||
                                   isOnlineUnpaid ||
@@ -2357,7 +2358,7 @@ export const AdminOrders = () => {
                                             "accepted",
                                           )
                                         }
-                                        className="px-1 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        className="col-action-btn px-1 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                         title="Force Accept Rider Status"
                                       >
                                         ✓ Accept
@@ -2370,7 +2371,7 @@ export const AdminOrders = () => {
                                             "rejected",
                                           )
                                         }
-                                        className="px-1 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
+                                        className="col-action-btn px-1 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[8px] font-bold transition-all cursor-pointer flex items-center gap-0.5 shadow-xs"
                                         title="Reject and Unassign Rider"
                                       >
                                         ✕ Reject
@@ -2386,7 +2387,7 @@ export const AdminOrders = () => {
                         <td className="px-2.5 py-2 sm:px-3.5 sm:py-2.5 text-right whitespace-nowrap">
                           <button
                             onClick={() => setActiveChatOrderId(ordId)}
-                            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
+                            className={`col-chat-btn p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-primary-500 hover:border-primary-500/40 active:scale-95 transition-all cursor-pointer ${
                               activeChatOrderId === ordId
                                 ? "bg-primary-500/10 text-primary-500 border-primary-500/30"
                                 : ""
