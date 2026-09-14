@@ -246,7 +246,7 @@ export const AdminLayout = () => {
       </div>
 
       {/* Navigation List */}
-      <div className="flex-1 flex flex-col px-3 py-3 overflow-y-auto">
+      <div className="flex-1 flex flex-col px-3 pt-2 pb-1.5 overflow-y-auto">
         <nav className="flex flex-col gap-1 flex-1">
           {navItems
             .filter((item) => hasPermission(item.permission))
@@ -294,10 +294,10 @@ export const AdminLayout = () => {
           })}
         </nav>
 
-        <div className="flex flex-col gap-1 pt-3 mt-3 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
+        <div className="flex flex-col gap-1 pt-1.5 mt-1.5 border-t border-neutral-200/80 dark:border-neutral-800/80 shrink-0">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+            className="flex items-center gap-3 px-3 py-1.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             Log Out
