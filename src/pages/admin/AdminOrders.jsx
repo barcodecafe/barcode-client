@@ -298,17 +298,20 @@ const getPaymentBadge = (ord) => {
       return {
         label: "CANCELLED",
         tone: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20 font-bold",
+        textColor: "text-neutral-400 dark:text-neutral-500 font-medium",
       };
     }
     if (isPaid || st === "DELIVERED") {
       return {
         label: "PAID (COD)",
         tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+        textColor: "text-emerald-600 dark:text-emerald-400 font-semibold",
       };
     }
     return {
       label: "AWAITING PAYMENT",
       tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold",
+      textColor: "text-amber-600 dark:text-amber-400 font-semibold",
     };
   }
 
@@ -317,11 +320,13 @@ const getPaymentBadge = (ord) => {
       return {
         label: "REFUNDED",
         tone: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 font-bold",
+        textColor: "text-purple-600 dark:text-purple-400 font-semibold",
       };
     }
     return {
       label: "REFUND REQUIRED",
       tone: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-extrabold animate-pulse",
+      textColor: "text-rose-600 dark:text-rose-400 font-bold animate-pulse",
     };
   }
 
@@ -331,6 +336,7 @@ const getPaymentBadge = (ord) => {
     return {
       label: cleanChannel ? `PAID (${cleanChannel})` : "PAID",
       tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
+      textColor: "text-emerald-600 dark:text-emerald-400 font-semibold",
     };
   }
 
@@ -338,12 +344,14 @@ const getPaymentBadge = (ord) => {
     return {
       label: "PAYMENT FAILED",
       tone: "bg-red-500/10 text-red-500 border-red-500/20 font-bold",
+      textColor: "text-rose-500 dark:text-rose-400 font-semibold",
     };
   }
 
   return {
     label: "AWAITING PAYMENT",
     tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold",
+    textColor: "text-amber-600 dark:text-amber-400 font-semibold",
   };
 };
 
@@ -2095,19 +2103,19 @@ export const AdminOrders = () => {
                           <span className="font-extrabold text-[11px] sm:text-xs text-primary-600 dark:text-primary-400 group-hover:text-primary-700 group-hover:underline uppercase transition-colors block">
                             {formatShortOrderId(ordId)}
                           </span>
-                          <div className="flex flex-wrap items-center gap-1 mt-1">
+                          <div className="flex flex-col gap-0.5 mt-0.5">
                             <span
-                              className={`px-1 py-0.2 rounded border text-[7.5px] sm:text-[8.5px] leading-tight uppercase tracking-wider font-bold ${
+                              className={`text-[8px] sm:text-[8.5px] font-semibold leading-tight ${
                                 isPickupOrder
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                  : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-blue-600 dark:text-blue-400"
                               }`}
                             >
-                              {isPickupOrder ? "Pickup" : "Delivery"}
+                              {isPickupOrder ? "Pickup" : "Home Delivery"}
                             </span>
                             {badge && (
                               <span
-                                className={`px-1 py-0.2 rounded border text-[7.5px] sm:text-[8.5px] leading-tight uppercase tracking-wider font-bold ${badge.tone}`}
+                                className={`text-[8px] sm:text-[8.5px] leading-tight ${badge.textColor || "text-neutral-500"}`}
                               >
                                 {badge.label}
                               </span>
