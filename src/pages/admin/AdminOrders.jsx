@@ -989,7 +989,6 @@ export const AdminOrders = () => {
       display: table-cell !important;
       padding: 5px 6px !important;
       border-right: 1px solid #d1d5db !important;
-      text-align: left !important;
       vertical-align: middle !important;
       overflow: hidden !important;
     }
@@ -1008,12 +1007,29 @@ export const AdminOrders = () => {
     table.invoice-table td:last-child {
       border-right: none !important;
     }
-    .col-items { width: 32% !important; text-align: left !important; font-weight: 600 !important; }
-    .col-price { width: 15% !important; text-align: right !important; font-weight: 500 !important; font-size: 10.5px !important; white-space: nowrap !important; }
-    .col-qty   { width: 10% !important; text-align: center !important; font-weight: 700 !important; }
-    .col-disc  { width: 15% !important; text-align: right !important; font-weight: 700 !important; color: #059669 !important; font-size: 10.5px !important; white-space: nowrap !important; }
-    .col-vat   { width: 10% !important; text-align: right !important; }
-    .col-total { width: 18% !important; text-align: right !important; font-weight: 800 !important; color: #111827 !important; font-size: 11px !important; white-space: nowrap !important; }
+    table.invoice-table .col-items,
+    table.invoice-table th.col-items,
+    table.invoice-table td.col-items { width: 32% !important; text-align: left !important; font-weight: 600 !important; }
+    
+    table.invoice-table .col-price,
+    table.invoice-table th.col-price,
+    table.invoice-table td.col-price { width: 15% !important; text-align: right !important; font-weight: 500 !important; font-size: 10.5px !important; white-space: nowrap !important; }
+    
+    table.invoice-table .col-qty,
+    table.invoice-table th.col-qty,
+    table.invoice-table td.col-qty   { width: 10% !important; text-align: center !important; font-weight: 700 !important; }
+    
+    table.invoice-table .col-disc,
+    table.invoice-table th.col-disc,
+    table.invoice-table td.col-disc  { width: 15% !important; text-align: right !important; font-weight: 700 !important; color: #059669 !important; font-size: 10.5px !important; white-space: nowrap !important; }
+    
+    table.invoice-table .col-vat,
+    table.invoice-table th.col-vat,
+    table.invoice-table td.col-vat   { width: 10% !important; text-align: right !important; }
+    
+    table.invoice-table .col-total,
+    table.invoice-table th.col-total,
+    table.invoice-table td.col-total { width: 18% !important; text-align: right !important; font-weight: 800 !important; color: #111827 !important; font-size: 11px !important; white-space: nowrap !important; }
     
     .promo-badge {
       display: inline-block !important;
@@ -2884,7 +2900,7 @@ export const AdminOrders = () => {
                         </colgroup>
                         <thead>
                           <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
-                            <th className="col-items p-2.5 border-r border-neutral-300">
+                            <th className="col-items p-2.5 border-r border-neutral-300 text-left">
                               Items
                             </th>
                             <th className="col-price p-2.5 border-r border-neutral-300 text-right">
