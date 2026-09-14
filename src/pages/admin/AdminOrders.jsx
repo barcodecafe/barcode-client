@@ -415,9 +415,57 @@ export const AdminOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  const [invoiceScale, setInvoiceScale] = useState(1);
+  const [invoiceHeight, setInvoiceHeight] = useState(0);
+  const invoiceRef = useRef(null);
+  const invoiceWrapperRef = useRef(null);
+
+  // 📄 Responsive auto-scaling for Invoice Modal to fit phone screens seamlessly (matching PDF preview)
+  useEffect(() => {
+    if (!selectedOrderDetails) return;
+
+    const updateInvoiceScale = () => {
+      if (invoiceWrapperRef.current && invoiceRef.current) {
+        const containerWidth = invoiceWrapperRef.current.clientWidth;
+        const targetWidth = 760;
+        const paddingOffset = window.innerWidth < 640 ? 12 : 24;
+        const availableWidth = Math.max(containerWidth - paddingOffset, 180);
+        if (containerWidth < targetWidth) {
+          const scale = Math.min(1, availableWidth / targetWidth);
+          setInvoiceScale(scale);
+        } else {
+          setInvoiceScale(1);
+        }
+        if (invoiceRef.current.offsetHeight > 0) {
+          setInvoiceHeight(invoiceRef.current.offsetHeight);
+        }
+      }
+    };
+
+    updateInvoiceScale();
+    const timer1 = setTimeout(updateInvoiceScale, 50);
+    const timer2 = setTimeout(updateInvoiceScale, 150);
+    const timer3 = setTimeout(updateInvoiceScale, 400);
+
+    let ro;
+    if (typeof ResizeObserver !== "undefined" && invoiceWrapperRef.current) {
+      ro = new ResizeObserver(() => updateInvoiceScale());
+      ro.observe(invoiceWrapperRef.current);
+      if (invoiceRef.current) ro.observe(invoiceRef.current);
+    }
+
+    window.addEventListener("resize", updateInvoiceScale);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", updateInvoiceScale);
+    };
+  }, [selectedOrderDetails]);
+
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
-  const invoiceRef = useRef(null);
   const currentChat = orders.find((o) => String(o.id || o._id) === String(activeChatOrderId));
   const chatMessagesCount = currentChat?.chatHistory?.length || 0;
 
@@ -2629,12 +2677,31 @@ export const AdminOrders = () => {
               </div>
 
               {/* 📄 Official A4 Paper Sheet Wrapper */}
-              <div className="w-full overflow-x-auto bg-neutral-100/80 dark:bg-neutral-950/80 p-2 sm:p-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 flex justify-center">
+              <div
+                ref={invoiceWrapperRef}
+                className="w-full bg-neutral-100/80 dark:bg-neutral-950/80 p-1 sm:p-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 flex justify-center items-start overflow-hidden"
+              >
                 <div
-                  ref={invoiceRef}
-                  className="invoice-container relative bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between w-[760px] min-w-[760px] max-w-[760px] min-h-0 text-xs font-sans shadow-md border border-neutral-200/80 rounded-xl shrink-0"
-                  style={{ width: "760px", minWidth: "760px" }}
+                  style={{
+                    width: `${760 * invoiceScale}px`,
+                    height: invoiceHeight > 0 ? `${invoiceHeight * invoiceScale}px` : "auto",
+                    overflow: "hidden",
+                    position: "relative",
+                    flexShrink: 0,
+                    transition: "width 0.15s ease, height 0.15s ease",
+                  }}
                 >
+                  <div
+                    ref={invoiceRef}
+                    className="invoice-container relative bg-white text-neutral-800 p-6 sm:p-8 flex flex-col justify-between w-[760px] min-w-[760px] max-w-[760px] min-h-0 text-xs font-sans shadow-md border border-neutral-200/80 rounded-xl shrink-0"
+                    style={{
+                      width: "760px",
+                      minWidth: "760px",
+                      maxWidth: "760px",
+                      transform: `scale(${invoiceScale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
                   {/* ❌ VOID / CANCELLED Watermark Stamp for Rejected Orders */}
                   {isRejectedOrder && (
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden select-none">
@@ -3036,6 +3103,7 @@ export const AdminOrders = () => {
                 </div>
               </div>
             </div>
+          </div>
 
               {String(
                 selectedOrderDetails.paymentMethod || "cod",
