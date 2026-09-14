@@ -1221,6 +1221,9 @@ export const AdminOrders = () => {
         frameDoc.print();
       } catch (err) {
         console.error("Print error:", err);
+      } finally {
+        // 🚀 Auto close modal after triggering print / save PDF
+        setSelectedOrderDetails(null);
       }
     }, 450);
   };
@@ -2664,35 +2667,34 @@ export const AdminOrders = () => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl max-w-4xl 2xl:max-w-5xl w-full p-3 sm:p-6 shadow-2xl max-h-[94vh] overflow-y-auto space-y-4 sm:space-y-6"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
-                <div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-neutral-800 dark:text-neutral-100">
-                    Official Invoice Preview
+              <div className="flex items-center justify-between gap-2 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800 print:hidden">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm sm:text-lg font-extrabold text-neutral-800 dark:text-neutral-100 truncate">
+                    Invoice Preview
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-0.5 break-all">
-                    Order ID: #
-                    {(
-                      selectedOrderDetails.id || selectedOrderDetails._id
-                    )?.toUpperCase()}
+                  <p className="text-[10.5px] sm:text-xs text-neutral-400 truncate">
+                    Order: #{(selectedOrderDetails.id || selectedOrderDetails._id)?.toUpperCase()}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-[11px] sm:text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
                     title="Print / Save as PDF"
                   >
-                    <Printer className="w-4 h-4" /> Print / Save PDF
+                    <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Print / Save PDF</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSelectedOrderDetails(null)}
-                    className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors cursor-pointer"
+                    className="p-1.5 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors cursor-pointer"
+                    title="Close"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
