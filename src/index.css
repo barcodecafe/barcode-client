@@ -315,8 +315,11 @@ div[data-toaster-container] div[role="alert"],
   .admin-sidebar-open .admin-orders-table-wrapper .col-order-id {
     font-size: 0.72rem !important;
   }
-  .admin-sidebar-open .admin-orders-table-wrapper .col-order-time {
-    font-size: 0.52rem !important;
+  .admin-sidebar-open .admin-orders-table-wrapper .col-order-time,
+  .admin-sidebar-open .admin-orders-table-wrapper .col-delivery-time,
+  .admin-sidebar-open .admin-orders-table-wrapper .col-rider-delivery-time {
+    font-size: 0.38rem !important;
+    line-height: 1.1 !important;
   }
   .admin-sidebar-open .admin-orders-table-wrapper .col-order-sub {
     font-size: 0.52rem !important;
@@ -394,8 +397,11 @@ div[data-toaster-container] div[role="alert"],
   .admin-sidebar-closed .admin-orders-table-wrapper .col-order-id {
     font-size: 0.875rem !important;
   }
-  .admin-sidebar-closed .admin-orders-table-wrapper .col-order-time {
-    font-size: 0.65rem !important;
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-order-time,
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-delivery-time,
+  .admin-sidebar-closed .admin-orders-table-wrapper .col-rider-delivery-time {
+    font-size: 0.44rem !important;
+    line-height: 1.15 !important;
   }
   .admin-sidebar-closed .admin-orders-table-wrapper .col-order-sub {
     font-size: 0.65rem !important;

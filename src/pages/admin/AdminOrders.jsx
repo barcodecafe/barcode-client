@@ -2219,7 +2219,7 @@ export const AdminOrders = () => {
                           </span>
                           <div className="flex flex-col gap-0.5 mt-0.5">
                             <span
-                              className="col-order-time text-[7.5px] sm:text-[8px] text-neutral-400 dark:text-neutral-500 font-medium leading-tight"
+                              className="col-order-time text-[5.5px] sm:text-[6px] text-neutral-400 dark:text-neutral-500 font-medium leading-none block"
                               title={formatFullOrderDateTime(ord)}
                             >
                               🕒 {formatOrderPlacedTime(ord)}
@@ -2375,7 +2375,7 @@ export const AdminOrders = () => {
                                 if (!dur) return null;
                                 return (
                                   <span
-                                    className="text-[7.5px] sm:text-[8px] font-semibold text-emerald-700 dark:text-emerald-400 leading-none"
+                                    className="col-delivery-time text-[5.5px] sm:text-[6px] font-semibold text-emerald-700 dark:text-emerald-400 leading-none block mt-0.5"
                                     title={`Delivery completed in ${dur}`}
                                   >
                                     ⏱️ {dur}
@@ -2521,7 +2521,7 @@ export const AdminOrders = () => {
                                   if (!dur) return null;
                                   return (
                                     <span
-                                      className="text-[7.5px] sm:text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 block leading-tight"
+                                      className="col-rider-delivery-time text-[5.5px] sm:text-[6px] font-semibold text-emerald-600 dark:text-emerald-400 block leading-tight"
                                       title={`Time from assignment to delivery: ${dur}`}
                                     >
                                       ⏱️ Delivered in {dur}
@@ -2538,7 +2538,7 @@ export const AdminOrders = () => {
                                   if (!dur) return null;
                                   return (
                                     <span
-                                      className="text-[7.5px] sm:text-[8px] font-medium text-amber-600 dark:text-amber-400 block leading-tight"
+                                      className="col-rider-delivery-time text-[5.5px] sm:text-[6px] font-medium text-amber-600 dark:text-amber-400 block leading-tight"
                                       title={`Elapsed time since assignment: ${dur}`}
                                     >
                                       ⏱️ Active: {dur}
