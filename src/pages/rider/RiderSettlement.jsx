@@ -157,18 +157,6 @@ export const RiderSettlement = () => {
 
       {/* Main Container */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-neutral-100 dark:border-neutral-800">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-rose-500" />
-            <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white uppercase tracking-wider">
-              Daily Settlement History & Order Breakdown
-            </h3>
-          </div>
-          <span className="text-xs text-neutral-400 font-semibold">
-            {dailyLog.length} Days Recorded
-          </span>
-        </div>
-
         {dailyLog.length === 0 ? (
           <div className="text-center py-12 space-y-2">
             <Package className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto" />
@@ -399,78 +387,65 @@ export const RiderSettlement = () => {
                   {/* EXPANDED INDIVIDUAL ORDER PAYMENT BREAKDOWN                */}
                   {/* ========================================================= */}
                   {isExpanded && (
-                    <div className="border-t border-neutral-200 dark:border-neutral-800 p-2 sm:p-3 bg-white dark:bg-neutral-900 space-y-2 animate-fade-in">
-                      {/* Filter Bar & Header for individual orders */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1.5 border-b border-neutral-100 dark:border-neutral-800">
-                        <div>
-                          <h4 className="text-[11px] sm:text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1">
-                            <Package className="w-3 h-3 text-rose-500" />
-                            Individual Order Payment & Settlement Tracking
-                          </h4>
-                          <p className="text-[9px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                            Track which individual orders have their cash paid to admin and which are still pending.
-                          </p>
-                        </div>
+                    <div className="border-t border-neutral-200 dark:border-neutral-800 p-2 sm:p-2.5 bg-white dark:bg-neutral-900 space-y-1.5 animate-fade-in">
+                      {/* Quick filter tabs */}
+                      <div className="flex items-center justify-end gap-1 flex-wrap pb-1.5 border-b border-neutral-100 dark:border-neutral-800">
+                        <button
+                          type="button"
+                          onClick={() => setOrderPaymentFilter("all")}
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
+                            orderPaymentFilter === "all"
+                              ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                          }`}
+                        >
+                          All ({counts.all})
+                        </button>
 
-                        {/* Quick filter tabs */}
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => setOrderPaymentFilter("all")}
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
-                              orderPaymentFilter === "all"
-                                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                            }`}
-                          >
-                            All ({counts.all})
-                          </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderPaymentFilter("pending")}
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
+                            orderPaymentFilter === "pending"
+                              ? "bg-amber-500 text-white"
+                              : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-100"
+                          }`}
+                        >
+                          <span>Pending ({counts.pending})</span>
+                        </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setOrderPaymentFilter("pending")}
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
-                              orderPaymentFilter === "pending"
-                                ? "bg-amber-500 text-white"
-                                : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-100"
-                            }`}
-                          >
-                            <span>Pending ({counts.pending})</span>
-                          </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderPaymentFilter("settled")}
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
+                            orderPaymentFilter === "settled"
+                              ? "bg-emerald-600 text-white"
+                              : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/40 hover:bg-emerald-100"
+                          }`}
+                        >
+                          <span>Paid ({counts.settled})</span>
+                        </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setOrderPaymentFilter("settled")}
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
-                              orderPaymentFilter === "settled"
-                                ? "bg-emerald-600 text-white"
-                                : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/40 hover:bg-emerald-100"
-                            }`}
-                          >
-                            <span>Paid ({counts.settled})</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setOrderPaymentFilter("online")}
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
-                              orderPaymentFilter === "online"
-                                ? "bg-purple-600 text-white"
-                                : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-900/40 hover:bg-purple-100"
-                            }`}
-                          >
-                            Online ({counts.online})
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setOrderPaymentFilter("online")}
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
+                            orderPaymentFilter === "online"
+                              ? "bg-purple-600 text-white"
+                              : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-900/40 hover:bg-purple-100"
+                          }`}
+                        >
+                          Online ({counts.online})
+                        </button>
                       </div>
 
-                      {/* Orders List (Compact space-efficient rows) */}
+                      {/* Orders List (Flat clean rows without card packaging) */}
                       {filteredDayOrders.length === 0 ? (
                         <p className="text-[10px] text-neutral-400 italic py-2 text-center">
                           No orders matching this filter for this date.
                         </p>
                       ) : (
-                        <div className="space-y-1 max-h-[450px] overflow-y-auto pr-1">
+                        <div className="divide-y divide-neutral-100 dark:divide-neutral-800/70 max-h-[450px] overflow-y-auto pr-1">
                           {filteredDayOrders.map((ord, oIdx) => {
                             const isDelivered = ord.status === "Delivered";
                             const isRejected = ord.status === "Rejected";
@@ -526,19 +501,13 @@ export const RiderSettlement = () => {
                             return (
                               <div
                                 key={oIdx}
-                                className={`px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border transition-all flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-2 text-[10px] ${
-                                  isOrderSettledByAdmin
-                                    ? "bg-emerald-50/20 dark:bg-emerald-950/10 border-emerald-200/60 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800"
-                                    : !isOnlinePrepaid && isDelivered
-                                      ? "bg-amber-50/20 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-800"
-                                      : "bg-neutral-50/50 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
-                                }`}
+                                className="py-1.5 px-1 flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-2 text-[10px] hover:bg-neutral-50/70 dark:hover:bg-neutral-800/30 transition-colors"
                               >
                                 {/* Left Col: Order ID + Status + Time + Customer & Address */}
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
                                   {/* Order ID, Status badge, and Time */}
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <span className="font-mono font-bold text-[9px] text-neutral-900 dark:text-white bg-neutral-200/70 dark:bg-neutral-800 px-1 py-0.5 rounded">
+                                    <span className="font-mono font-bold text-[9px] text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 px-1 py-0.5 rounded">
                                       #{String(ord._id || ord.id).slice(-6).toUpperCase()}
                                     </span>
                                     <span
@@ -613,7 +582,7 @@ export const RiderSettlement = () => {
                                 </div>
 
                                 {/* Right: Inline Financial Figures */}
-                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0 text-right bg-neutral-100/60 dark:bg-neutral-800/40 sm:bg-transparent sm:dark:bg-transparent p-1 sm:p-0 rounded-md">
+                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0 text-right">
                                   <div className="text-left sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       Total
