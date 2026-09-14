@@ -121,14 +121,16 @@ const getStatusColor = (status) => {
   }
 };
 
-const paymentMethodLabel = (method) => {
-  switch (method) {
+const paymentMethodLabel = (method, cardType) => {
+  const m = String(method || "cod").toLowerCase();
+  const channel = cardType ? String(cardType).split("-")[0].trim().toUpperCase() : "";
+  switch (m) {
     case "sslcommerz":
-      return "SSLCommerz (Online)";
+      return channel ? `SSLCommerz (${channel})` : "SSLCommerz (Online)";
     case "cod":
       return "Cash on Delivery";
     default:
-      return method ? String(method).toUpperCase() : "Cash on Delivery";
+      return channel ? `${String(method).toUpperCase()} (${channel})` : (method ? String(method).toUpperCase() : "Cash on Delivery");
   }
 };
 
@@ -1406,7 +1408,7 @@ export const Profile = () => {
                             {formatDate(order.createdAt)}
                           </td>
                           <td className="px-3 py-3.5 text-neutral-600 dark:text-neutral-300">
-                            {paymentMethodLabel(order.paymentMethod)}
+                            {paymentMethodLabel(order.paymentMethod, order.cardType)}
                           </td>
                           <td className="px-3 py-3.5 text-right font-bold text-primary-500">
                             {taka(order.total)}

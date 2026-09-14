@@ -1013,7 +1013,9 @@ export const OrderTracking = () => {
                   <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
                     <span>Payment Method:</span>
                     <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase">
-                      {order.paymentMethod || "Cash on Delivery"}
+                      {order.cardType
+                        ? `${order.paymentMethod || "SSLCOMMERZ"} (${order.cardType.split("-")[0].trim()})`
+                        : (order.paymentMethod || "Cash on Delivery")}
                     </span>
                   </div>
 

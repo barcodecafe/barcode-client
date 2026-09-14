@@ -266,6 +266,26 @@ export const checkIsPickupOrder = (ord) => {
   );
 };
 
+export const formatPaymentMethodWithChannel = (ord) => {
+  if (!ord) return "COD";
+  const pm = String(ord?.paymentMethod || "cod").toUpperCase();
+  const rawChannel = ord?.cardType || ord?.cardBrand || ord?.cardIssuer || "";
+  if (!rawChannel) return pm;
+
+  let channel = String(rawChannel).trim();
+  if (channel.includes("-")) {
+    const parts = channel.split("-");
+    const brand = parts[0].trim();
+    const bank = parts.slice(1).join("-").trim();
+    if (brand.toLowerCase() === bank.toLowerCase()) {
+      channel = brand;
+    } else {
+      channel = `${brand} (${bank})`;
+    }
+  }
+  return `${pm} - ${channel}`;
+};
+
 const getPaymentBadge = (ord) => {
   const pm = String(ord?.paymentMethod || "cod").toLowerCase();
   const ps = String(ord?.paymentStatus || "").toLowerCase();
@@ -306,8 +326,10 @@ const getPaymentBadge = (ord) => {
   }
 
   if (isPaid) {
+    const rawChannel = ord?.cardType || ord?.cardBrand;
+    const cleanChannel = rawChannel ? String(rawChannel).split("-")[0].trim().toUpperCase() : "";
     return {
-      label: "PAID",
+      label: cleanChannel ? `PAID (${cleanChannel})` : "PAID",
       tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold",
     };
   }
@@ -2752,7 +2774,7 @@ export const AdminOrders = () => {
                           Payment
                         </span>
                         <span className="bill-value font-bold text-neutral-800 uppercase">
-                          : {selectedOrderDetails.paymentMethod || "COD"}{" "}
+                          : {formatPaymentMethodWithChannel(selectedOrderDetails)}{" "}
                           {isRejectedOrder ? (
                             <span className="text-rose-600 font-black">(CANCELLED)</span>
                           ) : isPaidOrder ? (
@@ -2762,6 +2784,16 @@ export const AdminOrders = () => {
                           )}
                         </span>
                       </div>
+                      {selectedOrderDetails.bankTranId && (
+                        <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium">
+                            Gateway TxID
+                          </span>
+                          <span className="bill-value font-mono text-[10px] text-neutral-700">
+                            : {selectedOrderDetails.bankTranId}
+                          </span>
+                        </div>
+                      )}
                       {isRejectedOrder && (
                         <div className="bill-row grid grid-cols-[85px_1fr] gap-x-2">
                           <span className="bill-label text-neutral-500 font-medium">
