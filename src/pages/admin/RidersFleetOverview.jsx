@@ -209,9 +209,38 @@ export const RidersFleetOverview = ({
       .filter((r) => r.dateKey !== todayKey && r.delivered > 0 && !r.isSettled)
       .sort((a, b) => (a.dateKey < b.dateKey ? -1 : 1));
 
+    // Average Delivery Time Calculation (in minutes)
+    const deliveredOrders = riderOrders.filter(
+      (o) => (o.status === "Delivered" || o.orderStatus === "Delivered") && (o.deliveredAt || o.createdAt)
+    );
+    let avgDeliveryMinutes = null;
+    if (deliveredOrders.length > 0) {
+      let totalMins = 0;
+      let validCount = 0;
+      deliveredOrders.forEach((o) => {
+        const start = o.riderAssignedAt
+          ? new Date(o.riderAssignedAt)
+          : o.createdAt
+          ? new Date(o.createdAt)
+          : null;
+        const end = o.deliveredAt ? new Date(o.deliveredAt) : null;
+        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const diffMins = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+          if (diffMins >= 0 && diffMins <= 360) {
+            totalMins += diffMins;
+            validCount += 1;
+          }
+        }
+      });
+      if (validCount > 0) {
+        avgDeliveryMinutes = Math.round(totalMins / validCount);
+      }
+    }
+
     return {
       dateKey: todayKey,
       pastDue,
+      avgDeliveryMinutes,
       daily: {
         foodDelivered: today?.foodPrice || 0,
         income: today?.riderCommission || 0,
@@ -458,7 +487,15 @@ export const RidersFleetOverview = ({
                         </span>
                       )}
 
-                      <span className="text-[9px] font-semibold ml-auto sm:ml-0">
+                      <span className="text-[9px] font-semibold ml-auto sm:ml-0 flex items-center gap-1.5">
+                        {stats.avgDeliveryMinutes !== null && (
+                          <span
+                            className="text-violet-600 dark:text-violet-400 font-bold bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.2 rounded inline-flex items-center gap-0.5"
+                            title={`Average delivery turnaround time: ${stats.avgDeliveryMinutes} mins`}
+                          >
+                            ⏱️ Avg: {stats.avgDeliveryMinutes}m
+                          </span>
+                        )}
                         {r.activeOrders > 0 ? (
                           <span className="text-rose-500 font-bold bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.2 rounded">
                             🚴 {r.activeOrders} active
@@ -714,9 +751,19 @@ export const RidersFleetOverview = ({
                       </span>
                     )}
 
-                    <span className="text-[9px] text-neutral-400 font-semibold ml-auto">
-                      {r.activeOrders > 0 ? `🚴 ${r.activeOrders} active` : "Idle"}
-                    </span>
+                    <div className="text-[9px] font-semibold ml-auto flex items-center gap-1">
+                      {stats.avgDeliveryMinutes !== null && (
+                        <span
+                          className="text-violet-600 dark:text-violet-400 font-bold bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded inline-flex items-center gap-0.5"
+                          title={`Average delivery turnaround time: ${stats.avgDeliveryMinutes} mins`}
+                        >
+                          ⏱️ Avg: {stats.avgDeliveryMinutes}m
+                        </span>
+                      )}
+                      <span className="text-neutral-400">
+                        {r.activeOrders > 0 ? `🚴 ${r.activeOrders} active` : "Idle"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Today's Daily Stats */}

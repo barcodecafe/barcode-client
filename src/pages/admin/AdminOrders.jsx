@@ -146,6 +146,45 @@ export const formatFullOrderDateTime = (ord) => {
   });
 };
 
+export const getOrderDeliveryDuration = (ord) => {
+  if (!ord) return null;
+  const isPickup = checkIsPickupOrder(ord);
+  if (isPickup) return null;
+
+  const deliveredDate = ord.deliveredAt ? new Date(ord.deliveredAt) : null;
+  const assignedDate = ord.riderAssignedAt
+    ? new Date(ord.riderAssignedAt)
+    : ord.createdAt
+    ? new Date(ord.createdAt)
+    : null;
+
+  const isDelivered = String(ord.status || "").toLowerCase() === "delivered";
+
+  if (isDelivered) {
+    if (deliveredDate && assignedDate && !isNaN(deliveredDate.getTime()) && !isNaN(assignedDate.getTime())) {
+      const diffMs = Math.max(0, deliveredDate.getTime() - assignedDate.getTime());
+      const mins = Math.max(1, Math.round(diffMs / 60000));
+      if (mins < 60) return `${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return remMins > 0 ? `${hrs}h ${remMins}m` : `${hrs}h`;
+    }
+    return null;
+  }
+
+  // Active in progress
+  if (assignedDate && !isNaN(assignedDate.getTime()) && (ord.riderId || ord.rider)) {
+    const diffMs = Math.max(0, Date.now() - assignedDate.getTime());
+    const mins = Math.max(0, Math.floor(diffMs / 60000));
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return remMins > 0 ? `${hrs}h ${remMins}m` : `${hrs}h`;
+  }
+
+  return null;
+};
+
 export const numberToWords = (num) => {
   if (!num || isNaN(num) || num <= 0) return "Zero Taka Only";
 
@@ -2327,9 +2366,23 @@ export const AdminOrders = () => {
                               Cancelled
                             </span>
                           ) : ord.status === "Delivered" ? (
-                            <span className="col-action-btn px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] sm:text-[10.5px] uppercase tracking-wide inline-flex items-center gap-0.5 shadow-2xs">
-                              <Check className="w-3 h-3 stroke-[3]" /> Delivered
-                            </span>
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="col-action-btn px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] sm:text-[10.5px] uppercase tracking-wide inline-flex items-center gap-0.5 shadow-2xs">
+                                <Check className="w-3 h-3 stroke-[3]" /> Delivered
+                              </span>
+                              {(() => {
+                                const dur = getOrderDeliveryDuration(ord);
+                                if (!dur) return null;
+                                return (
+                                  <span
+                                    className="text-[7.5px] sm:text-[8px] font-semibold text-emerald-700 dark:text-emerald-400 leading-none"
+                                    title={`Delivery completed in ${dur}`}
+                                  >
+                                    ⏱️ {dur}
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           ) : (
                             <div>
                               <select
@@ -2460,6 +2513,40 @@ export const AdminOrders = () => {
                                   )}
                                 </div>
                               )}
+
+                            {assignedRiderId && ord.status === "Delivered" && (
+                              <div className="mt-0.5">
+                                {(() => {
+                                  const dur = getOrderDeliveryDuration(ord);
+                                  if (!dur) return null;
+                                  return (
+                                    <span
+                                      className="text-[7.5px] sm:text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 block leading-tight"
+                                      title={`Time from assignment to delivery: ${dur}`}
+                                    >
+                                      ⏱️ Delivered in {dur}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            )}
+
+                            {assignedRiderId && ord.status !== "Delivered" && !isRejected && (
+                              <div className="mt-0.5">
+                                {(() => {
+                                  const dur = getOrderDeliveryDuration(ord);
+                                  if (!dur) return null;
+                                  return (
+                                    <span
+                                      className="text-[7.5px] sm:text-[8px] font-medium text-amber-600 dark:text-amber-400 block leading-tight"
+                                      title={`Elapsed time since assignment: ${dur}`}
+                                    >
+                                      ⏱️ Active: {dur}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            )}
                             </div>
                           )}
                         </td>
