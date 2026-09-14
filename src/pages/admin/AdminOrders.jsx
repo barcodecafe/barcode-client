@@ -2664,27 +2664,27 @@ export const AdminOrders = () => {
 
                 {/* 🎯 Invoice Body Content (Middle Space) */}
                 <div className="invoice-content flex-grow space-y-4 py-2">
-                  <div className="bill-to-box flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-6 bg-neutral-50 p-3 sm:p-4 rounded-xl border border-neutral-200 text-xs leading-normal">
-                    <div className="bill-to-left space-y-1.5 w-full sm:flex-1 min-w-0">
-                      <p className="font-bold text-neutral-900 uppercase text-[11px] mb-1.5">
+                  <div className="bill-to-box flex flex-row justify-between items-start gap-2 sm:gap-6 bg-neutral-50 p-2.5 sm:p-4 rounded-xl border border-neutral-200 text-[10px] sm:text-xs leading-normal">
+                    <div className="bill-to-left space-y-1 flex-1 min-w-0">
+                      <p className="font-bold text-neutral-900 uppercase text-[10px] sm:text-[11px] mb-1">
                         Bill To:
                       </p>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Customer Name
                         </span>
-                        <span className="bill-value font-bold text-neutral-800 break-words">
+                        <span className="bill-value font-bold text-neutral-800 break-words text-[9.5px] sm:text-xs">
                           :{" "}
                           {selectedOrderDetails.user?.name ||
                             selectedOrderDetails.customerName ||
                             "N/A"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Mobile
                         </span>
-                        <span className="bill-value font-semibold text-neutral-800 break-all">
+                        <span className="bill-value font-semibold text-neutral-800 break-all text-[9.5px] sm:text-xs">
                           :{" "}
                           {(() => {
                             const detPhone = String(
@@ -2697,21 +2697,21 @@ export const AdminOrders = () => {
                           })()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Order Type
                         </span>
-                        <span className="bill-value font-bold text-neutral-800">
+                        <span className="bill-value font-bold text-neutral-800 text-[9.5px] sm:text-xs">
                           : {checkIsPickupOrder(selectedOrderDetails)
                               ? `Self-Pickup (${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Selected Branch"})`
                               : "Home Delivery"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[95px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[68px_1fr] sm:grid-cols-[95px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           {checkIsPickupOrder(selectedOrderDetails) ? "Pickup Outlet" : "Address"}
                         </span>
-                        <span className="bill-value text-neutral-800 break-words">
+                        <span className="bill-value text-neutral-800 break-words text-[9.5px] sm:text-xs">
                           : {checkIsPickupOrder(selectedOrderDetails)
                               ? `Counter Collection at ${selectedOrderDetails.pickupBranchName || selectedOrderDetails.deliveryArea || "Barcode Outlet"}`
                               : (selectedOrderDetails.deliveryAddress || selectedOrderDetails.user?.address || "N/A") +
@@ -2722,12 +2722,12 @@ export const AdminOrders = () => {
                       </div>
                     </div>
 
-                    <div className="bill-to-right space-y-1.5 w-full sm:w-56 md:w-60 sm:shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-200/80">
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                    <div className="bill-to-right space-y-1 w-[155px] sm:w-56 md:w-60 shrink-0 pt-0">
+                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Invoice Date
                         </span>
-                        <span className="bill-value font-semibold text-neutral-800">
+                        <span className="bill-value font-semibold text-neutral-800 text-[9.5px] sm:text-xs">
                           :{" "}
                           {(() => {
                             try {
@@ -2740,30 +2740,30 @@ export const AdminOrders = () => {
                           })()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Invoice #
                         </span>
-                        <span className="bill-value font-bold text-neutral-800 uppercase">
+                        <span className="bill-value font-bold text-neutral-800 uppercase text-[9.5px] sm:text-xs">
                           : IN-
                           {String(
                             selectedOrderDetails?.id || selectedOrderDetails?._id || ""
                           ).slice(-10).toUpperCase()}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Fulfillment
                         </span>
-                        <span className={`bill-value font-bold uppercase ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
+                        <span className={`bill-value font-bold uppercase text-[9.5px] sm:text-xs ${checkIsPickupOrder(selectedOrderDetails) ? "text-emerald-700" : "text-blue-700"}`}>
                           : {checkIsPickupOrder(selectedOrderDetails) ? "SELF-PICKUP" : "HOME DELIVERY"}
                         </span>
                       </div>
-                      <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                      <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                        <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                           Payment
                         </span>
-                        <span className="bill-value font-bold text-neutral-800 uppercase">
+                        <span className="bill-value font-bold text-neutral-800 uppercase text-[9.5px] sm:text-xs">
                           : {formatPaymentMethodWithChannel(selectedOrderDetails)}{" "}
                           {isRejectedOrder ? (
                             <span className="text-rose-600 font-black">(CANCELLED)</span>
@@ -2775,21 +2775,21 @@ export const AdminOrders = () => {
                         </span>
                       </div>
                       {selectedOrderDetails.bankTranId && (
-                        <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                        <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                             Gateway TxID
                           </span>
-                          <span className="bill-value font-mono text-[10px] text-neutral-700">
+                          <span className="bill-value font-mono text-[9px] sm:text-[10px] text-neutral-700 break-all">
                             : {selectedOrderDetails.bankTranId}
                           </span>
                         </div>
                       )}
                       {isRejectedOrder && (
-                        <div className="bill-row grid grid-cols-[105px_1fr] sm:grid-cols-[85px_1fr] gap-x-2">
-                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap">
+                        <div className="bill-row grid grid-cols-[62px_1fr] sm:grid-cols-[85px_1fr] gap-x-1 sm:gap-x-2">
+                          <span className="bill-label text-neutral-500 font-medium whitespace-nowrap text-[9.5px] sm:text-xs">
                             Status
                           </span>
-                          <span className="bill-value font-black text-rose-600 uppercase">
+                          <span className="bill-value font-black text-rose-600 uppercase text-[9.5px] sm:text-xs">
                             : REJECTED
                           </span>
                         </div>
@@ -2797,34 +2797,34 @@ export const AdminOrders = () => {
                     </div>
                   </div>
 
-                  <div className="invoice-table-wrap w-full overflow-x-auto border border-neutral-300 rounded-lg sm:rounded-none">
-                    <table className="invoice-table w-full min-w-[480px] sm:min-w-0 text-xs text-left border-collapse table-fixed">
+                  <div className="invoice-table-wrap w-full overflow-hidden border border-neutral-300 rounded-lg sm:rounded-none">
+                    <table className="invoice-table w-full text-[9px] sm:text-xs text-left border-collapse table-fixed">
                       <colgroup>
-                        <col className="w-[32%]" style={{ width: "32%" }} />
+                        <col className="w-[30%]" style={{ width: "30%" }} />
                         <col className="w-[15%]" style={{ width: "15%" }} />
                         <col className="w-[10%]" style={{ width: "10%" }} />
-                        <col className="w-[15%]" style={{ width: "15%" }} />
+                        <col className="w-[13%]" style={{ width: "13%" }} />
                         <col className="w-[10%]" style={{ width: "10%" }} />
-                        <col className="w-[18%]" style={{ width: "18%" }} />
+                        <col className="w-[22%]" style={{ width: "22%" }} />
                       </colgroup>
                       <thead>
-                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[10px] border-b border-neutral-300">
-                          <th className="col-items p-2 sm:p-2.5 border-r border-neutral-300">
+                        <tr className="bg-neutral-100 text-neutral-700 uppercase text-[8.5px] sm:text-[10px] border-b border-neutral-300">
+                          <th className="col-items p-1 sm:p-2.5 border-r border-neutral-300">
                             Items
                           </th>
-                          <th className="col-price p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-price p-1 sm:p-2.5 border-r border-neutral-300 text-right">
                             Unit Price
                           </th>
-                          <th className="col-qty p-2 sm:p-2.5 border-r border-neutral-300 text-center">
+                          <th className="col-qty p-1 sm:p-2.5 border-r border-neutral-300 text-center">
                             Quantity
                           </th>
-                          <th className="col-disc p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-disc p-1 sm:p-2.5 border-r border-neutral-300 text-right">
                             Discount
                           </th>
-                          <th className="col-vat p-2 sm:p-2.5 border-r border-neutral-300 text-right">
+                          <th className="col-vat p-1 sm:p-2.5 border-r border-neutral-300 text-right">
                             Vat
                           </th>
-                          <th className="col-total p-2 sm:p-2.5 text-right">Total</th>
+                          <th className="col-total p-1 sm:p-2.5 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2841,7 +2841,7 @@ export const AdminOrders = () => {
 
                           return (
                             <tr key={idx} className="border-b border-neutral-200">
-                              <td className="col-items p-2 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
+                              <td className="col-items p-1 sm:p-2.5 border-r border-neutral-300 font-semibold break-words">
                                 <div className="text-neutral-850">
                                   {item.name}{" "}
                                   {item.selectedSize
@@ -2850,34 +2850,34 @@ export const AdminOrders = () => {
                                 </div>
                                 {promoBadge && (
                                   <span
-                                    className={`promo-badge inline-block mt-1 px-1.5 py-0.2 rounded border text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
+                                    className={`promo-badge inline-block mt-0.5 px-1 py-0.2 rounded border text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${promoBadgeColor}`}
                                   >
                                     {promoBadge}
                                   </span>
                                 )}
                                 {Array.isArray(item.selectedAddons) && item.selectedAddons.length > 0 && (
-                                  <div className="addons-list text-[10px] text-emerald-700 font-normal mt-0.5">
+                                  <div className="addons-list text-[8.5px] sm:text-[10px] text-emerald-700 font-normal mt-0.5">
                                     {item.selectedAddons
                                       .map((a) => `+${a.name} (৳${Number(a.price).toFixed(2)})`)
                                       .join(", ")}
                                   </div>
                                 )}
                               </td>
-                              <td className="col-price p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
+                              <td className="col-price p-1 sm:p-2.5 border-r border-neutral-300 text-right font-medium whitespace-nowrap">
                                 ৳{origUnitPrice.toFixed(2)}
                               </td>
-                              <td className="col-qty p-2 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
+                              <td className="col-qty p-1 sm:p-2.5 border-r border-neutral-300 text-center font-bold">
                                 {qty}
                               </td>
-                              <td className="col-disc p-2 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
+                              <td className="col-disc p-1 sm:p-2.5 border-r border-neutral-300 text-right font-bold text-emerald-600 whitespace-nowrap">
                                 {totalItemDiscount > 0
                                   ? `-৳${totalItemDiscount.toFixed(2)}`
                                   : "0.00"}
                               </td>
-                              <td className="col-vat p-2 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
+                              <td className="col-vat p-1 sm:p-2.5 border-r border-neutral-300 text-right font-medium">
                                 0.00
                               </td>
-                              <td className="col-total p-2 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
+                              <td className="col-total p-1 sm:p-2.5 text-right font-extrabold text-neutral-900 whitespace-nowrap">
                                 ৳{lineTotal.toFixed(2)}
                               </td>
                             </tr>
@@ -2888,7 +2888,7 @@ export const AdminOrders = () => {
                   </div>
 
                   <div className="summary-section flex justify-end pt-2">
-                    <div className="summary-box w-full sm:w-80 space-y-1.5 text-xs">
+                    <div className="summary-box w-52 sm:w-80 space-y-1 text-[10px] sm:text-xs">
                       {/* 🎯 Subtotal Breakdown */}
                       {orderAddonsTotal > 0 ? (
                         <>
