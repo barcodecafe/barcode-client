@@ -39,7 +39,8 @@ import { getAllRegions } from "../../services/regionsService";
 
 import invoiceHeaderImg from "../../assets/invoiceheader.png";
 import invoiceFooterImg from "../../assets/invoicefooter.png";
-import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas-pro";
+import { jsPDF } from "jspdf";
 import { socket } from "../../services/socket";
 import { soundNotification } from "../../utils/soundNotification";
 
@@ -1352,68 +1353,6 @@ export const AdminOrders = () => {
     }, 450);
   };
 
-  const sanitizeOklchInDoc = (clonedDoc, targetElement) => {
-    try {
-      const canvas = clonedDoc.createElement ? clonedDoc.createElement('canvas') : document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const convertColor = (colorStr) => {
-        if (!colorStr || typeof colorStr !== 'string' || !colorStr.includes('oklch')) {
-          return colorStr;
-        }
-        try {
-          ctx.fillStyle = colorStr;
-          return ctx.fillStyle;
-        } catch {
-          return colorStr;
-        }
-      };
-
-      // 1. Replace oklch in all <style> tags inside cloned document
-      const styleElements = clonedDoc.querySelectorAll ? clonedDoc.querySelectorAll('style') : [];
-      styleElements.forEach((styleEl) => {
-        if (styleEl.textContent && styleEl.textContent.includes('oklch')) {
-          styleEl.textContent = styleEl.textContent.replace(/oklch\([^)]+\)/gi, (match) => {
-            return convertColor(match);
-          });
-        }
-      });
-
-      // 2. Convert computed oklch colors to explicit inline rgb/hex styles for target elements
-      const elementsToProcess = targetElement
-        ? [targetElement, ...Array.from(targetElement.querySelectorAll('*'))]
-        : Array.from(clonedDoc.querySelectorAll ? clonedDoc.querySelectorAll('*') : []);
-
-      const colorProperties = [
-        'color',
-        'backgroundColor',
-        'borderColor',
-        'borderTopColor',
-        'borderRightColor',
-        'borderBottomColor',
-        'borderLeftColor',
-        'fill',
-        'stroke',
-      ];
-
-      const win = clonedDoc.defaultView || window;
-
-      elementsToProcess.forEach((el) => {
-        if (!el || el.nodeType !== 1) return;
-        const computed = win.getComputedStyle(el);
-        colorProperties.forEach((prop) => {
-          const value = computed[prop];
-          if (value && typeof value === 'string' && value.includes('oklch')) {
-            el.style[prop] = convertColor(value);
-          }
-        });
-      });
-    } catch (err) {
-      console.warn('Error sanitizing oklch colors:', err);
-    }
-  };
-
   const handleShareInvoice = async () => {
     if (!selectedOrderDetails || !invoiceRef.current) return;
     const rawId = selectedOrderDetails.id || selectedOrderDetails._id || "";
@@ -1421,10 +1360,10 @@ export const AdminOrders = () => {
     const customerName = selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "Customer";
     const fileName = `Barcode_Invoice_IN-${displayId}.pdf`;
 
-    const shareToastId = toast.loading("📄 Preparing PDF invoice for sharing...", { duration: 10000 });
+    const shareToastId = toast.loading("📄 Preparing PDF invoice...", { duration: 10000 });
 
     try {
-      // 📄 Clone node and unscale for crisp A4 PDF rendering
+      // 📄 1. Clone node and unscale for crisp A4 PDF rendering
       const clone = invoiceRef.current.cloneNode(true);
       clone.removeAttribute("style");
       clone.style.cssText =
@@ -1438,38 +1377,39 @@ export const AdminOrders = () => {
       tempContainer.appendChild(clone);
       document.body.appendChild(tempContainer);
 
-      // Pre-sanitize oklch colors on tempContainer in document
-      sanitizeOklchInDoc(document, tempContainer);
-
-      const opt = {
-        margin: [4, 4, 4, 4],
-        filename: fileName,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          onclone: (clonedDoc, element) => {
-            sanitizeOklchInDoc(clonedDoc, element);
-          },
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      };
-
-      const pdfBlob = await html2pdf()
-        .set(opt)
-        .from(clone)
-        .outputPdf("blob");
+      // 📄 2. Render canvas using html2canvas-pro (native oklch & Tailwind v4 support!)
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
 
       if (document.body.contains(tempContainer)) {
         document.body.removeChild(tempContainer);
       }
 
+      // 📄 3. Convert canvas to PDF via jsPDF
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+      // 📄 4. Generate PDF Blob & File
+      const pdfBlob = pdf.output("blob");
       const pdfFile = new File([pdfBlob], fileName, {
         type: "application/pdf",
       });
 
-      // Check if browser can share files directly via Web Share API
+      // 📲 5. MOBILE BROWSERS: Instant Native Share Sheet (WhatsApp, Drive, Files, etc.)
       if (
         typeof navigator !== "undefined" &&
         navigator.canShare &&
@@ -1483,13 +1423,14 @@ export const AdminOrders = () => {
           text: `🧾 Barcode Restaurant Group - Invoice #IN-${displayId} for ${customerName}`,
         });
         toast.success("✅ PDF Invoice shared successfully!");
-      } else {
-        // Fallback for desktop/browsers without direct file sharing support: Download PDF & trigger print
-        toast.dismiss(shareToastId);
-        await html2pdf().set(opt).from(clone).save();
-        toast.success("📥 Invoice PDF downloaded!");
-        handlePrint();
+        return;
       }
+
+      // 💻 6. DESKTOP BROWSERS: Download PDF file & trigger print window
+      toast.dismiss(shareToastId);
+      pdf.save(fileName);
+      toast.success("📥 Invoice PDF downloaded!");
+      handlePrint();
     } catch (err) {
       toast.dismiss(shareToastId);
       if (err?.name !== "AbortError") {
