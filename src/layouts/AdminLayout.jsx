@@ -74,6 +74,40 @@ const navItems = [
   { name: 'Staff & Roles', path: '/admin/staff', icon: ShieldCheck, permission: 'staff_management' },
 ];
 
+// ⚡ Dynamic Route Preloaders: Resolves chunks ahead of time for instant navigation
+const adminRoutePreloaders = {
+  '/admin': () => import('../pages/admin/AdminDashboard'),
+  '/admin/orders': () => import('../pages/admin/AdminOrders'),
+  '/admin/dishes': () => import('../pages/admin/AdminDishes'),
+  '/admin/brands': () => import('../pages/admin/AdminBrands'),
+  '/admin/regions': () => import('../pages/admin/AdminRegions'),
+  '/admin/branches': () => import('../pages/admin/AdminBranches'),
+  '/admin/fleet-overview': () => import('../pages/admin/AdminRidersFleet'),
+  '/admin/add-rider': () => import('../pages/admin/AdminAddRider'),
+  '/admin/customers': () => import('../pages/admin/AdminCustomers'),
+  '/admin/reviews': () => import('../pages/admin/AdminReviews'),
+  '/admin/coupons': () => import('../pages/admin/AdminCoupons'),
+  '/admin/free-delivery': () => import('../pages/admin/AdminFreeDelivery'),
+  '/admin/hero': () => import('../pages/admin/AdminHero'),
+  '/admin/about': () => import('../pages/admin/AdminAbout'),
+  '/admin/policies': () => import('../pages/admin/AdminPolicies'),
+  '/admin/rider-applications': () => import('../pages/RiderApplication'),
+  '/admin/settings': () => import('../pages/admin/AdminSettings'),
+  '/admin/staff': () => import('../pages/admin/AdminStaff'),
+};
+
+const preloadedRoutes = new Set();
+export const preloadRoute = (path) => {
+  if (!path || preloadedRoutes.has(path)) return;
+  const loader = adminRoutePreloaders[path];
+  if (loader) {
+    preloadedRoutes.add(path);
+    loader().catch(() => {
+      preloadedRoutes.delete(path);
+    });
+  }
+};
+
 export const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, hasPermission, isSuperAdmin } = useAuth();
@@ -97,6 +131,44 @@ export const AdminLayout = () => {
   );
 
   const [pushState, setPushState] = useState(() => getPushPermissionState());
+
+  // ⚡ Smart Route Preloading: Download admin chunks ahead of time in background idle time
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const idleCallback =
+      window.requestIdleCallback ||
+      ((cb) => setTimeout(cb, 1500));
+
+    const cancelCallback =
+      window.cancelIdleCallback ||
+      ((id) => clearTimeout(id));
+
+    const handle = idleCallback(() => {
+      const topAdminRoutes = [
+        '/admin/orders',
+        '/admin/dishes',
+        '/admin/customers',
+        '/admin/branches',
+        '/admin/brands',
+        '/admin/fleet-overview',
+        '/admin/reviews',
+        '/admin/coupons',
+        '/admin/free-delivery',
+        '/admin/settings',
+      ];
+
+      topAdminRoutes.forEach((routePath, index) => {
+        setTimeout(() => {
+          preloadRoute(routePath);
+        }, index * 250);
+      });
+    });
+
+    return () => {
+      cancelCallback(handle);
+    };
+  }, []);
 
   const handleTestAndEnableAlerts = async () => {
     // 🔊 1. Play brief bell chime to verify audio permission
@@ -250,6 +322,9 @@ export const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 end={item.end}
+                onMouseEnter={() => preloadRoute(item.path)}
+                onFocus={() => preloadRoute(item.path)}
+                onTouchStart={() => preloadRoute(item.path)}
                 onClick={() => {
                   if (isOrdersRoute) markOrdersAsRead();
                   onNavigate();
