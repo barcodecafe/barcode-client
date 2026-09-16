@@ -1484,10 +1484,11 @@ export const AdminOrders = () => {
         });
         toast.success("✅ PDF Invoice shared successfully!");
       } else {
-        // Fallback for desktop/browsers without direct file sharing support: Download PDF directly
+        // Fallback for desktop/browsers without direct file sharing support: Download PDF & trigger print
         toast.dismiss(shareToastId);
         await html2pdf().set(opt).from(clone).save();
-        toast.success("📥 Invoice PDF downloaded! You can now send it on WhatsApp.");
+        toast.success("📥 Invoice PDF downloaded!");
+        handlePrint();
       }
     } catch (err) {
       toast.dismiss(shareToastId);
@@ -3010,7 +3011,7 @@ export const AdminOrders = () => {
                     type="button"
                     onClick={handleShareInvoice}
                     className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-[11px] sm:text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
-                    title="Share Invoice via WhatsApp, Imo or Apps"
+                    title="Share Invoice PDF via WhatsApp, Imo or Apps"
                   >
                     <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Share</span>
@@ -3018,9 +3019,9 @@ export const AdminOrders = () => {
 
                   <button
                     type="button"
-                    onClick={handlePrint}
+                    onClick={handleShareInvoice}
                     className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-[11px] sm:text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
-                    title="Print / Save as PDF"
+                    title="Save PDF / Instant Share / Print"
                   >
                     <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Print / Save PDF</span>
