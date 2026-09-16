@@ -20,6 +20,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Phone,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { ErrorBanner } from "../../components/ErrorBanner";
@@ -1348,6 +1349,43 @@ export const AdminOrders = () => {
         setSelectedOrderDetails(null);
       }
     }, 450);
+  };
+
+  const handleShareInvoice = async () => {
+    if (!selectedOrderDetails) return;
+    const rawId = selectedOrderDetails.id || selectedOrderDetails._id || "";
+    const displayId = String(rawId).slice(-10).toUpperCase();
+    const customerName = selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "Customer";
+    const customerPhone = String(selectedOrderDetails.deliveryPhone || selectedOrderDetails.user?.phone || selectedOrderDetails.customerPhone || "").trim();
+    const orderDishes = selectedOrderDetails.items || selectedOrderDetails.dishes || [];
+    const itemSummaryList = orderDishes.map((i) => `• ${i.name} (${i.selectedSize || "Standard"}) x${i.quantity || 1}`).join("\n");
+    
+    const isPickup = checkIsPickupOrder(selectedOrderDetails);
+    const orderTypeStr = isPickup ? "Self-Pickup" : "Home Delivery";
+    const paymentStr = formatPaymentMethodWithChannel(selectedOrderDetails);
+
+    const shareText = `🧾 BARCODE RESTAURANT GROUP\nInvoice #IN-${displayId}\n----------------------------\n👤 Customer: ${customerName}\n📞 Phone: ${customerPhone || "N/A"}\n📦 Type: ${orderTypeStr}\n💳 Payment: ${paymentStr}\n\n🍔 ITEMS:\n${itemSummaryList || "Food Items"}\n----------------------------\nThank you for choosing Barcode!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Invoice #IN-${displayId}`,
+          text: shareText,
+        });
+        toast.success("Invoice shared!");
+      } catch (err) {
+        if (err?.name !== "AbortError") {
+          console.warn("Share error:", err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        toast.success("📋 Invoice details copied to clipboard!");
+      } catch {
+        toast.error("Sharing not supported on this browser.");
+      }
+    }
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -2858,6 +2896,16 @@ export const AdminOrders = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleShareInvoice}
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-[11px] sm:text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
+                    title="Share Invoice via WhatsApp, Imo or Apps"
+                  >
+                    <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Share</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handlePrint}
