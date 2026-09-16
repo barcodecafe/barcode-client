@@ -68,20 +68,11 @@ export const RiderLayout = () => {
   const [pushState, setPushState] = useState(() => getPushPermissionState());
 
   const handleTestAndEnableAlerts = async () => {
-    // 🚨 1. Start continuous alert loop immediately (sound + mobile vibration)
-    soundNotification.startContinuousOrderAlert();
-    setIsAlertActive(true);
-
-    // 🔔 2. Dispatch simulated Delivery Notification to device
-    soundNotification.sendNotification({
-      title: '🚴 [TEST] New Delivery Assigned #TEST99!',
-      body: '৳450 • Test Customer\nTap to view and accept delivery.',
-      url: '/rider/orders',
-      tag: 'rider-test-alert',
-    });
+    // 🔊 1. Play brief chime to test audio
+    soundNotification.playKitchenBellChime();
 
     if (!isPushSupported()) {
-      toast.success("🔊 Continuous Alert & Vibration started! (Click top banner or Mute to stop)", { id: "test-sound-toast", duration: 5000 });
+      toast.success("🔊 Audio notification test passed!", { id: "test-sound-toast", duration: 5000 });
       return;
     }
 
@@ -100,8 +91,8 @@ export const RiderLayout = () => {
       }
 
       toast.success(
-        "🔊 Looping Alarm started! 📱 Sending lock-screen push in 3s... Lock your screen now!",
-        { id: "test-sound-toast", duration: 7000 }
+        "✅ Notifications Enabled! 📱 Test push sent.",
+        { id: "test-sound-toast", duration: 5000 }
       );
 
       setTimeout(async () => {
@@ -110,7 +101,7 @@ export const RiderLayout = () => {
         } catch (pushErr) {
           console.warn("Test push error:", pushErr);
         }
-      }, 3000);
+      }, 1000);
     } catch (err) {
       toast.error("Could not activate push: " + (err?.message || err), { id: "test-sound-toast" });
     }
