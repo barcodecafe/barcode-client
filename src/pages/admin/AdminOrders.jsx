@@ -39,6 +39,7 @@ import { getAllRegions } from "../../services/regionsService";
 
 import invoiceHeaderImg from "../../assets/invoiceheader.png";
 import invoiceFooterImg from "../../assets/invoicefooter.png";
+import html2pdf from "html2pdf.js";
 import { socket } from "../../services/socket";
 import { soundNotification } from "../../utils/soundNotification";
 
@@ -1352,38 +1353,75 @@ export const AdminOrders = () => {
   };
 
   const handleShareInvoice = async () => {
-    if (!selectedOrderDetails) return;
+    if (!selectedOrderDetails || !invoiceRef.current) return;
     const rawId = selectedOrderDetails.id || selectedOrderDetails._id || "";
     const displayId = String(rawId).slice(-10).toUpperCase();
     const customerName = selectedOrderDetails.user?.name || selectedOrderDetails.customerName || "Customer";
-    const customerPhone = String(selectedOrderDetails.deliveryPhone || selectedOrderDetails.user?.phone || selectedOrderDetails.customerPhone || "").trim();
-    const orderDishes = selectedOrderDetails.items || selectedOrderDetails.dishes || [];
-    const itemSummaryList = orderDishes.map((i) => `• ${i.name} (${i.selectedSize || "Standard"}) x${i.quantity || 1}`).join("\n");
-    
-    const isPickup = checkIsPickupOrder(selectedOrderDetails);
-    const orderTypeStr = isPickup ? "Self-Pickup" : "Home Delivery";
-    const paymentStr = formatPaymentMethodWithChannel(selectedOrderDetails);
+    const fileName = `Barcode_Invoice_IN-${displayId}.pdf`;
 
-    const shareText = `🧾 BARCODE RESTAURANT GROUP\nInvoice #IN-${displayId}\n----------------------------\n👤 Customer: ${customerName}\n📞 Phone: ${customerPhone || "N/A"}\n📦 Type: ${orderTypeStr}\n💳 Payment: ${paymentStr}\n\n🍔 ITEMS:\n${itemSummaryList || "Food Items"}\n----------------------------\nThank you for choosing Barcode!`;
+    const shareToastId = toast.loading("📄 Preparing PDF invoice for sharing...", { duration: 10000 });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Invoice #IN-${displayId}`,
-          text: shareText,
-        });
-        toast.success("Invoice shared!");
-      } catch (err) {
-        if (err?.name !== "AbortError") {
-          console.warn("Share error:", err);
-        }
+    try {
+      // 📄 Clone node and unscale for crisp A4 PDF rendering
+      const clone = invoiceRef.current.cloneNode(true);
+      clone.removeAttribute("style");
+      clone.style.cssText =
+        "width: 760px !important; min-width: 760px !important; max-width: 760px !important; transform: none !important; margin: 0 !important; background: #ffffff !important;";
+
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "fixed";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "0";
+      tempContainer.style.width = "760px";
+      tempContainer.appendChild(clone);
+      document.body.appendChild(tempContainer);
+
+      const opt = {
+        margin: [4, 4, 4, 4],
+        filename: fileName,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+
+      const pdfBlob = await html2pdf()
+        .set(opt)
+        .from(clone)
+        .outputPdf("blob");
+
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        toast.success("📋 Invoice details copied to clipboard!");
-      } catch {
-        toast.error("Sharing not supported on this browser.");
+
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: "application/pdf",
+      });
+
+      // Check if browser can share files directly via Web Share API
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.canShare &&
+        navigator.canShare({ files: [pdfFile] }) &&
+        navigator.share
+      ) {
+        toast.dismiss(shareToastId);
+        await navigator.share({
+          files: [pdfFile],
+          title: `Invoice #IN-${displayId}`,
+          text: `🧾 Barcode Restaurant Group - Invoice #IN-${displayId} for ${customerName}`,
+        });
+        toast.success("✅ PDF Invoice shared successfully!");
+      } else {
+        // Fallback for desktop/browsers without direct file sharing support: Download PDF directly
+        toast.dismiss(shareToastId);
+        await html2pdf().set(opt).from(clone).save();
+        toast.success("📥 Invoice PDF downloaded! You can now send it on WhatsApp.");
+      }
+    } catch (err) {
+      toast.dismiss(shareToastId);
+      if (err?.name !== "AbortError") {
+        console.error("PDF Share Error:", err);
+        toast.error("Could not generate PDF: " + (err?.message || err));
       }
     }
   };
