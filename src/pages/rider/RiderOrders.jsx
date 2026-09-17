@@ -59,9 +59,18 @@ export const RiderOrders = () => {
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const chatPanelRef = useRef(null);
   
   const chatOrder = orders.find((o) => String(o._id || o.id) === String(activeChatOrderId));
   const chatMessagesCount = chatOrder?.chatHistory?.length || 0;
+
+  useEffect(() => {
+    if (activeChatOrderId && typeof window !== "undefined" && window.innerWidth < 1024) {
+      setTimeout(() => {
+        chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, [activeChatOrderId]);
 
   // 💬 লাইভ চ্যাট হিস্ট্রি ব্যাকএন্ড থেকে ফেচ করা
   useEffect(() => {
@@ -318,22 +327,22 @@ export const RiderOrders = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
           Assigned Orders
         </h1>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
+        <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 font-medium">
           Accept jobs, update order delivery status, and communicate live with customers.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         <div
           className={`${
             activeChatOrderId ? "lg:col-span-7" : "lg:col-span-12"
           } space-y-4 transition-all duration-300`}
         >
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-5 shadow-xs">
-            <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white mb-4 uppercase tracking-wider">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3.5 sm:p-5 shadow-xs">
+            <h3 className="font-extrabold text-xs sm:text-sm text-neutral-900 dark:text-white mb-3 sm:mb-4 uppercase tracking-wider">
               Assigned Delivery Orders ({orders.length})
             </h3>
 
@@ -439,54 +448,54 @@ export const RiderOrders = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div className="font-bold text-xs">
-                          Total Invoice:{" "}
-                          <span className="text-rose-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 border-t border-neutral-100 dark:border-neutral-800/60">
+                        <div className="font-bold text-xs flex items-center justify-between sm:justify-start gap-1">
+                          <span className="text-neutral-500 dark:text-neutral-400">Total Invoice:</span>{" "}
+                          <span className="text-rose-500 font-black text-sm">
                             ৳{Number(ord.total || 0).toFixed(2)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                           {ord.riderAcceptStatus === "pending" || !ord.riderAcceptStatus ? (
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                               <button
                                 onClick={() => handleAccept(safeOrderId)}
-                                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                               >
                                 <CheckCircle className="w-3.5 h-3.5" /> Accept Job
                               </button>
                               <button
                                 onClick={() => handleReject(safeOrderId)}
-                                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                                className="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white border border-red-500/20 font-bold text-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1"
                               >
-                                <X className="w-3.5 h-3.5" /> Reject Job
+                                <X className="w-3.5 h-3.5" /> Reject
                               </button>
                             </div>
                           ) : (
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-initial">
                               {/* Stage 1: Kitchen Cooking (Waiting for Restaurant to set Ready to Pick) */}
                               {(ord.status === "Placed" ||
                                 ord.status === "Accepted" ||
                                 ord.status === "Preparing") && (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold animate-pulse">
-                                  <ChefHat className="w-3.5 h-3.5" />
-                                  <span>Kitchen Cooking... (Waiting for Food Ready)</span>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold animate-pulse w-full sm:w-auto justify-center">
+                                  <ChefHat className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate">Kitchen Cooking... (Waiting for Food)</span>
                                 </div>
                               )}
 
                               {/* Stage 2: Food Ready for Pickup at Restaurant Counter */}
                               {ord.status === "Ready to Pick" && (
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-black animate-pulse">
-                                    <PackageCheck className="w-3.5 h-3.5" /> Food Ready!
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-black animate-pulse shrink-0">
+                                    <PackageCheck className="w-3.5 h-3.5" /> Ready!
                                   </span>
                                   <button
                                     onClick={() =>
                                       handleStatusChange(safeOrderId, "Out for Delivery")
                                     }
-                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 animate-bounce"
+                                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5 animate-bounce"
                                   >
-                                    <Bike className="w-4 h-4" /> Pick Up & Start Delivery
+                                    <Bike className="w-4 h-4" /> Pick Up & Start
                                   </button>
                                 </div>
                               )}
@@ -497,7 +506,7 @@ export const RiderOrders = () => {
                                   onClick={() =>
                                     handleStatusChange(safeOrderId, "Delivered")
                                   }
-                                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
+                                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
                                 >
                                   <CheckCircle className="w-4 h-4" /> Mark as Delivered
                                 </button>
@@ -518,7 +527,7 @@ export const RiderOrders = () => {
                                 safeOrderId === activeChatOrderId ? null : safeOrderId
                               )
                             }
-                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-rose-500 hover:border-rose-500/40 active:scale-95 transition-all cursor-pointer ${
+                            className={`p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-rose-500 hover:border-rose-500/40 active:scale-95 transition-all cursor-pointer shrink-0 ${
                               activeChatOrderId === safeOrderId
                                 ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
                                 : ""
@@ -541,10 +550,11 @@ export const RiderOrders = () => {
         <AnimatePresence>
           {activeChatOrderId && chatOrder && (
             <motion.div
+              ref={chatPanelRef}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="lg:col-span-5 flex flex-col h-[500px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl overflow-hidden shadow-xs"
+              className="lg:col-span-5 flex flex-col h-[450px] sm:h-[500px] bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl overflow-hidden shadow-xs"
             >
               <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
                 <div>

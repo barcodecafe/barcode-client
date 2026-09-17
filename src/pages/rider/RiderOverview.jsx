@@ -154,28 +154,28 @@ export const RiderOverview = () => {
     <div className="space-y-6">
       {/* Header Dashboard Title */}
       <div>
-        <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
           Dashboard Overview
         </h1>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
+        <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 font-medium">
           Real-time snapshot of your active deliveries and income metrics.
         </p>
       </div>
 
       {/* Filter Bar Controls */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-rose-500" />
-          <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          <Calendar className="w-4 h-4 text-rose-500 shrink-0" />
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
             Filter Earnings & Performance:
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 grow sm:grow-0 justify-end">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-between sm:justify-end">
           <select
             value={timeFilter}
             onChange={(e) => setTimeFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
+            className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 font-bold text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-500"
           >
             <option value="daily">Daily (Today)</option>
             <option value="weekly">Weekly (Last 7 Days)</option>
@@ -185,121 +185,126 @@ export const RiderOverview = () => {
           </select>
 
           {timeFilter === "custom" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-rose-500"
+                className="w-1/2 sm:w-auto px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-rose-500"
               />
-              <span className="text-xs text-neutral-400">to</span>
+              <span className="text-xs text-neutral-400 shrink-0">to</span>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-rose-500"
+                className="w-1/2 sm:w-auto px-2 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-rose-500"
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* 5 Primary Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 5 Primary Stat Cards (2-col grid on mobile, hero earnings card, 5-col on desktop) */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* 1. Active Orders */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3 sm:p-4 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="block text-xl font-black text-neutral-900 dark:text-white leading-none">
+          <div className="min-w-0">
+            <span className="block text-lg sm:text-xl font-black text-neutral-900 dark:text-white leading-none truncate">
               {activeOrdersCount}
             </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
+            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase mt-1 block truncate">
               Active Orders
             </span>
           </div>
         </div>
 
         {/* 2. New Orders */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-5 h-5" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3 sm:p-4 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="block text-xl font-black text-neutral-900 dark:text-white leading-none">
+          <div className="min-w-0">
+            <span className="block text-lg sm:text-xl font-black text-neutral-900 dark:text-white leading-none truncate">
               {pendingAcceptCount}
             </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
+            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase mt-1 block truncate">
               New Orders
             </span>
           </div>
         </div>
 
         {/* 3. Delivered */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3 sm:p-4 shadow-xs flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="block text-xl font-black text-neutral-900 dark:text-white leading-none">
+          <div className="min-w-0">
+            <span className="block text-lg sm:text-xl font-black text-neutral-900 dark:text-white leading-none truncate">
               {filteredStats.deliveryCount}
             </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-              Delivered ({timeFilter})
+            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase mt-1 block truncate">
+              Delivered
             </span>
           </div>
         </div>
 
         {/* 4. Food Delivered */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-indigo-500">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
-            <Utensils className="w-5 h-5" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-3 sm:p-4 shadow-xs flex items-center gap-2.5 sm:gap-3 border-l-4 border-l-indigo-500">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+            <Utensils className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="block text-xl font-black text-neutral-900 dark:text-white leading-none">
-              ৳{filteredStats.foodPrice.toFixed(2)}
+          <div className="min-w-0">
+            <span className="block text-lg sm:text-xl font-black text-neutral-900 dark:text-white leading-none truncate" title={`৳${filteredStats.foodPrice.toFixed(2)}`}>
+              ৳{filteredStats.foodPrice.toFixed(0)}
             </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
+            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase mt-1 block truncate">
               Food Delivered
             </span>
           </div>
         </div>
 
-        {/* 5. Rider Income */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 shadow-xs flex items-center gap-3 border-l-4 border-l-rose-500">
-          <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-5 h-5" />
+        {/* 5. Rider Income (Spans full 2 columns on mobile as prominent hero card) */}
+        <div className="col-span-2 sm:col-span-2 lg:col-span-1 bg-gradient-to-r from-rose-500/5 via-white to-white dark:from-rose-500/10 dark:via-neutral-900 dark:to-neutral-900 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl p-3.5 sm:p-4 shadow-xs flex items-center justify-between lg:justify-start gap-3 border-l-4 border-l-rose-500">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-10 sm:h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-xl sm:text-xl font-black text-rose-500 dark:text-rose-400 leading-none truncate">
+                ৳{filteredStats.earnings.toFixed(2)}
+              </span>
+              <span className="text-[10px] sm:text-[10px] font-extrabold text-rose-600/80 dark:text-rose-400/80 uppercase mt-1 block tracking-wide">
+                Rider Income ({timeFilter})
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="block text-xl font-black text-rose-500 dark:text-rose-400 leading-none">
-              ৳{filteredStats.earnings.toFixed(2)}
-            </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase mt-1 block">
-              Rider Income
-            </span>
-          </div>
+          <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full lg:hidden shrink-0">
+            Net Earn
+          </span>
         </div>
       </div>
 
       {/* Quick Action Link Banner */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-            <ShoppingBag className="w-6 h-6" />
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white">
               Assigned Orders Management
             </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               You have {activeOrdersCount} active orders waiting for action.
             </p>
           </div>
         </div>
         <Link
           to="/rider/orders"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition-all shadow-md shadow-rose-500/20 active:scale-95 cursor-pointer"
+          className="w-full sm:w-auto text-center px-4 py-2.5 sm:py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <span>Manage Orders</span>
           <ChevronRight className="w-4 h-4" />

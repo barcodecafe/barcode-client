@@ -144,19 +144,19 @@ export const RiderSettlement = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white tracking-tight flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 stroke-[2.5]" />
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-neutral-900 dark:text-white tracking-tight flex items-center gap-2 sm:gap-2.5">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </div>
-          Daily Performance & Settlement Track Log
+          <span className="truncate">Daily Performance & Settlement</span>
         </h1>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
+        <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1 font-medium">
           Track daily earnings, cash collected, admin received payments, and pending payable orders.
         </p>
       </div>
 
       {/* Main Container */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 rounded-2xl sm:rounded-3xl p-3 sm:p-5 lg:p-7 shadow-xs space-y-4">
         {dailyLog.length === 0 ? (
           <div className="text-center py-12 space-y-2">
             <Package className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mx-auto" />
@@ -249,37 +249,71 @@ export const RiderSettlement = () => {
                   {/* ========================================================= */}
                   <div
                     onClick={() => toggleAccordion(log.dateKey)}
-                    className="py-2 px-3 sm:py-2.5 sm:px-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
+                    className="p-2.5 sm:py-2.5 sm:px-3.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
                   >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`p-1 rounded-lg transition-transform ${
-                          isExpanded
-                            ? "bg-rose-500 text-white"
-                            : "bg-rose-500/10 text-rose-500"
-                        }`}
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs text-neutral-900 dark:text-white block">
-                          {log.date}
-                        </span>
-                        <span className="text-[9px] text-neutral-500 dark:text-neutral-400 font-medium flex items-center gap-1 mt-0.5">
-                          <span>{dayOrders.length} Orders</span>
-                          <span>•</span>
-                          <span className="text-primary-500 font-bold">
-                            {isExpanded ? "Hide breakdown" : "Click to view breakdown"}
+                    {/* Top line: Date + Count + Expand indicator on left, Status badge/action on right */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`p-1 rounded-lg transition-transform shrink-0 ${
+                            isExpanded
+                              ? "bg-rose-500 text-white"
+                              : "bg-rose-500/10 text-rose-500"
+                          }`}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs text-neutral-900 dark:text-white block truncate">
+                            {log.date}
                           </span>
-                        </span>
+                          <span className="text-[9px] text-neutral-500 dark:text-neutral-400 font-medium flex items-center gap-1 mt-0.5">
+                            <span>{dayOrders.length} Orders</span>
+                            <span>•</span>
+                            <span className="text-primary-500 font-bold">
+                              {isExpanded ? "Hide" : "Breakdown"}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Daily Status Action Badge (Always visible & aligned) */}
+                      <div className="shrink-0 text-right">
+                        {log.delivered === 0 ? (
+                          <span className="text-neutral-400 font-medium text-[9px]">
+                            N/A
+                          </span>
+                        ) : log.outstandingNetPayable === 0 ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                            <CheckCircle2 className="w-3 h-3" /> Fully Settled
+                          </span>
+                        ) : log.isSubmitted ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                            <Clock3 className="w-3 h-3" /> Awaiting Approval
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => handleSubmitCash(log.dateKey, e)}
+                            disabled={submittingCashDate === log.dateKey}
+                            className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-amber-500 hover:bg-amber-600 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-xs"
+                          >
+                            <Clock3 className="w-3 h-3 animate-pulse" />
+                            {submittingCashDate === log.dateKey
+                              ? "Submitting..."
+                              : (log.paidToAdmin || 0) > 0
+                                ? "Pay Remaining"
+                                : "Pay Day Cash"}
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px]">
+                    {/* Desktop horizontal columns view */}
+                    <div className="hidden md:flex items-center justify-end gap-4 text-[10px] mt-1 pt-1">
                       <div>
                         <span className="text-neutral-400 text-[8px] block font-semibold uppercase tracking-wider">
                           Delivered
@@ -350,35 +384,50 @@ export const RiderSettlement = () => {
                           ৳{log.outstandingNetPayable.toFixed(2)}
                         </span>
                       </div>
+                    </div>
 
-                      {/* Daily Status Action Badge */}
-                      <div className="text-right">
-                        {log.delivered === 0 ? (
-                          <span className="text-neutral-400 font-medium text-[9px]">
-                            N/A
-                          </span>
-                        ) : log.outstandingNetPayable === 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
-                            <CheckCircle2 className="w-3 h-3" /> Fully Settled
-                          </span>
-                        ) : log.isSubmitted ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
-                            <Clock3 className="w-3 h-3" /> Awaiting Admin Approval
-                          </span>
-                        ) : (
-                          <button
-                            onClick={(e) => handleSubmitCash(log.dateKey, e)}
-                            disabled={submittingCashDate === log.dateKey}
-                            className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-amber-500 hover:bg-amber-600 px-2 py-0.5 rounded-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                          >
-                            <Clock3 className="w-3 h-3 animate-pulse" />
-                            {submittingCashDate === log.dateKey
-                              ? "Submitting..."
-                              : (log.paidToAdmin || 0) > 0
-                                ? "Pay Remaining Cash"
-                                : "Pay Day Cash to Admin"}
-                          </button>
-                        )}
+                    {/* Mobile structured 4-metric grid (Crisp, clean, no awkward wrapping) */}
+                    <div className="md:hidden grid grid-cols-4 gap-1 pt-2 mt-2 border-t border-neutral-100 dark:border-neutral-800/60 text-center">
+                      <div className="bg-neutral-50 dark:bg-neutral-800/40 p-1.5 rounded-lg">
+                        <span className="text-neutral-400 text-[8px] block font-bold uppercase">
+                          Delivered
+                        </span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[10px] block mt-0.5">
+                          {log.delivered}
+                        </span>
+                      </div>
+
+                      <div className="bg-rose-500/5 dark:bg-rose-500/10 p-1.5 rounded-lg">
+                        <span className="text-neutral-400 text-[8px] block font-bold uppercase">
+                          Cash
+                        </span>
+                        <span className="font-black text-rose-500 text-[10px] block mt-0.5">
+                          ৳{log.cashCollected.toFixed(0)}
+                        </span>
+                      </div>
+
+                      <div className="bg-emerald-500/5 dark:bg-emerald-500/10 p-1.5 rounded-lg">
+                        <span className="text-neutral-400 text-[8px] block font-bold uppercase">
+                          Admin Recv
+                        </span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[10px] block mt-0.5">
+                          ৳{(log.paidToAdmin || 0).toFixed(0)}
+                        </span>
+                      </div>
+
+                      <div className="bg-amber-500/5 dark:bg-amber-500/10 p-1.5 rounded-lg">
+                        <span className="text-neutral-400 text-[8px] block font-bold uppercase">
+                          Payable/Due
+                        </span>
+                        <span
+                          className={`font-black text-[10px] block mt-0.5 ${
+                            log.outstandingNetPayable > 0
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-neutral-400"
+                          }`}
+                        >
+                          ৳{log.outstandingNetPayable.toFixed(0)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -501,42 +550,78 @@ export const RiderSettlement = () => {
                             return (
                               <div
                                 key={oIdx}
-                                className="py-1.5 px-1 flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-2 text-[10px] hover:bg-neutral-50/70 dark:hover:bg-neutral-800/30 transition-colors"
+                                className="p-2 sm:py-1.5 sm:px-1 rounded-xl sm:rounded-none border sm:border-0 border-neutral-200/60 dark:border-neutral-800/80 bg-neutral-50/50 sm:bg-transparent dark:bg-neutral-850/30 sm:dark:bg-transparent flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-2 text-[10px] hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30 transition-colors"
                               >
                                 {/* Left Col: Order ID + Status + Time + Customer & Address */}
-                                <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-                                  {/* Order ID, Status badge, and Time */}
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <span className="font-mono font-bold text-[9px] text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 px-1 py-0.5 rounded">
-                                      #{String(ord._id || ord.id).slice(-6).toUpperCase()}
-                                    </span>
-                                    <span
-                                      className={`px-1 py-0.2 rounded text-[7px] font-bold uppercase tracking-wider ${
-                                        isDelivered
-                                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                          : "bg-red-500/10 text-red-500 border border-red-500/20"
-                                      }`}
-                                    >
-                                      {ord.status}
-                                    </span>
-                                    {timeStr && (
-                                      <span className="text-[8px] sm:text-[9px] text-neutral-400 font-medium">
-                                        {timeStr}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 min-w-0 flex-1">
+                                  {/* Top Mini-Bar on mobile: ID, Status, Time + Payment Badge */}
+                                  <div className="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <span className="font-mono font-bold text-[9px] text-neutral-900 dark:text-white bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700 px-1 py-0.5 rounded">
+                                        #{String(ord._id || ord.id).slice(-6).toUpperCase()}
                                       </span>
-                                    )}
+                                      <span
+                                        className={`px-1 py-0.5 rounded text-[7px] font-bold uppercase tracking-wider ${
+                                          isDelivered
+                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                            : "bg-red-500/10 text-red-500 border border-red-500/20"
+                                        }`}
+                                      >
+                                        {ord.status}
+                                      </span>
+                                      {timeStr && (
+                                        <span className="text-[8px] sm:text-[9px] text-neutral-400 font-medium">
+                                          {timeStr}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Mobile Payment Badge (inline top right) */}
+                                    <div className="md:hidden shrink-0">
+                                      {isRejected ? (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-500 text-[8px] font-bold">
+                                          <XCircle className="w-2.5 h-2.5 text-red-500" />
+                                          <span>Cancelled</span>
+                                        </span>
+                                      ) : isOnlinePrepaid ? (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 text-[8px] font-bold">
+                                          <CreditCard className="w-2.5 h-2.5 text-purple-600" />
+                                          <span>Online Paid</span>
+                                        </span>
+                                      ) : isOrderSettledByAdmin ? (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-[8px] font-bold">
+                                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                          <span>Paid ✓</span>
+                                        </span>
+                                      ) : isOrderSubmittedToAdmin ? (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 text-[8px] font-bold">
+                                          <Clock3 className="w-2.5 h-2.5 text-blue-600" />
+                                          <span>Submitted</span>
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[8px] font-bold">
+                                          <AlertCircle className="w-2.5 h-2.5 text-amber-600" />
+                                          <span>Pending</span>
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
 
                                   <span className="text-neutral-300 dark:text-neutral-700 hidden sm:inline">•</span>
 
                                   {/* Customer Name & Address */}
-                                  <div className="flex items-center gap-1 min-w-0 flex-1">
-                                    <span className="font-bold text-[10px] sm:text-[11px] text-neutral-900 dark:text-white truncate max-w-[90px] sm:max-w-[120px] lg:max-w-[140px]">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <span className="font-bold text-[10px] sm:text-[11px] text-neutral-900 dark:text-white truncate max-w-[100px] sm:max-w-[140px]">
                                       {ord.user?.name || ord.customerName || "Customer"}
                                     </span>
                                     {(ord.user?.phone || ord.deliveryPhone) && (
-                                      <span className="text-[9px] text-neutral-400 font-mono hidden lg:inline">
-                                        ({ord.user?.phone || ord.deliveryPhone})
-                                      </span>
+                                      <a
+                                        href={`tel:${ord.user?.phone || ord.deliveryPhone}`}
+                                        className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono inline-flex items-center gap-0.5 hover:underline"
+                                      >
+                                        <Phone className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                                        <span>{ord.user?.phone || ord.deliveryPhone}</span>
+                                      </a>
                                     )}
                                     <span className="text-neutral-300 dark:text-neutral-700 hidden md:inline">•</span>
                                     <div
@@ -551,8 +636,8 @@ export const RiderSettlement = () => {
                                   </div>
                                 </div>
 
-                                {/* Center: Payment Method & Admin Settlement Status Badge */}
-                                <div className="shrink-0 flex items-center">
+                                {/* Center: Payment Method & Admin Settlement Status Badge (Desktop only) */}
+                                <div className="hidden md:flex shrink-0 items-center">
                                   {isRejected ? (
                                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-500 text-[8px] sm:text-[9px] font-bold">
                                       <XCircle className="w-2.5 h-2.5 text-red-500" />
@@ -581,9 +666,9 @@ export const RiderSettlement = () => {
                                   )}
                                 </div>
 
-                                {/* Right: Inline Financial Figures */}
-                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0 text-right">
-                                  <div className="text-left sm:text-right">
+                                {/* Right: Financial Figures (Responsive grid on mobile, horizontal flex on desktop) */}
+                                <div className="grid grid-cols-5 sm:flex sm:items-center sm:justify-end gap-1.5 sm:gap-3 shrink-0 text-center sm:text-right bg-white dark:bg-neutral-900 sm:bg-transparent p-1.5 sm:p-0 rounded-lg border sm:border-0 border-neutral-200/60 dark:border-neutral-800/60 mt-1 sm:mt-0">
+                                  <div className="text-center sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       Total
                                     </span>
@@ -592,7 +677,7 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-left sm:text-right">
+                                  <div className="text-center sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       {ord.riderEmploymentType === "freelance" ? "Comm." : "Model"}
                                     </span>
@@ -603,7 +688,7 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-left sm:text-right">
+                                  <div className="text-center sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       Cash
                                     </span>
@@ -616,7 +701,7 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-left sm:text-right">
+                                  <div className="text-center sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       Admin Paid
                                     </span>
@@ -631,7 +716,7 @@ export const RiderSettlement = () => {
                                     </span>
                                   </div>
 
-                                  <div className="text-left sm:text-right">
+                                  <div className="text-center sm:text-right">
                                     <span className="text-neutral-400 text-[7px] block uppercase font-bold tracking-wider leading-none">
                                       Due
                                     </span>

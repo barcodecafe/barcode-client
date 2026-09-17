@@ -528,8 +528,8 @@ export const RiderLayout = () => {
       </motion.aside>
 
       <div className="flex-grow flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 h-14 border-b border-neutral-200/60 dark:border-neutral-800/60 glass bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md flex items-center justify-between px-3 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
               className="p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-850 active:scale-95 transition-all cursor-pointer"
@@ -542,12 +542,12 @@ export const RiderLayout = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Duty Availability Toggle */}
             <button
               onClick={handleToggleDuty}
               disabled={isDutyUpdating}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
                 riderStatus === "Available"
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
@@ -555,21 +555,21 @@ export const RiderLayout = () => {
               title="Click to toggle Online / Offline Duty Status"
             >
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2 h-2 rounded-full shrink-0 ${
                   riderStatus === "Available"
                     ? "bg-emerald-500 animate-pulse"
                     : "bg-amber-500"
                 }`}
               />
-              <span>{riderStatus === "Available" ? "Online" : "On Break"}</span>
+              <span className="whitespace-nowrap">{riderStatus === "Available" ? "Online" : "Break"}</span>
             </button>
 
             <button
               onClick={handleTestAndEnableAlerts}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
               title="Test Sound & Mobile Lock-Screen Notification"
             >
-              <Volume2 className="w-3.5 h-3.5" />
+              <Volume2 className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden md:inline">Test Alert</span>
               {pushState === 'granted' && (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Mobile Push Connected" />
@@ -578,7 +578,7 @@ export const RiderLayout = () => {
 
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1"
+              className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer p-1.5 sm:p-1"
               title={
                 soundEnabled
                   ? "Sound Enabled (Click to Mute)"
@@ -594,9 +594,9 @@ export const RiderLayout = () => {
 
             <Link
               to="/rider/orders"
-              className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
+              className={`min-w-[20px] h-5 px-1.5 rounded-full text-white font-extrabold text-[11px] items-center justify-center shadow-xs transition-all cursor-pointer hidden xs:flex ${
                 pendingCount > 0
-                  ? "bg-rose-500"
+                  ? "bg-rose-500 animate-pulse"
                   : "bg-neutral-400 dark:bg-neutral-600"
               }`}
               title="Click to view assigned orders"
@@ -606,7 +606,7 @@ export const RiderLayout = () => {
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-rose-500 hover:scale-105 transition-all duration-300 cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:text-rose-500 hover:scale-105 transition-all duration-300 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {theme === "dark" ? (
@@ -616,9 +616,9 @@ export const RiderLayout = () => {
               )}
             </button>
 
-            <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-800">
-              <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-sm">
-                <Bike className="w-4 h-4" />
+            <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-neutral-200 dark:border-neutral-800">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-sm shrink-0">
+                <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
               <div className="leading-tight hidden sm:block">
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
@@ -640,17 +640,17 @@ export const RiderLayout = () => {
 
         {/* 📱 Mobile Push Setup Prompt */}
         {pushState !== 'granted' && isPushSupported() && (
-          <div className="bg-amber-500/95 text-neutral-950 px-3.5 py-2 flex items-center justify-between gap-3 text-xs font-bold border-b border-amber-600/40 shadow-xs backdrop-blur-md sticky top-14 z-20">
+          <div className="bg-amber-500/95 text-neutral-950 px-3 py-1.5 sm:px-3.5 sm:py-2 flex items-center justify-between gap-2.5 text-[11px] sm:text-xs font-bold border-b border-amber-600/40 shadow-xs backdrop-blur-md sticky top-14 z-20">
             <div className="flex items-center gap-2 min-w-0">
               <BellRing className="w-4 h-4 text-neutral-950 animate-bounce shrink-0" />
               <span className="truncate">
-                📱 স্ক্রিন লক বা ফেসবুক/ইউটিউব চলাকালীন রিং ও ভাইব্রেশন পেতে নোটিফিকেশন Allow করুন
+                📱 স্ক্রিন লক বা অন্যান্য অ্যাপ চলাকালীন রিং পেতে নোটিফিকেশন Allow করুন
               </span>
             </div>
             <button
               type="button"
               onClick={handleTestAndEnableAlerts}
-              className="px-3 py-1 bg-neutral-950 hover:bg-neutral-800 text-white rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap shadow-xs"
+              className="px-2.5 py-1 bg-neutral-950 hover:bg-neutral-800 text-white rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap shadow-xs shrink-0"
             >
               Allow Alerts
             </button>
@@ -659,17 +659,17 @@ export const RiderLayout = () => {
 
         {/* 🚨 Continuous Looping Alarm Banner with Mute Control */}
         {isAlertActive && (
-          <div className="bg-red-600 text-white px-3.5 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xl animate-pulse sticky top-14 z-20 border-b border-red-700 backdrop-blur-md">
+          <div className="bg-red-600 text-white px-3 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xl animate-pulse sticky top-14 z-20 border-b border-red-700 backdrop-blur-md">
             <div className="flex items-center gap-2 font-bold text-xs sm:text-sm min-w-0">
               <BellRing className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce shrink-0 text-amber-300" />
-              <span className="truncate">🚨 New Assigned Delivery! Ringing Alarm & Vibrating...</span>
+              <span className="truncate">🚨 New Assigned Delivery! Ringing Alarm...</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 to="/rider/orders"
                 className="px-2.5 py-1 bg-white text-red-600 rounded-lg text-xs font-black hover:bg-neutral-100 transition-all cursor-pointer shadow-xs whitespace-nowrap"
               >
-                View Orders
+                View
               </Link>
               <button
                 type="button"
@@ -678,13 +678,13 @@ export const RiderLayout = () => {
                 title="Mute Alert"
               >
                 <VolumeX className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mute Alarm</span>
+                <span className="hidden sm:inline">Mute</span>
               </button>
             </div>
           </div>
         )}
 
-        <main className="flex-grow p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
+        <main className="flex-grow p-3 sm:p-6 lg:p-8 pb-20 md:pb-8 w-full max-w-[1600px] mx-auto">
           {/* Keyed on the path so leaving a page that crashed clears the
               boundary. Inside the shell, so a broken page keeps the rider's
               navigation usable instead of blanking the portal. */}
@@ -692,6 +692,82 @@ export const RiderLayout = () => {
             <Outlet />
           </ErrorBoundary>
         </main>
+
+        {/* 📱 Mobile Rider Bottom Navigation Bar */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-lg border-t border-neutral-200/80 dark:border-neutral-800/80 px-2 py-1.5 flex items-center justify-around shadow-xl">
+          <NavLink
+            to="/rider"
+            end
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+                isActive
+                  ? "text-rose-500 font-black"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              }`
+            }
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[10px] font-bold mt-0.5">Overview</span>
+          </NavLink>
+
+          <NavLink
+            to="/rider/orders"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
+                isActive
+                  ? "text-rose-500 font-black"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              }`
+            }
+          >
+            <div className="relative">
+              <ShoppingBag className="w-5 h-5" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse shadow-xs">
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] font-bold mt-0.5">Orders</span>
+          </NavLink>
+
+          <NavLink
+            to="/rider/settlement"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+                isActive
+                  ? "text-rose-500 font-black"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              }`
+            }
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-[10px] font-bold mt-0.5">Daily Log</span>
+          </NavLink>
+
+          <button
+            type="button"
+            onClick={handleToggleDuty}
+            disabled={isDutyUpdating}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+              riderStatus === "Available"
+                ? "text-emerald-600 dark:text-emerald-400 font-black"
+                : "text-amber-600 dark:text-amber-400 font-black"
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              <Bike className="w-5 h-5" />
+              <span
+                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${
+                  riderStatus === "Available" ? "bg-emerald-500 animate-ping" : "bg-amber-500"
+                }`}
+              />
+            </div>
+            <span className="text-[10px] font-bold mt-0.5">
+              {riderStatus === "Available" ? "Online" : "Break"}
+            </span>
+          </button>
+        </nav>
       </div>
     </div>
   );
