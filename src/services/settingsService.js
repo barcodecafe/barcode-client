@@ -37,6 +37,9 @@ export const DEFAULT_SETTINGS = {
   maintenanceNoticeEnabled: true,
   maintenanceNoticeText:
     '⚠️ Notice: Our displayed products are not for sale (uploaded strictly for experimental purposes). Also, we are updating our server system right now, so some features might be slower than usual!',
+
+  // 🎁 Loyalty Rewards Settings Defaults
+  loyaltyRedemptionEnabled: false,
 };
 
 /** GET /api/settings — falls back to defaults if the API is unreachable. */

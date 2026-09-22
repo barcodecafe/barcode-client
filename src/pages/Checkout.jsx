@@ -277,17 +277,17 @@ export const Checkout = () => {
   const totalSavings = Math.max(0, overallOriginalTotal - cartTotal);
 
   // ── Derived money ──────────────────────────────────────────────────────
+  const { settings } = useSettings();
+  const isRedemptionEnabled = Boolean(settings?.loyaltyRedemptionEnabled);
   const couponDiscount = appliedCoupon
     ? couponDiscountAmount(cartTotal, appliedCoupon)
     : 0;
   const afterCoupon = cartTotal - couponDiscount;
   const availablePoints = Math.max(0, Math.floor(user?.points || 0));
-  const maxRedeemablePoints = Math.max(
-    0,
-    Math.min(availablePoints, Math.floor(afterCoupon)),
-  );
-  const pointsDiscount = redeemPoints ? maxRedeemablePoints : 0;
-  const { settings } = useSettings();
+  const maxRedeemablePoints = isRedemptionEnabled
+    ? Math.max(0, Math.min(availablePoints, Math.floor(afterCoupon)))
+    : 0;
+  const pointsDiscount = (redeemPoints && isRedemptionEnabled) ? maxRedeemablePoints : 0;
   const isPickup = orderType === "pickup";
   const standardDeliveryCharge = isPickup ? 0 : (area ? getRegionDeliveryCharge(region, area) : 0);
   const isFreeDelivery = isPickup || (!!area && checkFreeDeliveryEligibility(settings, {
@@ -964,37 +964,58 @@ export const Checkout = () => {
 
             {/* Points redeem */}
             {availablePoints > 0 && (
-              <button
-                type="button"
-                onClick={() => setRedeemPoints((v) => !v)}
-                disabled={maxRedeemablePoints < 1}
-                className={`mt-3 w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${redeemPoints ? "border-amber-400 bg-amber-50 dark:bg-amber-500/10" : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300"} ${maxRedeemablePoints < 1 ? "opacity-60 cursor-not-allowed" : ""}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${redeemPoints ? "bg-amber-400 text-white" : "bg-amber-500/10 text-amber-500"}`}
-                >
-                  <Coins className="w-4 h-4" />
-                </div>
-                <div className="flex-grow min-w-0">
-                  <span className="block text-xs font-bold text-neutral-800 dark:text-white">
-                    {availablePoints} points available
-                  </span>
-                  <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">
-                    {maxRedeemablePoints < 1
-                      ? "Nothing left to discount"
-                      : redeemPoints
-                        ? `Redeeming ${maxRedeemablePoints} pts — ৳${maxRedeemablePoints} off`
-                        : `Tap to use (up to ৳${maxRedeemablePoints} off)`}
-                  </span>
-                </div>
-                <div
-                  className={`w-9 h-5 rounded-full p-0.5 shrink-0 transition-colors ${redeemPoints ? "bg-amber-400" : "bg-neutral-300 dark:bg-neutral-700"}`}
+              isRedemptionEnabled ? (
+                <button
+                  type="button"
+                  onClick={() => setRedeemPoints((v) => !v)}
+                  disabled={maxRedeemablePoints < 1}
+                  className={`mt-3 w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${redeemPoints ? "border-amber-400 bg-amber-50 dark:bg-amber-500/10" : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300"} ${maxRedeemablePoints < 1 ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${redeemPoints ? "translate-x-4" : ""}`}
-                  />
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${redeemPoints ? "bg-amber-400 text-white" : "bg-amber-500/10 text-amber-500"}`}
+                  >
+                    <Coins className="w-4 h-4" />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <span className="block text-xs font-bold text-neutral-800 dark:text-white">
+                      {availablePoints} points available
+                    </span>
+                    <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">
+                      {maxRedeemablePoints < 1
+                        ? "Nothing left to discount"
+                        : redeemPoints
+                          ? `Redeeming ${maxRedeemablePoints} pts — ৳${maxRedeemablePoints} off`
+                          : `Tap to use (up to ৳${maxRedeemablePoints} off)`}
+                    </span>
+                  </div>
+                  <div
+                    className={`w-9 h-5 rounded-full p-0.5 shrink-0 transition-colors ${redeemPoints ? "bg-amber-400" : "bg-neutral-300 dark:bg-neutral-700"}`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${redeemPoints ? "translate-x-4" : ""}`}
+                    />
+                  </div>
+                </button>
+              ) : (
+                <div className="mt-3 w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/40">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-500">
+                    <Coins className="w-4 h-4" />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="block text-xs font-bold text-neutral-800 dark:text-white">
+                        {availablePoints} reward points earned
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold">
+                        Redemption Soon
+                      </span>
+                    </div>
+                    <span className="block text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      Points are safely stored in your account. Spending will unlock soon!
+                    </span>
+                  </div>
                 </div>
-              </button>
+              )
             )}
 
             {/* 🎯 Totals Section in Checkout with Savings Badge */}

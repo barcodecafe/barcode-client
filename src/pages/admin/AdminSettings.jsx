@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Sparkles,
   Megaphone,
+  Coins,
 } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import NoticeTicker from "../../components/NoticeTicker";
@@ -67,6 +68,11 @@ export const AdminSettings = () => {
     settings.maintenanceNoticeText || ""
   );
 
+  // 🎁 Loyalty Rewards Settings state
+  const [loyaltyRedemptionEnabled, setLoyaltyRedemptionEnabled] = useState(
+    Boolean(settings.loyaltyRedemptionEnabled)
+  );
+
   // UI States
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -91,6 +97,7 @@ export const AdminSettings = () => {
         : true
     );
     setMaintenanceNoticeText(settings.maintenanceNoticeText || "");
+    setLoyaltyRedemptionEnabled(Boolean(settings.loyaltyRedemptionEnabled));
   }, [isSettingsLoaded, settings]);
 
   const compressImageFile = (file, maxWidth = 1200, maxHeight = 800, quality = 0.85) => {
@@ -212,6 +219,7 @@ export const AdminSettings = () => {
         footerTwitter: footerTwitter.trim(),
         maintenanceNoticeEnabled: Boolean(maintenanceNoticeEnabled),
         maintenanceNoticeText: maintenanceNoticeText.trim(),
+        loyaltyRedemptionEnabled: Boolean(loyaltyRedemptionEnabled),
       };
 
       await updateSettings(payload);
@@ -258,6 +266,7 @@ export const AdminSettings = () => {
           : true
       );
       setMaintenanceNoticeText(defaults.maintenanceNoticeText || "");
+      setLoyaltyRedemptionEnabled(Boolean(defaults.loyaltyRedemptionEnabled));
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -418,6 +427,63 @@ export const AdminSettings = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* 🎁 Loyalty Points & Rewards System */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 rounded-3xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-100 dark:border-neutral-800/60">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-extrabold text-sm text-neutral-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  Loyalty Points Redemption (Burn Control)
+                </h2>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    loyaltyRedemptionEnabled
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+                      : "bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20"
+                  }`}
+                >
+                  {loyaltyRedemptionEnabled ? "🟢 Redemption Active" : "⚪ Redemption Paused (Earn Only)"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Control whether customers can redeem/burn their earned reward points for discounts at checkout.
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <label className="relative inline-flex items-center cursor-pointer select-none self-start sm:self-auto shrink-0">
+              <input
+                type="checkbox"
+                checked={loyaltyRedemptionEnabled}
+                onChange={(e) => setLoyaltyRedemptionEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-hidden rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-600 peer-checked:bg-amber-500"></div>
+              <span className="ml-2.5 text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                {loyaltyRedemptionEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </label>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-850/60 border border-neutral-200/50 dark:border-neutral-800/60 text-xs text-neutral-600 dark:text-neutral-300 space-y-1.5">
+            <p className="font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+              💡 How it works:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-neutral-500 dark:text-neutral-400">
+              <li>
+                <strong className="text-neutral-700 dark:text-neutral-300">Point Earning (Always Active):</strong> Customers continuously earn 5 reward points for every ৳100 spent when their order is marked Delivered.
+              </li>
+              <li>
+                <strong className="text-neutral-700 dark:text-neutral-300">When Disabled (Paused):</strong> Point burning is locked at checkout. Customers still see their total accumulated points safely held, but cannot apply them as discounts.
+              </li>
+              <li>
+                <strong className="text-neutral-700 dark:text-neutral-300">When Enabled:</strong> Customers can toggle point redemption at checkout to get ৳1 discount per point (up to their subtotal).
+              </li>
+            </ul>
           </div>
         </div>
 
