@@ -6,7 +6,9 @@ WORKDIR /app
 # No package-lock.json is committed (a Windows lockfile breaks Linux native
 # binaries), so we use `npm install`.
 COPY package.json .npmrc ./
-RUN npm config set registry https://registry.npmmirror.com && npm install
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm install \
+    && npm install --no-save lightningcss-linux-x64-musl @tailwindcss/oxide-linux-x64-musl @rollup/rollup-linux-x64-musl 2>/dev/null; true
 
 # VITE_API_BASE_URL is baked into the bundle at BUILD time. Coolify passes
 # env vars marked as "Build Variable" as --build-arg, so keep it a Build Variable.
