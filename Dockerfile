@@ -6,7 +6,7 @@ WORKDIR /app
 # No package-lock.json is committed (a Windows lockfile breaks Linux native
 # binaries), so we use `npm install`.
 COPY package.json .npmrc ./
-RUN npm install
+RUN npm config set registry https://registry.npmmirror.com && npm install
 
 # VITE_API_BASE_URL is baked into the bundle at BUILD time. Coolify passes
 # env vars marked as "Build Variable" as --build-arg, so keep it a Build Variable.
