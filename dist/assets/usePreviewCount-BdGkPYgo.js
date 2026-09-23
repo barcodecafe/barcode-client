@@ -1,0 +1,1 @@
+import{r as n}from"./vendor-react-B4cQlIi4.js";const o=()=>{const[t,r]=n.useState(()=>typeof window<"u"&&window.innerWidth>=1536?6:5);return n.useEffect(()=>{const e=()=>{r(window.innerWidth>=1536?6:5)};return window.addEventListener("resize",e),()=>window.removeEventListener("resize",e)},[]),t};export{o as u};

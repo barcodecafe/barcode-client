@@ -1,0 +1,1 @@
+import{o as n}from"./index-BK5OdhOZ.js";async function r(){return n.get("/regions")}async function i(e){return n.post("/regions",e)}async function s(e,t){return n.patch(`/regions/${e}`,t)}async function a(e){return n.delete(`/regions/${e}`)}export{i as c,a as d,r as g,s as u};

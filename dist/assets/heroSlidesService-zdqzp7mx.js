@@ -1,0 +1,1 @@
+import{o as s}from"./index-BK5OdhOZ.js";async function r(){return s.get("/hero-slides")}async function i(e){return s.post("/hero-slides",e)}async function l(e,t){return s.put(`/hero-slides/${e}`,t)}async function o(e){return s.delete(`/hero-slides/${e}`)}export{i as c,o as d,r as g,l as u};
