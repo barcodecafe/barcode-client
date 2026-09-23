@@ -17,12 +17,9 @@ dist-ssr
 package-lock.json
 
 # Env — do not commit local env (use .env.example)
-.env
-.env.*
 !.env.example
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -37,3 +34,4 @@ scratchpad
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
